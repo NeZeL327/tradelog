@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, UserPlus, Mail, Lock, User } from 'lucide-react';
@@ -24,7 +25,8 @@ export default function Register() {
     email: '',
     password: '',
     confirmPassword: '',
-    fullName: ''
+    fullName: '',
+    acceptTerms: false
   });
 
   useEffect(() => {
@@ -47,10 +49,10 @@ export default function Register() {
   }, []);
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
     if (error) setError('');
   };
@@ -58,6 +60,11 @@ export default function Register() {
   const validateForm = () => {
     if (!formData.email || !formData.password || !formData.confirmPassword) {
       setError(t('registerRequiredFields'));
+      return false;
+    }
+
+    if (!formData.acceptTerms) {
+      setError(t('registerAcceptTermsRequired') || 'You must accept the Terms and Privacy Policy');
       return false;
     }
 
@@ -340,10 +347,45 @@ export default function Register() {
                   </div>
                 </div>
 
+                {/* Terms and Privacy Checkbox */}
+                <div className="flex items-start space-x-3 py-2">
+                  <Checkbox
+                    id="acceptTerms"
+                    checked={formData.acceptTerms}
+                    onCheckedChange={(checked) => {
+                      setFormData(prev => ({ ...prev, acceptTerms: checked }));
+                      if (error) setError('');
+                    }}
+                    disabled={isLoading}
+                    className="mt-1 border-slate-700 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                  />
+                  <Label
+                    htmlFor="acceptTerms"
+                    className="text-sm text-slate-300 leading-relaxed cursor-pointer"
+                  >
+                    {t('registerAcceptTerms') || 'I accept the'}{' '}
+                    <Link
+                      to="/terms"
+                      className="text-emerald-400 hover:text-emerald-300 underline"
+                      target="_blank"
+                    >
+                      {t('termsOfService') || 'Terms of Service'}
+                    </Link>
+                    {' '}{t('and') || 'and'}{' '}
+                    <Link
+                      to="/privacy"
+                      className="text-emerald-400 hover:text-emerald-300 underline"
+                      target="_blank"
+                    >
+                      {t('privacyPolicy') || 'Privacy Policy'}
+                    </Link>
+                  </Label>
+                </div>
+
                 <Button
                   type="submit"
-                  className="hero-cta hero-cta-pulse w-full bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold py-2.5 shadow-lg shadow-emerald-500/20"
-                  disabled={isLoading}
+                  className="hero-cta hero-cta-pulse w-full bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold py-2.5 shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isLoading || !formData.acceptTerms}
                 >
                   {isLoading ? (
                     <>

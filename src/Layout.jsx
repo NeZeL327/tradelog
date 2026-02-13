@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
+import Footer from "@/components/Footer";
 
 function LayoutContent({ children }) {
   const { t } = useLanguage();
@@ -211,8 +212,11 @@ function LayoutContent({ children }) {
             </div>
           </header>
 
-          <div className="flex-1 overflow-auto">
-            {children}
+          <div className="flex-1 overflow-auto flex flex-col">
+            <div className="flex-1">
+              {children}
+            </div>
+            <Footer />
           </div>
         </main>
       </div>

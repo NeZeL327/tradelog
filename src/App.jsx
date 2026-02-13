@@ -13,6 +13,9 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
+import Cookies from './pages/Cookies';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -52,6 +55,9 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<Home />} />
         <Route path="/Login" element={<Login />} />
         <Route path="/Register" element={<Register />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/cookies" element={<Cookies />} />
         <Route path="*" element={<Home />} />
       </Routes>
     );
@@ -65,6 +71,9 @@ const AuthenticatedApp = () => {
           <MainPage />
         </LayoutWrapper>
       } />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/cookies" element={<Cookies />} />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}
