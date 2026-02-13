@@ -1,0 +1,250 @@
+css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mobile-first approach */
+@layer base {
+  /* Ensure proper viewport scaling */
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Better mobile touch targets (min 44px) */
+  button, a, input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"] {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Mobile-friendly form inputs */
+  input, textarea, select {
+    @apply text-base; /* Prevents zoom on iOS */
+    @apply p-3;
+  }
+
+  /* Improve mobile responsiveness */
+  body {
+    @apply overflow-x-hidden;
+  }
+
+  /* Better readable text on mobile */
+  @media (max-width: 640px) {
+    body {
+      font-size: 15px;
+    }
+    
+    h1 { @apply text-2xl sm:text-3xl; }
+    h2 { @apply text-xl sm:text-2xl; }
+    h3 { @apply text-lg sm:text-xl; }
+    h4 { @apply text-base sm:text-lg; }
+  }
+}
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+  --chart-1: 12 76% 61%;
+  --chart-2: 173 58% 39%;
+  --chart-3: 197 37% 24%;
+  --chart-4: 43 74% 66%;
+  --chart-5: 27 87% 67%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 240 10% 8%;
+  --foreground: 240 5% 96%;
+  --card: 240 10% 10%;
+  --card-foreground: 240 5% 96%;
+  --popover: 240 10% 10%;
+  --popover-foreground: 240 5% 96%;
+  --primary: 262 83% 58%;
+  --primary-foreground: 240 5% 96%;
+  --secondary: 240 10% 15%;
+  --secondary-foreground: 240 5% 96%;
+  --muted: 240 10% 15%;
+  --muted-foreground: 240 5% 65%;
+  --accent: 262 70% 50%;
+  --accent-foreground: 240 5% 96%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 240 5% 96%;
+  --border: 240 10% 18%;
+  --input: 240 10% 18%;
+  --ring: 262 83% 58%;
+  --chart-1: 262 83% 58%;
+  --chart-2: 200 80% 50%;
+  --chart-3: 160 70% 50%;
+  --chart-4: 30 80% 55%;
+  --chart-5: 340 75% 55%;
+}
+
+.bordo {
+  --background: 345 40% 8%;
+  --foreground: 340 15% 95%;
+  --card: 345 35% 12%;
+  --card-foreground: 340 15% 95%;
+  --popover: 345 35% 12%;
+  --popover-foreground: 340 15% 95%;
+  --primary: 340 75% 55%;
+  --primary-foreground: 340 15% 98%;
+  --secondary: 345 30% 18%;
+  --secondary-foreground: 340 15% 95%;
+  --muted: 345 30% 18%;
+  --muted-foreground: 340 20% 65%;
+  --accent: 345 30% 18%;
+  --accent-foreground: 340 15% 95%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 340 15% 98%;
+  --border: 345 30% 20%;
+  --input: 345 30% 20%;
+  --ring: 340 75% 55%;
+  --chart-1: 340 75% 55%;
+  --chart-2: 280 70% 60%;
+  --chart-3: 30 80% 60%;
+  --chart-4: 160 60% 50%;
+  --chart-5: 200 70% 55%;
+}
+
+:root[data-skin="ocean"] {
+  --primary: 199 89% 48%;
+  --primary-foreground: 210 40% 98%;
+  --accent: 199 80% 92%;
+  --accent-foreground: 215 25% 20%;
+  --ring: 199 89% 48%;
+}
+
+:root[data-skin="sunset"] {
+  --primary: 12 82% 55%;
+  --primary-foreground: 210 40% 98%;
+  --accent: 24 90% 92%;
+  --accent-foreground: 15 30% 20%;
+  --ring: 12 82% 55%;
+}
+
+:root[data-skin="midnight"] {
+  --primary: 262 83% 58%;
+  --primary-foreground: 240 5% 96%;
+  --accent: 262 70% 92%;
+  --accent-foreground: 262 30% 20%;
+  --ring: 262 83% 58%;
+}
+
+:root[data-skin="emerald"] {
+  --primary: 158 70% 45%;
+  --primary-foreground: 210 40% 98%;
+  --accent: 158 60% 92%;
+  --accent-foreground: 160 30% 20%;
+  --ring: 158 70% 45%;
+}
+
+.dark[data-skin="ocean"] {
+  --primary: 199 89% 60%;
+  --accent: 199 45% 18%;
+  --accent-foreground: 210 40% 98%;
+  --ring: 199 89% 60%;
+}
+
+.dark[data-skin="sunset"] {
+  --primary: 14 85% 60%;
+  --accent: 18 45% 18%;
+  --accent-foreground: 210 40% 98%;
+  --ring: 14 85% 60%;
+}
+
+.dark[data-skin="midnight"] {
+  --primary: 262 83% 62%;
+  --accent: 262 35% 18%;
+  --accent-foreground: 240 5% 96%;
+  --ring: 262 83% 62%;
+}
+
+.dark[data-skin="emerald"] {
+  --primary: 158 70% 55%;
+  --accent: 158 35% 18%;
+  --accent-foreground: 210 40% 98%;
+  --ring: 158 70% 55%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 87%;
+}
+
+html {
+  font-size: 87%;
+}
+
+h1 {
+  font-size: 1.8rem !important;
+}
+
+h2 {
+  font-size: 1.4rem !important;
+}
+
+h3 {
+  font-size: 1.1rem !important;
+}
+
+.text-4xl {
+  font-size: 1.8rem !important;
+}
+
+.text-3xl {
+  font-size: 1.5rem !important;
+}
+
+.text-2xl {
+  font-size: 1.3rem !important;
+}
+
+.text-xl {
+  font-size: 1.1rem !important;
+}
+
+.p-6 {
+  padding: 1rem !important;
+}
+
+.p-4 {
+  padding: 0.7rem !important;
+}
+
+.p-3 {
+  padding: 0.5rem !important;
+}
+
+.gap-6 {
+  gap: 1rem !important;
+}
+
+.gap-4 {
+  gap: 0.7rem !important;
+}
+
+.gap-3 {
+  gap: 0.5rem !important;
+}
