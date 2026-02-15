@@ -14,8 +14,8 @@ export default function PublicNavbar() {
   const menuItems = [
     { label: t('features') || 'Features', href: '#features' },
     { label: t('pricing') || 'Pricing', href: '#pricing' },
-    { label: t('about') || 'About', href: '#about' },
-    { label: t('contact') || 'Contact', href: '#contact' },
+    { label: t('about') || 'About', href: '/about' },
+    { label: t('contact') || 'Contact', href: '/contact' },
   ];
 
   return (
@@ -25,23 +25,33 @@ export default function PublicNavbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center transition-transform group-hover:scale-105">
-              <span className="text-white font-bold text-lg">TJ</span>
+              <span className="text-white font-bold text-lg">TL</span>
             </div>
             <span className="font-bold text-xl bg-gradient-to-r from-emerald-400 to-blue-500 dark:from-emerald-300 dark:to-blue-400 bg-clip-text text-transparent">
-              TRADE JOURNAL
+              TRADE LOG
             </span>
           </Link>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
             {menuItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {item.label}
-              </a>
+              item.href.startsWith('#') ? (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {item.label}
+                </Link>
+              )
             ))}
           </div>
 
@@ -52,7 +62,7 @@ export default function PublicNavbar() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/Login')}
+              onClick={() => navigate('/login')}
               className="gap-2"
             >
               <LogIn className="w-4 h-4" />
@@ -60,7 +70,7 @@ export default function PublicNavbar() {
             </Button>
             <Button
               size="sm"
-              onClick={() => navigate('/Register')}
+              onClick={() => navigate('/register')}
               className="gap-2 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700"
             >
               <UserPlus className="w-4 h-4" />
@@ -90,20 +100,31 @@ export default function PublicNavbar() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-3 border-t border-border">
             {menuItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.label}
-              </a>
+              item.href.startsWith('#') ? (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              )
             ))}
             <div className="flex flex-col gap-2 px-4 pt-4 border-t border-border">
               <Button
                 variant="outline"
                 onClick={() => {
-                  navigate('/Login');
+                  navigate('/login');
                   setMobileMenuOpen(false);
                 }}
                 className="w-full gap-2"
@@ -113,7 +134,7 @@ export default function PublicNavbar() {
               </Button>
               <Button
                 onClick={() => {
-                  navigate('/Register');
+                  navigate('/register');
                   setMobileMenuOpen(false);
                 }}
                 className="w-full gap-2 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700"

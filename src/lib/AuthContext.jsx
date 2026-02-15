@@ -131,11 +131,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    window.location.href = '/Login';
+    window.location.href = '/login';
   };
 
   const navigateToRegister = () => {
-    window.location.href = '/Register';
+    window.location.href = '/register';
   };
 
   return (

@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import LanguageToggle from '@/components/LanguageToggle';
 import { useLanguage } from '@/components/LanguageProvider';
+import PublicNavbar from '@/components/PublicNavbar';
+import Footer from '@/components/Footer';
 
 export default function Login() {
   const navigate = useNavigate();

@@ -134,7 +134,7 @@ export default function Home() {
         className="relative z-10 w-full max-w-sm"
       >
         <motion.button
-          onClick={() => window.location.href = '/Login'}
+          onClick={() => window.location.href = '/login'}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="hero-cta hero-cta-pulse w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-500/40 transition-all flex items-center justify-center gap-2 text-lg"
@@ -147,7 +147,7 @@ export default function Home() {
           {t('homeSecureLogin')}
         </p>
         <p className="text-center text-slate-400 text-sm mt-2">
-          {t('loginNoAccount')} <button type="button" onClick={() => window.location.href = '/Register'} className="text-emerald-300 hover:text-emerald-200 underline">{t('loginRegisterLink')}</button>
+          {t('loginNoAccount')} <button type="button" onClick={() => window.location.href = '/register'} className="text-emerald-300 hover:text-emerald-200 underline">{t('loginRegisterLink')}</button>
         </p>
       </motion.div>
 

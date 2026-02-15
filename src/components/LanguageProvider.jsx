@@ -590,7 +590,27 @@ export function LanguageProvider({ children }) {
         registerPasswordTooShort: "Hasło musi mieć co najmniej 6 znaków",
         registerInvalidEmail: "Nieprawidłowy format adresu email"
         ,
-        registerEmailExists: "Użytkownik z tym adresem email już istnieje"
+        registerEmailExists: "Użytkownik z tym adresem email już istnieje",
+        
+        // Public Navbar
+        features: "Funkcje",
+        pricing: "Cennik",
+        about: "O nas",
+        contact: "Kontakt",
+        login: "Zaloguj się",
+        register: "Zarejestruj się",
+        
+        // Footer
+        footerTagline: "Profesjonalny dziennik handlowy dla poważnych traderów",
+        footerNavigation: "Nawigacja",
+        footerAccount: "Konto",
+        footerLegal: "Regulamin",
+        footerFollowUs: "Obserwuj nas",
+        footerDisclaimer: "Ta aplikacja nie udziela porad inwestycyjnych. Handel wiąże się z ryzykiem. Wyniki z przeszłości nie wskazują na przyszłe rezultaty.",
+        resetPassword: "Resetuj hasło",
+        termsOfService: "Warunki korzystania",
+        privacyPolicy: "Polityka prywatności",
+        cookiesPolicy: "Polityka cookies"
       },
       en: {
         // Navigation
@@ -604,6 +624,26 @@ export function LanguageProvider({ children }) {
         goals: "Goals",
         settings: "Settings",
         billing: "Billing",
+        
+        // Public Navbar
+        features: "Features",
+        pricing: "Pricing",
+        about: "About",
+        contact: "Contact",
+        login: "Login",
+        register: "Sign Up",
+        
+        // Footer
+        footerTagline: "Professional trading journal for serious traders",
+        footerNavigation: "Navigation",
+        footerAccount: "Account",
+        footerLegal: "Legal",
+        footerFollowUs: "Follow Us",
+        footerDisclaimer: "This application does not provide investment advice. Trading involves risk. Past performance is not indicative of future results.",
+        resetPassword: "Reset Password",
+        termsOfService: "Terms of Service",
+        privacyPolicy: "Privacy Policy",
+        cookiesPolicy: "Cookies Policy",
         
         // Common
         save: "Save",

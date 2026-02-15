@@ -14,16 +14,16 @@ export default function Footer() {
           {/* Sekcja 1: Logo i copyright */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">TJ</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">TL</span>
               </div>
-              <span className="font-semibold text-lg">Trade Journal</span>
+              <span className="font-semibold text-lg">Trade Log</span>
             </div>
             <p className="text-sm text-muted-foreground">
               {t('footerTagline') || 'Professional trading journal for serious traders'}
             </p>
             <p className="text-xs text-muted-foreground">
-              © 2026 Trade Journal App
+              © 2026 Trade Log App
             </p>
           </div>
 
