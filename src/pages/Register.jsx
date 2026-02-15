@@ -9,7 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, UserPlus, Mail, Lock, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import LanguageToggle from '@/components/LanguageToggle';
+import PublicNavbar from '@/components/PublicNavbar';
+import Footer from '@/components/Footer';
 import { useLanguage } from '@/components/LanguageProvider';
 import { createUserWithEmailAndPassword, deleteUser } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -152,15 +153,14 @@ export default function Register() {
   };
 
   return (
-    <div
-      className="parallax-root min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-6 overflow-hidden relative"
-      style={/** @type {any} */ ({ '--px': parallax.x, '--py': parallax.y })}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-    >
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-        <LanguageToggle />
-      </div>
+    <>
+      <PublicNavbar />
+      <div
+        className="parallax-root min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-6 overflow-hidden relative pt-24"
+        style={/** @type {any} */ ({ '--px': parallax.x, '--py': parallax.y })}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="hero-grid parallax-layer parallax-layer-slow" />
         <div className="hero-stars parallax-layer" />
@@ -416,6 +416,8 @@ export default function Register() {
           </Card>
         </motion.div>
       </div>
-    </div>
+      </div>
+      <Footer />
+    </>
   );
 }

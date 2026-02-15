@@ -12,5 +12,22 @@
     "public": "dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [{ "source": "**", "destination": "/index.html" }]
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8082
+    },
+    "hosting": {
+      "port": 5003
+    },
+    "functions": {
+      "port": 5004
+    },
+    "storage": {
+      "port": 9198
+    },
+    "ui": {
+      "enabled": false
+    }
   }
 }

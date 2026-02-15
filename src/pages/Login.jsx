@@ -85,15 +85,14 @@ export default function Login() {
   };
 
   return (
-    <div
-      className="parallax-root min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-6 overflow-hidden relative"
-      style={/** @type {any} */ ({ '--px': parallax.x, '--py': parallax.y })}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-    >
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-        <LanguageToggle />
-      </div>
+    <>
+      <PublicNavbar />
+      <div
+        className="parallax-root min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-6 overflow-hidden relative pt-24"
+        style={/** @type {any} */ ({ '--px': parallax.x, '--py': parallax.y })}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="hero-grid parallax-layer parallax-layer-slow" />
         <div className="hero-stars parallax-layer" />
@@ -325,6 +324,8 @@ export default function Login() {
           </Card>
         </motion.div>
       </div>
-    </div>
+      </div>
+      <Footer />
+    </>
   );
 }
