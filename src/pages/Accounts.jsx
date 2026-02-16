@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash, Wallet } from "lucide-react";
+import { Plus, Edit, Trash, Wallet, Upload } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
+import { AccountImportButton } from "@/components/AccountImportExport";
 
 export default function Accounts() {
   const { user } = useAuth();
@@ -184,6 +185,8 @@ export default function Accounts() {
               <AccountCard
                 key={account.id}
                 account={account}
+                user={user}
+                queryClient={queryClient}
                 onEdit={(account) => {
                   setEditingAccount(account);
                   setShowForm(true);
@@ -219,7 +222,7 @@ export default function Accounts() {
   );
 }
 
-function AccountCard({ account, onEdit, onDelete }) {
+function AccountCard({ account, user, queryClient, onEdit, onDelete }) {
   const accountTypeColors = {
     Live: "#10b981",
     Demo: "#3b82f6",
@@ -299,6 +302,14 @@ function AccountCard({ account, onEdit, onDelete }) {
             </div>
           </div>
           <div className="flex gap-2">
+            <AccountImportButton 
+              account={account} 
+              onImportSuccess={() => {
+                // Invalidate queries to refresh data
+                queryClient.invalidateQueries({ queryKey: ['trades', user?.id] });
+                toast.success('Transakcje zaimportowane pomyślnie');
+              }} 
+            />
             <Button size="sm" variant="outline" onClick={() => onEdit(account)}>
               <Edit className="w-4 h-4" />
             </Button>

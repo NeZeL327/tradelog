@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Upload, X, Loader2, CheckCircle2, AlertCircle, AlertTriangle } from "lucide-react";
@@ -154,111 +153,17 @@ export default function BulkUpload() {
   };
 
   const checkForDuplicates = async (expenseData) => {
-    const existingExpenses = await base44.entities.Expense.list();
-    
-    const isDuplicate = existingExpenses.some(existing => {
-      return existing.vendor === expenseData.vendor &&
-             existing.amount === expenseData.amount &&
-             existing.date === expenseData.date;
-    });
-    
-    return isDuplicate;
+    // Note: Duplicate checking requires database configuration
+    return false;
   };
 
   const processFiles = async () => {
     setProcessing(true);
     setDuplicatesCount(0);
-    let duplicates = 0;
     
-    const existingExpenses = await base44.entities.Expense.list();
+    // Note: Bulk receipt processing requires additional configuration
+    alert("Bulk receipt processing feature is currently not available. Please enter expense details manually.");
     
-    for (let i = 0; i < files.length; i++) {
-      setCurrentIndex(i);
-      setResults(prev => {
-        const newResults = [...prev];
-        newResults[i] = { status: 'processing' };
-        return newResults;
-      });
-
-      try {
-        const fileToUpload = await compressImage(files[i]);
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: fileToUpload });
-        
-        const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-          file_url,
-          json_schema: EXPENSE_SCHEMA
-        });
-
-        if (result.status === "success" && result.output) {
-          const expenseData = {
-            ...result.output,
-            receipt_url: file_url,
-            status: 'Pending'
-          };
-          
-          const isDuplicate = existingExpenses.some(existing => {
-            return existing.vendor === expenseData.vendor &&
-                   existing.amount === expenseData.amount &&
-                   existing.date === expenseData.date;
-          });
-          
-          if (isDuplicate) {
-            duplicates++;
-            setDuplicatesCount(duplicates);
-            
-            await base44.entities.UploadLog.create({
-              file_name: files[i].name,
-              status: 'duplicate',
-              vendor: expenseData.vendor,
-              amount: expenseData.amount,
-              upload_type: 'bulk'
-            });
-            
-            setResults(prev => {
-              const newResults = [...prev];
-              newResults[i] = { status: 'duplicate', data: result.output };
-              return newResults;
-            });
-          } else {
-            const expense = await base44.entities.Expense.create(expenseData);
-            existingExpenses.push(expenseData);
-            
-            await base44.entities.UploadLog.create({
-              file_name: files[i].name,
-              status: 'success',
-              expense_id: expense.id,
-              vendor: expenseData.vendor,
-              amount: expenseData.amount,
-              upload_type: 'bulk'
-            });
-            
-            setResults(prev => {
-              const newResults = [...prev];
-              newResults[i] = { status: 'success', data: result.output };
-              return newResults;
-            });
-          }
-        } else {
-          throw new Error("Could not extract data from receipt");
-        }
-      } catch (error) {
-        console.error(`Error processing file ${i}:`, error);
-        
-        await base44.entities.UploadLog.create({
-          file_name: files[i].name,
-          status: 'failed',
-          error_message: error.message || 'Processing failed',
-          upload_type: 'bulk'
-        });
-        
-        setResults(prev => {
-          const newResults = [...prev];
-          newResults[i] = { status: 'error', error: error.message || 'Processing failed' };
-          return newResults;
-        });
-      }
-    }
-
     setProcessing(false);
   };
 

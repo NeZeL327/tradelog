@@ -139,7 +139,9 @@ export const createTrade = async (userId, tradeData) => {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
+    console.log('Creating trade in Firestore with payload:', payload);
     const refDoc = await addDoc(userCollection(userId, 'trades'), payload);
+    console.log('Trade created with ID:', refDoc.id);
     return { id: refDoc.id, ...payload };
   });
 };

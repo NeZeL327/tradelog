@@ -14,51 +14,19 @@ export function useLanguage() {
 
 export function LanguageProvider({ children }) {
   const { user, checkSession } = useAuth();
-  const [language, setLanguage] = useState('pl');
+  const [language, setLanguage] = useState(() => {
+    // Initialize from localStorage
+    const saved = localStorage.getItem("appLanguage");
+    return saved === 'en' ? 'en' : 'pl';
+  });
   const [translations, setTranslations] = useState({});
   const [isLoading, setIsLoading] = useState(true);
 
   const normalizeLanguage = (value) => (value === 'en' ? 'en' : 'pl');
 
-  const applyLanguage = (nextLang, { persist = false } = {}) => {
-    const normalized = normalizeLanguage(nextLang);
-    setLanguage(normalized);
-    loadTranslations(normalized);
-
-    if (!persist) {
-      return;
-    }
-
-    if (user?.id) {
-      try {
-        updateUser(user.id, { language: normalized });
-        if (checkSession) {
-          checkSession();
-        }
-      } catch (error) {
-        // Ignore update errors
-      }
-    }
-  };
-
+  // Load translations whenever language changes
   useEffect(() => {
-    const loadLanguage = async () => {
-      try {
-        const userLang = user?.language;
-        const nextLang = normalizeLanguage(userLang || 'pl');
-        applyLanguage(nextLang);
-      } catch (error) {
-        applyLanguage('pl');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadLanguage();
-  }, [user]);
-  
-
-  const loadTranslations = (lang) => {
+    const lang = language || 'pl';
     const allTranslations = {
       pl: {
         // Navigation
@@ -209,27 +177,63 @@ export function LanguageProvider({ children }) {
         notesViewGrid: "Siatka",
         notesViewTimeline: "Oś czasu",
         notesViewKanban: "Kanban",
+        
+        // Billing & Pricing
         billingTitle: "Subskrypcja Trade Log",
         billingSubtitle: "Zarzadzaj planem i funkcjami premium",
-        billingPlanFree: "Plan Free",
-        billingPlanPro: "Plan Pro",
-        billingCurrent: "Obecny plan",
-        billingActive: "Aktywny",
-        billingUpgrade: "Ulepsz",
-        billingSubscribe: "Wykup",
-        billingManage: "Zarzadzaj",
+        billingPlanDesc: "Pełny dostęp do wszystkich funkcji tradingowych",
+        billingPerMonth: "miesiąc",
+        billing14DayTrial: "14 dni za darmo",
+        billingIncluded: "Co otrzymujesz:",
+        billingProFeature1: "Nieograniczony dziennik transakcji i analiza",
+        billingProFeature2: "Zaawansowane wykresy i raporty wydajności",
+        billingProFeature3: "Zarządzanie strategiami i celami",
+        billingProFeature4: "Inteligentne notatki z AI i checklisty",
+        billingProFeature5: "Eksport danych i backup w chmurze",
+        billingProFeature6: "Wsparcie priorytetowe 24/7",
+        billingActive: "Aktywna subskrypcja",
+        billingManage: "Zarządzaj subskrypcją",
+        billingStartTrial: "Rozpocznij 14-dniowy trial",
+        billingNoCreditCard: "Nie wymaga karty kredytowej do rozpoczęcia trialu",
         billingStatusTitle: "Status subskrypcji",
         billingLoading: "Sprawdzanie statusu...",
         billingStatus: "Status: {status}",
-        billingFreeFeature1: "Podstawowe notatki i dziennik",
-        billingFreeFeature2: "Podstawowe raporty",
-        billingProFeature1: "Zaawansowany edytor i szablony",
-        billingProFeature2: "Eksport premium i backup",
-        billingProFeature3: "Wsparcie priorytetowe",
         billingMissingPrice: "Brak skonfigurowanej ceny Stripe",
         billingCheckoutError: "Nie udalo sie otworzyc platnosci",
         billingPortalError: "Nie udalo sie otworzyc panelu subskrypcji",
         billingUpgradeNeeded: "Ta funkcja wymaga planu Pro",
+        
+        // Pricing Page
+        pricingBadge: "Jedna prosta cena",
+        pricingTitle: "Profesjonalny trading za $9.9/miesiąc",
+        pricingSubtitle: "Wszystkie narzędzia potrzebne do rozwoju jako trader. Bez ukrytych kosztów.",
+        pricingPlanDesc: "Pełny dostęp do wszystkich funkcji",
+        pricingPerMonth: "miesiąc",
+        pricing14DayTrial: "14 dni za darmo - bez karty",
+        pricingInclude1: "Nieograniczona liczba transakcji i kont",
+        pricingInclude2: "Zaawansowane analizy P&L, win rate i profit factor",
+        pricingInclude3: "Inteligentne strategie i playbooki",
+        pricingInclude4: "Moduł psychologii tradingu i dziennik emocji",
+        pricingInclude5: "Automatyczny backup i eksport danych",
+        pricingInclude6: "Wsparcie premium i regularne aktualizacje",
+        pricingStartTrial: "Rozpocznij za darmo",
+        pricingNoCreditCard: "Do trialu nie potrzebujesz karty kredytowej",
+        pricingWhyChoose: "Dlaczego Trade Log?",
+        pricingFeature1Title: "Pełna analiza wydajności",
+        pricingFeature1Desc: "Szczegółowe statystyki, wykresy equity, analiza czasowa i wiele więcej",
+        pricingFeature2Title: "Psychologia tradingu",
+        pricingFeature2Desc: "Śledź emocje, jakość setupów i rozwój mentalny",
+        pricingFeature3Title: "Zarządzanie celami",
+        pricingFeature3Desc: "Ustaw cele, monitoruj postępy i buduj konsekwencję",
+        pricingFeature4Title: "Strategie i playbooki",
+        pricingFeature4Desc: "Dokumentuj swoje setups i analizuj ich skuteczność",
+        pricingFeature5Title: "Bezpieczeństwo danych",
+        pricingFeature5Desc: "Szyfrowanie end-to-end i automatyczne backupy",
+        pricingFeature6Title: "Szybkie wsparcie",
+        pricingFeature6Desc: "Odpowiadamy w 24h i dodajemy nowe funkcje na bieżąco",
+        pricingCTATitle: "Gotowy na rozwój?",
+        pricingCTADesc: "Dołącz do setek traderów, którzy używają Trade Log do budowania konsekwencji i poprawy wyników.",
+        pricingGetStarted: "Zacznij za darmo",
         
         // Dashboard
         totalPL: "Całkowity P&L",
@@ -781,27 +785,63 @@ export function LanguageProvider({ children }) {
         notesViewGrid: "Grid",
         notesViewTimeline: "Timeline",
         notesViewKanban: "Kanban",
+        
+        // Billing & Pricing
         billingTitle: "Trade Log Subscription",
-        billingSubtitle: "Manage plan and premium features",
-        billingPlanFree: "Free plan",
-        billingPlanPro: "Pro plan",
-        billingCurrent: "Current plan",
-        billingActive: "Active",
-        billingUpgrade: "Upgrade",
-        billingSubscribe: "Subscribe",
-        billingManage: "Manage",
+        billingSubtitle: "Manage your plan and premium features",
+        billingPlanDesc: "Full access to all trading features",
+        billingPerMonth: "month",
+        billing14DayTrial: "14 days free",
+        billingIncluded: "What's included:",
+        billingProFeature1: "Unlimited trade journal and analytics",
+        billingProFeature2: "Advanced charts and performance reports",
+        billingProFeature3: "Strategy and goal management",
+        billingProFeature4: "AI-powered notes and checklists",
+        billingProFeature5: "Data export and cloud backup",
+        billingProFeature6: "Priority support 24/7",
+        billingActive: "Active subscription",
+        billingManage: "Manage subscription",
+        billingStartTrial: "Start 14-day trial",
+        billingNoCreditCard: "No credit card required to start trial",
         billingStatusTitle: "Subscription status",
         billingLoading: "Checking status...",
         billingStatus: "Status: {status}",
-        billingFreeFeature1: "Basic notes and journal",
-        billingFreeFeature2: "Basic analytics",
-        billingProFeature1: "Advanced editor and templates",
-        billingProFeature2: "Premium export and backup",
-        billingProFeature3: "Priority support",
         billingMissingPrice: "Stripe price is not configured",
         billingCheckoutError: "Unable to open checkout",
         billingPortalError: "Unable to open billing portal",
         billingUpgradeNeeded: "This feature requires the Pro plan",
+        
+        // Pricing Page
+        pricingBadge: "One simple price",
+        pricingTitle: "Professional trading for $9.9/month",
+        pricingSubtitle: "All the tools you need to grow as a trader. No hidden costs.",
+        pricingPlanDesc: "Full access to all features",
+        pricingPerMonth: "month",
+        pricing14DayTrial: "14 days free - no card",
+        pricingInclude1: "Unlimited trades and accounts",
+        pricingInclude2: "Advanced P&L, win rate, and profit factor analysis",
+        pricingInclude3: "Smart strategies and playbooks",
+        pricingInclude4: "Trading psychology module and emotion journal",
+        pricingInclude5: "Automatic backup and data export",
+        pricingInclude6: "Premium support and regular updates",
+        pricingStartTrial: "Start for free",
+        pricingNoCreditCard: "No credit card needed for trial",
+        pricingWhyChoose: "Why Trade Log?",
+        pricingFeature1Title: "Complete performance analysis",
+        pricingFeature1Desc: "Detailed statistics, equity charts, time analysis, and more",
+        pricingFeature2Title: "Trading psychology",
+        pricingFeature2Desc: "Track emotions, setup quality, and mental development",
+        pricingFeature3Title: "Goal management",
+        pricingFeature3Desc: "Set goals, monitor progress, and build consistency",
+        pricingFeature4Title: "Strategies and playbooks",
+        pricingFeature4Desc: "Document your setups and analyze their effectiveness",
+        pricingFeature5Title: "Data security",
+        pricingFeature5Desc: "End-to-end encryption and automatic backups",
+        pricingFeature6Title: "Fast support",
+        pricingFeature6Desc: "We respond within 24h and add new features regularly",
+        pricingCTATitle: "Ready to grow?",
+        pricingCTADesc: "Join hundreds of traders using Trade Log to build consistency and improve results.",
+        pricingGetStarted: "Get started for free",
         
         // Dashboard
         totalPL: "Total P&L",
@@ -1202,17 +1242,40 @@ export function LanguageProvider({ children }) {
     };
     
     setTranslations(allTranslations[lang] || allTranslations.pl);
-  };
+    localStorage.setItem("appLanguage", lang);
+  }, [language]);
+
+  // Initialize from user preferences on mount
+  useEffect(() => {
+    if (user?.language) {
+      const normalized = normalizeLanguage(user.language);
+      if (normalized !== language) {
+        setLanguage(normalized);
+      }
+    }
+    setIsLoading(false);
+  }, [user?.language]);
 
   const t = (key) => {
     return translations[key] || key;
   };
 
   const updateLanguage = (newLang) => {
-    applyLanguage(newLang, { persist: true });
+    const normalized = normalizeLanguage(newLang);
+    setLanguage(normalized);
+    
+    // Update user preferences in database
+    if (user?.id) {
+      try {
+        updateUser(user.id, { language: normalized });
+        if (checkSession) {
+          setTimeout(() => checkSession(), 100);
+        }
+      } catch (error) {
+        console.error('Failed to update language:', error);
+      }
+    }
   };
-
-
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage: updateLanguage, t, isLoading }}>

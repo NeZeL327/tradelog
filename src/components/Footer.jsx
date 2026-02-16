@@ -8,7 +8,7 @@ export default function Footer() {
   const { t } = useLanguage();
   
   return (
-    <footer className="w-full border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mt-auto">
+    <footer className="w-full border-t border-slate-800 bg-slate-950/95 backdrop-blur mt-auto">
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Sekcja 1: Logo i copyright */}
@@ -17,24 +17,24 @@ export default function Footer() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">TL</span>
               </div>
-              <span className="font-semibold text-lg">Trade Log</span>
+              <span className="font-semibold text-lg text-white">Trade Log</span>
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-400">
               {t('footerTagline') || 'Professional trading journal for serious traders'}
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-slate-500">
               © 2026 Trade Log App
             </p>
           </div>
 
           {/* Sekcja 2: Nawigacja */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm">{t('footerNavigation') || 'Navigation'}</h3>
+            <h3 className="font-semibold text-sm text-white">{t('footerNavigation') || 'Navigation'}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link 
                   to={createPageUrl("Dashboard")} 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   {t('dashboard') || 'Dashboard'}
                 </Link>
@@ -42,7 +42,7 @@ export default function Footer() {
               <li>
                 <Link 
                   to={createPageUrl("Billing")} 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   {t('pricing') || 'Pricing'}
                 </Link>
@@ -50,7 +50,7 @@ export default function Footer() {
               <li>
                 <a 
                   href="#faq" 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   FAQ
                 </a>
@@ -58,7 +58,7 @@ export default function Footer() {
               <li>
                 <a 
                   href="#contact" 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   {t('contact') || 'Contact'}
                 </a>
@@ -68,12 +68,12 @@ export default function Footer() {
 
           {/* Sekcja 3: Konto */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm">{t('footerAccount') || 'Account'}</h3>
+            <h3 className="font-semibold text-sm text-white">{t('footerAccount') || 'Account'}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link 
                   to={createPageUrl("Login")} 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   {t('login') || 'Login'}
                 </Link>
@@ -81,7 +81,7 @@ export default function Footer() {
               <li>
                 <Link 
                   to={createPageUrl("Register")} 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   {t('register') || 'Sign Up'}
                 </Link>
@@ -89,7 +89,7 @@ export default function Footer() {
               <li>
                 <Link 
                   to="/reset-password" 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   {t('resetPassword') || 'Reset Password'}
                 </Link>
@@ -99,12 +99,12 @@ export default function Footer() {
 
           {/* Sekcja 4: Legal & Social */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm">{t('footerLegal') || 'Legal'}</h3>
+            <h3 className="font-semibold text-sm text-white">{t('footerLegal') || 'Legal'}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link 
                   to="/terms" 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   {t('termsOfService') || 'Terms of Service'}
                 </Link>
@@ -112,7 +112,7 @@ export default function Footer() {
               <li>
                 <Link 
                   to="/privacy" 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   {t('privacyPolicy') || 'Privacy Policy'}
                 </Link>
@@ -120,7 +120,7 @@ export default function Footer() {
               <li>
                 <Link 
                   to="/cookies" 
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors"
                 >
                   {t('cookiesPolicy') || 'Cookies Policy'}
                 </Link>
@@ -129,25 +129,25 @@ export default function Footer() {
             
             {/* Social Media Icons */}
             <div className="pt-4">
-              <h4 className="font-semibold text-sm mb-3">{t('footerFollowUs') || 'Follow Us'}</h4>
+              <h4 className="font-semibold text-sm text-white mb-3">{t('footerFollowUs') || 'Follow Us'}</h4>
               <div className="flex gap-3">
                 <a 
                   href="#" 
-                  className="w-9 h-9 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
+                  className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors text-slate-300"
                   aria-label="Instagram"
                 >
                   <Instagram className="w-4 h-4" />
                 </a>
                 <a 
                   href="#" 
-                  className="w-9 h-9 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
+                  className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors text-slate-300"
                   aria-label="Facebook"
                 >
                   <Facebook className="w-4 h-4" />
                 </a>
                 <a 
                   href="#" 
-                  className="w-9 h-9 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
+                  className="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors text-slate-300"
                   aria-label="TikTok"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -160,8 +160,8 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-8 pt-6 border-t text-center">
-          <p className="text-xs text-muted-foreground">
+        <div className="mt-8 pt-6 border-t border-slate-800 text-center">
+          <p className="text-xs text-slate-500">
             {t('footerDisclaimer') || 'This application does not provide investment advice. Trading involves risk. Past performance is not indicative of future results.'}
           </p>
         </div>

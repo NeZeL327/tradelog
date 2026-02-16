@@ -35,6 +35,7 @@ export default function JournalSimple() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilters, setStatusFilters] = useState(["all"]);
   const [timeFilter, setTimeFilter] = useState("all");
+  const [accountFilter, setAccountFilter] = useState("all");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTrade, setEditingTrade] = useState(null);
   const [viewingTrade, setViewingTrade] = useState(null);
@@ -42,6 +43,7 @@ export default function JournalSimple() {
   const [sortOrder, setSortOrder] = useState("desc");
   const [outcomeFilter, setOutcomeFilter] = useState("all");
   const [plannedOpen, setPlannedOpen] = useState(false);
+  const [selectedTrades, setSelectedTrades] = useState(new Set());
   const [visibleColumns, setVisibleColumns] = useState({
     status: true,
     date: true,
@@ -88,6 +90,38 @@ export default function JournalSimple() {
   const handleDelete = (id) => {
     if (confirm("Are you sure you want to delete this trade?")) {
       deleteTradeMutation.mutate(id);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTrades.size === 0) return;
+    if (confirm(`Are you sure you want to delete ${selectedTrades.size} trade(s)?`)) {
+      for (const id of selectedTrades) {
+        await deleteTrade(user?.id, id);
+      }
+      setSelectedTrades(new Set());
+      queryClient.invalidateQueries({ queryKey: ['trades', user?.id] });
+      refetch();
+    }
+  };
+
+  const toggleTradeSelection = (tradeId) => {
+    setSelectedTrades(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(tradeId)) {
+        newSet.delete(tradeId);
+      } else {
+        newSet.add(tradeId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleAllTrades = () => {
+    if (selectedTrades.size === executedTrades.length && executedTrades.length > 0) {
+      setSelectedTrades(new Set());
+    } else {
+      setSelectedTrades(new Set(executedTrades.map(t => t.id)));
     }
   };
 
@@ -155,6 +189,10 @@ export default function JournalSimple() {
       if (timeFilter === "month" && !isSameMonth(tradeDate, now)) return false;
     }
 
+    if (accountFilter !== "all") {
+      if (String(t.account_id) !== String(accountFilter)) return false;
+    }
+
     return true;
   });
 
@@ -216,6 +254,38 @@ export default function JournalSimple() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e] p-6">
       <div className="max-w-[1600px] mx-auto space-y-6">
+        {/* Bulk Actions Bar */}
+        {selectedTrades.size > 0 && (
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-white dark:bg-slate-800 shadow-2xl rounded-xl border border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center gap-4 animate-in slide-in-from-top-5">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-300">{selectedTrades.size}</span>
+              </div>
+              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                {selectedTrades.size} {selectedTrades.size === 1 ? 'trade' : 'trades'} selected
+              </span>
+            </div>
+            <div className="h-6 w-px bg-slate-300 dark:bg-slate-600"></div>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => setSelectedTrades(new Set())}
+              className="border-slate-300 dark:border-slate-600"
+            >
+              Clear
+            </Button>
+            <Button 
+              size="sm" 
+              variant="destructive" 
+              onClick={handleBulkDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Selected
+            </Button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
@@ -331,48 +401,96 @@ export default function JournalSimple() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-3 items-center">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={statusFilters.includes("all")}
-                    onChange={() => { toggleStatusFilter("all"); setOutcomeFilter("all"); }}
-                  />
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <div 
+                    className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
+                      statusFilters.includes("all")
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                    }`}
+                    onClick={() => { toggleStatusFilter("all"); setOutcomeFilter("all"); }}
+                  >
+                    {statusFilters.includes("all") && (
+                      <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
                   <span>{t('all')}</span>
                 </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={statusFilters.includes("Open")}
-                    onChange={() => { toggleStatusFilter("Open"); setOutcomeFilter("all"); }}
-                  />
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <div 
+                    className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
+                      statusFilters.includes("Open")
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                    }`}
+                    onClick={() => { toggleStatusFilter("Open"); setOutcomeFilter("all"); }}
+                  >
+                    {statusFilters.includes("Open") && (
+                      <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
                   <span>{t('openStatus')}</span>
                 </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={statusFilters.includes("Closed")}
-                    onChange={() => { toggleStatusFilter("Closed"); setOutcomeFilter("all"); }}
-                  />
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <div 
+                    className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
+                      statusFilters.includes("Closed")
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                    }`}
+                    onClick={() => { toggleStatusFilter("Closed"); setOutcomeFilter("all"); }}
+                  >
+                    {statusFilters.includes("Closed") && (
+                      <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
                   <span>{t('closedStatus')}</span>
                 </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={statusFilters.includes("Planned")}
-                    onChange={() => { toggleStatusFilter("Planned"); setOutcomeFilter("all"); }}
-                  />
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <div 
+                    className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
+                      statusFilters.includes("Planned")
+                        ? 'bg-blue-600 border-blue-600'
+                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                    }`}
+                    onClick={() => { toggleStatusFilter("Planned"); setOutcomeFilter("all"); }}
+                  >
+                    {statusFilters.includes("Planned") && (
+                      <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
                   <span>{t('plannedStatus')}</span>
                 </label>
               </div>
               <select
                 value={timeFilter}
                 onChange={(e) => setTimeFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-md"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200"
               >
                 <option value="all">All Time</option>
                 <option value="day">Today</option>
                 <option value="week">This Week</option>
                 <option value="month">This Month</option>
+              </select>
+              <select
+                value={accountFilter}
+                onChange={(e) => setAccountFilter(e.target.value)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200"
+              >
+                <option value="all">{t('allAccounts') || 'All Accounts'}</option>
+                {accounts.map(account => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
               </select>
             </div>
           </CardContent>
@@ -425,6 +543,22 @@ export default function JournalSimple() {
                     {visibleColumns.actions && (
                       <th className="text-right p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('actions')}</th>
                     )}
+                    <th className="text-center p-4 w-12">
+                      <div 
+                        onClick={toggleAllTrades}
+                        className={`w-5 h-5 rounded-full border-[3px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
+                          executedTrades.length > 0 && selectedTrades.size === executedTrades.length
+                            ? 'bg-blue-600 border-blue-600'
+                            : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        }`}
+                      >
+                        {executedTrades.length > 0 && selectedTrades.size === executedTrades.length && (
+                          <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -432,7 +566,10 @@ export default function JournalSimple() {
                     <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                       {visibleColumns.status && (
                         <td className="p-4">
-                          <Badge className={trade.status === "Open" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}>
+                          <Badge className={trade.status === "Open" 
+                            ? "bg-blue-500 text-white dark:bg-blue-600 dark:text-white" 
+                            : "bg-green-500 text-white dark:bg-green-600 dark:text-white"
+                          }>
                             {trade.status === "Open" ? <Clock className="w-3 h-3 mr-1" /> : <CheckCircle className="w-3 h-3 mr-1" />}
                             {trade.status}
                           </Badge>
@@ -510,6 +647,22 @@ export default function JournalSimple() {
                           </div>
                         </td>
                       )}
+                      <td className="text-center p-4">
+                        <div 
+                          onClick={() => toggleTradeSelection(trade.id)}
+                          className={`w-5 h-5 rounded-full border-[3px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
+                            selectedTrades.has(trade.id)
+                              ? 'bg-blue-600 border-blue-600'
+                              : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                          }`}
+                        >
+                          {selectedTrades.has(trade.id) && (
+                            <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

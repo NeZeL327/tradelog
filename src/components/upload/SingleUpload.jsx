@@ -111,37 +111,10 @@ export default function SingleUpload() {
     setDuplicateWarning(null);
 
     try {
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(90, prev + 10));
-      }, 200);
-
-      const fileToUpload = await compressImage(selectedFile);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: fileToUpload });
-      
-      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: EXPENSE_SCHEMA
-      });
-
-      clearInterval(progressInterval);
-      setProgress(100);
-
-      if (result.status === "success" && result.output) {
-        const expenseData = {
-          ...result.output,
-          receipt_url: file_url
-        };
-        
-        const isDuplicate = await checkForDuplicates(expenseData);
-        
-        if (isDuplicate) {
-          setDuplicateWarning("This receipt appears to be a duplicate (same vendor, amount, and date already exists). You can still edit and save it if needed.");
-        }
-        
-        setExtractedData(expenseData);
-      } else {
-        throw new Error("Could not extract data from receipt");
-      }
+      // Note: Receipt scanning feature requires additional configuration
+      // For now, this feature is disabled
+      alert("Receipt scanning feature is currently not available. Please enter expense details manually.");
+      resetUpload();
     } catch (error) {
       console.error("Error processing receipt:", error);
       alert("Error processing receipt. Please try again.");
@@ -153,28 +126,11 @@ export default function SingleUpload() {
 
   const handleSave = async (expenseData) => {
     try {
-      const expense = await base44.entities.Expense.create(expenseData);
-      
-      await base44.entities.UploadLog.create({
-        file_name: file?.name || 'camera-capture.jpg',
-        status: 'success',
-        expense_id: expense.id,
-        vendor: expenseData.vendor,
-        amount: expenseData.amount,
-        upload_type: 'single'
-      });
-      
+      // Note: Expense saving requires database configuration
+      alert("Expense saving feature is currently not available.");
       navigate(createPageUrl("Dashboard"));
     } catch (error) {
       console.error("Error saving expense:", error);
-      
-      await base44.entities.UploadLog.create({
-        file_name: file?.name || 'camera-capture.jpg',
-        status: 'failed',
-        error_message: error.message || 'Failed to save expense',
-        upload_type: 'single'
-      });
-      
       alert("Error saving expense. Please try again.");
     }
   };

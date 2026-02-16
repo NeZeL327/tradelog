@@ -674,6 +674,20 @@ export default function Dashboard() {
             <CardHeader className="flex items-center justify-between">
               <CardTitle className="text-slate-900">{format(calendarDate, 'LLLL yyyy', { locale: dateLocale })}</CardTitle>
               <div className="flex items-center gap-2">
+                <Select value={dashboardAccount} onValueChange={setDashboardAccount}>
+                  <SelectTrigger className="w-36">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-4 h-4 text-slate-500" />
+                      <SelectValue placeholder={t('myAccount')} />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('allAccounts')}</SelectItem>
+                    {accounts.map(acc => (
+                      <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={String(calendarDate.getFullYear())} onValueChange={(val) => setCalendarDate(new Date(parseInt(val, 10), calendarDate.getMonth(), 1))}>
                   <SelectTrigger className="w-28">
                     <SelectValue />

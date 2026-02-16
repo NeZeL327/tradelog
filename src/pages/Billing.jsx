@@ -53,52 +53,84 @@ export default function Billing() {
 
   return (
     <div className="min-h-screen px-6 py-8">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="text-center">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t("billingTitle")}</h1>
           <p className="text-slate-600 dark:text-slate-400">{t("billingSubtitle")}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5" />
-                {t("billingPlanFree")}
-              </CardTitle>
+        <div className="max-w-2xl mx-auto">
+          <Card className="border-2 border-blue-500/50 dark:border-blue-400/50 shadow-lg">
+            <CardHeader className="text-center">
+              <div className="inline-block mx-auto mb-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center">
+                  <CreditCard className="h-8 w-8 text-white" />
+                </div>
+              </div>
+              <CardTitle className="text-2xl">Trade Log Pro</CardTitle>
+              <p className="text-slate-600 dark:text-slate-400">{t("billingPlanDesc")}</p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <Badge variant="secondary">{t("billingCurrent")}</Badge>
-              <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-2">
-                <li>{t("billingFreeFeature1")}</li>
-                <li>{t("billingFreeFeature2")}</li>
-              </ul>
-            </CardContent>
-          </Card>
+            <CardContent className="space-y-6">
+              <div className="text-center py-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                <div className="flex items-baseline justify-center gap-2 mb-2">
+                  <span className="text-4xl font-bold text-slate-900 dark:text-white">$9.9</span>
+                  <span className="text-slate-600 dark:text-slate-400">/ {t("billingPerMonth")}</span>
+                </div>
+                <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                  {t("billing14DayTrial")}
+                </Badge>
+              </div>
 
-          <Card className="border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                {t("billingPlanPro")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Badge variant={isPremium ? "default" : "outline"}>
-                {isPremium ? t("billingActive") : t("billingUpgrade")}
-              </Badge>
-              <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-2">
-                <li>{t("billingProFeature1")}</li>
-                <li>{t("billingProFeature2")}</li>
-                <li>{t("billingProFeature3")}</li>
-              </ul>
-              <div className="flex flex-wrap gap-3">
-                <Button onClick={handleSubscribe} disabled={isPremium || isLoading}>
-                  {t("billingSubscribe")}
-                </Button>
-                <Button variant="outline" onClick={handleManage} disabled={!user || isLoading}>
-                  {t("billingManage")}
-                </Button>
+              <div className="space-y-3">
+                <h3 className="font-semibold text-slate-900 dark:text-white">{t("billingIncluded")}</h3>
+                <ul className="text-sm text-slate-600 dark:text-slate-400 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    {t("billingProFeature1")}
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    {t("billingProFeature2")}
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    {t("billingProFeature3")}
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    {t("billingProFeature4")}
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    {t("billingProFeature5")}
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    {t("billingProFeature6")}
+                  </li>
+                </ul>
+              </div>
+
+              <div className="space-y-3 pt-4">
+                {isPremium ? (
+                  <>
+                    <Badge variant="default" className="w-full justify-center py-2">
+                      {t("billingActive")}
+                    </Badge>
+                    <Button variant="outline" onClick={handleManage} disabled={!user || isLoading} className="w-full">
+                      {t("billingManage")}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button onClick={handleSubscribe} disabled={isLoading} className="w-full h-12 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700">
+                      {t("billingStartTrial")}
+                    </Button>
+                    <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+                      {t("billingNoCreditCard")}
+                    </p>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
