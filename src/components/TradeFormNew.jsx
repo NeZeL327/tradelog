@@ -115,23 +115,6 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
     });
   }, [trade]);
 
-  useEffect(() => {
-    if (!managerOpen) return;
-    setManagerData(prev => ({
-      ...prev,
-      entry_price: prev.entry_price || formData.entry_price || "",
-      sl_price: prev.sl_price || formData.stop_loss_pips || "",
-      tp_price: prev.tp_price || formData.take_profit_pips || "",
-      size: prev.size || formData.position_size || ""
-    }));
-  }, [
-    managerOpen,
-    formData.entry_price,
-    formData.stop_loss_pips,
-    formData.take_profit_pips,
-    formData.position_size
-  ]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({

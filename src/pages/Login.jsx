@@ -137,7 +137,7 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="relative z-10 w-full max-w-5xl grid items-center gap-10 md:grid-cols-[1.1fr_0.9fr]">
+      <div className="relative z-10 w-full max-w-6xl px-4 sm:px-6 grid items-center gap-8 md:gap-12 md:grid-cols-[1.1fr_0.9fr]">
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -145,47 +145,47 @@ export default function Login() {
           className="text-center md:text-left"
         >
           <div className="inline-flex items-center justify-center mb-6 md:justify-start">
-            <div className="logo-arrow hero-logo w-20 h-20 rounded-2xl">
+            <div className="logo-arrow hero-logo w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex-shrink-0">
               <span className="logo-arrow-path" />
               <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">T</span></span>
               <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">L</span></span>
               <span className="logo-arrow-wave" />
             </div>
           </div>
-          <h1 className="hero-title premium-title text-5xl md:text-6xl font-bold bg-gradient-to-r from-emerald-300 to-blue-400 bg-clip-text text-transparent mb-3">
+          <h1 className="hero-title premium-title text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-emerald-300 to-blue-400 bg-clip-text text-transparent mb-3">
             TRADE LOG
           </h1>
-          <p className="premium-subtitle text-lg text-slate-200 mb-2">{t('loginWelcomeTitle')}</p>
-          <p className="text-slate-400 text-sm max-w-md md:max-w-lg">{t('loginWelcomeDescription')}</p>
+          <p className="premium-subtitle text-base sm:text-lg text-slate-200 mb-2">{t('loginWelcomeTitle')}</p>
+          <p className="text-slate-400 text-sm max-w-md">{t('loginWelcomeDescription')}</p>
           <div className="hero-signal mt-6 mx-auto md:mx-0" />
 
-          <div className="mt-8 grid grid-cols-3 gap-3 max-w-sm md:max-w-md mx-auto md:mx-0">
+          <div className="mt-8 grid grid-cols-3 gap-2 sm:gap-3 max-w-sm mx-auto md:mx-0">
             <motion.div
               className="hero-feature hero-feature-blue hero-feature-neon"
               animate={{ y: [0, -8, 0], rotate: [0, 1.2, 0] }}
               transition={{ duration: 5.6, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <div className="hero-feature-icon">📊</div>
-              <p className="hero-feature-title">{t('homeFeatureAnalysisTitle')}</p>
-              <p className="hero-feature-sub">{t('homeFeatureAnalysisSubtitle')}</p>
+              <div className="hero-feature-icon text-lg sm:text-2xl">📊</div>
+              <p className="hero-feature-title text-xs sm:text-sm">{t('homeFeatureAnalysisTitle')}</p>
+              <p className="hero-feature-sub text-xs">{t('homeFeatureAnalysisSubtitle')}</p>
             </motion.div>
             <motion.div
               className="hero-feature hero-feature-cyan hero-feature-neon"
               animate={{ y: [0, -10, 0], rotate: [0, -1.4, 0] }}
               transition={{ duration: 6.2, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <div className="hero-feature-icon">📝</div>
-              <p className="hero-feature-title">{t('homeFeatureJournalTitle')}</p>
-              <p className="hero-feature-sub">{t('homeFeatureJournalSubtitle')}</p>
+              <div className="hero-feature-icon text-lg sm:text-2xl">📝</div>
+              <p className="hero-feature-title text-xs sm:text-sm">{t('homeFeatureJournalTitle')}</p>
+              <p className="hero-feature-sub text-xs">{t('homeFeatureJournalSubtitle')}</p>
             </motion.div>
             <motion.div
               className="hero-feature hero-feature-indigo hero-feature-neon"
               animate={{ y: [0, -7, 0], rotate: [0, 1, 0] }}
               transition={{ duration: 5.1, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <div className="hero-feature-icon">🎯</div>
-              <p className="hero-feature-title">{t('homeFeatureStrategiesTitle')}</p>
-              <p className="hero-feature-sub">{t('homeFeatureStrategiesSubtitle')}</p>
+              <div className="hero-feature-icon text-lg sm:text-2xl">🎯</div>
+              <p className="hero-feature-title text-xs sm:text-sm">{t('homeFeatureStrategiesTitle')}</p>
+              <p className="hero-feature-sub text-xs">{t('homeFeatureStrategiesSubtitle')}</p>
             </motion.div>
           </div>
         </motion.div>
@@ -194,25 +194,26 @@ export default function Login() {
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}
+          className="w-full"
         >
           <Card className="hero-card border border-slate-800/60 bg-slate-950/70 shadow-2xl shadow-blue-500/10 backdrop-blur-sm">
-            <CardHeader className="text-center space-y-2">
-              <CardTitle className="text-2xl font-bold text-white">{t('loginTitle')}</CardTitle>
-              <CardDescription className="text-slate-400">{t('loginSubtitle')}</CardDescription>
+            <CardHeader className="text-center space-y-2 pb-4">
+              <CardTitle className="text-xl sm:text-2xl font-bold text-white">{t('loginTitle')}</CardTitle>
+              <CardDescription className="text-sm text-slate-400">{t('loginSubtitle')}</CardDescription>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="px-4 sm:px-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
-                  <Alert variant="destructive">
+                  <Alert variant="destructive" className="text-sm">
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-slate-200">{t('loginEmailLabel')}</Label>
+                  <Label htmlFor="email" className="text-slate-200 text-sm">{t('loginEmailLabel')}</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500 flex-shrink-0" />
                     <Input
                       id="email"
                       name="email"
@@ -220,7 +221,7 @@ export default function Login() {
                       placeholder={t('loginEmailPlaceholder')}
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500 text-sm"
                       required
                       disabled={isLoading}
                     />
@@ -228,9 +229,9 @@ export default function Login() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-slate-200">{t('loginPasswordLabel')}</Label>
+                  <Label htmlFor="password" className="text-slate-200 text-sm">{t('loginPasswordLabel')}</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-500 flex-shrink-0" />
                     <Input
                       id="password"
                       name="password"
@@ -238,7 +239,7 @@ export default function Login() {
                       placeholder={t('loginPasswordPlaceholder')}
                       value={formData.password}
                       onChange={handleInputChange}
-                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500 text-sm"
                       required
                       disabled={isLoading}
                     />
@@ -247,25 +248,25 @@ export default function Login() {
 
                 <Button
                   type="submit"
-                  className="hero-cta hero-cta-pulse w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2.5 shadow-lg shadow-blue-500/30"
+                  className="hero-cta hero-cta-pulse w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2.5 shadow-lg shadow-blue-500/30 h-10"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t('loginLoading')}
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin flex-shrink-0" />
+                      <span className="text-sm">{t('loginLoading')}</span>
                     </>
                   ) : (
                     <>
-                      <LogIn className="mr-2 h-4 w-4" />
-                      {t('loginButton')}
+                      <LogIn className="mr-2 h-4 w-4 flex-shrink-0" />
+                      <span className="text-sm">{t('loginButton')}</span>
                     </>
                   )}
                 </Button>
 
-                  <div className="pt-2 text-center text-sm text-slate-400">
-                    {t('loginNoAccount')} <button type="button" onClick={() => navigate('/Register')} className="text-emerald-300 hover:text-emerald-200 underline">{t('loginRegisterLink')}</button>
-                  </div>
+                <div className="pt-2 text-center text-xs sm:text-sm text-slate-400">
+                  {t('loginNoAccount')} <button type="button" onClick={() => navigate('/Register')} className="text-emerald-300 hover:text-emerald-200 underline">{t('loginRegisterLink')}</button>
+                </div>
               </form>
 
               <div className="mt-6">
@@ -280,24 +281,26 @@ export default function Login() {
                   </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="mt-6 grid grid-cols-2 gap-2 sm:gap-3">
                   <Button
                     variant="outline"
-                    className="w-full border-slate-800 bg-slate-950/40 text-slate-100 hover:bg-slate-900/60"
+                    size="sm"
+                    className="w-full border-slate-800 bg-slate-950/40 text-slate-100 hover:bg-slate-900/60 text-xs sm:text-sm h-9"
                     onClick={() => toast.info(t('loginGoogleSoon'))}
                   >
-                    <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" viewBox="0 0 24 24">
                       <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                       <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                       <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                       <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    Google
+                    <span className="hidden sm:inline">Google</span>
                   </Button>
 
                   <Button
                     variant="outline"
-                    className="w-full border-slate-800 bg-slate-950/40 text-slate-100 hover:bg-slate-900/60"
+                    size="sm"
+                    className="w-full border-slate-800 bg-slate-950/40 text-slate-100 hover:bg-slate-900/60 text-xs sm:text-sm h-9"
                     onClick={() => toast.info(t('loginMicrosoftSoon'))}
                   >
                     <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">

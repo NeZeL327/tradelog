@@ -209,14 +209,17 @@ export default function Analytics() {
 
   // Equity curve
   let cumulative = 0;
-  const equityCurve = filteredTrades.slice().reverse().map((trade, index) => {
-    cumulative += parseFloat(trade.profit_loss) || 0;
-    return {
-      trade: index + 1,
-      equity: cumulative.toFixed(2),
-      date: trade.date
-    };
-  });
+  const equityCurve = [
+    { trade: 0, equity: 0, date: '' },
+    ...filteredTrades.slice().reverse().map((trade, index) => {
+      cumulative += parseFloat(trade.profit_loss) || 0;
+      return {
+        trade: index + 1,
+        equity: Math.round(cumulative * 100) / 100,
+        date: trade.date
+      };
+    })
+  ];
 
   // Period performance (daily, weekly, monthly, yearly)
   const periodStats = {};
@@ -246,7 +249,7 @@ export default function Analytics() {
   const periodData = Object.entries(periodStats)
     .map(([period, stats]) => ({
       period,
-      pl: stats.pl.toFixed(2),
+      pl: Math.round(stats.pl * 100) / 100,
       trades: stats.total,
       winRate: ((stats.wins / stats.total) * 100).toFixed(1)
     }))
@@ -326,8 +329,8 @@ export default function Analytics() {
     : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e] p-6">
-      <div className="max-w-screen-2xl w-full mx-auto space-y-6">
+    <div className="analytics-page min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e] p-2 sm:p-3">
+      <div className="max-w-none mx-0 space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{t('advancedAnalytics')}</h1>
@@ -492,7 +495,7 @@ export default function Analytics() {
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('outcomeDistribution')}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 overflow-hidden p-4">
                   <div className="grid grid-cols-3 gap-3">
                     {outcomeChartData.map((entry) => (
                       <div
@@ -506,27 +509,31 @@ export default function Analytics() {
                     ))}
                   </div>
 
-                  <ResponsiveContainer width="100%" height={220}>
-                    <ComposedChart data={outcomeChartData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="name" stroke="#64748b" />
-                      <YAxis yAxisId="left" stroke="#64748b" allowDecimals={false} />
-                      <YAxis yAxisId="right" orientation="right" stroke="#64748b" tickFormatter={(value) => `${value}%`} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '10px', color: '#e2e8f0' }}
-                        formatter={(value, name) => [
-                          name === 'rate' ? `${Number(value).toFixed(1)}%` : value,
-                          name === 'rate' ? t('winRate') : t('trades')
-                        ]}
-                      />
-                      <Bar dataKey="count" yAxisId="left" radius={[10, 10, 0, 0]}>
-                        {outcomeChartData.map((entry) => (
-                          <Cell key={entry.name} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                      <Line type="monotone" dataKey="rate" yAxisId="right" stroke="#38bdf8" strokeWidth={2} dot={{ r: 4, fill: '#38bdf8' }} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
+                  <div className="w-full overflow-hidden px-4 py-2">
+                    <ResponsiveContainer width="96%" height={320}>
+                      <ComposedChart data={outcomeChartData} margin={{ top: 50, right: 50, left: 30, bottom: 70 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="name" stroke="#64748b" />
+                        <YAxis yAxisId="left" stroke="#64748b" allowDecimals={false} width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" tickFormatter={(value) => `${value}%`} width={70} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                          formatter={(value, name) => [
+                            name === 'rate' ? `${Number(value).toFixed(1)}%` : value,
+                            name === 'rate' ? t('winRate') : t('trades')
+                          ]}
+                        />
+                        <Bar dataKey="count" yAxisId="left" radius={[10, 10, 0, 0]}>
+                          {outcomeChartData.map((entry) => (
+                            <Cell key={entry.name} fill={entry.fill} />
+                          ))}
+                        </Bar>
+                        <Line type="monotone" dataKey="rate" yAxisId="right" stroke="#38bdf8" strokeWidth={2} dot={{ r: 4, fill: '#38bdf8' }} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
 
                   <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-slate-900/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
                     {outcomeTop
@@ -540,7 +547,7 @@ export default function Analytics() {
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('directionDistribution')}</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 overflow-hidden p-4">
                   <div className="grid grid-cols-2 gap-3">
                     {directionEdgeData.map((entry) => (
                       <div
@@ -558,22 +565,26 @@ export default function Analytics() {
                     ))}
                   </div>
 
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={directionEdgeData} layout="vertical" margin={{ top: 10, right: 16, left: 8, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis type="number" stroke="#64748b" />
-                      <YAxis type="category" dataKey="direction" stroke="#64748b" />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '10px', color: '#e2e8f0' }}
-                        formatter={(value) => [Number(value).toFixed(2), t('netPL')]}
-                      />
-                      <Bar dataKey="netPL" radius={[10, 10, 10, 10]}>
-                        {directionEdgeData.map((entry) => (
-                          <Cell key={entry.direction} fill={entry.netPL >= 0 ? '#38bdf8' : '#fb7185'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div className="w-full overflow-hidden px-4 py-2">
+                    <ResponsiveContainer width="96%" height={320}>
+                      <BarChart data={directionEdgeData} layout="vertical" margin={{ top: 50, right: 60, left: 90, bottom: 50 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis type="number" stroke="#64748b" domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1))]} />
+                        <YAxis type="category" dataKey="direction" stroke="#64748b" width={80} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                          formatter={(value) => [Number(value).toFixed(2), t('netPL')]}
+                        />
+                        <Bar dataKey="netPL" radius={[0, 10, 10, 0]}>
+                          {directionEdgeData.map((entry) => (
+                            <Cell key={entry.direction} fill={entry.netPL >= 0 ? '#38bdf8' : '#fb7185'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
 
                   <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-slate-900/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
                     {directionTop
@@ -585,34 +596,40 @@ export default function Analytics() {
             </div>
 
             {/* Equity Curve */}
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40] overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-white">
                   <Activity className="w-5 h-5" />
                   {t('equityCurve')}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
-                  <AreaChart data={equityCurve}>
-                    <defs>
-                      <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="trade" stroke="#64748b" />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                    <Area type="monotone" dataKey="equity" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorEquity)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <CardContent className="overflow-hidden p-4">
+                <div className="w-full overflow-hidden px-4 py-2">
+                  <ResponsiveContainer width="96%" height={450}>
+                    <AreaChart data={equityCurve} margin={{ top: 50, right: 50, left: 30, bottom: 80 }}>
+                      <defs>
+                        <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="trade" stroke="#64748b" tickMargin={10} height={65} />
+                      <YAxis stroke="#64748b" width={75} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1))]} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                        itemStyle={{ color: '#e2e8f0' }}
+                        labelStyle={{ color: '#f1f5f9' }}
+                      />
+                      <Area type="monotone" dataKey="equity" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorEquity)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
 
             {/* Period Performance */}
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40] overflow-hidden">
               <CardHeader>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <CardTitle className="dark:text-white">
@@ -630,7 +647,7 @@ export default function Analytics() {
                   </Select>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                   <div className="rounded-xl border border-slate-200/60 bg-white/80 dark:bg-slate-500/10 dark:border-slate-500/20 p-3">
                     <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">{t('bestPeriod')}</p>
@@ -638,7 +655,7 @@ export default function Analytics() {
                       {bestPeriod ? bestPeriod.period : '--'}
                     </p>
                     <p className={`text-xs ${bestPeriod && Number(bestPeriod.pl) >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                      {bestPeriod ? `${Number(bestPeriod.pl) >= 0 ? '+' : ''}${bestPeriod.pl}` : '--'}
+                      {bestPeriod ? `${bestPeriod.pl >= 0 ? '+' : ''}${bestPeriod.pl.toFixed(2)}` : '--'}
                     </p>
                   </div>
                   <div className="rounded-xl border border-slate-200/60 bg-white/80 dark:bg-slate-500/10 dark:border-slate-500/20 p-3">
@@ -656,15 +673,21 @@ export default function Analytics() {
                     <p className="text-xs text-slate-500 dark:text-slate-400">{t('results')}</p>
                   </div>
                 </div>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={periodData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="period" stroke="#64748b" angle={timePeriod === "weekly" ? -45 : 0} textAnchor={timePeriod === "weekly" ? "end" : "middle"} height={timePeriod === "weekly" ? 80 : 30} />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                    <Bar dataKey="pl" fill="#3b82f6" name="P&L" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="w-full overflow-hidden px-6 py-2 pb-4">
+                  <ResponsiveContainer width="96%" height={400}>
+                    <BarChart data={periodData} margin={{ top: 50, right: 50, left: 30, bottom: timePeriod === "weekly" ? 120 : 80 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="period" stroke="#64748b" angle={timePeriod === "weekly" ? -45 : 0} textAnchor={timePeriod === "weekly" ? "end" : "middle"} height={timePeriod === "weekly" ? 105 : 55} tickMargin={10} />
+                      <YAxis stroke="#64748b" width={75} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1))]} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                        itemStyle={{ color: '#e2e8f0' }}
+                        labelStyle={{ color: '#f1f5f9' }}
+                      />
+                      <Bar dataKey="pl" fill="#3b82f6" name="P&L" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
 
@@ -674,18 +697,24 @@ export default function Analytics() {
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('longVsShort')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={directionData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="direction" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
-                      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                      <Legend />
-                      <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" />
-                      <Bar dataKey="avgPL" fill="#10b981" name="Średni P&L" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <CardContent className="overflow-hidden p-4">
+                  <div className="w-full overflow-hidden px-4 py-2">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={directionData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="direction" stroke="#64748b" />
+                        <YAxis stroke="#64748b" width={60} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" fill="#10b981" name="Średni P&L" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -693,18 +722,24 @@ export default function Analytics() {
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('timeframeAnalysis')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={timeframeData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="timeframe" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
-                      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                      <Legend />
-                      <Bar dataKey="winRate" fill="#8b5cf6" name="Win Rate (%)" />
-                      <Bar dataKey="trades" fill="#f59e0b" name="Liczba transakcji" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <CardContent className="overflow-hidden p-4">
+                  <div className="w-full overflow-hidden px-4 py-2">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={timeframeData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="timeframe" stroke="#64748b" />
+                        <YAxis stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="winRate" fill="#8b5cf6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="trades" fill="#f59e0b" name="Liczba transakcji" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -715,18 +750,25 @@ export default function Analytics() {
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('sessionsAnalysis')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={sessionData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="session" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
-                      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                      <Legend />
-                      <Bar dataKey="winRate" fill="#06b6d4" name="Win Rate (%)" />
-                      <Bar dataKey="avgPL" fill="#ec4899" name="Średni P&L" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <CardContent className="overflow-hidden p-4">
+                  <div className="w-full overflow-hidden px-4 py-2">
+                    <ResponsiveContainer width="100%" height={350}>
+                      <BarChart data={sessionData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="session" stroke="#64748b" />
+                        <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="winRate" yAxisId="left" fill="#06b6d4" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" yAxisId="right" fill="#ec4899" name="Średni P&L" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -738,18 +780,25 @@ export default function Analytics() {
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('top10Symbols')}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={symbolData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis type="number" stroke="#64748b" />
-                    <YAxis dataKey="symbol" type="category" stroke="#64748b" width={80} />
-                    <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                    <Legend />
-                    <Bar dataKey="totalPL" fill="#10b981" name={t('totalPLLabel')} />
-                    <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <CardContent className="overflow-hidden p-4">
+                <div className="w-full overflow-hidden px-4 py-2">
+                  <ResponsiveContainer width="100%" height={450}>
+                    <BarChart data={symbolData} layout="vertical" margin={{ top: 30, right: 35, left: 95, bottom: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis xAxisId="bottom" type="number" stroke="#64748b" domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                        <XAxis xAxisId="top" orientation="top" type="number" stroke="#64748b" domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                        <YAxis dataKey="symbol" type="category" stroke="#64748b" width={90} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="totalPL" xAxisId="bottom" fill="#10b981" name={t('totalPLLabel')} radius={[0, 8, 8, 0]} />
+                        <Bar dataKey="winRate" xAxisId="top" fill="#3b82f6" name="Win Rate (%)" radius={[0, 8, 8, 0]} />
+                      </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
 
@@ -966,18 +1015,24 @@ export default function Analytics() {
                             <CardHeader>
                               <CardTitle className="text-base">{t('longVsShort')}</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                              <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={directionBreakdownData}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                  <XAxis dataKey="direction" stroke="#64748b" />
-                                  <YAxis stroke="#64748b" />
-                                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                                  <Legend />
-                                  <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" />
-                                  <Bar dataKey="trades" fill="#10b981" name="Transakcje" />
-                                </BarChart>
-                              </ResponsiveContainer>
+                            <CardContent className="overflow-hidden p-3">
+                              <div className="w-full overflow-hidden px-2 py-1">
+                                <ResponsiveContainer width="100%" height={230}>
+                                  <BarChart data={directionBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                    <XAxis dataKey="direction" stroke="#64748b" />
+                                    <YAxis stroke="#64748b" width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                                    <Tooltip
+                                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                                      itemStyle={{ color: '#e2e8f0' }}
+                                      labelStyle={{ color: '#f1f5f9' }}
+                                    />
+                                    <Legend />
+                                    <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill="#10b981" name="Transakcje" radius={[8, 8, 0, 0]} />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
                             </CardContent>
                           </Card>
 
@@ -986,18 +1041,24 @@ export default function Analytics() {
                             <CardHeader>
                               <CardTitle className="text-base">Według timeframe</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                              <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={timeframeBreakdownData}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                  <XAxis dataKey="timeframe" stroke="#64748b" />
-                                  <YAxis stroke="#64748b" />
-                                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                                  <Legend />
-                                  <Bar dataKey="winRate" fill="#8b5cf6" name="Win Rate (%)" />
-                                  <Bar dataKey="trades" fill="#f59e0b" name="Transakcje" />
-                                </BarChart>
-                              </ResponsiveContainer>
+                            <CardContent className="overflow-hidden p-3">
+                              <div className="w-full overflow-hidden px-2 py-1">
+                                <ResponsiveContainer width="100%" height={230}>
+                                  <BarChart data={timeframeBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                    <XAxis dataKey="timeframe" stroke="#64748b" />
+                                    <YAxis stroke="#64748b" width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                                    <Tooltip
+                                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                                      itemStyle={{ color: '#e2e8f0' }}
+                                      labelStyle={{ color: '#f1f5f9' }}
+                                    />
+                                    <Legend />
+                                    <Bar dataKey="winRate" fill="#8b5cf6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill="#f59e0b" name="Transakcje" radius={[8, 8, 0, 0]} />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
                             </CardContent>
                           </Card>
                         </div>
@@ -1080,19 +1141,26 @@ export default function Analytics() {
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('strategiesComparison')}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={strategyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="name" stroke="#64748b" angle={-45} textAnchor="end" height={100} />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                    <Legend />
-                    <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" />
-                    <Bar dataKey="avgPL" fill="#10b981" name={t('avgPLLabel')} />
-                    <Bar dataKey="trades" fill="#8b5cf6" name={t('noOfTrades')} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <CardContent className="overflow-hidden p-4">
+                <div className="w-full overflow-hidden px-4 py-2">
+                  <ResponsiveContainer width="100%" height={450}>
+                    <BarChart data={strategyData} margin={{ top: 30, right: 35, left: 20, bottom: 100 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="name" stroke="#64748b" angle={-45} textAnchor="end" height={95} />
+                      <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                      <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                        itemStyle={{ color: '#e2e8f0' }}
+                        labelStyle={{ color: '#f1f5f9' }}
+                      />
+                      <Legend />
+                      <Bar dataKey="winRate" yAxisId="left" fill="#3b82f6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="avgPL" yAxisId="right" fill="#10b981" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="trades" yAxisId="left" fill="#8b5cf6" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
 
@@ -1312,18 +1380,24 @@ export default function Analytics() {
                             <CardHeader>
                               <CardTitle className="text-base">{t('longVsShort')}</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                              <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={directionBreakdownData}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                  <XAxis dataKey="direction" stroke="#64748b" />
-                                  <YAxis stroke="#64748b" />
-                                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                                  <Legend />
-                                  <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" />
-                                  <Bar dataKey="trades" fill="#10b981" name="Transakcje" />
-                                </BarChart>
-                              </ResponsiveContainer>
+                            <CardContent className="overflow-hidden p-3">
+                              <div className="w-full overflow-hidden px-2 py-1">
+                                <ResponsiveContainer width="100%" height={230}>
+                                  <BarChart data={directionBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                    <XAxis dataKey="direction" stroke="#64748b" />
+                                    <YAxis stroke="#64748b" width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                                    <Tooltip
+                                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                                      itemStyle={{ color: '#e2e8f0' }}
+                                      labelStyle={{ color: '#f1f5f9' }}
+                                    />
+                                    <Legend />
+                                    <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill="#10b981" name="Transakcje" radius={[8, 8, 0, 0]} />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
                             </CardContent>
                           </Card>
 
@@ -1332,18 +1406,24 @@ export default function Analytics() {
                             <CardHeader>
                               <CardTitle className="text-base">Według timeframe</CardTitle>
                             </CardHeader>
-                            <CardContent>
-                              <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={timeframeBreakdownData}>
-                                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                  <XAxis dataKey="timeframe" stroke="#64748b" />
-                                  <YAxis stroke="#64748b" />
-                                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                                  <Legend />
-                                  <Bar dataKey="winRate" fill="#8b5cf6" name="Win Rate (%)" />
-                                  <Bar dataKey="trades" fill="#f59e0b" name="Transakcje" />
-                                </BarChart>
-                              </ResponsiveContainer>
+                            <CardContent className="overflow-hidden p-3">
+                              <div className="w-full overflow-hidden px-2 py-1">
+                                <ResponsiveContainer width="100%" height={230}>
+                                  <BarChart data={timeframeBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                    <XAxis dataKey="timeframe" stroke="#64748b" />
+                                    <YAxis stroke="#64748b" width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                                    <Tooltip
+                                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                                      itemStyle={{ color: '#e2e8f0' }}
+                                      labelStyle={{ color: '#f1f5f9' }}
+                                    />
+                                    <Legend />
+                                    <Bar dataKey="winRate" fill="#8b5cf6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill="#f59e0b" name="Transakcje" radius={[8, 8, 0, 0]} />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
                             </CardContent>
                           </Card>
                         </div>
@@ -1428,35 +1508,41 @@ export default function Analytics() {
                 <CardHeader>
                   <CardTitle className="dark:text-white">Rozkład typów kont</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: '#10b981' },
-                          { name: 'Demo', value: accounts.filter(a => a.account_type === 'Demo').length, fill: '#3b82f6' },
-                          { name: 'Challenge', value: accounts.filter(a => a.account_type === 'Challenge').length, fill: '#8b5cf6' },
-                          { name: 'Funded', value: accounts.filter(a => a.account_type === 'Funded').length, fill: '#f59e0b' }
-                        ].filter(item => item.value > 0)}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={100}
-                        dataKey="value"
-                      >
-                        {[
-                          { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: '#10b981' },
-                          { name: 'Demo', value: accounts.filter(a => a.account_type === 'Demo').length, fill: '#3b82f6' },
-                          { name: 'Challenge', value: accounts.filter(a => a.account_type === 'Challenge').length, fill: '#8b5cf6' },
-                          { name: 'Funded', value: accounts.filter(a => a.account_type === 'Funded').length, fill: '#f59e0b' }
-                        ].filter(item => item.value > 0).map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                <CardContent className="overflow-hidden p-4">
+                  <div className="w-full overflow-hidden">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                        <Pie
+                          data={[
+                            { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: '#10b981' },
+                            { name: 'Demo', value: accounts.filter(a => a.account_type === 'Demo').length, fill: '#3b82f6' },
+                            { name: 'Challenge', value: accounts.filter(a => a.account_type === 'Challenge').length, fill: '#8b5cf6' },
+                            { name: 'Funded', value: accounts.filter(a => a.account_type === 'Funded').length, fill: '#f59e0b' }
+                          ].filter(item => item.value > 0)}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={85}
+                          dataKey="value"
+                        >
+                          {[
+                            { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: '#10b981' },
+                            { name: 'Demo', value: accounts.filter(a => a.account_type === 'Demo').length, fill: '#3b82f6' },
+                            { name: 'Challenge', value: accounts.filter(a => a.account_type === 'Challenge').length, fill: '#8b5cf6' },
+                            { name: 'Funded', value: accounts.filter(a => a.account_type === 'Funded').length, fill: '#f59e0b' }
+                          ].filter(item => item.value > 0).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -1464,21 +1550,27 @@ export default function Analytics() {
                 <CardHeader>
                   <CardTitle className="dark:text-white">Status kont</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={[
-                      { status: 'Aktywne', count: accounts.filter(a => a.status === 'Active').length, fill: '#10b981' },
-                      { status: 'Nieaktywne', count: accounts.filter(a => a.status === 'Inactive').length, fill: '#64748b' },
-                      { status: 'Zawieszone', count: accounts.filter(a => a.status === 'Suspended').length, fill: '#f59e0b' },
-                      { status: 'Zamknięte', count: accounts.filter(a => a.status === 'Closed').length, fill: '#ef4444' }
-                    ].filter(item => item.count > 0)}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="status" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
-                      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                      <Bar dataKey="count" fill="#3b82f6" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <CardContent className="overflow-hidden p-4">
+                  <div className="w-full overflow-hidden px-4 py-2">
+                    <ResponsiveContainer width="100%" height={340}>
+                      <BarChart data={[
+                        { status: 'Aktywne', count: accounts.filter(a => a.status === 'Active').length, fill: '#10b981' },
+                        { status: 'Nieaktywne', count: accounts.filter(a => a.status === 'Inactive').length, fill: '#64748b' },
+                        { status: 'Zawieszone', count: accounts.filter(a => a.status === 'Suspended').length, fill: '#f59e0b' },
+                        { status: 'Zamknięte', count: accounts.filter(a => a.status === 'Closed').length, fill: '#ef4444' }
+                      ].filter(item => item.count > 0)} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="status" stroke="#64748b" />
+                        <YAxis stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.2)]} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -1487,19 +1579,26 @@ export default function Analytics() {
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('accountsComparison')}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={accountData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="name" stroke="#64748b" />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                    <Legend />
-                    <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" />
-                    <Bar dataKey="roi" fill="#10b981" name={t('roi')} />
-                    <Bar dataKey="trades" fill="#8b5cf6" name={t('noOfTrades')} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <CardContent className="overflow-hidden p-4">
+                <div className="w-full overflow-hidden px-4 py-2">
+                  <ResponsiveContainer width="100%" height={390}>
+                    <BarChart data={accountData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="name" stroke="#64748b" />
+                      <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                      <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                        itemStyle={{ color: '#e2e8f0' }}
+                        labelStyle={{ color: '#f1f5f9' }}
+                      />
+                      <Legend />
+                      <Bar dataKey="winRate" yAxisId="left" fill="#3b82f6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="roi" yAxisId="right" fill="#10b981" name={t('roi')} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="trades" yAxisId="left" fill="#8b5cf6" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
 
@@ -1550,18 +1649,25 @@ export default function Analytics() {
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('setupQuality')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={setupData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="quality" stroke="#64748b" />
-                      <YAxis stroke="#64748b" />
-                      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                      <Legend />
-                      <Bar dataKey="winRate" fill="#f59e0b" name="Win Rate (%)" />
-                      <Bar dataKey="avgPL" fill="#10b981" name={t('avgPLLabel')} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <CardContent className="overflow-hidden p-4">
+                  <div className="w-full overflow-hidden px-4 py-2">
+                    <ResponsiveContainer width="100%" height={340}>
+                      <BarChart data={setupData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="quality" stroke="#64748b" />
+                        <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="winRate" yAxisId="left" fill="#f59e0b" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" yAxisId="right" fill="#10b981" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -1569,18 +1675,25 @@ export default function Analytics() {
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('emotionalState')}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={emotionalData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="state" stroke="#64748b" angle={-45} textAnchor="end" height={100} />
-                      <YAxis stroke="#64748b" />
-                      <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                      <Legend />
-                      <Bar dataKey="winRate" fill="#ec4899" name="Win Rate (%)" />
-                      <Bar dataKey="avgPL" fill="#8b5cf6" name={t('avgPLLabel')} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <CardContent className="overflow-hidden p-4">
+                  <div className="w-full overflow-hidden px-4 py-2">
+                    <ResponsiveContainer width="100%" height={360}>
+                      <BarChart data={emotionalData} margin={{ top: 30, right: 35, left: 20, bottom: 100 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="state" stroke="#64748b" angle={-45} textAnchor="end" height={95} />
+                        <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="winRate" yAxisId="left" fill="#ec4899" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" yAxisId="right" fill="#8b5cf6" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </CardContent>
               </Card>
             </div>

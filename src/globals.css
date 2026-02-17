@@ -3,14 +3,13 @@ css
 @tailwind components;
 @tailwind utilities;
 
+/* Global page padding reduction */
+.min-h-screen {
+  @apply p-0.5 md:p-1.5;
+}
+
 /* Mobile-first approach */
 @layer base {
-  /* Ensure proper viewport scaling */
-  html {
-    font-size: 16px;
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
-  }
 
   /* Better mobile touch targets (min 44px) */
   button, a, input[type="button"], input[type="submit"], input[type="checkbox"], input[type="radio"] {
@@ -26,12 +25,13 @@ css
   /* Improve mobile responsiveness */
   body {
     @apply overflow-x-hidden;
+    zoom: 0.8;
   }
 
   /* Better readable text on mobile */
   @media (max-width: 640px) {
     body {
-      font-size: 15px;
+      font-size: 12.75px;
     }
     
     h1 { @apply text-2xl sm:text-3xl; }
@@ -187,14 +187,52 @@ css
   border-color: hsl(var(--border));
 }
 
+/* Modern thin scrollbar - global */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-size: 87%;
+  font-size: 80%;
 }
 
 html {
-  font-size: 87%;
+  font-size: 80%;
+}
+
+@supports not (zoom: 1) {
+  #root {
+    transform: scale(0.8);
+    transform-origin: top center;
+    width: 125%;
+  }
 }
 
 h1 {

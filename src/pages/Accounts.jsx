@@ -88,7 +88,7 @@ export default function Accounts() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="max-w-none mx-0 space-y-6">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">Wymagane logowanie</h1>
             <p className="text-slate-600 dark:text-slate-400">Musisz się zalogować, aby zarządzać kontami handlowymi.</p>
@@ -101,7 +101,7 @@ export default function Accounts() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+        <div className="max-w-none mx-0 space-y-6">
           <div className="text-center">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin mx-auto"></div>
             <p className="text-slate-600 dark:text-slate-400 mt-4">Ładowanie kont...</p>
@@ -112,20 +112,20 @@ export default function Accounts() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">Konta tradingowe</h1>
-            <p className="text-slate-600 dark:text-slate-400">Zarządzaj swoimi kontami handlowymi</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-4 sm:p-6">
+      <div className="max-w-none mx-0 space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex-1">
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-2">Konta tradingowe</h1>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">Zarządzaj swoimi kontami handlowymi</p>
           </div>
           <Dialog open={showForm} onOpenChange={(open) => {
             setShowForm(open);
             if (!open) setEditingAccount(null);
           }}>
             <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="w-5 h-5 mr-2" />
+              <Button className="bg-blue-600 hover:bg-blue-700 gap-2 whitespace-nowrap">
+                <Plus className="w-4 h-4" />
                 Dodaj konto
               </Button>
             </DialogTrigger>
@@ -153,17 +153,17 @@ export default function Accounts() {
         </div>
 
         {accounts.length === 0 ? (
-          <div className="text-center py-12">
-            <Wallet className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Brak kont handlowych</h3>
-            <p className="text-slate-600 dark:text-slate-400 mb-6">Rozpocznij od dodania pierwszego konta tradingowego.</p>
+          <div className="text-center py-12 px-4">
+            <Wallet className="w-16 h-16 text-slate-400 dark:text-slate-500 mx-auto mb-4" />
+            <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-2">Brak kont handlowych</h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">Rozpocznij od dodania pierwszego konta tradingowego.</p>
             <Dialog open={showForm} onOpenChange={(open) => {
               setShowForm(open);
               if (!open) setEditingAccount(null);
             }}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="w-5 h-5 mr-2" />
+                <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
+                  <Plus className="w-4 h-4" />
                   Dodaj pierwsze konto
                 </Button>
               </DialogTrigger>
@@ -180,7 +180,7 @@ export default function Accounts() {
             </Dialog>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {accounts.map((account) => (
               <AccountCard
                 key={account.id}
@@ -286,90 +286,92 @@ function AccountCard({ account, user, queryClient, onEdit, onDelete }) {
   };
 
   return (
-    <Card className={`transition-all ${getAccountTypeColor()}`} style={{ borderLeftColor: accentColor }}>
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
+    <Card className={`transition-all duration-200 ${getAccountTypeColor()} hover:shadow-xl`} style={{ borderLeftColor: accentColor }}>
+      <CardHeader className="pb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               {getAccountTypeBadge()}
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: accentColor }} />
+              <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: accentColor }} />
             </div>
-            <CardTitle className="text-lg">{account.name}</CardTitle>
-            <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400 mt-1">
-              {account.broker && <span>{account.broker}</span>}
-              {account.account_number && <span>Nr: {account.account_number}</span>}
-              <span className={getStatusColor(account.status)}>{getStatusText(account.status)}</span>
+            <CardTitle className="text-base sm:text-lg truncate">{account.name}</CardTitle>
+            <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 flex-wrap">
+              {account.broker && <span className="truncate">{account.broker}</span>}
+              {account.account_number && <span className="truncate">Nr: {account.account_number}</span>}
+              <span className={`${getStatusColor(account.status)} whitespace-nowrap`}>{getStatusText(account.status)}</span>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1 flex-shrink-0">
             <AccountImportButton 
               account={account} 
               onImportSuccess={() => {
-                // Invalidate queries to refresh data
                 queryClient.invalidateQueries({ queryKey: ['trades', user?.id] });
                 toast.success('Transakcje zaimportowane pomyślnie');
               }} 
             />
-            <Button size="sm" variant="outline" onClick={() => onEdit(account)}>
-              <Edit className="w-4 h-4" />
+            <Button size="sm" variant="outline" onClick={() => onEdit(account)} className="h-8 w-8 p-0">
+              <Edit className="w-3.5 h-3.5" />
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onDelete(account)} className="text-red-600 hover:text-red-700">
-              <Trash className="w-4 h-4" />
+            <Button size="sm" variant="outline" onClick={() => onDelete(account)} className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
+              <Trash className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <span className="text-sm text-slate-600 dark:text-slate-400">Kapitał:</span>
-            <div className="font-medium">{account.current_balance?.toFixed(2)} {account.currency}</div>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Kapitał</span>
+            <div className="font-semibold text-sm">{account.current_balance?.toFixed(2)} {account.currency}</div>
           </div>
-          <div>
-            <span className="text-sm text-slate-600 dark:text-slate-400">P&L:</span>
-            <div className={`font-medium ${profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {profitLoss >= 0 ? '+' : ''}{profitLoss?.toFixed(2)} {account.currency} ({profitLossPercent}%)
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">P&L</span>
+            <div className={`font-semibold text-sm ${profitLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              {profitLoss >= 0 ? '+' : ''}{profitLoss?.toFixed(2)} {account.currency}
+            </div>
+            <div className={`text-xs ${profitLoss >= 0 ? 'text-green-600/70 dark:text-green-400/60' : 'text-red-600/70 dark:text-red-400/60'}`}>
+              ({profitLossPercent}%)
             </div>
           </div>
         </div>
 
         {/* Statystyki */}
-        <div className={`pt-3 border-t dark:border-slate-700 ${getAccountDividerColor()}`}>
+        <div className={`pt-3 border-t ${getAccountDividerColor()}`}>
           <div className="grid grid-cols-3 gap-2 text-xs">
-            <div>
-              <span className="text-slate-500">Transakcje:</span>
-              <div className="font-medium">{totalTrades}</div>
+            <div className="text-center sm:text-left">
+              <span className="text-slate-500 dark:text-slate-500 block">Transakcje</span>
+              <div className="font-semibold mt-0.5">{totalTrades}</div>
             </div>
-            <div>
-              <span className="text-slate-500">Win Rate:</span>
-              <div className="font-medium text-green-600">{winRate}%</div>
+            <div className="text-center sm:text-left">
+              <span className="text-slate-500 dark:text-slate-500 block">Win Rate</span>
+              <div className="font-semibold mt-0.5 text-green-600 dark:text-green-400">{winRate}%</div>
             </div>
-            <div>
-              <span className="text-slate-500">W/L Ratio:</span>
-              <div className="font-medium">{winningTrades}:{losingTrades}</div>
+            <div className="text-center sm:text-left">
+              <span className="text-slate-500 dark:text-slate-500 block">W/L Ratio</span>
+              <div className="font-semibold mt-0.5">{winningTrades}:{losingTrades}</div>
             </div>
           </div>
         </div>
 
         {(account.max_daily_loss_percent || account.max_account_loss || account.profit_target) && (
-          <div className={`pt-3 border-t dark:border-slate-700 ${getAccountDividerColor()}`}>
-            <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className={`pt-3 border-t ${getAccountDividerColor()}`}>
+            <div className="grid grid-cols-3 gap-2 text-xs space-y-2">
               {account.max_daily_loss_percent && (
-                <div>
-                  <span className="text-slate-500">Max strata dziennie:</span>
-                  <div className="font-medium">{account.max_daily_loss_percent}%</div>
+                <div className="text-center sm:text-left">
+                  <span className="text-slate-500 dark:text-slate-500 block">Max strata</span>
+                  <div className="font-semibold mt-0.5">{account.max_daily_loss_percent}%</div>
                 </div>
               )}
               {account.max_account_loss && (
-                <div>
-                  <span className="text-slate-500">Max strata konto:</span>
-                  <div className="font-medium">{account.max_account_loss}%</div>
+                <div className="text-center sm:text-left">
+                  <span className="text-slate-500 dark:text-slate-500 block">Limit konta</span>
+                  <div className="font-semibold mt-0.5">{account.max_account_loss}%</div>
                 </div>
               )}
               {account.profit_target && (
-                <div>
-                  <span className="text-slate-500">Cel zysku:</span>
-                  <div className="font-medium text-green-600">{account.profit_target} {account.currency}</div>
+                <div className="text-center sm:text-left">
+                  <span className="text-slate-500 dark:text-slate-500 block">Cel zysku</span>
+                  <div className="font-semibold mt-0.5 text-green-600 dark:text-green-400">{account.profit_target}</div>
                 </div>
               )}
             </div>
@@ -377,8 +379,8 @@ function AccountCard({ account, user, queryClient, onEdit, onDelete }) {
         )}
 
         {account.notes && (
-          <div className={`pt-3 border-t dark:border-slate-700 ${getAccountDividerColor()}`}>
-            <p className="text-sm text-slate-600 dark:text-slate-400">{account.notes}</p>
+          <div className={`pt-3 border-t ${getAccountDividerColor()}`}>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{account.notes}</p>
           </div>
         )}
       </CardContent>

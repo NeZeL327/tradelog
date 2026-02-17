@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, TrendingDown, Target, Award, Calendar, BarChart3, Eye, ChevronDown, ChevronUp, Filter, CalendarDays, Wallet } from "lucide-react";
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, AreaChart, Area, ScatterChart, Scatter } from "recharts";
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, ScatterChart, Scatter } from "recharts";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, subDays } from "date-fns";
 import { enUS, pl } from "date-fns/locale";
 import TradeCard from "../components/TradeCard";
@@ -206,15 +206,40 @@ export default function Dashboard() {
 
   const recentTrades = [...getFilteredTradesForChart()].reverse().slice(0, 20);
   let cumulativePL = 0;
-  const plOverTime = recentTrades.map((trade, index) => {
-    cumulativePL += parseFloat(trade.profit_loss) || 0;
-    return {
-      trade: `#${index + 1}`,
-      pl: cumulativePL.toFixed(2),
-      symbol: trade.symbol,
-      date: trade.date
-    };
-  });
+  const plOverTime = [
+    { trade: '#0', pl: 0, symbol: '', date: '' },
+    ...recentTrades.map((trade, index) => {
+      cumulativePL += parseFloat(trade.profit_loss) || 0;
+      return {
+        trade: `#${index + 1}`,
+        pl: Math.round(cumulativePL * 100) / 100,
+        symbol: trade.symbol,
+        date: trade.date
+      };
+    })
+  ];
+
+  // Daily cumulative P&L (grouped by date, sorted chronologically)
+  const dailyCumulativeByDate = {};
+  [...getFilteredTradesForChart()]
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .forEach(t => {
+      if (t.date) {
+        const dateKey = t.date.substring(0, 10);
+        if (!dailyCumulativeByDate[dateKey]) dailyCumulativeByDate[dateKey] = 0;
+        dailyCumulativeByDate[dateKey] += parseFloat(t.profit_loss) || 0;
+      }
+    });
+  let dailyCum = 0;
+  const dailyCumulativeData = [
+    { date: '', pl: 0 },
+    ...Object.entries(dailyCumulativeByDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, dayPl]) => {
+        dailyCum += dayPl;
+        return { date: date.substring(5), pl: Math.round(dailyCum * 100) / 100 };
+      })
+  ];
 
   let running = 0;
   let peak = 0;
@@ -298,18 +323,18 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e] p-6 dashboard-surface">
-      <div className="max-w-screen-2xl w-full mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e] dashboard-surface">
+      <div className="w-full mx-auto space-y-6">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="text-4xl font-bold text-slate-900 dark:text-white bordo:text-[#f9d5e5] mb-2">{t('dashboard')}</h1>
-              <p className="text-slate-600 dark:text-slate-400 bordo:text-[#d4a5b8]">{t('overviewOfYourTradingPerformance')}</p>
+            <div className="min-w-0">
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white bordo:text-[#f9d5e5] mb-2">{t('dashboard')}</h1>
+              <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 bordo:text-[#d4a5b8]">{t('overviewOfYourTradingPerformance')}</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
               <Select value={dashboardAccount} onValueChange={setDashboardAccount}>
-                <SelectTrigger className="w-36">
+                <SelectTrigger className="w-32 md:w-36 text-xs md:text-sm">
                   <div className="flex items-center gap-2">
                     <Wallet className="w-4 h-4 text-slate-500" />
                     <SelectValue placeholder={t('myAccount')} />
@@ -322,12 +347,12 @@ export default function Dashboard() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" className="gap-2" onClick={() => setFiltersOpen(true)}>
+              <Button variant="outline" size="sm" className="gap-2 text-xs md:text-sm" onClick={() => setFiltersOpen(true)}>
                 <Filter className="w-4 h-4" />
                 {t('filters')}
               </Button>
               <Select value={dashboardRange} onValueChange={setDashboardRange}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-32 md:w-40 text-xs md:text-sm">
                   <div className="flex items-center gap-2">
                     <CalendarDays className="w-4 h-4 text-slate-500" />
                     <SelectValue placeholder={t('dateRange')} />
@@ -409,113 +434,135 @@ export default function Dashboard() {
         </Dialog>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           <Card
-            className="ocean-stat-card cursor-pointer"
+            className="ocean-stat-card cursor-pointer hover:shadow-lg transition-all"
             onClick={() => setExpandedMetric(expandedMetric === 'pl' ? null : 'pl')}
           >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-500">{t('totalPL')}</p>
-                  <div className={`mt-2 text-2xl font-bold ${totalPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <CardContent className="p-4 md:p-5">
+              <div className="flex items-center justify-between gap-2 md:gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-500 truncate">{t('totalPL')}</p>
+                  <div className={`mt-1.5 text-xl md:text-2xl font-bold ${totalPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     {totalPL >= 0 ? '+' : ''}{totalPL.toFixed(2)}
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">{t('from')} {totalTrades} {t('trades')}</p>
+                  <p className="text-xs text-slate-500 mt-1 truncate">{t('from')} {totalTrades} {t('trades')}</p>
                 </div>
-                <div className="ocean-ring" style={{ background: `conic-gradient(${totalPL >= 0 ? '#10b981' : '#ef4444'} ${plRing}%, #e5e7eb 0)` }} />
+                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${totalPL >= 0 ? '#10b981' : '#ef4444'} ${plRing}%, #e5e7eb 0)` }} />
               </div>
             </CardContent>
           </Card>
 
           <Card
-            className="ocean-stat-card cursor-pointer"
+            className="ocean-stat-card cursor-pointer hover:shadow-lg transition-all"
             onClick={() => setExpandedMetric(expandedMetric === 'winrate' ? null : 'winrate')}
           >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-500">{t('winRate')}</p>
-                  <div className="mt-2 text-2xl font-bold text-slate-900">{winRate}%</div>
-                  <p className="text-xs text-slate-500 mt-1">{wins} {t('wins')} / {totalTrades} {t('trades')}</p>
+            <CardContent className="p-4 md:p-5">
+              <div className="flex items-center justify-between gap-2 md:gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-500 truncate">{t('winRate')}</p>
+                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{winRate}%</div>
+                  <p className="text-xs text-slate-500 mt-1 truncate">{wins} {t('wins')} / {totalTrades} {t('trades')}</p>
                 </div>
-                <div className="ocean-ring" style={{ background: `conic-gradient(#6d4dff ${winRateRing}%, #e5e7eb 0)` }} />
+                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(#6d4dff ${winRateRing}%, #e5e7eb 0)` }} />
               </div>
             </CardContent>
           </Card>
 
           <Card
-            className="ocean-stat-card cursor-pointer"
+            className="ocean-stat-card cursor-pointer hover:shadow-lg transition-all"
             onClick={() => setExpandedMetric(expandedMetric === 'pf' ? null : 'pf')}
           >
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-500">{t('profitFactor')}</p>
-                  <div className="mt-2 text-2xl font-bold text-slate-900">{profitFactor}</div>
-                  <p className="text-xs text-slate-500 mt-1">{t('avgWinAvgLoss')}</p>
+            <CardContent className="p-4 md:p-5">
+              <div className="flex items-center justify-between gap-2 md:gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-500 truncate">{t('profitFactor')}</p>
+                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{profitFactor}</div>
+                  <p className="text-xs text-slate-500 mt-1 truncate">{t('avgWinAvgLoss')}</p>
                 </div>
-                <div className="ocean-ring" style={{ background: `conic-gradient(#34d399 ${pfRing}%, #e5e7eb 0)` }} />
+                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(#34d399 ${pfRing}%, #e5e7eb 0)` }} />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="ocean-stat-card">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-500">{t('dayWinRate')}</p>
-                  <div className="mt-2 text-2xl font-bold text-slate-900">{dayWinRate}%</div>
-                  <p className="text-xs text-slate-500 mt-1">{dayWins}/{dayTrades.length} {t('trades')}</p>
+          <Card className="ocean-stat-card hover:shadow-lg transition-all">
+            <CardContent className="p-4 md:p-5">
+              <div className="flex items-center justify-between gap-2 md:gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-500 truncate">{t('dayWinRate')}</p>
+                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{dayWinRate}%</div>
+                  <p className="text-xs text-slate-500 mt-1 truncate">{dayWins}/{dayTrades.length} {t('trades')}</p>
                 </div>
-                <div className="ocean-ring" style={{ background: `conic-gradient(#60a5fa ${dayWinRing}%, #e5e7eb 0)` }} />
+                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(#60a5fa ${dayWinRing}%, #e5e7eb 0)` }} />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="ocean-stat-card">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-500">{t('avgWinAvgLoss')}</p>
-                  <div className="mt-2 text-2xl font-bold text-slate-900">{avgWinLossRatio}</div>
-                  <div className="mt-2 flex items-center gap-2 text-xs">
-                    <span className="rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5">+{avgWin}</span>
-                    <span className="rounded-full bg-rose-50 text-rose-700 px-2 py-0.5">{avgLoss}</span>
+          <Card className="ocean-stat-card hover:shadow-lg transition-all">
+            <CardContent className="p-4 md:p-5">
+              <div className="flex items-center justify-between gap-2 md:gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-500 truncate">{t('avgWinAvgLoss')}</p>
+                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{avgWinLossRatio}</div>
+                  <div className="mt-2 flex items-center gap-1.5 text-xs flex-wrap">
+                    <span className="rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-200 px-2 py-0.5 whitespace-nowrap text-[10px] md:text-xs">+{avgWin}</span>
+                    <span className="rounded-full bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-200 px-2 py-0.5 whitespace-nowrap text-[10px] md:text-xs">{avgLoss}</span>
                   </div>
                 </div>
-                <div className="ocean-ring" style={{ background: `conic-gradient(#a78bfa ${avgWinLossRing}%, #e5e7eb 0)` }} />
+                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(#a78bfa ${avgWinLossRing}%, #e5e7eb 0)` }} />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Dashboard Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="bg-white shadow-xl border border-slate-200/60">
-            <CardHeader className="flex items-center justify-between">
-              <CardTitle className="text-slate-900">{t('zellaScore')}</CardTitle>
-              <div className="text-sm font-semibold text-slate-700">{zellaScore.total}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-slate-900 dark:text-white text-sm md:text-base">{t('tradingScore') || 'Trading Score'}</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={220}>
-                <RadarChart data={zellaScore.metrics}>
-                  <PolarGrid stroke="#e2e8f0" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10 }} />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} />
-                  <Radar dataKey="value" stroke="#6d4dff" fill="#6d4dff" fillOpacity={0.2} />
-                </RadarChart>
-              </ResponsiveContainer>
-              <div className="mt-3 h-2 rounded-full bg-slate-100">
-                <div className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500" style={{ width: `${zellaScore.total}%` }} />
+              <div className="flex items-center gap-4">
+                <div className="relative w-24 h-24 flex-shrink-0">
+                  <svg viewBox="0 0 120 120" className="w-full h-full" style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="#e2e8f0" strokeWidth="9" className="dark:!stroke-slate-700" style={{ stroke: 'var(--score-track, #e2e8f0)' }} />
+                    <circle cx="60" cy="60" r="52" fill="none" strokeWidth="9" strokeLinecap="round"
+                      style={{
+                        stroke: zellaScore.total >= 80 ? '#10b981' : zellaScore.total >= 60 ? '#3b82f6' : zellaScore.total >= 40 ? '#f59e0b' : '#ef4444',
+                        strokeDasharray: `${zellaScore.total * 3.267} 326.7`,
+                        transition: 'stroke-dasharray 0.8s ease'
+                      }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-bold text-slate-900 dark:text-white">{zellaScore.total}</span>
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400">/ 100</span>
+                  </div>
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  {zellaScore.metrics.map((metric, i) => {
+                    const colors = ['#6d4dff', '#10b981', '#3b82f6', '#f59e0b', '#ec4899'];
+                    return (
+                      <div key={metric.subject}>
+                        <div className="flex justify-between text-[10px] mb-0.5">
+                          <span className="text-slate-600 dark:text-slate-400">{metric.subject}</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{Math.round(metric.value)}</span>
+                        </div>
+                        <div className="h-1 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                          <div className="h-1 rounded-full" style={{ width: `${metric.value}%`, backgroundColor: colors[i], transition: 'width 0.6s ease' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-xl border border-slate-200/60">
-            <CardHeader className="flex items-center justify-between">
-              <CardTitle className="text-slate-900">{t('progressTracker')}</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => navigate('/ProgressTracker')}>{t('view')}</Button>
+          <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-slate-900 dark:text-white text-sm md:text-base">{t('progressTracker')}</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => navigate('/ProgressTracker')} className="text-xs">{t('view')}</Button>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-7 gap-2">
@@ -527,82 +574,92 @@ export default function Dashboard() {
                   />
                 ))}
               </div>
-              <div className="flex items-center justify-between text-[10px] text-slate-500 mt-3">
-                <span>{t('less')}</span>
-                <div className="flex items-center gap-1">
+              <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-4 gap-2">
+                <span className="flex-shrink-0">{t('less')}</span>
+                <div className="flex items-center gap-1 flex-1 justify-center">
                   <span className="progress-0 progress-legend" />
                   <span className="progress-1 progress-legend" />
                   <span className="progress-2 progress-legend" />
                   <span className="progress-3 progress-legend" />
                 </div>
-                <span>{t('more')}</span>
+                <span className="flex-shrink-0">{t('more')}</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-xl border border-slate-200/60">
-            <CardHeader>
-              <CardTitle className="text-slate-900">{t('dailyNetCumulativePL')}</CardTitle>
+          <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-slate-900 dark:text-white text-sm md:text-base">{t('dailyNetCumulativePL')}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={plOverTime}>
-                  <defs>
-                    <linearGradient id="plFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6d4dff" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#6d4dff" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="trade" stroke="#64748b" />
-                  <YAxis stroke="#64748b" />
-                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                  <Area type="monotone" dataKey="pl" stroke="#6d4dff" fill="url(#plFill)" strokeWidth={2} dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
+            <CardContent className="overflow-hidden p-3">
+              <div className="w-full overflow-hidden">
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={dailyCumulativeData} margin={{ top: 10, right: 20, left: 5, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="plCumFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6d4dff" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#6d4dff" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} />
+                    <YAxis stroke="#64748b" width={55} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                      itemStyle={{ color: '#e2e8f0' }}
+                      labelStyle={{ color: '#f1f5f9' }}
+                    />
+                    <Area type="monotone" dataKey="pl" stroke="#6d4dff" fill="url(#plCumFill)" strokeWidth={2} dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="bg-white shadow-xl border border-slate-200/60">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-slate-900">{t('netDailyPL')}</CardTitle>
-              <div className="flex gap-2">
-                <Select value={dashboardRange} onValueChange={setDashboardRange}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7d">7d</SelectItem>
-                    <SelectItem value="30d">30d</SelectItem>
-                    <SelectItem value="90d">90d</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-slate-900 dark:text-white">{t('netDailyPL')}</CardTitle>
+              <Select value={dashboardRange} onValueChange={setDashboardRange}>
+                <SelectTrigger className="w-28 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7d">7d</SelectItem>
+                  <SelectItem value="30d">30d</SelectItem>
+                  <SelectItem value="90d">90d</SelectItem>
+                </SelectContent>
+              </Select>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={dailyPLData} barSize={20}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="date" stroke="#64748b" tickFormatter={(v) => v.slice(5)} />
-                  <YAxis stroke="#64748b" />
-                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                  <Bar dataKey="pl">
-                    {dailyPLData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.pl >= 0 ? '#10b981' : '#ef4444'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <CardContent className="overflow-hidden p-3">
+              <div className="w-full overflow-hidden">
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={dailyPLData} barSize={20} margin={{ top: 10, right: 25, left: 10, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="date" stroke="#64748b" tickFormatter={(v) => v.slice(5)} />
+                    <YAxis stroke="#64748b" width={55} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                      itemStyle={{ color: '#e2e8f0' }}
+                      labelStyle={{ color: '#f1f5f9' }}
+                    />
+                    <Bar dataKey="pl" radius={[8, 8, 0, 0]}>
+                      {dailyPLData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.pl >= 0 ? '#10b981' : '#ef4444'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-xl border border-slate-200/60">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-slate-900">{t('recentTrades')}</CardTitle>
+          <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="text-slate-900 dark:text-white text-sm">{t('recentTrades')}</CardTitle>
               <Select value={dashboardAccount} onValueChange={setDashboardAccount}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-32 text-xs">
                   <SelectValue placeholder={t('account')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -614,34 +671,42 @@ export default function Dashboard() {
               </Select>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-slate-50">
+              <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
                     <tr>
-                      <th className="text-left p-3 text-xs font-semibold text-slate-600">{t('date')}</th>
-                      <th className="text-left p-3 text-xs font-semibold text-slate-600">{t('symbol')}</th>
-                      <th className="text-left p-3 text-xs font-semibold text-slate-600">{t('statusLabel')}</th>
-                      <th className="text-left p-3 text-xs font-semibold text-slate-600">{t('entryPrice')}</th>
-                      <th className="text-left p-3 text-xs font-semibold text-slate-600">{t('stopLossPips')}</th>
-                      <th className="text-left p-3 text-xs font-semibold text-slate-600">{t('takeProfitPips')}</th>
-                      <th className="text-right p-3 text-xs font-semibold text-slate-600">{t('netPL')}</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{t('date')}</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{t('symbol')}</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{t('statusLabel')}</th>
+                      <th className="text-right px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{t('netPL')}</th>
+                      <th className="text-center px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{t('actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentTradesTable.map(trade => (
-                      <tr key={trade.id} className="border-b border-slate-100">
-                        <td className="p-3 text-sm text-slate-700">{trade.date || '-'}</td>
-                        <td className="p-3 text-sm text-slate-900 font-medium">{trade.symbol || '-'}</td>
-                        <td className="p-3 text-xs text-slate-700">
+                      <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+                        <td className="px-3 py-2 text-xs text-slate-700 dark:text-slate-400">{trade.date || '-'}</td>
+                        <td className="px-3 py-2 text-xs font-medium text-slate-900 dark:text-white">{trade.symbol || '-'}</td>
+                        <td className="px-3 py-2 text-xs text-slate-700 dark:text-slate-400">
                           {trade.status || '-'}
                         </td>
-                        <td className="p-3 text-sm text-slate-700">{trade.entry_price ?? '-'}</td>
-                        <td className="p-3 text-sm text-slate-700">{trade.stop_loss_pips ?? '-'}</td>
-                        <td className="p-3 text-sm text-slate-700">{trade.take_profit_pips ?? '-'}</td>
-                        <td className={`p-3 text-sm font-semibold text-right ${parseFloat(trade.profit_loss) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        <td className={`px-3 py-2 text-xs font-semibold text-right ${parseFloat(trade.profit_loss) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                           {trade.status === 'Planned' || trade.profit_loss == null
                             ? '-'
                             : `${parseFloat(trade.profit_loss) >= 0 ? '+' : ''}${parseFloat(trade.profit_loss || 0).toFixed(2)}`}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => setSelectedTrade(trade)}
+                              className="h-7 w-7 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                              title={t('viewDetails') || 'View Details'}
+                            >
+                              <Eye className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -651,31 +716,37 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white shadow-xl border border-slate-200/60">
-            <CardHeader>
-              <CardTitle className="text-slate-900">{t('accountBalance')}</CardTitle>
+          <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-slate-900 dark:text-white">{t('accountBalance')}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={plOverTime}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="trade" stroke="#64748b" />
-                  <YAxis stroke="#64748b" />
-                  <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                  <Line type="monotone" dataKey="pl" stroke="#6d4dff" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
+            <CardContent className="overflow-hidden p-3">
+              <div className="w-full overflow-hidden">
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={plOverTime} margin={{ top: 10, right: 25, left: 10, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="trade" stroke="#64748b" />
+                    <YAxis stroke="#64748b" width={55} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                      itemStyle={{ color: '#e2e8f0' }}
+                      labelStyle={{ color: '#f1f5f9' }}
+                    />
+                    <Line type="monotone" dataKey="pl" stroke="#6d4dff" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           <Card className="bg-white shadow-xl border border-slate-200/60 lg:col-span-2">
-            <CardHeader className="flex items-center justify-between">
-              <CardTitle className="text-slate-900">{format(calendarDate, 'LLLL yyyy', { locale: dateLocale })}</CardTitle>
-              <div className="flex items-center gap-2">
+            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+              <CardTitle className="text-slate-900 text-sm md:text-base">{format(calendarDate, 'LLLL yyyy', { locale: dateLocale })}</CardTitle>
+              <div className="flex items-center gap-2 flex-wrap">
                 <Select value={dashboardAccount} onValueChange={setDashboardAccount}>
-                  <SelectTrigger className="w-36">
+                  <SelectTrigger className="w-28 md:w-36 text-xs md:text-sm">
                     <div className="flex items-center gap-2">
                       <Wallet className="w-4 h-4 text-slate-500" />
                       <SelectValue placeholder={t('myAccount')} />
@@ -689,7 +760,7 @@ export default function Dashboard() {
                   </SelectContent>
                 </Select>
                 <Select value={String(calendarDate.getFullYear())} onValueChange={(val) => setCalendarDate(new Date(parseInt(val, 10), calendarDate.getMonth(), 1))}>
-                  <SelectTrigger className="w-28">
+                  <SelectTrigger className="w-24 md:w-28 text-xs md:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -760,22 +831,31 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-slate-900">{t('drawdown')}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart data={drawdownData}>
-                    <defs>
-                      <linearGradient id="ddFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="trade" stroke="#64748b" />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                    <Area type="monotone" dataKey="drawdown" stroke="#ef4444" fill="url(#ddFill)" strokeWidth={2} dot={false} />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <CardContent className="overflow-hidden p-3">
+                <div className="w-full overflow-hidden">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <AreaChart data={drawdownData} margin={{ top: 10, right: 25, left: 10, bottom: 10 }}>
+                      <defs>
+                        <clipPath id="drawdown-clip">
+                          <rect x="0" y="0" width="100%" height="100%" />
+                        </clipPath>
+                        <linearGradient id="ddFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="trade" stroke="#64748b" />
+                      <YAxis stroke="#64748b" width={55} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                        itemStyle={{ color: '#e2e8f0' }}
+                        labelStyle={{ color: '#f1f5f9' }}
+                      />
+                      <Area type="monotone" dataKey="drawdown" stroke="#ef4444" fill="url(#ddFill)" strokeWidth={2} dot={false} clipPath="url(#drawdown-clip)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
 
@@ -783,20 +863,31 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-slate-900">{t('tradeTimePerformance')}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={220}>
-                  <ScatterChart>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="hour" stroke="#64748b" domain={[0, 23]} ticks={[0,4,8,12,16,20,23]} />
-                    <YAxis dataKey="pl" stroke="#64748b" />
-                    <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                    <Scatter data={tradeTimeData} fill="#6d4dff">
-                      {tradeTimeData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.pl >= 0 ? '#10b981' : '#ef4444'} />
-                      ))}
-                    </Scatter>
-                  </ScatterChart>
-                </ResponsiveContainer>
+              <CardContent className="overflow-hidden p-3">
+                <div className="w-full overflow-hidden">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <ScatterChart margin={{ top: 10, right: 25, left: 10, bottom: 10 }}>
+                      <defs>
+                        <clipPath id="scatter-clip">
+                          <rect x="0" y="0" width="100%" height="100%" />
+                        </clipPath>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="hour" stroke="#64748b" domain={[0, 23]} ticks={[0,4,8,12,16,20,23]} />
+                      <YAxis dataKey="pl" stroke="#64748b" width={55} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                        itemStyle={{ color: '#e2e8f0' }}
+                        labelStyle={{ color: '#f1f5f9' }}
+                      />
+                      <Scatter data={tradeTimeData} fill="#6d4dff" clipPath="url(#scatter-clip)">
+                        {tradeTimeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.pl >= 0 ? '#10b981' : '#ef4444'} />
+                        ))}
+                      </Scatter>
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -979,18 +1070,25 @@ export default function Dashboard() {
                   </div>
                   <div className="bg-slate-50 p-3 rounded-lg">
                     <p className="text-xs text-slate-700 mb-2 font-semibold">{t('tradeEfficiency')}</p>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={[
-                        { name: t('avgWinShort'), value: parseFloat(avgWin), fill: '#10b981' },
-                        { name: t('avgLossShort'), value: Math.abs(parseFloat(avgLoss)), fill: '#ef4444' }
-                      ]}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="name" stroke="#64748b" />
-                        <YAxis stroke="#64748b" />
-                        <Tooltip />
-                        <Bar dataKey="value" />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <div className="w-full overflow-hidden">
+                      <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={[
+                          { name: t('avgWinShort'), value: parseFloat(avgWin), fill: '#10b981' },
+                          { name: t('avgLossShort'), value: Math.abs(parseFloat(avgLoss)), fill: '#ef4444' }
+                        ]} margin={{ top: 10, right: 20, left: 5, bottom: 5 }}>
+                          <defs>
+                            <clipPath id="trade-efficiency-clip">
+                              <rect x="0" y="0" width="100%" height="100%" />
+                            </clipPath>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="name" stroke="#64748b" />
+                          <YAxis stroke="#64748b" width={50} />
+                          <Tooltip />
+                          <Bar dataKey="value" radius={[8, 8, 0, 0]} clipPath="url(#trade-efficiency-clip)" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1095,26 +1193,28 @@ export default function Dashboard() {
                 {expandedMetric === 'outcome' ? <ChevronUp className="w-5 h-5 text-blue-600" /> : <ChevronDown className="w-5 h-5 text-blue-600" />}
               </div>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={outcomeData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {outcomeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+            <CardContent className="overflow-hidden p-3">
+              <div className="w-full overflow-hidden">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <Pie
+                      data={outcomeData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={75}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {outcomeData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 
@@ -1164,18 +1264,22 @@ export default function Dashboard() {
                 )}
               </div>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={plOverTime}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="trade" stroke="#64748b" />
-                  <YAxis stroke="#64748b" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                  />
-                  <Line type="monotone" dataKey="pl" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} />
-                </LineChart>
-              </ResponsiveContainer>
+            <CardContent className="overflow-hidden p-3">
+              <div className="w-full overflow-hidden">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={plOverTime} margin={{ top: 10, right: 25, left: 10, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="trade" stroke="#64748b" />
+                    <YAxis stroke="#64748b" width={55} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                      itemStyle={{ color: '#e2e8f0' }}
+                      labelStyle={{ color: '#f1f5f9' }}
+                    />
+                    <Line type="monotone" dataKey="pl" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -1186,20 +1290,27 @@ export default function Dashboard() {
             <CardHeader>
               <CardTitle className="text-slate-900 dark:text-white">{t('strategyPerformance')}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={strategyData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" stroke="#64748b" angle={-45} textAnchor="end" height={100} />
-                  <YAxis stroke="#64748b" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                  />
-                  <Legend />
-                  <Bar dataKey="winRate" fill="#3b82f6" name={t('winRatePercent')} />
-                  <Bar dataKey="trades" fill="#8b5cf6" name={t('tradesCount')} />
-                </BarChart>
-              </ResponsiveContainer>
+            <CardContent className="overflow-hidden p-4">
+              <div className="w-full overflow-hidden">
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={strategyData} margin={{ top: 15, right: 25, left: 10, bottom: 85 }}>
+                    <defs>
+                      <clipPath id="dashboard-strategy-clip">
+                        <rect x="0" y="0" width="100%" height="100%" />
+                      </clipPath>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="name" stroke="#64748b" angle={-45} textAnchor="end" height={80} />
+                    <YAxis stroke="#64748b" width={55} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                    />
+                    <Legend />
+                    <Bar dataKey="winRate" fill="#3b82f6" name={t('winRatePercent')} radius={[8, 8, 0, 0]} clipPath="url(#dashboard-strategy-clip)" />
+                    <Bar dataKey="trades" fill="#8b5cf6" name={t('tradesCount')} radius={[8, 8, 0, 0]} clipPath="url(#dashboard-strategy-clip)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         )}

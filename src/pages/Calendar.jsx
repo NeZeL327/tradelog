@@ -80,8 +80,8 @@ export default function Calendar() {
     : [t('monday'), t('tuesday'), t('wednesday'), t('thursday'), t('friday'), t('saturday'), t('sunday')];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
+      <div className="max-w-none mx-0 space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{t('tradingCalendar')}</h1>
@@ -115,7 +115,7 @@ export default function Calendar() {
               </Button>
             </CardHeader>
 
-            <CardContent>
+            <CardContent className="p-0">
               <div className="grid grid-cols-7 gap-2">
                 {/* Week day headers */}
                 {weekDays.map(day => (
@@ -182,7 +182,7 @@ export default function Calendar() {
                   : t('selectDay')}
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {selectedDate && selectedTrades.length > 0 ? (
                 <div className="space-y-4">
                   {/* Day Summary */}
@@ -312,7 +312,7 @@ export default function Calendar() {
           <CardHeader>
             <CardTitle className="dark:text-white">{t('monthSummary')} - {format(currentDate, 'LLLL yyyy', { locale })}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(() => {
                 const monthTrades = trades.filter(t => {

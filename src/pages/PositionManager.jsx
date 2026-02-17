@@ -169,7 +169,7 @@ export default function PositionManager() {
   const handleClearManual = () => {
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-[#0f0f16] dark:to-[#1a1a2e] p-4 sm:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-[#0f0f16] dark:to-[#1a1a2e] p-2 sm:p-3">
       {/* Notification */}
       {notification && (
         <div
@@ -194,7 +194,7 @@ export default function PositionManager() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-none mx-0 space-y-6">
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-1">
             Position Manager

@@ -14,8 +14,8 @@ export default function Upload() {
   const [activeTab, setActiveTab] = useState("single");
 
   return (
-    <div className="min-h-screen p-3 sm:p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen p-2 sm:p-3">
+      <div className="max-w-none mx-0">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Button
             variant="outline"

@@ -52,14 +52,14 @@ export default function Billing() {
   };
 
   return (
-    <div className="min-h-screen px-6 py-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen p-2 sm:p-3">
+      <div className="max-w-none mx-0 space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t("billingTitle")}</h1>
           <p className="text-slate-600 dark:text-slate-400">{t("billingSubtitle")}</p>
         </div>
 
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-none mx-0">
           <Card className="border-2 border-blue-500/50 dark:border-blue-400/50 shadow-lg">
             <CardHeader className="text-center">
               <div className="inline-block mx-auto mb-4">

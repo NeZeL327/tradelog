@@ -28,6 +28,12 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
+const PageShell = ({ children }) => (
+  <div style={{ width: "90%", maxWidth: "90%", margin: "0 auto" }}>
+    {children}
+  </div>
+);
+
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
 
@@ -55,16 +61,16 @@ const AuthenticatedApp = () => {
   if (!isAuthenticated) {
     return (
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/cookies" element={<Cookies />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="*" element={<Home />} />
+        <Route path="/" element={<PageShell><Home /></PageShell>} />
+        <Route path="/login" element={<PageShell><Login /></PageShell>} />
+        <Route path="/register" element={<PageShell><Register /></PageShell>} />
+        <Route path="/terms" element={<PageShell><Terms /></PageShell>} />
+        <Route path="/privacy" element={<PageShell><Privacy /></PageShell>} />
+        <Route path="/cookies" element={<PageShell><Cookies /></PageShell>} />
+        <Route path="/contact" element={<PageShell><Contact /></PageShell>} />
+        <Route path="/about" element={<PageShell><About /></PageShell>} />
+        <Route path="/pricing" element={<PageShell><Pricing /></PageShell>} />
+        <Route path="*" element={<PageShell><Home /></PageShell>} />
       </Routes>
     );
   }
@@ -77,10 +83,10 @@ const AuthenticatedApp = () => {
           <MainPage />
         </LayoutWrapper>
       } />
-      <Route path="/terms" element={<Terms />} />
-      <Route path="/privacy" element={<Privacy />} />
-      <Route path="/cookies" element={<Cookies />} />
-      <Route path="/pricing" element={<Pricing />} />
+      <Route path="/terms" element={<PageShell><Terms /></PageShell>} />
+      <Route path="/privacy" element={<PageShell><Privacy /></PageShell>} />
+      <Route path="/cookies" element={<PageShell><Cookies /></PageShell>} />
+      <Route path="/pricing" element={<PageShell><Pricing /></PageShell>} />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}

@@ -252,16 +252,16 @@ export default function JournalSimple() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e] p-6">
-      <div className="max-w-[1600px] mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e]">
+      <div className="w-full mx-auto space-y-4">
         {/* Bulk Actions Bar */}
         {selectedTrades.size > 0 && (
-          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-white dark:bg-slate-800 shadow-2xl rounded-xl border border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center gap-4 animate-in slide-in-from-top-5">
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-white dark:bg-slate-800 shadow-2xl rounded-xl border border-slate-200 dark:border-slate-700 px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4 animate-in slide-in-from-top-5">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                <span className="text-sm font-bold text-blue-600 dark:text-blue-300">{selectedTrades.size}</span>
+                <span className="text-xs md:text-sm font-bold text-blue-600 dark:text-blue-300">{selectedTrades.size}</span>
               </div>
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <span className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
                 {selectedTrades.size} {selectedTrades.size === 1 ? 'trade' : 'trades'} selected
               </span>
             </div>
@@ -499,54 +499,54 @@ export default function JournalSimple() {
         {(statusFilters.includes("all") || statusFilters.some(s => s !== "Planned")) && (
           <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl">
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="overflow-x-auto w-full">
+                <table className="w-full text-sm border-collapse">
                 <thead className="bg-slate-50 dark:bg-[#14141f] border-b border-slate-200 dark:border-[#2d2d40]">
                   <tr>
                     {visibleColumns.status && (
-                      <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('statusLabel')}</th>
+                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('statusLabel')}</th>
                     )}
                     {visibleColumns.date && (
-                      <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                        <button onClick={() => handleSort("date")} className="flex items-center gap-1 hover:text-blue-600">
+                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                        <button onClick={() => handleSort("date")} className="flex items-center gap-0.5 hover:text-blue-600">
                           {t('date')} <ArrowUpDown className="w-3 h-3" />
                         </button>
                       </th>
                     )}
                     {visibleColumns.symbol && (
-                      <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('symbol')}</th>
+                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('symbol')}</th>
                     )}
                     {visibleColumns.direction && (
-                      <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('direction')}</th>
+                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('direction')}</th>
                     )}
                     {visibleColumns.entry && (
-                      <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('entryPrice')}</th>
+                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('entryPrice')}</th>
                     )}
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('stopLossPips')}</th>
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('takeProfitPips')}</th>
+                    <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('stopLossPips')}</th>
+                    <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('takeProfitPips')}</th>
                     {visibleColumns.exit && (
-                      <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('exit')}</th>
+                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('exit')}</th>
                     )}
                     {visibleColumns.position && (
-                      <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('lotSize')}</th>
+                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('lotSize')}</th>
                     )}
                     {visibleColumns.pl && (
-                      <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
-                        <button onClick={() => handleSort("profit_loss")} className="flex items-center gap-1 hover:text-blue-600">
+                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                        <button onClick={() => handleSort("profit_loss")} className="flex items-center gap-0.5 hover:text-blue-600">
                           {t('profitLoss')} <ArrowUpDown className="w-3 h-3" />
                         </button>
                       </th>
                     )}
                     {visibleColumns.outcome && (
-                      <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('outcome')}</th>
+                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('outcome')}</th>
                     )}
                     {visibleColumns.actions && (
-                      <th className="text-right p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('actions')}</th>
+                      <th className="text-right px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('actions')}</th>
                     )}
-                    <th className="text-center p-4 w-12">
+                    <th className="text-center px-1.5 py-1 w-8">
                       <div 
                         onClick={toggleAllTrades}
-                        className={`w-5 h-5 rounded-full border-[3px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
+                        className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
                           executedTrades.length > 0 && selectedTrades.size === executedTrades.length
                             ? 'bg-blue-600 border-blue-600'
                             : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
@@ -565,50 +565,50 @@ export default function JournalSimple() {
                   {executedTrades.map((trade) => (
                     <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                       {visibleColumns.status && (
-                        <td className="p-4">
+                        <td className="px-1.5 py-1">
                           <Badge className={trade.status === "Open" 
-                            ? "bg-blue-500 text-white dark:bg-blue-600 dark:text-white" 
-                            : "bg-green-500 text-white dark:bg-green-600 dark:text-white"
+                            ? "bg-blue-500 text-white dark:bg-blue-600 dark:text-white text-sm px-2 py-0.5" 
+                            : "bg-green-500 text-white dark:bg-green-600 dark:text-white text-sm px-2 py-0.5"
                           }>
-                            {trade.status === "Open" ? <Clock className="w-3 h-3 mr-1" /> : <CheckCircle className="w-3 h-3 mr-1" />}
+                            {trade.status === "Open" ? <Clock className="w-2.5 h-2.5 mr-0.5" /> : <CheckCircle className="w-2.5 h-2.5 mr-0.5" />}
                             {trade.status}
                           </Badge>
                         </td>
                       )}
                       {visibleColumns.date && (
-                        <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.date}</td>
+                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.date}</td>
                       )}
                       {visibleColumns.symbol && (
-                        <td className="p-4 font-semibold text-slate-900 dark:text-slate-100">{trade.symbol}</td>
+                        <td className="px-1.5 py-1 text-sm font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.symbol}</td>
                       )}
                       {visibleColumns.direction && (
-                        <td className="p-4">
-                          <Badge className={directionBadgeClass(trade.direction)}>
+                        <td className="px-1.5 py-1">
+                          <Badge className={`${directionBadgeClass(trade.direction)} text-sm px-2 py-0.5`}>
                             {directionLabel(trade.direction, t)}
                           </Badge>
                         </td>
                       )}
                       {visibleColumns.entry && (
-                        <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.entry_price ?? '-'}</td>
+                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
                       )}
-                      <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.stop_loss_pips ?? '-'}</td>
-                      <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.take_profit_pips ?? '-'}</td>
+                      <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
+                      <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
                       {visibleColumns.exit && (
-                        <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.exit_price || '-'}</td>
+                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.exit_price || '-'}</td>
                       )}
                       {visibleColumns.position && (
-                        <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.position_size}</td>
+                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.position_size}</td>
                       )}
                       {visibleColumns.pl && (
-                        <td className="p-4">
+                        <td className="px-1.5 py-1">
                           {trade.profit_loss != null ? (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-0.5">
                               {parseFloat(trade.profit_loss) > 0 ? (
-                                <TrendingUp className="w-4 h-4 text-green-600" />
+                                <TrendingUp className="w-3 h-3 text-green-600" />
                               ) : parseFloat(trade.profit_loss) < 0 ? (
-                                <TrendingDown className="w-4 h-4 text-red-600" />
+                                <TrendingDown className="w-3 h-3 text-red-600" />
                               ) : null}
-                              <span className={`font-semibold ${
+                              <span className={`text-sm font-semibold ${
                                 parseFloat(trade.profit_loss) > 0 ? 'text-green-600' :
                                 parseFloat(trade.profit_loss) < 0 ? 'text-red-600' :
                                 'text-slate-600'
@@ -616,41 +616,41 @@ export default function JournalSimple() {
                                 {parseFloat(trade.profit_loss) > 0 ? '+' : ''}{parseFloat(trade.profit_loss).toFixed(2)}
                               </span>
                             </div>
-                          ) : <span className="text-slate-400">-</span>}
+                          ) : <span className="text-sm text-slate-400">-</span>}
                         </td>
                       )}
                       {visibleColumns.outcome && (
-                        <td className="p-4">
+                        <td className="px-3 py-2.5">
                           {trade.outcome && (
-                            <Badge variant="outline" className={
+                            <Badge variant="outline" className={`text-sm px-2 py-0.5 ${
                               trade.outcome === "Win" ? "border-green-600 text-green-600" :
                               trade.outcome === "Loss" ? "border-red-600 text-red-600" :
                               "border-slate-600 text-slate-600"
-                            }>
+                            }`}>
                               {trade.outcome}
                             </Badge>
                           )}
                         </td>
                       )}
                       {visibleColumns.actions && (
-                        <td className="p-4">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button size="sm" variant="outline" onClick={() => handleViewTrade(trade)}>
-                              <Eye className="w-4 h-4" />
+                        <td className="px-1 py-1">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button size="sm" variant="outline" onClick={() => handleViewTrade(trade)} className="h-6 w-6 p-0">
+                              <Eye className="w-3 h-3" />
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => setEditingTrade(trade)}>
-                              <Edit className="w-4 h-4" />
+                            <Button size="sm" variant="outline" onClick={() => setEditingTrade(trade)} className="h-6 w-6 p-0">
+                              <Edit className="w-3 h-3" />
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-red-600">
-                              <Trash2 className="w-4 h-4" />
+                            <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-red-600 h-6 w-6 p-0">
+                              <Trash2 className="w-3 h-3" />
                             </Button>
                           </div>
                         </td>
                       )}
-                      <td className="text-center p-4">
+                      <td className="text-center px-1 py-1">
                         <div 
                           onClick={() => toggleTradeSelection(trade.id)}
-                          className={`w-5 h-5 rounded-full border-[3px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
+                          className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
                             selectedTrades.has(trade.id)
                               ? 'bg-blue-600 border-blue-600'
                               : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
@@ -695,26 +695,26 @@ export default function JournalSimple() {
             {plannedOpen ? (
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-slate-200 dark:divide-[#23233a]">
+                  <table className="min-w-full divide-y divide-slate-200 dark:divide-[#23233a] text-sm">
                     <thead>
                       <tr>
                         {visibleColumns.date && (
-                          <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('date')}</th>
+                          <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('date')}</th>
                         )}
                         {visibleColumns.symbol && (
-                          <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('symbol')}</th>
+                          <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('symbol')}</th>
                         )}
                         {visibleColumns.direction && (
-                          <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('direction')}</th>
+                          <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('direction')}</th>
                         )}
-                        <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('entryPrice')}</th>
-                        <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('stopLossPips')}</th>
-                        <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('takeProfitPips')}</th>
+                        <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('entryPrice')}</th>
+                        <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('stopLossPips')}</th>
+                        <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('takeProfitPips')}</th>
                         {visibleColumns.notes && (
-                          <th className="p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('notes')}</th>
+                          <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('notes')}</th>
                         )}
                         {visibleColumns.actions && (
-                          <th className="text-right p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('actions')}</th>
+                          <th className="text-right px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('actions')}</th>
                         )}
                       </tr>
                     </thead>
@@ -722,41 +722,40 @@ export default function JournalSimple() {
                       {plannedTrades.map((trade) => (
                         <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors">
                           {visibleColumns.date && (
-                            <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.date}</td>
+                            <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.date}</td>
                           )}
                           {visibleColumns.symbol && (
-                            <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.symbol}</td>
+                            <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.symbol}</td>
                           )}
                           {visibleColumns.direction && (
-                            <td className="p-4">
-                              <Badge className={directionBadgeClass(trade.direction)}>
+                            <td className="px-1.5 py-1">
+                              <Badge className={`${directionBadgeClass(trade.direction)} text-sm px-2 py-0.5`}>
                                 {directionLabel(trade.direction, t)}
                               </Badge>
                             </td>
                           )}
-                          <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.entry_price ?? '-'}</td>
-                          <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.stop_loss_pips ?? '-'}</td>
-                          <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.take_profit_pips ?? '-'}</td>
+                          <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
+                          <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
+                          <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
                           {visibleColumns.notes && (
-                            <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.notes}</td>
+                            <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 line-clamp-2">{trade.notes}</td>
                           )}
                           {visibleColumns.actions && (
-                            <td className="p-4">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button size="sm" variant="outline" onClick={() => handleViewTrade(trade)}>
-                                  <Eye className="w-4 h-4" />
+                            <td className="px-1 py-1">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button size="sm" variant="outline" onClick={() => handleViewTrade(trade)} className="h-6 w-6 p-0">
+                                  <Eye className="w-3 h-3" />
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setEditingTrade(trade)}
-                                  className="text-blue-600 gap-2"
+                                  className="text-blue-600 h-6 w-6 p-0"
                                 >
-                                  <Edit className="w-4 h-4" />
-                                  {t('edit')}
+                                  <Edit className="w-3 h-3" />
                                 </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-red-600">
-                                  <Trash2 className="w-4 h-4" />
+                                <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-red-600 h-6 w-6 p-0">
+                                  <Trash2 className="w-3 h-3" />
                                 </Button>
                               </div>
                             </td>

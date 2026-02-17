@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  zoom: 0.85;
+}
+
+@supports not (zoom: 1) {
+  #root {
+    transform: scale(0.85);
+    transform-origin: top center;
+    width: 117.647%;
+  }
+}
+
+.analytics-page .recharts-wrapper {
+  overflow: hidden !important;
+}
+
+.analytics-page .recharts-responsive-container,
+.analytics-page .recharts-surface {
+  overflow: hidden !important;
+  clip-path: inset(1px);
+}
+
 
 /* :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -1967,5 +1989,253 @@ button:focus-visible {
 
 :root[data-skin="blackblu"] .dashboard-surface table tbody tr {
   border-color: hsl(230 18% 22%);
+}
+
+/* ===== IMPROVED ALIGNMENT & SPACING ===== */
+
+/* Ocean ring improved alignment */
+:root[data-skin="ocean"] .ocean-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  background: conic-gradient(#6d4dff 0%, #e5e7eb 0);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+:root[data-skin="blackblu"] .ocean-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  background: conic-gradient(#5b6cff 0%, #1b2335 0);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+:root[data-skin="ocean"] .ocean-ring::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  background: #ffffff;
+  border-radius: 9999px;
+}
+
+:root[data-skin="blackblu"] .ocean-ring::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  background: hsl(230 22% 12%);
+  border-radius: 9999px;
+}
+
+/* Card content alignment improvements */
+.ocean-stat-card [class*="CardContent"] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ocean-stat-card .flex.items-start.justify-between {
+  align-items: center;
+  gap: 1rem;
+}
+
+.ocean-stat-card .ocean-ring {
+  margin-top: 0;
+  margin-left: auto;
+}
+
+/* Improved grid gaps */
+.grid.gap-4 { gap: 1rem; }
+.grid.gap-6 { gap: 1.5rem; }
+
+@media (max-width: 640px) {
+  .grid.gap-4 { gap: 0.75rem; }
+  .grid.gap-6 { gap: 1rem; }
+}
+
+/* Badge alignment */
+.rounded-full {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Icon alignment with text */
+.flex.items-center.gap-2 {
+  align-items: center;
+  height: auto;
+}
+
+/* Improved button icon spacing */
+button svg {
+  flex-shrink: 0;
+}
+
+/* Better card header alignment */
+[class*="CardHeader"] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Improved stat card layout */
+.ocean-stat-card > * {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Better responsive text sizing */
+@media (max-width: 768px) {
+  .text-4xl { font-size: 1.875rem; }
+  .text-3xl { font-size: 1.5rem; }
+  .text-2xl { font-size: 1.25rem; }
+}
+
+/* Improved flex alignment for metrics */
+.flex.items-start.justify-between {
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+/* Better spacing for text info */
+.text-xs + .text-2xl {
+  margin-top: 0.25rem;
+}
+
+/* Improved label and value alignment */
+p.text-xs.font-medium + * {
+  margin-top: 0.5rem;
+}
+
+/* Better responsive card padding */
+@media (max-width: 640px) {
+  [class*="CardContent"] {
+    padding: 1rem !important;
+  }
+}
+
+/* Icon sizing consistency */
+svg[class*="w-4"][class*="h-4"] {
+  width: 1rem;
+  height: 1rem;
+}
+
+svg[class*="w-5"][class*="h-5"] {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+svg[class*="w-6"][class*="h-6"] {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Dialog and modal improvements */
+[role="dialog"] {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Better button alignment in groups */
+.flex.gap-2 button {
+  flex: 1;
+  min-height: 40px;
+}
+
+@media (max-width: 640px) {
+  .flex.gap-2 button {
+    min-height: 44px;
+  }
+}
+
+/* Improved form input spacing */
+input, textarea, select {
+  min-height: 40px;
+}
+
+/* Better table alignment */
+table th, table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+@media (max-width: 640px) {
+  table th, table td {
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* Circle animations should be smooth */
+@keyframes spinSmooth {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spinSmooth 1s linear infinite;
+}
+
+/* Better card hover states */
+.ocean-stat-card {
+  transition: all 200ms ease;
+}
+
+.ocean-stat-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Modern thin scrollbar - global */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.35);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.55);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Modern tooltip styling - global */
+.recharts-default-tooltip,
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: #0f172a !important;
+  border: 1px solid #334155 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(100, 116, 139, 0.1) !important;
+  backdrop-filter: blur(8px);
+  color: #e2e8f0 !important;
+}
+
+/* Dark hover cursor on charts */
+.recharts-tooltip-cursor {
+  fill: rgba(100, 116, 139, 0.12) !important;
+  stroke: rgba(100, 116, 139, 0.25) !important;
 }
 

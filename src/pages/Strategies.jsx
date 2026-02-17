@@ -69,8 +69,8 @@ export default function Strategies() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
+      <div className="max-w-none mx-0 space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{t('tradingStrategies')}</h1>

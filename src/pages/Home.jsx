@@ -108,20 +108,20 @@ export default function Home() {
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="relative z-10 text-center mb-12 max-w-2xl"
+        className="relative z-10 text-center mb-8 sm:mb-12 max-w-2xl px-4"
       >
-        <div className="inline-flex items-center justify-center mb-6">
-          <div className="logo-arrow hero-logo w-20 h-20 rounded-2xl">
+        <div className="inline-flex items-center justify-center mb-4 sm:mb-6">
+          <div className="logo-arrow hero-logo w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex-shrink-0">
             <span className="logo-arrow-path" />
               <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">T</span></span>
               <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">L</span></span>
             <span className="logo-arrow-wave" />
           </div>
         </div>
-        <h1 className="hero-title premium-title text-6xl md:text-7xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent mb-4">
+        <h1 className="hero-title premium-title text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent mb-3 sm:mb-4">
           TRADE LOG
         </h1>
-        <p className="premium-subtitle text-lg text-slate-200 mb-2">{t('homeSubtitle')}</p>
+        <p className="premium-subtitle text-base sm:text-lg text-slate-200 mb-2">{t('homeSubtitle')}</p>
         <p className="text-slate-400 text-sm max-w-md mx-auto">{t('homeDescription')}</p>
         <div className="hero-signal mt-6 mx-auto" />
       </motion.div>
@@ -131,22 +131,22 @@ export default function Home() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className="relative z-10 w-full max-w-sm"
+        className="relative z-10 w-full max-w-sm px-4"
       >
         <motion.button
           onClick={() => window.location.href = '/login'}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="hero-cta hero-cta-pulse w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-500/40 transition-all flex items-center justify-center gap-2 text-lg"
+          className="hero-cta hero-cta-pulse w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 sm:py-4 px-6 rounded-xl shadow-lg shadow-blue-500/40 transition-all flex items-center justify-center gap-2 text-base sm:text-lg"
         >
           {t('homeLoginButton')}
-          <ArrowRight className="w-5 h-5" />
+          <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
         </motion.button>
 
-        <p className="text-center text-slate-400 text-sm mt-6">
+        <p className="text-center text-slate-400 text-xs sm:text-sm mt-4 sm:mt-6">
           {t('homeSecureLogin')}
         </p>
-        <p className="text-center text-slate-400 text-sm mt-2">
+        <p className="text-center text-slate-400 text-xs sm:text-sm mt-2">
           {t('loginNoAccount')} <button type="button" onClick={() => window.location.href = '/register'} className="text-emerald-300 hover:text-emerald-200 underline">{t('loginRegisterLink')}</button>
         </p>
       </motion.div>
@@ -156,36 +156,36 @@ export default function Home() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
-        className="mt-16 z-10 text-center"
+        className="mt-12 sm:mt-16 z-10 text-center px-4 w-full"
       >
-        <p className="text-slate-300 text-sm font-semibold mb-6">{t('homeAccessTo')}</p>
-        <div className="grid grid-cols-3 gap-3">
+        <p className="text-slate-300 text-xs sm:text-sm font-semibold mb-4 sm:mb-6">{t('homeAccessTo')}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-2xl mx-auto">
           <motion.div
             className="hero-feature hero-feature-blue hero-feature-neon"
             animate={{ y: [0, -8, 0], rotate: [0, 1.2, 0] }}
             transition={{ duration: 5.6, repeat: Infinity, ease: "easeInOut" }}
           >
-            <div className="hero-feature-icon">📊</div>
-            <p className="hero-feature-title">{t('homeFeatureAnalysisTitle')}</p>
-            <p className="hero-feature-sub">{t('homeFeatureAnalysisSubtitle')}</p>
+            <div className="hero-feature-icon text-2xl sm:text-3xl">📊</div>
+            <p className="hero-feature-title text-xs sm:text-sm">{t('homeFeatureAnalysisTitle')}</p>
+            <p className="hero-feature-sub text-xs">{t('homeFeatureAnalysisSubtitle')}</p>
           </motion.div>
           <motion.div
             className="hero-feature hero-feature-cyan hero-feature-neon"
             animate={{ y: [0, -10, 0], rotate: [0, -1.4, 0] }}
             transition={{ duration: 6.2, repeat: Infinity, ease: "easeInOut" }}
           >
-            <div className="hero-feature-icon">📝</div>
-            <p className="hero-feature-title">{t('homeFeatureJournalTitle')}</p>
-            <p className="hero-feature-sub">{t('homeFeatureJournalSubtitle')}</p>
+            <div className="hero-feature-icon text-2xl sm:text-3xl">📝</div>
+            <p className="hero-feature-title text-xs sm:text-sm">{t('homeFeatureJournalTitle')}</p>
+            <p className="hero-feature-sub text-xs">{t('homeFeatureJournalSubtitle')}</p>
           </motion.div>
           <motion.div
             className="hero-feature hero-feature-indigo hero-feature-neon"
             animate={{ y: [0, -7, 0], rotate: [0, 1, 0] }}
             transition={{ duration: 5.1, repeat: Infinity, ease: "easeInOut" }}
           >
-            <div className="hero-feature-icon">🎯</div>
-            <p className="hero-feature-title">{t('homeFeatureStrategiesTitle')}</p>
-            <p className="hero-feature-sub">{t('homeFeatureStrategiesSubtitle')}</p>
+            <div className="hero-feature-icon text-2xl sm:text-3xl">🎯</div>
+            <p className="hero-feature-title text-xs sm:text-sm">{t('homeFeatureStrategiesTitle')}</p>
+            <p className="hero-feature-sub text-xs">{t('homeFeatureStrategiesSubtitle')}</p>
           </motion.div>
         </div>
       </motion.div>

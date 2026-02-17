@@ -213,7 +213,7 @@ function LayoutContent({ children }) {
           </header>
 
           <div className="flex-1 overflow-auto flex flex-col">
-            <div className="flex-1 mx-auto" style={{ width: '75%', maxWidth: '75%' }}>
+            <div className="flex-1 w-full mx-auto px-3 sm:px-4" style={{ width: "90%", maxWidth: "90%" }}>
               {children}
             </div>
             <Footer />
