@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useSubscription } from "@/hooks/use-subscription";
 import { createPageUrl } from "@/utils";
+import { pagesConfig } from "@/pages.config";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -14,8 +15,6 @@ import { toast } from "sonner";
 import {
   ArrowDown,
   ArrowUp,
-  CalendarClock,
-  Download,
   ListTodo,
   NotebookPen,
   Pencil,
@@ -72,19 +71,21 @@ const buildEmptyNote = (type = "note", notebookId = "", sectionId = "") => ({
   pinned: false,
   tags: [],
   links: [],
-  attachments: [],
   status: "active",
   priority: "medium",
   dueDate: "",
   reminderAt: "",
   reminderSentAt: "",
+  pinnedToSidebar: false,
+  visibilityScope: "all",
+  visibleOnPages: [],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 });
 
-const buildChecklistItem = () => ({
+const buildChecklistItem = (text = "") => ({
   id: createId(),
-  text: "",
+  text,
   done: false,
   dueDate: "",
   priority: "medium",
@@ -113,9 +114,11 @@ const normalizeNotesData = (raw, defaults) => {
     order: typeof note.order === "number" ? note.order : Date.now(),
     tags: Array.isArray(note.tags) ? note.tags : [],
     links: Array.isArray(note.links) ? note.links : [],
-    attachments: Array.isArray(note.attachments) ? note.attachments : [],
     checklist: Array.isArray(note.checklist) ? note.checklist : [],
-    reminderSentAt: note.reminderSentAt || ""
+    reminderSentAt: note.reminderSentAt || "",
+    pinnedToSidebar: Boolean(note.pinnedToSidebar),
+    visibilityScope: note.visibilityScope === "selected" ? "selected" : "all",
+    visibleOnPages: Array.isArray(note.visibleOnPages) ? note.visibleOnPages : []
   }));
 
   return {
@@ -127,6 +130,7 @@ const normalizeNotesData = (raw, defaults) => {
 
 export default function Notes() {
   const { user } = useAuth();
+  const location = useLocation();
   const { t } = useLanguage();
   const { isPremium } = useSubscription(user?.id);
   const fileInputRef = useRef(null);
@@ -134,7 +138,6 @@ export default function Notes() {
   const lastHtmlRef = useRef("");
   const selectionRef = useRef(null);
   const imageInputRef = useRef(null);
-  const attachmentInputRef = useRef(null);
   const pendingNoteUpdates = useRef(new Map());
 
   const [notes, setNotes] = useState([]);
@@ -155,6 +158,7 @@ export default function Notes() {
   const [tableCols, setTableCols] = useState("3");
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [sectionInput, setSectionInput] = useState("");
+  const [checklistInput, setChecklistInput] = useState("");
 
   const notebookColors = [
     "bg-blue-500",
@@ -173,6 +177,7 @@ export default function Notes() {
     () => ({ id: "general", notebookId: "default", name: t("notesDefaultSection") }),
     [t]
   );
+  const availablePages = useMemo(() => Object.keys(pagesConfig.Pages || {}), []);
 
   useEffect(() => {
     if (!user?.id) {
@@ -221,6 +226,7 @@ export default function Notes() {
       const items = snapshot.docs.map((item) => ({
         id: item.id,
         ...item.data(),
+        pinnedToSidebar: Boolean(item.data().pinnedToSidebar),
         createdAt: toIsoString(item.data().createdAt)
       }));
       if (items.length === 0) {
@@ -229,6 +235,7 @@ export default function Notes() {
           {
             name: defaultSection.name,
             notebookId: "default",
+            pinnedToSidebar: false,
             createdAt: serverTimestamp()
           },
           { merge: true }
@@ -266,7 +273,7 @@ export default function Notes() {
       unsubscribeSections();
       unsubscribeNotes();
     };
-  }, [user?.id, defaultNotebook.name, defaultSection.name, selectedNotebookId, selectedSectionId]);
+  }, [user?.id, defaultNotebook.name, defaultSection.name]);
 
   useEffect(() => {
     setTagInput("");
@@ -276,7 +283,17 @@ export default function Notes() {
     setShowLinkPanel(false);
     setShowTablePanel(false);
     setShowImagePanel(false);
+    setChecklistInput("");
   }, [selectedId]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || "");
+    const requestedId = params.get("noteId");
+    if (!requestedId) return;
+    if (!notes.some((note) => String(note.id) === String(requestedId))) return;
+    if (selectedId === requestedId) return;
+    setSelectedId(requestedId);
+  }, [location.search, notes, selectedId]);
 
   const selectedNote = notes.find((note) => note.id === selectedId) || null;
   const notebookSections = sections.filter((section) => section.notebookId === selectedNotebookId);
@@ -317,6 +334,26 @@ export default function Notes() {
     }
   }, [notebooks, notebookSections, selectedNotebookId, selectedSectionId]);
 
+  useEffect(() => {
+    if (!user?.id || !selectedNotebookId) return;
+    const hasSectionForNotebook = sections.some((section) => section.notebookId === selectedNotebookId);
+    if (hasSectionForNotebook) return;
+
+    const sectionDocId = `general_${selectedNotebookId}`;
+    void setDoc(
+      doc(db, "users", String(user.id), "sections", sectionDocId),
+      {
+        name: defaultSection.name,
+        notebookId: selectedNotebookId,
+        pinnedToSidebar: false,
+        createdAt: serverTimestamp()
+      },
+      { merge: true }
+    ).catch((error) => {
+      console.error("Auto-create section error:", error);
+    });
+  }, [user?.id, selectedNotebookId, sections, defaultSection.name]);
+
 
   const stripHtml = (value) =>
     String(value || "")
@@ -326,6 +363,19 @@ export default function Notes() {
       .trim();
 
   const isEmptyHtml = (value) => stripHtml(value).length === 0;
+
+  const checklistProgress = useMemo(() => {
+    if (!selectedNote || !Array.isArray(selectedNote.checklist) || selectedNote.checklist.length === 0) {
+      return { total: 0, done: 0, percent: 0 };
+    }
+    const total = selectedNote.checklist.length;
+    const done = selectedNote.checklist.filter((item) => item.done).length;
+    return {
+      total,
+      done,
+      percent: Math.round((done / total) * 100)
+    };
+  }, [selectedNote]);
 
   const filteredNotes = useMemo(() => {
     const lowered = searchQuery.trim().toLowerCase();
@@ -438,6 +488,15 @@ export default function Notes() {
     queueNoteUpdate(id, patch);
   };
 
+  const toggleVisibleOnPage = (pageName) => {
+    if (!selectedNote) return;
+    const current = Array.isArray(selectedNote.visibleOnPages) ? selectedNote.visibleOnPages : [];
+    const next = current.includes(pageName)
+      ? current.filter((item) => item !== pageName)
+      : [...current, pageName];
+    updateNote(selectedNote.id, { visibleOnPages: next, visibilityScope: "selected" });
+  };
+
   const handleDelete = async (id) => {
     if (!user?.id) return;
     try {
@@ -453,9 +512,11 @@ export default function Notes() {
 
   const handleChecklistAdd = () => {
     if (!ensureSelectedNote()) return;
+    const nextText = checklistInput.trim();
     updateNote(selectedNote.id, {
-      checklist: [...selectedNote.checklist, buildChecklistItem()]
+      checklist: [...selectedNote.checklist, buildChecklistItem(nextText)]
     });
+    setChecklistInput("");
   };
 
   const handleChecklistUpdate = (itemId, patch) => {
@@ -527,34 +588,6 @@ export default function Notes() {
     updateNote(selectedNote.id, { links: selectedNote.links.filter((link) => link.id !== linkId) });
   };
 
-  const handleAttachmentUpload = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file || !selectedNote) return;
-    try {
-      const url = await uploadUserFile(user?.id, file, 'notes-attachments');
-      if (!url) return;
-      const next = {
-        id: createId(),
-        name: file.name || 'attachment',
-        url,
-        uploadedAt: new Date().toISOString()
-      };
-      updateNote(selectedNote.id, { attachments: [...(selectedNote.attachments || []), next] });
-    } catch (error) {
-      console.error('Attachment upload error:', error);
-      notifyInfo(t("notesAttachmentUploadError"));
-    } finally {
-      event.target.value = "";
-    }
-  };
-
-  const handleAttachmentRemove = (attachmentId) => {
-    if (!selectedNote) return;
-    updateNote(selectedNote.id, {
-      attachments: (selectedNote.attachments || []).filter((item) => item.id !== attachmentId)
-    });
-  };
-
 
   const handleAddSection = async () => {
     if (!user?.id) return;
@@ -570,6 +603,7 @@ export default function Notes() {
       const refDoc = await addDoc(userCollection(user.id, "sections"), {
         notebookId: selectedNotebookId,
         name: sectionInput.trim(),
+        pinnedToSidebar: false,
         createdAt: serverTimestamp()
       });
       setSelectedSectionId(refDoc.id);
@@ -624,6 +658,7 @@ export default function Notes() {
       const refDoc = await addDoc(userCollection(user.id, "sections"), {
         notebookId: selectedNotebookId,
         name: sectionInput.trim(),
+        pinnedToSidebar: false,
         createdAt: serverTimestamp()
       });
       setSelectedSectionId(refDoc.id);
@@ -660,6 +695,20 @@ export default function Notes() {
     const name = window.prompt(t("notesRenamePagePrompt"), selectedNote.title || "");
     if (!name || !name.trim()) return;
     updateNote(selectedNote.id, { title: name.trim() });
+  };
+
+  const handleToggleSectionPin = async () => {
+    if (!user?.id || !selectedSection) return;
+    try {
+      const nextPinned = !Boolean(selectedSection.pinnedToSidebar);
+      await updateDoc(doc(db, "users", String(user.id), "sections", String(selectedSection.id)), {
+        pinnedToSidebar: nextPinned,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error("Toggle section pin error:", error);
+      notifyInfo(t("notesSaveError"));
+    }
   };
 
   const [dragId, setDragId] = useState(null);
@@ -1240,6 +1289,16 @@ export default function Notes() {
                       <Trash2 className="w-4 h-4" />
                       {t("notesDeleteSection")}
                     </Button>
+                    <Button
+                      size="sm"
+                      variant={selectedSection?.pinnedToSidebar ? "default" : "outline"}
+                      onClick={handleToggleSectionPin}
+                      disabled={!selectedSection}
+                      className="gap-1"
+                    >
+                      <Pin className="w-4 h-4" />
+                      {selectedSection?.pinnedToSidebar ? "Sekcja przypięta" : "Przypnij sekcję"}
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -1290,12 +1349,18 @@ export default function Notes() {
                       <div className="flex items-center gap-2">
                         <Button
                           size="sm"
-                          variant="outline"
-                          onClick={() => updateNote(selectedNote.id, { pinned: !selectedNote.pinned })}
-                          className="gap-2"
+                          variant={selectedNote.pinnedToSidebar ? "default" : "outline"}
+                          onClick={() => {
+                            const nextPinned = !selectedNote.pinnedToSidebar;
+                            updateNote(selectedNote.id, {
+                              pinned: nextPinned,
+                              pinnedToSidebar: nextPinned
+                            });
+                          }}
+                          className="h-8 w-8 p-0"
+                          title={selectedNote.pinnedToSidebar ? "Odepnij z prawego panelu" : "Przypnij do prawego panelu"}
                         >
                           <Pin className="w-4 h-4" />
-                          {selectedNote.pinned ? t("notesUnpin") : t("notesPin")}
                         </Button>
                         <Button
                           size="sm"
@@ -1332,59 +1397,157 @@ export default function Notes() {
                         </div>
                       </div>
 
-                        <div className="rounded-md border border-slate-200 bg-white/70 px-3 py-3 text-sm text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <span className="font-semibold">{t("notesAttachments")}</span>
-                            <div className="flex items-center gap-2">
-                              <input
-                                ref={attachmentInputRef}
-                                type="file"
-                                className="hidden"
-                                onChange={handleAttachmentUpload}
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => attachmentInputRef.current?.click()}
-                              >
-                                {t("notesAddAttachment")}
-                              </Button>
-                            </div>
+                      <div className="rounded-md border border-slate-200 bg-white/70 px-3 py-3 text-sm text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-semibold">Prawy panel notatek</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {selectedNote.pinnedToSidebar ? "Przypięta" : "Użyj pinezki u góry"}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-3 items-start">
+                          <div>
+                            <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">Widoczność</label>
+                            <select
+                              value={selectedNote.visibilityScope || "all"}
+                              onChange={(event) => {
+                                const nextScope = event.target.value === "selected" ? "selected" : "all";
+                                updateNote(selectedNote.id, {
+                                  visibilityScope: nextScope,
+                                  visibleOnPages:
+                                    nextScope === "all"
+                                      ? []
+                                      : Array.isArray(selectedNote.visibleOnPages)
+                                        ? selectedNote.visibleOnPages
+                                        : []
+                                });
+                              }}
+                              className="h-9 w-full rounded-md border border-slate-200 bg-transparent px-2 text-sm dark:border-slate-700"
+                            >
+                              <option value="all">Wszystkie strony</option>
+                              <option value="selected">Wybrane podstrony</option>
+                            </select>
                           </div>
-                          {selectedNote.attachments && selectedNote.attachments.length > 0 ? (
-                            <div className="mt-2 space-y-2">
-                              {selectedNote.attachments.map((item) => (
-                                <div key={item.id} className="flex items-center justify-between gap-2">
-                                  <a
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-sm text-blue-600 hover:underline dark:text-blue-300"
-                                  >
-                                    {item.name}
-                                  </a>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleAttachmentRemove(item.id)}
-                                    className="text-rose-500 hover:text-rose-600"
-                                  >
-                                    {t("notesRemoveAttachment")}
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-                              {t("notesAttachmentsEmpty")}
+
+                          {selectedNote.visibilityScope === "selected" && (
+                            <div>
+                              <label className="mb-1 block text-xs text-slate-500 dark:text-slate-400">Podstrony</label>
+                              <div className="max-h-36 overflow-auto rounded-md border border-slate-200 dark:border-slate-700 p-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                {availablePages.map((pageName) => {
+                                  const checked = (selectedNote.visibleOnPages || []).includes(pageName);
+                                  return (
+                                    <label key={pageName} className="inline-flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                                      <input
+                                        type="checkbox"
+                                        checked={checked}
+                                        onChange={() => toggleVisibleOnPage(pageName)}
+                                      />
+                                      <span>{pageName}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
                             </div>
                           )}
                         </div>
+                      </div>
 
-                        <div className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white/70 px-2 py-2 text-sm text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-300">
-                        <div className="flex items-center gap-2">
+                      <div className="rounded-lg border border-blue-200/70 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-3 shadow-sm dark:border-blue-900/60 dark:from-[#111a2b] dark:to-[#141a32]">
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                            <ListTodo className="w-4 h-4" />
+                            Checklist
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-slate-300">
+                            {checklistProgress.done}/{checklistProgress.total} · {checklistProgress.percent}%
+                          </div>
+                        </div>
+
+                        <div className="mb-3 h-2 rounded-full bg-slate-200/70 dark:bg-slate-800/80 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 transition-all"
+                            style={{ width: `${checklistProgress.percent}%` }}
+                          />
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <Input
+                            value={checklistInput}
+                            onChange={(event) => setChecklistInput(event.target.value)}
+                            placeholder="Dodaj punkt checklisty (np. Warunek wejścia na M15)"
+                            className="h-9 flex-1 min-w-[260px] bg-white/80 dark:bg-slate-900/60"
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                handleChecklistAdd();
+                              }
+                            }}
+                          />
+                          <Button type="button" size="sm" className="h-9" onClick={handleChecklistAdd}>
+                            <Plus className="w-4 h-4 mr-1" /> Dodaj
+                          </Button>
+                        </div>
+
+                        <div className="max-h-52 overflow-auto space-y-1 pr-1">
+                          {(selectedNote.checklist || []).length === 0 ? (
+                            <div className="text-xs text-slate-500 dark:text-slate-400 py-2">
+                              Brak punktów checklisty. Dodaj własny punkt lub użyj gotowego szablonu.
+                            </div>
+                          ) : (
+                            (selectedNote.checklist || []).map((item, index) => (
+                              <div key={item.id} className="flex items-start gap-2 rounded-md border border-slate-200/80 bg-white/80 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/60">
+                                <input
+                                  type="checkbox"
+                                  className="mt-1"
+                                  checked={Boolean(item.done)}
+                                  onChange={(event) => handleChecklistUpdate(item.id, { done: event.target.checked })}
+                                />
+                                <Input
+                                  value={item.text || ""}
+                                  onChange={(event) => handleChecklistUpdate(item.id, { text: event.target.value })}
+                                  className={cn("h-8 text-sm", item.done && "line-through opacity-70")}
+                                />
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7"
+                                    disabled={index === 0}
+                                    onClick={() => handleChecklistMove(item.id, "up")}
+                                  >
+                                    <ArrowUp className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7"
+                                    disabled={index === (selectedNote.checklist || []).length - 1}
+                                    onClick={() => handleChecklistMove(item.id, "down")}
+                                  >
+                                    <ArrowDown className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7 text-rose-600 hover:text-rose-700"
+                                    onClick={() => handleChecklistRemove(item.id)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                        <div className="sticky top-2 z-10 rounded-lg border border-slate-200 bg-white/95 px-3 py-3 text-sm text-slate-700 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200">
+                        <div className="flex flex-wrap items-center gap-2">
                           <select
-                            className="h-8 rounded border border-slate-200 bg-transparent px-2 text-sm dark:border-slate-700"
+                            className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm dark:border-slate-700 dark:bg-slate-950"
                               onChange={(event) => applyFontName(event.target.value)}
                             defaultValue="Calibri"
                             onFocus={saveSelection}
@@ -1397,7 +1560,7 @@ export default function Notes() {
                             <option value="Tahoma">Tahoma</option>
                           </select>
                           <select
-                            className="h-8 rounded border border-slate-200 bg-transparent px-2 text-sm dark:border-slate-700"
+                            className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm dark:border-slate-700 dark:bg-slate-950"
                               onChange={(event) => applyFontSize(event.target.value)}
                               defaultValue="14"
                             onFocus={saveSelection}
@@ -1410,7 +1573,7 @@ export default function Notes() {
                               <option value="28">28</option>
                           </select>
                             <select
-                              className="h-8 rounded border border-slate-200 bg-transparent px-2 text-sm dark:border-slate-700"
+                              className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm dark:border-slate-700 dark:bg-slate-950"
                               onChange={(event) => applyHeading(event.target.value)}
                               defaultValue="p"
                               onFocus={saveSelection}
@@ -1420,22 +1583,18 @@ export default function Notes() {
                               <option value="h2">Heading 2</option>
                               <option value="h3">Heading 3</option>
                             </select>
-                        </div>
-
-                        <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
-
-                        <div className="flex items-center gap-1">
-                          <button type="button" className="h-8 w-8 rounded border border-slate-200 font-bold dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("bold")}>B</button>
-                          <button type="button" className="h-8 w-8 rounded border border-slate-200 italic dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("italic")}>I</button>
-                          <button type="button" className="h-8 w-8 rounded border border-slate-200 underline dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("underline")}>U</button>
-                          <button type="button" className="h-8 w-8 rounded border border-slate-200 line-through dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("strikeThrough")}>S</button>
-                          <button type="button" className="h-8 w-8 rounded border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("superscript")}>x^2</button>
-                          <button type="button" className="h-8 w-8 rounded border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("subscript")}>x_2</button>
+                          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+                          <button type="button" className="h-9 min-w-9 px-2 rounded-md border border-slate-200 font-bold dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("bold")}>B</button>
+                          <button type="button" className="h-9 min-w-9 px-2 rounded-md border border-slate-200 italic dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("italic")}>I</button>
+                          <button type="button" className="h-9 min-w-9 px-2 rounded-md border border-slate-200 underline dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("underline")}>U</button>
+                          <button type="button" className="h-9 min-w-9 px-2 rounded-md border border-slate-200 line-through dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("strikeThrough")}>S</button>
+                          <button type="button" className="h-9 min-w-9 px-2 rounded-md border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("superscript")}>x²</button>
+                          <button type="button" className="h-9 min-w-9 px-2 rounded-md border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("subscript")}>x₂</button>
                           <label className="flex items-center gap-1 text-xs">
                             <span className="text-slate-500 dark:text-slate-400">A</span>
                             <input
                               type="color"
-                              className="h-8 w-8 rounded border border-slate-200 bg-transparent dark:border-slate-700"
+                              className="h-9 w-9 rounded-md border border-slate-200 bg-transparent dark:border-slate-700"
                               onChange={(event) => applyInlineStyle({ color: event.target.value })}
                               onFocus={saveSelection}
                             />
@@ -1444,18 +1603,14 @@ export default function Notes() {
                             <span className="text-slate-500 dark:text-slate-400">HL</span>
                             <input
                               type="color"
-                              className="h-8 w-8 rounded border border-slate-200 bg-transparent dark:border-slate-700"
+                              className="h-9 w-9 rounded-md border border-slate-200 bg-transparent dark:border-slate-700"
                               onChange={(event) => applyInlineStyle({ backgroundColor: event.target.value })}
                               onFocus={saveSelection}
                             />
                           </label>
-                        </div>
-
-                        <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
-
-                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
                           <select
-                            className="h-8 rounded border border-slate-200 bg-transparent px-2 text-sm dark:border-slate-700"
+                            className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm dark:border-slate-700 dark:bg-slate-950"
                             onChange={(event) => applyListStyle(event.target.value, false)}
                             defaultValue="disc"
                             onFocus={saveSelection}
@@ -1465,7 +1620,7 @@ export default function Notes() {
                             <option value="square">■ Square</option>
                           </select>
                           <select
-                            className="h-8 rounded border border-slate-200 bg-transparent px-2 text-sm dark:border-slate-700"
+                            className="h-9 rounded-md border border-slate-200 bg-white px-2 text-sm dark:border-slate-700 dark:bg-slate-950"
                             onChange={(event) => applyListStyle(event.target.value, true)}
                             defaultValue="decimal"
                             onFocus={saveSelection}
@@ -1476,39 +1631,26 @@ export default function Notes() {
                             <option value="lower-roman">i. Lower roman</option>
                             <option value="upper-roman">I. Upper roman</option>
                           </select>
-                          <button type="button" className="h-8 w-8 rounded border border-slate-200 dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("outdent")}>←</button>
-                          <button type="button" className="h-8 w-8 rounded border border-slate-200 dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("indent")}>→</button>
-                        </div>
-
-                        <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
-
-                        <div className="flex items-center gap-1">
-                          <button type="button" className="h-8 w-8 rounded border border-slate-200 dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("justifyLeft")}>L</button>
-                          <button type="button" className="h-8 w-8 rounded border border-slate-200 dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("justifyCenter")}>C</button>
-                          <button type="button" className="h-8 w-8 rounded border border-slate-200 dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("justifyRight")}>R</button>
-                        </div>
-
-                        <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
-
-                        <div className="flex items-center gap-1">
+                          <button type="button" className="h-9 min-w-9 px-2 rounded-md border border-slate-200 dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("outdent")}>←</button>
+                          <button type="button" className="h-9 min-w-9 px-2 rounded-md border border-slate-200 dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("indent")}>→</button>
+                          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+                          <button type="button" className="h-9 min-w-9 px-2 rounded-md border border-slate-200 dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("justifyLeft")}>L</button>
+                          <button type="button" className="h-9 min-w-9 px-2 rounded-md border border-slate-200 dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("justifyCenter")}>C</button>
+                          <button type="button" className="h-9 min-w-9 px-2 rounded-md border border-slate-200 dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("justifyRight")}>R</button>
+                          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
                           <button
                             type="button"
-                            className="h-8 w-12 rounded border border-slate-200 text-xs dark:border-slate-700"
+                            className="h-9 px-3 rounded-md border border-slate-200 text-xs dark:border-slate-700"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => setShowLinkPanel((prev) => !prev)}
                           >
                             Link
                           </button>
-                          <button type="button" className="h-8 w-14 rounded border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("unlink")}>Unlink</button>
-                          <button type="button" className="h-8 w-12 rounded border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("removeFormat")}>Clear</button>
-                        </div>
-
-                        <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
-
-                        <div className="flex items-center gap-1">
+                          <button type="button" className="h-9 px-3 rounded-md border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("unlink")}>Unlink</button>
+                          <button type="button" className="h-9 px-3 rounded-md border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("removeFormat")}>Clear</button>
                           <button
                             type="button"
-                            className="h-8 w-12 rounded border border-slate-200 text-xs dark:border-slate-700"
+                            className="h-9 px-3 rounded-md border border-slate-200 text-xs dark:border-slate-700"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => requirePremium(() => setShowTablePanel((prev) => !prev))}
                           >
@@ -1516,7 +1658,7 @@ export default function Notes() {
                           </button>
                           <button
                             type="button"
-                            className="h-8 w-12 rounded border border-slate-200 text-xs dark:border-slate-700"
+                            className="h-9 px-3 rounded-md border border-slate-200 text-xs dark:border-slate-700"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => requirePremium(() => setShowImagePanel((prev) => !prev))}
                           >
@@ -1524,14 +1666,14 @@ export default function Notes() {
                           </button>
                           <button
                             type="button"
-                            className="h-8 w-16 rounded border border-slate-200 text-xs dark:border-slate-700"
+                            className="h-9 px-3 rounded-md border border-slate-200 text-xs dark:border-slate-700"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => requirePremium(() => imageInputRef.current?.click())}
                           >
                             Upload
                           </button>
-                          <button type="button" className="h-8 w-12 rounded border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("undo")}>Undo</button>
-                          <button type="button" className="h-8 w-12 rounded border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("redo")}>Redo</button>
+                          <button type="button" className="h-9 px-3 rounded-md border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("undo")}>Undo</button>
+                          <button type="button" className="h-9 px-3 rounded-md border border-slate-200 text-xs dark:border-slate-700" onMouseDown={(event) => event.preventDefault()} onClick={() => applyEditorCommand("redo")}>Redo</button>
                         </div>
                       </div>
                       {showLinkPanel && (
@@ -1597,12 +1739,12 @@ export default function Notes() {
                         onChange={handleInsertImageFile}
                       />
 
-                      <div className="relative min-h-[520px]">
+                      <div className="relative min-h-[560px] rounded-xl border border-slate-200 bg-white shadow-inner dark:border-slate-700 dark:bg-slate-950/70">
                         <div
                           ref={editorRef}
                           contentEditable
                           suppressContentEditableWarning
-                          className="min-h-[520px] max-w-[860px] mx-auto text-base leading-7 bg-transparent border-0 rounded-none px-0 pl-6 focus:outline-none whitespace-pre-wrap break-words"
+                          className="min-h-[560px] max-w-none mx-auto text-[15px] leading-7 bg-transparent border-0 rounded-none px-6 py-6 focus:outline-none whitespace-pre-wrap break-words"
                           onFocus={ensureEditorSelection}
                           onBlur={saveSelection}
                           onKeyUp={saveSelection}

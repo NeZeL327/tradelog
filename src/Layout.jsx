@@ -23,6 +23,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
+import PinnedNotesSidebar from "@/components/PinnedNotesSidebar";
 
 function LayoutContent({ children }) {
   const { t } = useLanguage();
@@ -188,7 +189,7 @@ function LayoutContent({ children }) {
             </div>
             <div className="flex items-center gap-3">
               {user && (
-                <Button variant="outline" size="sm" className="gap-2 hidden sm:flex">
+                <Button variant="outline" size="sm" className="h-8 gap-2 hidden sm:flex items-center">
                   <Avatar className="h-6 w-6">
                     <AvatarFallback className="bg-gradient-to-br from-emerald-400 to-blue-500 text-white text-[10px] font-semibold">
                       {initials || <User className="w-3.5 h-3.5" />}
@@ -199,12 +200,12 @@ function LayoutContent({ children }) {
                   </span>
                 </Button>
               )}
-              <div className="flex items-center gap-2">
-                <LanguageToggle />
-                <ThemeToggle />
+              <div className="flex items-center gap-2 self-center shrink-0">
+                <LanguageToggle className="h-8" />
+                <ThemeToggle className="h-8" />
               </div>
               {user && (
-                <Button variant="outline" size="sm" onClick={() => logout()} className="gap-2">
+                <Button variant="outline" size="sm" onClick={() => logout()} className="h-8 gap-2 items-center">
                   <LogOut className="w-4 h-4" />
                   <span className="hidden sm:inline">{t('logout')}</span>
                 </Button>
@@ -219,6 +220,7 @@ function LayoutContent({ children }) {
             <Footer />
           </div>
         </main>
+        {user && <PinnedNotesSidebar />}
       </div>
     </SidebarProvider>
   );

@@ -38,6 +38,9 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
     stop_loss_pips: "",
     take_profit_pips: "",
     profit_loss_manual: "",
+    scale_outs: [],
+    breakeven_moved: false,
+    breakeven_price: "",
     screenshot_1: "",
     screenshot_2: "",
     screenshot_3: ""
@@ -109,11 +112,48 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
       stop_loss_pips: trade.stop_loss_pips != null ? String(trade.stop_loss_pips) : "",
       take_profit_pips: trade.take_profit_pips != null ? String(trade.take_profit_pips) : "",
       profit_loss_manual: trade.profit_loss != null ? String(trade.profit_loss) : "",
+      scale_outs: Array.isArray(trade.scale_outs) ? trade.scale_outs.map((item) => ({
+        id: item.id || `${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        size: item.size != null ? String(item.size) : "",
+        price: item.price != null ? String(item.price) : ""
+      })) : [],
+      breakeven_moved: Boolean(trade.breakeven_moved),
+      breakeven_price: trade.breakeven_price != null ? String(trade.breakeven_price) : "",
       screenshot_1: trade.screenshot_1 || "",
       screenshot_2: trade.screenshot_2 || "",
       screenshot_3: trade.screenshot_3 || ""
     });
   }, [trade]);
+
+  const addScaleOut = () => {
+    setFormData(prev => ({
+      ...prev,
+      scale_outs: [...(prev.scale_outs || []), { id: `${Date.now()}_${Math.random().toString(16).slice(2)}`, size: "", price: "" }]
+    }));
+  };
+
+  const updateScaleOut = (id, patch) => {
+    setFormData(prev => ({
+      ...prev,
+      scale_outs: (prev.scale_outs || []).map(item => item.id === id ? { ...item, ...patch } : item)
+    }));
+  };
+
+  const removeScaleOut = (id) => {
+    setFormData(prev => ({
+      ...prev,
+      scale_outs: (prev.scale_outs || []).filter(item => item.id !== id)
+    }));
+  };
+
+  const totalScaleOutSize = useMemo(() => {
+    return (formData.scale_outs || []).reduce((sum, item) => sum + (parseFloat(item.size) || 0), 0);
+  }, [formData.scale_outs]);
+
+  const remainingSize = useMemo(() => {
+    const total = parseFloat(formData.position_size) || 0;
+    return Math.max(0, total - totalScaleOutSize);
+  }, [formData.position_size, totalScaleOutSize]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -211,6 +251,14 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
         position_size: formData.position_size ? parseFloat(formData.position_size) : null,
         stop_loss_pips: formData.stop_loss_pips ? parseFloat(formData.stop_loss_pips) : null,
         take_profit_pips: formData.take_profit_pips ? parseFloat(formData.take_profit_pips) : null,
+        scale_outs: (formData.scale_outs || []).map(item => ({
+          id: item.id,
+          size: item.size ? parseFloat(item.size) : null,
+          price: item.price ? parseFloat(item.price) : null
+        })),
+        breakeven_moved: Boolean(formData.breakeven_moved),
+        breakeven_price: formData.breakeven_price ? parseFloat(formData.breakeven_price) : null,
+        remaining_size: remainingSize,
         ...(pl && {
           profit_loss: parseFloat(pl.profit_loss),
           profit_loss_percent: pl.profit_loss_percent ? parseFloat(pl.profit_loss_percent) : null,
@@ -245,6 +293,9 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
           stop_loss_pips: "",
           take_profit_pips: "",
           profit_loss_manual: "",
+          scale_outs: [],
+          breakeven_moved: false,
+          breakeven_price: "",
           screenshot_1: "",
           screenshot_2: "",
           screenshot_3: ""
@@ -486,6 +537,83 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                       value={calculateRR() ? `1:${calculateRR()}` : "-"}
                       className="bg-slate-100"
                     />
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-white p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">Podzial pozycji (scale-out)</p>
+                      <p className="text-xs text-slate-500">Wpisz czesciowe zamkniecia i automatycznie policz pozostala pozycje.</p>
+                    </div>
+                    <Button type="button" size="sm" variant="outline" onClick={addScaleOut}>
+                      <Plus className="w-4 h-4 mr-1" /> Dodaj czesc
+                    </Button>
+                  </div>
+
+                  {(formData.scale_outs || []).length === 0 && (
+                    <div className="text-xs text-slate-500">Brak czesciowych zamkniec.</div>
+                  )}
+
+                  <div className="space-y-2">
+                    {(formData.scale_outs || []).map((item, index) => (
+                      <div key={item.id} className="grid grid-cols-1 md:grid-cols-[1.2fr_1.2fr_auto] gap-2 items-end rounded-md border border-slate-200 p-2">
+                        <div>
+                          <Label className="text-xs">Zamknieta wielkosc (lot)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.size}
+                            onChange={(e) => updateScaleOut(item.id, { size: e.target.value })}
+                            placeholder="np. 1.0"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Cena zamkniecia</Label>
+                          <Input
+                            type="number"
+                            step="0.00001"
+                            value={item.price}
+                            onChange={(e) => updateScaleOut(item.id, { price: e.target.value })}
+                            placeholder="np. 1.1055"
+                          />
+                        </div>
+                        <Button type="button" variant="ghost" onClick={() => removeScaleOut(item.id)}>
+                          Usun
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="rounded-md border border-slate-200 p-2 text-sm">
+                      <div className="text-xs text-slate-500">Suma zamkniec</div>
+                      <div className="font-semibold text-slate-800">{totalScaleOutSize.toFixed(2)}</div>
+                    </div>
+                    <div className="rounded-md border border-slate-200 p-2 text-sm">
+                      <div className="text-xs text-slate-500">Pozostala pozycja</div>
+                      <div className="font-semibold text-slate-800">{remainingSize.toFixed(2)}</div>
+                    </div>
+                    <div className="rounded-md border border-slate-200 p-2 text-sm">
+                      <div className="text-xs text-slate-500">BE / ochrona</div>
+                      <label className="flex items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={formData.breakeven_moved}
+                          onChange={(e) => setFormData(prev => ({ ...prev, breakeven_moved: e.target.checked }))}
+                        />
+                        Przenies SL na BE
+                      </label>
+                      <Input
+                        type="number"
+                        step="0.00001"
+                        value={formData.breakeven_price}
+                        onChange={(e) => setFormData(prev => ({ ...prev, breakeven_price: e.target.value }))}
+                        placeholder="Cena BE (opcjonalnie)"
+                        className="mt-2"
+                        disabled={!formData.breakeven_moved}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

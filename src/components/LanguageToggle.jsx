@@ -14,7 +14,7 @@ export default function LanguageToggle({ className = "" }) {
   return (
     <div
       className={cn(
-        "inline-flex items-center rounded-full border border-slate-700 bg-slate-800/80 text-slate-100 backdrop-blur-sm p-1 shadow-sm",
+        "inline-flex h-8 items-center rounded-md border border-input bg-background p-0.5 shadow-sm overflow-hidden",
         className
       )}
       role="group"
@@ -30,8 +30,8 @@ export default function LanguageToggle({ className = "" }) {
             variant="ghost"
             onClick={() => setLanguage(lang.code)}
             className={cn(
-              "h-7 px-2 text-xs font-semibold text-slate-300 hover:text-white",
-              isActive && "bg-white/15 text-white"
+              "h-7 rounded-sm px-2 text-xs font-semibold text-muted-foreground hover:text-foreground",
+              isActive && "bg-accent text-foreground"
             )}
             aria-pressed={isActive}
           >

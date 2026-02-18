@@ -57,7 +57,7 @@ export default function ThemeToggle({ className = "" }) {
   return (
     <div
       className={cn(
-        "inline-flex items-center rounded-full border border-slate-200 bg-white/80 text-slate-700 backdrop-blur-sm p-1 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/70 dark:text-slate-100",
+        "inline-flex h-8 items-center rounded-md border border-input bg-background p-0.5 shadow-sm overflow-hidden",
         className
       )}
       role="group"
@@ -73,8 +73,8 @@ export default function ThemeToggle({ className = "" }) {
             variant="ghost"
             onClick={() => handleThemeChange(entry.value)}
             className={cn(
-              "h-7 px-2 text-[11px] font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white",
-              isActive && "bg-slate-900/10 text-slate-900 dark:bg-white/15 dark:text-white"
+              "h-7 rounded-sm px-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
+              isActive && "bg-accent text-foreground"
             )}
             aria-pressed={isActive}
           >

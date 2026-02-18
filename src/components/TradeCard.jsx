@@ -151,7 +151,38 @@ export default function TradeCard({ trade, onEdit = null }) {
               <p className="font-semibold text-green-600 dark:text-green-400">{trade.take_profit_pips}</p>
             </div>
           )}
+          {trade.remaining_size != null && (
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('remainingSize')}</p>
+              <p className="font-semibold text-slate-900 dark:text-white">{trade.remaining_size}</p>
+            </div>
+          )}
+          {trade.breakeven_moved && (
+            <div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('breakevenMoved')}</p>
+              <p className="font-semibold text-slate-900 dark:text-white">{trade.breakeven_price || '-'}</p>
+            </div>
+          )}
         </div>
+
+        {/* Scale-outs */}
+        {Array.isArray(trade.scale_outs) && trade.scale_outs.length > 0 && (
+          <div className="p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl dark:border dark:border-slate-700">
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">{t('scaleOuts')}</p>
+            <div className="space-y-2 text-sm">
+              {trade.scale_outs.map((scaleOut, index) => (
+                <div key={scaleOut.id || `scale-out-${index}`} className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-slate-800 dark:text-slate-200">
+                    {t('size')}: {scaleOut.size || '-'} | {t('price')}: {scaleOut.price || '-'}
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {scaleOut.time || scaleOut.reason || ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Position Phases */}
         <div className="space-y-3">

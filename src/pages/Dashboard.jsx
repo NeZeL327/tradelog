@@ -332,11 +332,11 @@ export default function Dashboard() {
               <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white bordo:text-[#f9d5e5] mb-2">{t('dashboard')}</h1>
               <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 bordo:text-[#d4a5b8]">{t('overviewOfYourTradingPerformance')}</p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div className="flex items-center gap-3 md:gap-4 flex-wrap justify-end">
               <Select value={dashboardAccount} onValueChange={setDashboardAccount}>
-                <SelectTrigger className="w-32 md:w-36 text-xs md:text-sm">
-                  <div className="flex items-center gap-2">
-                    <Wallet className="w-4 h-4 text-slate-500" />
+                <SelectTrigger className="w-[170px] md:w-[210px] h-9 md:h-10 text-sm shrink-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Wallet className="w-4 h-4 text-slate-500 shrink-0" />
                     <SelectValue placeholder={t('myAccount')} />
                   </div>
                 </SelectTrigger>
@@ -347,14 +347,14 @@ export default function Dashboard() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" className="gap-2 text-xs md:text-sm" onClick={() => setFiltersOpen(true)}>
+              <Button variant="outline" size="sm" className="h-9 md:h-10 px-3 md:px-4 gap-2 text-sm shrink-0" onClick={() => setFiltersOpen(true)}>
                 <Filter className="w-4 h-4" />
                 {t('filters')}
               </Button>
               <Select value={dashboardRange} onValueChange={setDashboardRange}>
-                <SelectTrigger className="w-32 md:w-40 text-xs md:text-sm">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4 text-slate-500" />
+                <SelectTrigger className="w-[170px] md:w-[210px] h-9 md:h-10 text-sm shrink-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <CalendarDays className="w-4 h-4 text-slate-500 shrink-0" />
                     <SelectValue placeholder={t('dateRange')} />
                   </div>
                 </SelectTrigger>
