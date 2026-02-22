@@ -132,7 +132,7 @@ export default function Notes() {
   const { user } = useAuth();
   const location = useLocation();
   const { t } = useLanguage();
-  const { isPremium } = useSubscription(user?.id);
+  const { isPremium } = useSubscription(user?.id, user?.createdAt);
   const fileInputRef = useRef(null);
   const editorRef = useRef(null);
   const lastHtmlRef = useRef("");
