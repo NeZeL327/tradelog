@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
@@ -20,6 +20,8 @@ const applySkinToDocument = (skin) => {
   document.documentElement.setAttribute("data-skin", skin);
 };
 
+const getSkin = (theme) => (theme === "dark" ? "blackblu" : "default");
+
 export default function ThemeToggle({ className = "" }) {
   const { user } = useAuth();
   const [theme, setTheme] = useState(() => {
@@ -32,26 +34,25 @@ export default function ThemeToggle({ className = "" }) {
   // Apply theme when component mounts and theme changes
   useEffect(() => {
     applyThemeToDocument(theme);
-    const skin = theme === "dark" ? "blackblu" : "default";
-    applySkinToDocument(skin);
+    applySkinToDocument(getSkin(theme));
     localStorage.setItem("appTheme", theme);
   }, [theme]);
 
   // Sync to user profile when user changes (but don't reset local theme)
   useEffect(() => {
     if (user?.id && user?.theme !== theme) {
-      try {
-        updateUser(user.id, { theme, skin: theme === "dark" ? "blackblu" : "default" });
-      } catch (error) {
-        console.error("Theme update error:", error);
-      }
+      updateUser(user.id, { theme, skin: getSkin(theme) })
+        .catch((error) => console.error("Theme update error:", error));
     }
-  }, [user?.id]);
+  }, [user?.id, theme]);
 
   const handleThemeChange = (nextTheme) => {
     const normalizedTheme = nextTheme === "dark" ? "dark" : "light";
     setTheme(normalizedTheme);
-    // Don't call checkSession - just update local state
+    if (user?.id) {
+      updateUser(user.id, { theme: normalizedTheme, skin: getSkin(normalizedTheme) })
+        .catch((error) => console.error("Theme update error:", error));
+    }
   };
 
   return (

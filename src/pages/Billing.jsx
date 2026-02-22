@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +38,7 @@ export default function Billing() {
       if (url) {
         window.location.href = url;
       }
-    } catch (error) {
+    } catch {
       toast.error(t("billingCheckoutError"));
     }
   };
@@ -53,7 +52,7 @@ export default function Billing() {
       if (url) {
         window.location.href = url;
       }
-    } catch (error) {
+    } catch {
       toast.error(t("billingPortalError"));
     }
   };
