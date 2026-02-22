@@ -7,12 +7,12 @@ const ensureBaseUrl = () => {
   return baseUrl.replace(/\/$/, "");
 };
 
-export async function createCheckoutSession({ priceId, successUrl, cancelUrl, customerEmail, userId }) {
+export async function createCheckoutSession({ priceId, successUrl, cancelUrl, customerEmail, userId, trialDays }) {
   const url = `${ensureBaseUrl()}/createCheckoutSession`;
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ priceId, successUrl, cancelUrl, customerEmail, userId })
+    body: JSON.stringify({ priceId, successUrl, cancelUrl, customerEmail, userId, trialDays })
   });
   if (!response.ok) {
     throw new Error("Unable to create checkout session");

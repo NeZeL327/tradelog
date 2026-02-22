@@ -8,13 +8,15 @@ const languages = [
   { code: "en", label: "EN" }
 ];
 
-export default function LanguageToggle({ className = "" }) {
+export default function LanguageToggle({ className = "", variant = "light" }) {
   const { language, setLanguage } = useLanguage();
+  const isDark = variant === "dark";
 
   return (
     <div
       className={cn(
-        "inline-flex h-8 items-center rounded-md border border-input bg-background p-0.5 shadow-sm overflow-hidden",
+        "inline-flex h-8 items-center rounded-md border p-0.5 shadow-sm overflow-hidden",
+        isDark ? "border-slate-700/70 bg-slate-900/70" : "border-input bg-background",
         className
       )}
       role="group"
@@ -30,8 +32,15 @@ export default function LanguageToggle({ className = "" }) {
             variant="ghost"
             onClick={() => setLanguage(lang.code)}
             className={cn(
-              "h-7 rounded-sm px-2 text-xs font-semibold text-muted-foreground hover:text-foreground",
-              isActive && "bg-accent text-foreground"
+              "h-7 rounded-sm px-2 text-xs font-semibold",
+              isDark
+                ? "text-slate-200 hover:text-white"
+                : "text-muted-foreground hover:text-foreground",
+              isActive
+                ? isDark
+                  ? "bg-slate-800 text-white"
+                  : "bg-accent text-foreground"
+                : null
             )}
             aria-pressed={isActive}
           >

@@ -176,6 +176,7 @@ export default function ProgressTracker() {
 
   const [selectedDay, setSelectedDay] = useState(() => toDayKey(new Date()));
   const hydratedRef = useRef(false);
+  const skipPersistRef = useRef(false);
 
   const { data: trades = [] } = useQuery({
     queryKey: ["trades", user?.id],
@@ -200,14 +201,21 @@ export default function ProgressTracker() {
       }
 
       const data = snapshot.data();
+      let didUpdate = false;
       if (Array.isArray(data.rules) && data.rules.length > 0) {
         setRules(data.rules);
+        didUpdate = true;
       }
       if (Array.isArray(data.checklistTemplate) && data.checklistTemplate.length > 0) {
         setChecklistTemplate(data.checklistTemplate);
+        didUpdate = true;
       }
       if (data.dailyChecks && typeof data.dailyChecks === "object") {
         setDailyChecks(data.dailyChecks);
+        didUpdate = true;
+      }
+      if (didUpdate) {
+        skipPersistRef.current = true;
       }
       hydratedRef.current = true;
     });
@@ -217,6 +225,10 @@ export default function ProgressTracker() {
 
   useEffect(() => {
     if (!user?.id || !hydratedRef.current) return;
+    if (skipPersistRef.current) {
+      skipPersistRef.current = false;
+      return;
+    }
     const refDoc = doc(db, "users", String(user.id), "progress", "tracker");
     void setDoc(
       refDoc,

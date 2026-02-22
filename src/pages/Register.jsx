@@ -382,6 +382,11 @@ export default function Register() {
                   </Label>
                 </div>
 
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+                  <span className="font-semibold">{t('pricing14DayTrial')}</span>
+                  <span className="text-emerald-300"> • {t('pricingNoCreditCard')}</span>
+                </div>
+
                 <Button
                   type="submit"
                   className="hero-cta hero-cta-pulse w-full bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-semibold py-2.5 shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"

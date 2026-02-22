@@ -12,7 +12,7 @@ export default function PublicNavbar() {
 
   const menuItems = [
     { label: t('features') || 'Features', href: '#features' },
-    { label: t('pricing') || 'Pricing', href: '#pricing' },
+    { label: t('pricing') || 'Pricing', href: '/pricing' },
     { label: t('about') || 'About', href: '/about' },
     { label: t('contact') || 'Contact', href: '/contact' },
   ];
@@ -56,7 +56,7 @@ export default function PublicNavbar() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <LanguageToggle />
+            <LanguageToggle variant="dark" />
             <Button
               variant="ghost"
               size="sm"
@@ -78,7 +78,7 @@ export default function PublicNavbar() {
 
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center gap-2">
-            <LanguageToggle />
+            <LanguageToggle variant="dark" />
             <Button
               variant="ghost"
               size="sm"
