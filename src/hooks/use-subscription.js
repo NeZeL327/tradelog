@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+const TRIAL_DURATION_MS = 14 * 24 * 60 * 60 * 1000;
+
 const emptyState = {
   status: "free",
   plan: "free",
@@ -9,7 +11,45 @@ const emptyState = {
   customerId: null
 };
 
-export function useSubscription(userId) {
+const toMilliseconds = (value) => {
+  if (!value) return null;
+  if (typeof value === "number") return value;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value?.toDate === "function") return value.toDate().getTime();
+  if (typeof value?.seconds === "number") return value.seconds * 1000;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const deriveTrialFromRegistration = (subscription, userCreatedAt) => {
+  if (subscription.customerId || subscription.status === "active") {
+    return subscription;
+  }
+
+  const createdAtMs = toMilliseconds(userCreatedAt);
+  if (!createdAtMs) {
+    return subscription;
+  }
+
+  const trialEndMs = createdAtMs + TRIAL_DURATION_MS;
+  const trialEndsInMs = trialEndMs - Date.now();
+
+  if (trialEndsInMs > 0) {
+    return {
+      ...subscription,
+      status: "trialing",
+      trialEnd: Math.floor(trialEndMs / 1000)
+    };
+  }
+
+  return {
+    ...subscription,
+    status: "trial_expired",
+    trialEnd: Math.floor(trialEndMs / 1000)
+  };
+};
+
+export function useSubscription(userId, userCreatedAt = null) {
   const [subscription, setSubscription] = useState(emptyState);
   const [isLoading, setIsLoading] = useState(Boolean(userId));
 
@@ -40,9 +80,11 @@ export function useSubscription(userId) {
     return () => unsubscribe();
   }, [userId]);
 
+  const effectiveSubscription = deriveTrialFromRegistration(subscription, userCreatedAt);
+
   return {
-    subscription,
+    subscription: effectiveSubscription,
     isLoading,
-    isPremium: subscription.status === "active" || subscription.status === "trialing"
+    isPremium: effectiveSubscription.status === "active" || effectiveSubscription.status === "trialing"
   };
 }

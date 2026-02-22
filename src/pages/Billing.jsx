@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/AuthContext";
 import { useLanguage } from "@/components/LanguageProvider";
-import { createCheckoutSession, createPortalSession } from "@/lib/billing";
+import { cancelSubscription, createCheckoutSession, createPortalSession, syncCheckoutSession } from "@/lib/billing";
 import { useSubscription } from "@/hooks/use-subscription";
 import { toast } from "sonner";
 import { CreditCard, ShieldCheck } from "lucide-react";
@@ -14,15 +14,52 @@ const priceId = import.meta.env.VITE_STRIPE_PRICE_ID;
 export default function Billing() {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const { subscription, isPremium, isLoading } = useSubscription(user?.id);
-  const trialEligible = !subscription.customerId;
+  const [isCancelling, setIsCancelling] = useState(false);
+  const { subscription, isPremium, isLoading } = useSubscription(user?.id, user?.createdAt);
+  const hasStripeCustomer = Boolean(subscription.customerId);
+  const isCancellationScheduled = Boolean(subscription.cancelAtPeriodEnd);
   const trialEndsAt = subscription.trialEnd ? new Date(subscription.trialEnd * 1000) : null;
+  const nextPaymentAt = subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd * 1000) : null;
   const trialDaysLeft = trialEndsAt
     ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86400000))
     : null;
-  const showTrialEndedNotice = ["past_due", "incomplete", "unpaid"].includes(subscription.status);
+  const showActiveSchedule = hasStripeCustomer && Boolean(subscription.subscriptionId) && ["trialing", "active"].includes(subscription.status);
+  const showTrialEndedNotice = ["past_due", "incomplete", "unpaid", "trial_expired"].includes(subscription.status);
 
-  const handleSubscribe = async (trialDays) => {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkoutState = params.get("checkout");
+    const sessionId = params.get("session_id");
+
+    if (checkoutState !== "success" || !sessionId || !user?.id) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const syncStatus = async () => {
+      try {
+        await syncCheckoutSession({ sessionId, userId: user.id });
+      } catch (error) {
+        if (!isCancelled) {
+          toast.error(t("billingSyncError"));
+        }
+      } finally {
+        if (!isCancelled) {
+          const cleanedUrl = `${window.location.origin}${window.location.pathname}`;
+          window.history.replaceState({}, "", cleanedUrl);
+        }
+      }
+    };
+
+    void syncStatus();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user?.id, t]);
+
+  const handleSubscribe = async () => {
     if (!priceId) {
       toast.error(t("billingMissingPrice"));
       return;
@@ -30,11 +67,10 @@ export default function Billing() {
     try {
       const { url } = await createCheckoutSession({
         priceId,
-        successUrl: window.location.origin + "/Billing",
-        cancelUrl: window.location.origin + "/Billing",
+        successUrl: `${window.location.origin}/Billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${window.location.origin}/Billing?checkout=cancel`,
         customerEmail: user?.email || undefined,
-        userId: user?.id || undefined,
-        trialDays: trialDays || 0
+        userId: user?.id || undefined
       });
       if (url) {
         window.location.href = url;
@@ -45,28 +81,50 @@ export default function Billing() {
   };
 
   const handleManage = async () => {
+    if (!user?.id) {
+      toast.error(t("billingPortalError"));
+      return;
+    }
     try {
-      const { url } = await createPortalSession({
+      const response = await createPortalSession({
         returnUrl: window.location.origin + "/Billing",
-        userId: user?.id || undefined
+        userId: user.id
       });
-      if (url) {
-        window.location.href = url;
+      if (response?.url) {
+        window.location.href = response.url;
+      } else {
+        toast.error(t("billingPortalError"));
       }
     } catch (error) {
       toast.error(t("billingPortalError"));
     }
   };
 
+  const handleCancelSubscription = async () => {
+    if (!user?.id) return;
+    const shouldCancel = window.confirm(t("billingCancelConfirm"));
+    if (!shouldCancel) return;
+
+    setIsCancelling(true);
+    try {
+      await cancelSubscription({ userId: user.id });
+      toast.success(t("billingCancelSuccess"));
+    } catch (error) {
+      toast.error(t("billingCancelError"));
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   return (
     <div className="min-h-screen p-2 sm:p-3">
-      <div className="max-w-none mx-0 space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t("billingTitle")}</h1>
           <p className="text-slate-600 dark:text-slate-400">{t("billingSubtitle")}</p>
         </div>
 
-        <div className="max-w-none mx-0">
+        <div className="max-w-xl mx-auto w-full">
           <Card className="border-2 border-blue-500/50 dark:border-blue-400/50 shadow-lg">
             <CardHeader className="text-center">
               <div className="inline-block mx-auto mb-4">
@@ -83,7 +141,7 @@ export default function Billing() {
                   <span className="text-4xl font-bold text-slate-900 dark:text-white">$9.9</span>
                   <span className="text-slate-600 dark:text-slate-400">/ {t("billingPerMonth")}</span>
                 </div>
-                {trialEligible && (
+                {subscription.status === "trialing" && (
                   <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">
                     {t("billing14DayTrial")}
                   </Badge>
@@ -123,33 +181,37 @@ export default function Billing() {
               <div className="space-y-3 pt-4">
                 {isPremium ? (
                   <>
-                    <Badge variant="default" className="w-full justify-center py-2">
-                      {t("billingActive")}
-                    </Badge>
-                    <Button variant="outline" onClick={handleManage} disabled={!user || isLoading} className="w-full">
-                      {t("billingManage")}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    {trialEligible ? (
+                    {hasStripeCustomer ? (
                       <>
-                        <Button onClick={() => handleSubscribe(14)} disabled={isLoading} className="w-full h-12 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700">
-                          {t("billingStartTrial")}
+                        <Button variant="outline" onClick={handleManage} disabled={!user || isLoading} className="w-full">
+                          {t("billingManage")}
                         </Button>
-                        <Button variant="outline" onClick={() => handleSubscribe(0)} disabled={isLoading} className="w-full h-12">
-                          {t("billingSubscribeNow")}
-                        </Button>
-                        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-                          {t("billingTrialOnlyNew")}
-                        </p>
+                        {!isCancellationScheduled && (
+                          <Button
+                            variant="destructive"
+                            onClick={handleCancelSubscription}
+                            disabled={!user || isLoading || isCancelling}
+                            className="w-full"
+                          >
+                            {isCancelling ? t("billingCancelling") : t("billingCancel")}
+                          </Button>
+                        )}
+                        {isCancellationScheduled && (
+                          <p className="text-center text-xs text-amber-600 dark:text-amber-300">
+                            {t("billingCancellationScheduled")}
+                          </p>
+                        )}
                       </>
                     ) : (
-                      <Button onClick={() => handleSubscribe(0)} disabled={isLoading} className="w-full h-12 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700">
+                      <Button onClick={handleSubscribe} disabled={isLoading} className="w-full h-12 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700">
                         {t("billingSubscribeNow")}
                       </Button>
                     )}
                   </>
+                ) : (
+                  <Button onClick={handleSubscribe} disabled={isLoading} className="w-full h-12 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700">
+                    {t("billingSubscribeNow")}
+                  </Button>
                 )}
               </div>
             </CardContent>
@@ -161,7 +223,12 @@ export default function Billing() {
             <CardTitle>{t("billingStatusTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-slate-600 dark:text-slate-400">
-            {subscription.status === "trialing" && trialEndsAt && (
+            {showActiveSchedule && nextPaymentAt && (
+              <div className="mb-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-200">
+                {`${t("billingActiveNextPayment")} ${nextPaymentAt.toLocaleDateString()}`}
+              </div>
+            )}
+            {!showActiveSchedule && subscription.status === "trialing" && trialEndsAt && (
               <div className="mb-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-200">
                 {trialDaysLeft !== null
                   ? `${t("billingTrialEndsOn")} ${trialEndsAt.toLocaleDateString()} (${trialDaysLeft} dni)`
@@ -173,7 +240,6 @@ export default function Billing() {
                 {t("billingTrialEnded")}
               </div>
             )}
-            {isLoading ? t("billingLoading") : t("billingStatus", { status: subscription.status })}
           </CardContent>
         </Card>
       </div>
