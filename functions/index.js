@@ -1,25 +1,26 @@
-import functions from "firebase-functions";
+import * as functions from "firebase-functions";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
 import Stripe from "stripe";
 import cors from "cors";
 
 admin.initializeApp();
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY || functions.config()?.stripe?.secret_key || "";
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || functions.config()?.stripe?.webhook_secret || "";
+const stripeSecret = process.env.STRIPE_SECRET_KEY || "";
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
 const REGISTRATION_TRIAL_DAYS = 14;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 const corsHandler = cors({ origin: true });
 
-export const createCheckoutSession = functions.https.onCall(async (data, context) => {
+export const createCheckoutSession = onCall({ cors: true }, async (request) => {
   if (!stripe) {
-    throw new functions.https.HttpsError("unavailable", "Stripe not configured");
+    throw new HttpsError("unavailable", "Stripe not configured");
   }
 
   try {
-    const { priceId, successUrl, cancelUrl, customerEmail, userId } = data;
+    const { priceId, successUrl, cancelUrl, customerEmail, userId } = request.data;
     let effectiveTrialDays = 0;
     if (userId) {
       const existing = await admin.firestore().collection("subscriptions").doc(String(userId)).get();
@@ -54,22 +55,22 @@ export const createCheckoutSession = functions.https.onCall(async (data, context
     return { id: session.id, url: session.url };
   } catch (error) {
     console.error("createCheckoutSession error:", error);
-    if (error instanceof functions.https.HttpsError) {
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new functions.https.HttpsError("internal", "Unable to create session");
+    throw new HttpsError("internal", "Unable to create session");
   }
 });
 
-export const createPortalSession = functions.https.onCall(async (data, context) => {
+export const createPortalSession = onCall({ cors: true }, async (request) => {
   if (!stripe) {
-    throw new functions.https.HttpsError("unavailable", "Stripe not configured");
+    throw new HttpsError("unavailable", "Stripe not configured");
   }
 
   try {
-    const { returnUrl, userId } = data;
+    const { returnUrl, userId } = request.data;
     if (!userId) {
-      throw new functions.https.HttpsError("invalid-argument", "Missing userId");
+      throw new HttpsError("invalid-argument", "Missing userId");
     }
 
     const doc = await admin.firestore().collection("subscriptions").doc(String(userId)).get();
@@ -87,7 +88,7 @@ export const createPortalSession = functions.https.onCall(async (data, context) 
     }
 
     if (!customerId) {
-      throw new functions.https.HttpsError("not-found", "Missing customer");
+      throw new HttpsError("not-found", "Missing customer");
     }
 
     const portal = await stripe.billingPortal.sessions.create({
@@ -98,22 +99,22 @@ export const createPortalSession = functions.https.onCall(async (data, context) 
     return { url: portal.url };
   } catch (error) {
     console.error("createPortalSession error:", error);
-    if (error instanceof functions.https.HttpsError) {
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new functions.https.HttpsError("internal", "Unable to create portal session");
+    throw new HttpsError("internal", "Unable to create portal session");
   }
 });
 
-export const cancelSubscription = functions.https.onCall(async (data, context) => {
+export const cancelSubscription = onCall({ cors: true }, async (request) => {
   if (!stripe) {
-    throw new functions.https.HttpsError("unavailable", "Stripe not configured");
+    throw new HttpsError("unavailable", "Stripe not configured");
   }
 
   try {
-    const { userId } = data;
+    const { userId } = request.data;
     if (!userId) {
-      throw new functions.https.HttpsError("invalid-argument", "Missing userId");
+      throw new HttpsError("invalid-argument", "Missing userId");
     }
 
     const userSubscriptionRef = admin.firestore().collection("subscriptions").doc(String(userId));
@@ -122,7 +123,7 @@ export const cancelSubscription = functions.https.onCall(async (data, context) =
     const subscriptionId = current.subscriptionId;
 
     if (!subscriptionId) {
-      throw new functions.https.HttpsError("not-found", "Missing subscription");
+      throw new HttpsError("not-found", "Missing subscription");
     }
 
     const canceled = await stripe.subscriptions.update(String(subscriptionId), {
@@ -141,22 +142,22 @@ export const cancelSubscription = functions.https.onCall(async (data, context) =
     return { ok: true, cancelAtPeriodEnd: Boolean(canceled.cancel_at_period_end) };
   } catch (error) {
     console.error("cancelSubscription error:", error);
-    if (error instanceof functions.https.HttpsError) {
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new functions.https.HttpsError("internal", "Unable to cancel subscription");
+    throw new HttpsError("internal", "Unable to cancel subscription");
   }
 });
 
-export const syncCheckoutSession = functions.https.onCall(async (data, context) => {
+export const syncCheckoutSession = onCall({ cors: true }, async (request) => {
   if (!stripe) {
-    throw new functions.https.HttpsError("unavailable", "Stripe not configured");
+    throw new HttpsError("unavailable", "Stripe not configured");
   }
 
   try {
-    const { sessionId, userId } = data;
+    const { sessionId, userId } = request.data;
     if (!sessionId || !userId) {
-      throw new functions.https.HttpsError("invalid-argument", "Missing sessionId or userId");
+      throw new HttpsError("invalid-argument", "Missing sessionId or userId");
     }
 
     const session = await stripe.checkout.sessions.retrieve(String(sessionId), {
@@ -165,7 +166,7 @@ export const syncCheckoutSession = functions.https.onCall(async (data, context) 
 
     const ownerUserId = session.metadata?.userId || session.client_reference_id || session.id;
     if (String(ownerUserId) !== String(userId)) {
-      throw new functions.https.HttpsError("permission-denied", "Session does not belong to user");
+      throw new HttpsError("permission-denied", "Session does not belong to user");
     }
 
     let subscriptionData = null;
@@ -190,10 +191,10 @@ export const syncCheckoutSession = functions.https.onCall(async (data, context) 
     return { ok: true, ...payload };
   } catch (error) {
     console.error("syncCheckoutSession error:", error);
-    if (error instanceof functions.https.HttpsError) {
+    if (error instanceof HttpsError) {
       throw error;
     }
-    throw new functions.https.HttpsError("internal", "Unable to sync checkout session");
+    throw new HttpsError("internal", "Unable to sync checkout session");
   }
 });
 

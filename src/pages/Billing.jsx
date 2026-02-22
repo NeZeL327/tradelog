@@ -86,23 +86,16 @@ export default function Billing() {
       return;
     }
     try {
-      console.log("Creating portal session for user:", user.id);
       const response = await createPortalSession({
         returnUrl: window.location.origin + "/Billing",
         userId: user.id
       });
-      console.log("Portal response:", response);
       if (response?.url) {
-        console.log("Redirecting to:", response.url);
         window.location.href = response.url;
       } else {
-        console.error("No URL in response:", response);
         toast.error(t("billingPortalError"));
       }
     } catch (error) {
-      console.error("Portal error details:", error);
-      console.error("Error message:", error?.message);
-      console.error("Error response:", error?.response);
       toast.error(t("billingPortalError"));
     }
   };
