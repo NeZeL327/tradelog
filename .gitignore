@@ -1,5 +1,9 @@
 #env
 .env
+
+# Windows reserved filename artifact
+nul
+NUL
 .env.*
 
 # Logs
