@@ -23,6 +23,16 @@ import {
 } from "lucide-react";
 import { parseISO, isSameDay, isSameWeek, isSameMonth } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import TradeFormNew from "../components/TradeFormNew";
 import TradeCard from "../components/TradeCard";
 import { ExportButton } from "../components/ExportButton";
@@ -44,6 +54,7 @@ export default function JournalSimple() {
   const [outcomeFilter, setOutcomeFilter] = useState("all");
   const [plannedOpen, setPlannedOpen] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState(new Set());
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, mode: null, tradeId: null, count: 0 });
   const [visibleColumns, setVisibleColumns] = useState({
     status: true,
     date: true,
@@ -88,20 +99,29 @@ export default function JournalSimple() {
   });
 
   const handleDelete = (id) => {
-    if (confirm("Are you sure you want to delete this trade?")) {
-      deleteTradeMutation.mutate(id);
-    }
+    setDeleteDialog({ open: true, mode: "single", tradeId: id, count: 1 });
   };
 
   const handleBulkDelete = async () => {
     if (selectedTrades.size === 0) return;
-    if (confirm(`Are you sure you want to delete ${selectedTrades.size} trade(s)?`)) {
+    setDeleteDialog({ open: true, mode: "bulk", tradeId: null, count: selectedTrades.size });
+  };
+
+  const confirmDelete = async () => {
+    if (deleteDialog.mode === "single" && deleteDialog.tradeId) {
+      deleteTradeMutation.mutate(deleteDialog.tradeId);
+      setDeleteDialog({ open: false, mode: null, tradeId: null, count: 0 });
+      return;
+    }
+
+    if (deleteDialog.mode === "bulk") {
       for (const id of selectedTrades) {
         await deleteTrade(user?.id, id);
       }
       setSelectedTrades(new Set());
       queryClient.invalidateQueries({ queryKey: ['trades', user?.id] });
       refetch();
+      setDeleteDialog({ open: false, mode: null, tradeId: null, count: 0 });
     }
   };
 
@@ -223,14 +243,15 @@ export default function JournalSimple() {
   };
 
 
+  const statsSource = baseFilteredTrades;
   const stats = {
-    total: filteredTrades.length,
-    open: filteredTrades.filter(t => t.status === "Open").length,
-    closed: filteredTrades.filter(t => t.status === "Closed").length,
-    planned: filteredTrades.filter(t => t.status === "Planned").length,
-    wins: filteredTrades.filter(t => t.outcome === "Win").length,
-    losses: filteredTrades.filter(t => t.outcome === "Loss").length,
-    totalPL: filteredTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0)
+    total: statsSource.length,
+    open: statsSource.filter(t => t.status === "Open").length,
+    closed: statsSource.filter(t => t.status === "Closed").length,
+    planned: statsSource.filter(t => t.status === "Planned").length,
+    wins: statsSource.filter(t => t.outcome === "Win").length,
+    losses: statsSource.filter(t => t.outcome === "Loss").length,
+    totalPL: statsSource.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0)
   };
 
   if (isLoading) {
@@ -840,6 +861,39 @@ export default function JournalSimple() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <AlertDialog
+          open={deleteDialog.open}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeleteDialog({ open: false, mode: null, tradeId: null, count: 0 });
+            }
+          }}
+        >
+          <AlertDialogContent className="bg-white dark:bg-[#1a1a2e] border-slate-200 dark:border-slate-700">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-slate-900 dark:text-white">
+                {deleteDialog.mode === "bulk" ? "Usunąć zaznaczone transakcje?" : "Usunąć transakcję?"}
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
+                {deleteDialog.mode === "bulk"
+                  ? `Ta operacja usunie ${deleteDialog.count} transakcje i nie da sie jej cofnac.`
+                  : "Ta operacja usunie transakcje i nie da sie jej cofnac."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700">
+                Anuluj
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Usuń
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

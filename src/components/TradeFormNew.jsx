@@ -20,6 +20,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [manualPLOvride, setManualPLOvride] = useState(false);
 
   const [formData, setFormData] = useState({
     symbol: "",
@@ -37,6 +38,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
     exit_time: "",
     stop_loss_pips: "",
     take_profit_pips: "",
+    stop_loss_amount: "",
+    take_profit_amount: "",
     profit_loss_manual: "",
     scale_outs: [],
     breakeven_moved: false,
@@ -49,6 +52,13 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerImage, setViewerImage] = useState("");
   const [screenshotDirHandle, setScreenshotDirHandle] = useState(null);
+
+  const toNumber = (value) => {
+    if (value === "" || value === null || value === undefined) return null;
+    const normalized = typeof value === "string" ? value.replace(",", ".") : value;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
 
   const supportsDirectoryAccess = () => typeof window !== "undefined" && "showDirectoryPicker" in window;
 
@@ -95,6 +105,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
 
   useEffect(() => {
     if (!trade) return;
+    setManualPLOvride(false);
     setFormData({
       symbol: trade.symbol || "",
       direction: normalizeDirection(trade.direction) || "Long",
@@ -111,11 +122,14 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
       exit_time: trade.exit_time || "",
       stop_loss_pips: trade.stop_loss_pips != null ? String(trade.stop_loss_pips) : "",
       take_profit_pips: trade.take_profit_pips != null ? String(trade.take_profit_pips) : "",
-      profit_loss_manual: trade.profit_loss != null ? String(trade.profit_loss) : "",
+      stop_loss_amount: trade.stop_loss_amount != null ? String(trade.stop_loss_amount) : "",
+      take_profit_amount: trade.take_profit_amount != null ? String(trade.take_profit_amount) : "",
+      profit_loss_manual: trade.profit_loss_manual != null ? String(trade.profit_loss_manual) : "",
       scale_outs: Array.isArray(trade.scale_outs) ? trade.scale_outs.map((item) => ({
         id: item.id || `${Date.now()}_${Math.random().toString(16).slice(2)}`,
         size: item.size != null ? String(item.size) : "",
-        price: item.price != null ? String(item.price) : ""
+        price: item.price != null ? String(item.price) : "",
+        pnl: item.pnl != null ? String(item.pnl) : ""
       })) : [],
       breakeven_moved: Boolean(trade.breakeven_moved),
       breakeven_price: trade.breakeven_price != null ? String(trade.breakeven_price) : "",
@@ -128,7 +142,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
   const addScaleOut = () => {
     setFormData(prev => ({
       ...prev,
-      scale_outs: [...(prev.scale_outs || []), { id: `${Date.now()}_${Math.random().toString(16).slice(2)}`, size: "", price: "" }]
+      scale_outs: [...(prev.scale_outs || []), { id: `${Date.now()}_${Math.random().toString(16).slice(2)}`, size: "", price: "", pnl: "" }]
     }));
   };
 
@@ -147,13 +161,90 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
   };
 
   const totalScaleOutSize = useMemo(() => {
-    return (formData.scale_outs || []).reduce((sum, item) => sum + (parseFloat(item.size) || 0), 0);
+    return (formData.scale_outs || []).reduce((sum, item) => sum + (toNumber(item.size) || 0), 0);
   }, [formData.scale_outs]);
 
   const remainingSize = useMemo(() => {
-    const total = parseFloat(formData.position_size) || 0;
+    const total = toNumber(formData.position_size) || 0;
     return Math.max(0, total - totalScaleOutSize);
   }, [formData.position_size, totalScaleOutSize]);
+
+  const scaleOutSummary = useMemo(() => {
+    const entry = toNumber(formData.entry_price);
+    const totalPosition = toNumber(formData.position_size) || 0;
+    const directionSign = normalizeDirection(formData.direction) === "Short" ? -1 : 1;
+
+    let remainingToClose = totalPosition;
+    let effectiveClosedSize = 0;
+    let totalPnl = 0;
+    let hasPnlParts = false;
+
+    for (const item of (formData.scale_outs || [])) {
+      const rawSize = toNumber(item.size);
+      if (rawSize === null || rawSize <= 0) continue;
+
+      const effectiveSize = Math.max(0, Math.min(rawSize, remainingToClose));
+      remainingToClose -= effectiveSize;
+      effectiveClosedSize += effectiveSize;
+
+      const manualPartialPnl = toNumber(item.pnl);
+      if (manualPartialPnl !== null) {
+        totalPnl += manualPartialPnl;
+        hasPnlParts = true;
+        continue;
+      }
+
+      const partialExit = toNumber(item.price);
+      if (entry !== null && partialExit !== null && effectiveSize > 0) {
+        totalPnl += (partialExit - entry) * effectiveSize * directionSign;
+        hasPnlParts = true;
+      }
+    }
+
+    return {
+      totalPnl,
+      hasPnlParts,
+      remainingToClose,
+      overClosed: totalScaleOutSize > totalPosition + 0.000001,
+    };
+  }, [formData.scale_outs, formData.entry_price, formData.position_size, formData.direction, totalScaleOutSize]);
+
+  const getScaleOutPnl = (item) => {
+    const manualPnl = toNumber(item.pnl);
+    if (manualPnl !== null) return manualPnl;
+    const size = toNumber(item.size);
+    const price = toNumber(item.price);
+    const entry = toNumber(formData.entry_price);
+    if (size === null || price === null || entry === null) return null;
+    const directionSign = normalizeDirection(formData.direction) === "Short" ? -1 : 1;
+    return (price - entry) * size * directionSign;
+  };
+
+  const applyQuickPnlFromRiskTarget = (type) => {
+    const slAmount = toNumber(formData.stop_loss_amount);
+    const tpAmount = toNumber(formData.take_profit_amount);
+
+    if (type === "SL") {
+      if (slAmount === null) {
+        setError("Uzupelnij najpierw Kwota SL.");
+        return;
+      }
+      setManualPLOvride(true);
+      setError(null);
+      setFormData(prev => ({ ...prev, profit_loss_manual: (-Math.abs(slAmount)).toFixed(2) }));
+      return;
+    }
+
+    if (type === "TP") {
+      if (tpAmount === null) {
+        setError("Uzupelnij najpierw Kwota TP.");
+        return;
+      }
+      setManualPLOvride(true);
+      setError(null);
+      setFormData(prev => ({ ...prev, profit_loss_manual: Math.abs(tpAmount).toFixed(2) }));
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -194,7 +285,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
     if (formData.status === "Planned") {
       return null;
     }
-    if (formData.profit_loss_manual !== "") {
+
+    if (manualPLOvride && formData.profit_loss_manual !== "") {
       const manual = parseFloat(formData.profit_loss_manual);
       if (!Number.isNaN(manual)) {
         return {
@@ -204,7 +296,35 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
         };
       }
     }
-    return null;
+
+    const entry = toNumber(formData.entry_price);
+    const totalSize = toNumber(formData.position_size);
+    const exit = toNumber(formData.exit_price);
+
+    if (entry === null || totalSize === null || totalSize <= 0) {
+      return null;
+    }
+
+    const directionSign = normalizeDirection(formData.direction) === "Short" ? -1 : 1;
+    let remainingToClose = scaleOutSummary.remainingToClose;
+    let totalRealized = scaleOutSummary.totalPnl;
+    let hasRealizedPart = scaleOutSummary.hasPnlParts;
+
+    if (formData.status === "Closed" && remainingToClose > 0 && exit !== null) {
+      totalRealized += (exit - entry) * remainingToClose * directionSign;
+      hasRealizedPart = true;
+      remainingToClose = 0;
+    }
+
+    if (!hasRealizedPart) {
+      return null;
+    }
+
+    return {
+      profit_loss: totalRealized.toFixed(2),
+      profit_loss_percent: "",
+      outcome: totalRealized > 0 ? "Win" : totalRealized < 0 ? "Loss" : "Breakeven"
+    };
   };
 
   const calculateRR = () => {
@@ -240,24 +360,32 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
         throw new Error(t('requiredFieldsSymbolEntrySize'));
       }
 
+      if (scaleOutSummary.overClosed) {
+        throw new Error("Suma zamkniec nie moze byc wieksza niz wielkosc pozycji.");
+      }
+
       const pl = calculatePL();
 
       const submitData = {
         ...formData,
         account_id: formData.account_id || null,
         strategy_id: formData.strategy_id || null,
-        entry_price: formData.entry_price ? parseFloat(formData.entry_price) : null,
-        exit_price: formData.exit_price ? parseFloat(formData.exit_price) : null,
-        position_size: formData.position_size ? parseFloat(formData.position_size) : null,
-        stop_loss_pips: formData.stop_loss_pips ? parseFloat(formData.stop_loss_pips) : null,
-        take_profit_pips: formData.take_profit_pips ? parseFloat(formData.take_profit_pips) : null,
+        entry_price: toNumber(formData.entry_price),
+        exit_price: toNumber(formData.exit_price),
+        position_size: toNumber(formData.position_size),
+        stop_loss_pips: toNumber(formData.stop_loss_pips),
+        take_profit_pips: toNumber(formData.take_profit_pips),
+        stop_loss_amount: toNumber(formData.stop_loss_amount),
+        take_profit_amount: toNumber(formData.take_profit_amount),
         scale_outs: (formData.scale_outs || []).map(item => ({
           id: item.id,
-          size: item.size ? parseFloat(item.size) : null,
-          price: item.price ? parseFloat(item.price) : null
+          size: toNumber(item.size),
+          price: toNumber(item.price),
+          pnl: toNumber(item.pnl)
         })),
+        profit_loss_manual: manualPLOvride ? toNumber(formData.profit_loss_manual) : null,
         breakeven_moved: Boolean(formData.breakeven_moved),
-        breakeven_price: formData.breakeven_price ? parseFloat(formData.breakeven_price) : null,
+        breakeven_price: toNumber(formData.breakeven_price),
         remaining_size: remainingSize,
         ...(pl && {
           profit_loss: parseFloat(pl.profit_loss),
@@ -292,6 +420,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
           exit_time: "",
           stop_loss_pips: "",
           take_profit_pips: "",
+          stop_loss_amount: "",
+          take_profit_amount: "",
           profit_loss_manual: "",
           scale_outs: [],
           breakeven_moved: false,
@@ -300,6 +430,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
           screenshot_2: "",
           screenshot_3: ""
         });
+        setManualPLOvride(false);
       }
 
       if (onSuccess) {
@@ -327,12 +458,12 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
+      <Card className="border border-slate-200/80 shadow-xl shadow-slate-900/5 overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-slate-100 border-b border-slate-700/80 rounded-none">
           <div className="flex justify-between items-center">
             <CardTitle>{trade?.id ? t('editTrade') : t('addTrade')}</CardTitle>
             {onClose && (
-              <button onClick={onClose} className="text-white hover:bg-white/20 p-1 rounded">
+              <button onClick={onClose} className="text-slate-200 hover:bg-white/10 p-1 rounded">
                 <X className="w-5 h-5" />
               </button>
             )}
@@ -530,6 +661,31 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
+                    <Label className="block text-sm font-semibold mb-2">Kwota SL</Label>
+                    <Input
+                      type="number"
+                      name="stop_loss_amount"
+                      placeholder="np. 150"
+                      step="0.01"
+                      value={formData.stop_loss_amount}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div>
+                    <Label className="block text-sm font-semibold mb-2">Kwota TP</Label>
+                    <Input
+                      type="number"
+                      name="take_profit_amount"
+                      placeholder="np. 300"
+                      step="0.01"
+                      value={formData.take_profit_amount}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
                     <Label className="block text-sm font-semibold mb-2">{t('rr')}</Label>
                     <Input
                       type="text"
@@ -543,7 +699,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                 <div className="rounded-lg border border-slate-200 bg-white p-3">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <p className="text-sm font-semibold text-slate-800">Podzial pozycji (scale-out)</p>
+                      <p className="text-sm font-semibold text-slate-800">Częściowe zamknięcia pozycji</p>
                       <p className="text-xs text-slate-500">Wpisz czesciowe zamkniecia i automatycznie policz pozostala pozycje.</p>
                     </div>
                     <Button type="button" size="sm" variant="outline" onClick={addScaleOut}>
@@ -556,8 +712,10 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                   )}
 
                   <div className="space-y-2">
-                    {(formData.scale_outs || []).map((item, index) => (
-                      <div key={item.id} className="grid grid-cols-1 md:grid-cols-[1.2fr_1.2fr_auto] gap-2 items-end rounded-md border border-slate-200 p-2">
+                    {(formData.scale_outs || []).map((item, index) => {
+                      const partialPnl = getScaleOutPnl(item);
+                      return (
+                      <div key={item.id} className="grid grid-cols-1 md:grid-cols-[1.1fr_1.1fr_1fr_auto] gap-2 items-end rounded-md border border-slate-200 p-2">
                         <div>
                           <Label className="text-xs">Zamknieta wielkosc (lot)</Label>
                           <Input
@@ -578,11 +736,26 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                             placeholder="np. 1.1055"
                           />
                         </div>
+                        <div>
+                          <Label className="text-xs">Kwota P&L (opcjonalnie)</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.pnl || ""}
+                            onChange={(e) => updateScaleOut(item.id, { pnl: e.target.value })}
+                            placeholder="np. 50"
+                          />
+                        </div>
                         <Button type="button" variant="ghost" onClick={() => removeScaleOut(item.id)}>
                           Usun
                         </Button>
+                        <div className="md:col-span-4 text-sm">
+                          Kwota zamknięcia: <span className={`font-semibold ${partialPnl === null ? 'text-slate-500 dark:text-slate-400' : partialPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {partialPnl === null ? '-' : `${partialPnl.toFixed(2)}$`}
+                          </span>
+                        </div>
                       </div>
-                    ))}
+                    )})}
                   </div>
 
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -595,6 +768,20 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                       <div className="font-semibold text-slate-800">{remainingSize.toFixed(2)}</div>
                     </div>
                     <div className="rounded-md border border-slate-200 p-2 text-sm">
+                      <div className="text-xs text-slate-500">Suma P&L zamkniec</div>
+                      <div className={`font-semibold ${scaleOutSummary.totalPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {scaleOutSummary.totalPnl >= 0 ? '+' : ''}{scaleOutSummary.totalPnl.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {scaleOutSummary.overClosed && (
+                    <div className="mt-2 rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
+                      Suma zamkniec przekracza wielkosc pozycji. Zmniejsz loty w partialach.
+                    </div>
+                  )}
+
+                  <div className="mt-3 rounded-md border border-slate-200 p-2 text-sm">
                       <div className="text-xs text-slate-500">BE / ochrona</div>
                       <label className="flex items-center gap-2 text-xs">
                         <input
@@ -616,24 +803,60 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                     </div>
                   </div>
                 </div>
-              </div>
             )}
 
             {/* Manual P&L */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border">
               <div>
-                <Label className="block text-sm font-semibold mb-2">{t('profitLoss')}</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="block text-sm font-semibold">{t('profitLoss')}</Label>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyQuickPnlFromRiskTarget("SL")}
+                      className="h-7 px-2 text-xs"
+                    >
+                      SL
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyQuickPnlFromRiskTarget("TP")}
+                      className="h-7 px-2 text-xs"
+                    >
+                      TP
+                    </Button>
+                  </div>
+                </div>
                 <Input
                   type="number"
                   name="profit_loss_manual"
                   placeholder="0.00"
                   step="0.01"
-                  value={formData.profit_loss_manual}
-                  onChange={handleChange}
+                  value={manualPLOvride ? formData.profit_loss_manual : (calculatePL()?.profit_loss || "")}
+                  onChange={(e) => {
+                    setManualPLOvride(true);
+                    handleChange(e);
+                  }}
                 />
+                {manualPLOvride && (
+                  <button
+                    type="button"
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-700"
+                    onClick={() => {
+                      setManualPLOvride(false);
+                      setFormData(prev => ({ ...prev, profit_loss_manual: "" }));
+                    }}
+                  >
+                    Uzyj auto-wyliczenia P&L
+                  </button>
+                )}
               </div>
               <div className="flex items-end text-sm text-slate-500">
-                {t('profitLossManualHint')}
+                {manualPLOvride ? t('profitLossManualHint') : 'Auto: wartosc aktualizuje sie na podstawie wszystkich czesci zamkniec.'}
               </div>
             </div>
 

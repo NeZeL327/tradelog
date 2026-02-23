@@ -25,6 +25,7 @@ export default function Analytics() {
   const [selectedSymbol, setSelectedSymbol] = useState(null);
   const [selectedStrategy, setSelectedStrategy] = useState(null);
   const [timePeriod, setTimePeriod] = useState("daily");
+  const [activeTab, setActiveTab] = useState("overview");
 
   const { data: trades = [], isLoading } = useQuery({
     queryKey: ['trades'],
@@ -478,7 +479,7 @@ export default function Analytics() {
           </div>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-white dark:bg-[#1a1a2e] shadow-lg">
             <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
             <TabsTrigger value="symbols">{t('symbols')}</TabsTrigger>
@@ -710,8 +711,8 @@ export default function Analytics() {
                           labelStyle={{ color: '#f1f5f9' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="avgPL" fill="#10b981" name="Średni P&L" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="winRate" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" fill="#10b981" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -735,8 +736,8 @@ export default function Analytics() {
                           labelStyle={{ color: '#f1f5f9' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" fill="#8b5cf6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="trades" fill="#f59e0b" name="Liczba transakcji" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="winRate" fill="#8b5cf6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="trades" fill="#f59e0b" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -764,8 +765,8 @@ export default function Analytics() {
                           labelStyle={{ color: '#f1f5f9' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" yAxisId="left" fill="#06b6d4" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="avgPL" yAxisId="right" fill="#ec4899" name="Średni P&L" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="winRate" yAxisId="left" fill="#06b6d4" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" yAxisId="right" fill="#ec4899" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -795,7 +796,7 @@ export default function Analytics() {
                         />
                         <Legend />
                         <Bar dataKey="totalPL" xAxisId="bottom" fill="#10b981" name={t('totalPLLabel')} radius={[0, 8, 8, 0]} />
-                        <Bar dataKey="winRate" xAxisId="top" fill="#3b82f6" name="Win Rate (%)" radius={[0, 8, 8, 0]} />
+                        <Bar dataKey="winRate" xAxisId="top" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[0, 8, 8, 0]} />
                       </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1028,8 +1029,8 @@ export default function Analytics() {
                                       labelStyle={{ color: '#f1f5f9' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                                    <Bar dataKey="trades" fill="#10b981" name="Transakcje" radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="winRate" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill="#10b981" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1039,7 +1040,7 @@ export default function Analytics() {
                           {/* Timeframe Breakdown */}
                           <Card className="bg-white">
                             <CardHeader>
-                              <CardTitle className="text-base">Według timeframe</CardTitle>
+                              <CardTitle className="text-base">{t('byTimeframe')}</CardTitle>
                             </CardHeader>
                             <CardContent className="overflow-hidden p-3">
                               <div className="w-full overflow-hidden px-2 py-1">
@@ -1054,8 +1055,8 @@ export default function Analytics() {
                                       labelStyle={{ color: '#f1f5f9' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill="#8b5cf6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                                    <Bar dataKey="trades" fill="#f59e0b" name="Transakcje" radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="winRate" fill="#8b5cf6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill="#f59e0b" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1101,12 +1102,12 @@ export default function Analytics() {
                               <CardHeader>
                                 <CardTitle className="text-base text-red-900 dark:text-red-300 flex items-center gap-2">
                                   <AlertCircle className="w-4 h-4" />
-                                  Najgorsza transakcja
+                                  {t('worstTradeSingle')}
                                 </CardTitle>
                               </CardHeader>
                               <CardContent className="space-y-2">
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">Data:</span>
+                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('date')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{worstTrade.date}</span>
                                 </div>
                                 <div className="flex justify-between">
@@ -1155,7 +1156,7 @@ export default function Analytics() {
                         labelStyle={{ color: '#f1f5f9' }}
                       />
                       <Legend />
-                      <Bar dataKey="winRate" yAxisId="left" fill="#3b82f6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="winRate" yAxisId="left" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
                       <Bar dataKey="avgPL" yAxisId="right" fill="#10b981" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
                       <Bar dataKey="trades" yAxisId="left" fill="#8b5cf6" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                     </BarChart>
@@ -1393,8 +1394,8 @@ export default function Analytics() {
                                       labelStyle={{ color: '#f1f5f9' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                                    <Bar dataKey="trades" fill="#10b981" name="Transakcje" radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="winRate" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill="#10b981" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1404,7 +1405,7 @@ export default function Analytics() {
                           {/* Timeframe Breakdown */}
                           <Card className="bg-white">
                             <CardHeader>
-                              <CardTitle className="text-base">Według timeframe</CardTitle>
+                              <CardTitle className="text-base">{t('byTimeframe')}</CardTitle>
                             </CardHeader>
                             <CardContent className="overflow-hidden p-3">
                               <div className="w-full overflow-hidden px-2 py-1">
@@ -1419,8 +1420,8 @@ export default function Analytics() {
                                       labelStyle={{ color: '#f1f5f9' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill="#8b5cf6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                                    <Bar dataKey="trades" fill="#f59e0b" name="Transakcje" radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="winRate" fill="#8b5cf6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill="#f59e0b" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1615,13 +1616,13 @@ export default function Analytics() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="p-3 bg-blue-100 dark:bg-blue-950 rounded-lg text-center">
                         <p className="text-xl font-bold text-blue-700 dark:text-blue-400">{account.winRate}%</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">Win Rate</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">{t('winRate')}</p>
                       </div>
                       <div className="p-3 bg-green-100 dark:bg-green-950 rounded-lg text-center">
                         <p className={`text-xl font-bold ${parseFloat(account.roi) >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
                           {parseFloat(account.roi) > 0 ? '+' : ''}{account.roi}%
                         </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">ROI</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">{t('roi')}</p>
                       </div>
                     </div>
                     <div className="p-3 bg-slate-100 dark:bg-slate-900 rounded-lg">
@@ -1650,24 +1651,30 @@ export default function Analytics() {
                   <CardTitle className="dark:text-white">{t('setupQuality')}</CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-hidden p-4">
-                  <div className="w-full overflow-hidden px-4 py-2">
-                    <ResponsiveContainer width="100%" height={340}>
-                      <BarChart data={setupData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="quality" stroke="#64748b" />
-                        <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                          itemStyle={{ color: '#e2e8f0' }}
-                          labelStyle={{ color: '#f1f5f9' }}
-                        />
-                        <Legend />
-                        <Bar dataKey="winRate" yAxisId="left" fill="#f59e0b" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="avgPL" yAxisId="right" fill="#10b981" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                  {setupData.length === 0 ? (
+                    <div className="h-[340px] flex items-center justify-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                      {t('noData')}
+                    </div>
+                  ) : (
+                    <div className="w-full overflow-hidden px-4 py-2">
+                      <ResponsiveContainer width="100%" height={340}>
+                        <BarChart data={setupData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="quality" stroke="#64748b" />
+                          <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                            itemStyle={{ color: '#e2e8f0' }}
+                            labelStyle={{ color: '#f1f5f9' }}
+                          />
+                          <Legend />
+                          <Bar dataKey="winRate" yAxisId="left" fill="#f59e0b" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="avgPL" yAxisId="right" fill="#10b981" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -1676,24 +1683,30 @@ export default function Analytics() {
                   <CardTitle className="dark:text-white">{t('emotionalState')}</CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-hidden p-4">
-                  <div className="w-full overflow-hidden px-4 py-2">
-                    <ResponsiveContainer width="100%" height={360}>
-                      <BarChart data={emotionalData} margin={{ top: 30, right: 35, left: 20, bottom: 100 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="state" stroke="#64748b" angle={-45} textAnchor="end" height={95} />
-                        <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                          itemStyle={{ color: '#e2e8f0' }}
-                          labelStyle={{ color: '#f1f5f9' }}
-                        />
-                        <Legend />
-                        <Bar dataKey="winRate" yAxisId="left" fill="#ec4899" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="avgPL" yAxisId="right" fill="#8b5cf6" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                  {emotionalData.length === 0 ? (
+                    <div className="h-[360px] flex items-center justify-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                      {t('noData')}
+                    </div>
+                  ) : (
+                    <div className="w-full overflow-hidden px-4 py-2">
+                      <ResponsiveContainer width="100%" height={360}>
+                        <BarChart data={emotionalData} margin={{ top: 30, right: 35, left: 20, bottom: 100 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="state" stroke="#64748b" angle={-45} textAnchor="end" height={95} />
+                          <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                            itemStyle={{ color: '#e2e8f0' }}
+                            labelStyle={{ color: '#f1f5f9' }}
+                          />
+                          <Legend />
+                          <Bar dataKey="winRate" yAxisId="left" fill="#ec4899" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="avgPL" yAxisId="right" fill="#8b5cf6" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -1704,6 +1717,11 @@ export default function Analytics() {
                   <CardTitle className="text-amber-900 dark:text-amber-300">{t('setupQualityDetails')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {setupData.length === 0 && (
+                    <div className="rounded-lg border border-dashed border-amber-300 dark:border-amber-700 p-4 text-sm text-amber-700 dark:text-amber-300">
+                      {t('noData')}
+                    </div>
+                  )}
                   {setupData.map((item) => (
                     <div key={item.quality} className="flex justify-between items-center p-3 bg-white/70 dark:bg-slate-800/70 rounded-lg">
                       <div>
@@ -1726,6 +1744,11 @@ export default function Analytics() {
                   <CardTitle className="text-purple-900 dark:text-purple-300">{t('emotionalAnalysis')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {emotionalData.length === 0 && (
+                    <div className="rounded-lg border border-dashed border-purple-300 dark:border-purple-700 p-4 text-sm text-purple-700 dark:text-purple-300">
+                      {t('noData')}
+                    </div>
+                  )}
                   {emotionalData.map((item) => (
                     <div key={item.state} className="flex justify-between items-center p-3 bg-white/70 dark:bg-slate-800/70 rounded-lg">
                       <div>

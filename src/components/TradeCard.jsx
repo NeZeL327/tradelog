@@ -16,12 +16,22 @@ export default function TradeCard({ trade, onEdit = null }) {
   const plColor = isWin ? "text-green-600 dark:text-green-400" : isLoss ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400";
   const bgColor = isWin ? "bg-green-50 border-green-200" : isLoss ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200";
   const directionText = directionLabel(trade.direction, t);
-  const positionHistory = Array.isArray(trade.position_history) ? trade.position_history : [];
-  const normalizedHistory = positionHistory.map(item => (
-    typeof item === "string" ? { label: item, type: "NOTE" } : item
-  ));
-  const phaseTwoEvents = normalizedHistory.filter(item => ["PARTIAL", "SL_MOVE"].includes(item.type));
-  const phaseThreeEvents = normalizedHistory.filter(item => item.type === "CLOSE");
+  const toNumber = (value) => {
+    if (value === "" || value === null || value === undefined) return null;
+    const normalized = typeof value === "string" ? value.replace(",", ".") : value;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const entryPrice = toNumber(trade.entry_price);
+  const directionSign = String(trade.direction || "Long").toLowerCase() === "short" ? -1 : 1;
+  const getScaleOutPnl = (scaleOut) => {
+    const manualPnl = toNumber(scaleOut.pnl);
+    if (manualPnl !== null) return manualPnl;
+    const size = toNumber(scaleOut.size);
+    const price = toNumber(scaleOut.price);
+    if (size === null || price === null || entryPrice === null) return null;
+    return (price - entryPrice) * size * directionSign;
+  };
 
   return (
     <Card className={`hover:shadow-xl transition-all duration-300 ${bgColor} dark:bg-[#23233a] dark:border-slate-700 border`}>
@@ -165,86 +175,33 @@ export default function TradeCard({ trade, onEdit = null }) {
           )}
         </div>
 
-        {/* Scale-outs */}
+        {/* Partial Closures */}
         {Array.isArray(trade.scale_outs) && trade.scale_outs.length > 0 && (
           <div className="p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl dark:border dark:border-slate-700">
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">{t('scaleOuts')}</p>
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Częściowe zamknięcia pozycji</p>
             <div className="space-y-2 text-sm">
-              {trade.scale_outs.map((scaleOut, index) => (
+              {trade.scale_outs.map((scaleOut, index) => {
+                const partialPnl = getScaleOutPnl(scaleOut);
+                return (
                 <div key={scaleOut.id || `scale-out-${index}`} className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-slate-800 dark:text-slate-200">
-                    {t('size')}: {scaleOut.size || '-'} | {t('price')}: {scaleOut.price || '-'}
-                  </span>
+                  <div className="text-slate-800 dark:text-slate-200">
+                    <span>
+                      {t('size')}: {scaleOut.size || '-'} | {t('price')}: {scaleOut.price || '-'}
+                    </span>
+                    <span className="ml-2 text-sm">
+                      | Kwota zamknięcia: <span className={`font-semibold ${partialPnl === null ? 'text-slate-500 dark:text-slate-400' : partialPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {partialPnl === null ? '-' : `${partialPnl.toFixed(2)}$`}
+                      </span>
+                    </span>
+                  </div>
                   <span className="text-xs text-slate-500 dark:text-slate-400">
                     {scaleOut.time || scaleOut.reason || ''}
                   </span>
                 </div>
-              ))}
+              )})}
             </div>
           </div>
         )}
-
-        {/* Position Phases */}
-        <div className="space-y-3">
-          <div className="p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl border dark:border-slate-700">
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">{t('phaseOne')}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-              <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('entryPrice')}</p>
-                <p className="font-semibold text-slate-900 dark:text-white">{trade.entry_price || '-'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('stopLossPips')}</p>
-                <p className="font-semibold text-slate-900 dark:text-white">{trade.stop_loss_pips ?? '-'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('takeProfitPips')}</p>
-                <p className="font-semibold text-slate-900 dark:text-white">{trade.take_profit_pips ?? '-'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('entryTime')}</p>
-                <p className="font-semibold text-slate-900 dark:text-white">{trade.entry_time || '-'}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl border dark:border-slate-700">
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">{t('phaseTwo')}</p>
-            {phaseTwoEvents.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">{t('phaseEmpty')}</p>
-            ) : (
-              <div className="space-y-2">
-                {phaseTwoEvents.map((event, index) => (
-                  <div key={event.id || `${event.type}-${index}`} className="flex items-center justify-between text-sm">
-                    <span className="text-slate-800 dark:text-slate-200">{event.label}</span>
-                    {event.time && <span className="text-xs text-slate-500 dark:text-slate-400">{event.time}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl border dark:border-slate-700">
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">{t('phaseThree')}</p>
-            {phaseThreeEvents.length === 0 && !trade.exit_price ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">{t('phaseEmpty')}</p>
-            ) : (
-              <div className="space-y-2 text-sm">
-                {trade.exit_price && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-800 dark:text-slate-200">{t('closePrice')} @ {trade.exit_price}</span>
-                  </div>
-                )}
-                {phaseThreeEvents.map((event, index) => (
-                  <div key={event.id || `${event.type}-${index}`} className="flex items-center justify-between">
-                    <span className="text-slate-800 dark:text-slate-200">{event.label}</span>
-                    {event.time && <span className="text-xs text-slate-500 dark:text-slate-400">{event.time}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* P&L */}
         {trade.profit_loss != null && (

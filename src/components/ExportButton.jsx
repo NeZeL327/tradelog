@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, FileText, Sheet } from "lucide-react";
 import {
@@ -7,13 +7,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import jsPDF from "jspdf";
 import { directionLabel } from "@/lib/utils";
 
 export function ExportButton({ trades, accounts, strategies, analytics, type = "journal" }) {
+  const [noDataDialogOpen, setNoDataDialogOpen] = useState(false);
+
   const exportToCSV = () => {
     if (!trades || trades.length === 0) {
-      alert("Brak danych do eksportu");
+      setNoDataDialogOpen(true);
       return;
     }
 
@@ -86,7 +97,7 @@ export function ExportButton({ trades, accounts, strategies, analytics, type = "
 
   const exportToPDF = () => {
     if (!trades || trades.length === 0) {
-      alert("Brak danych do eksportu");
+      setNoDataDialogOpen(true);
       return;
     }
 
@@ -167,23 +178,39 @@ export function ExportButton({ trades, accounts, strategies, analytics, type = "
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Download className="w-4 h-4" />
-          Eksportuj
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuItem onClick={exportToCSV}>
-          <Sheet className="w-4 h-4 mr-2" />
-          Eksportuj CSV
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={exportToPDF}>
-          <FileText className="w-4 h-4 mr-2" />
-          Eksportuj PDF
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="gap-2">
+            <Download className="w-4 h-4" />
+            Eksportuj
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={exportToCSV}>
+            <Sheet className="w-4 h-4 mr-2" />
+            Eksportuj CSV
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={exportToPDF}>
+            <FileText className="w-4 h-4 mr-2" />
+            Eksportuj PDF
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialog open={noDataDialogOpen} onOpenChange={setNoDataDialogOpen}>
+        <AlertDialogContent className="bg-white dark:bg-[#1a1a2e] border-slate-200 dark:border-slate-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-slate-900 dark:text-white">Brak danych</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
+              Brak danych do eksportu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction className="bg-blue-600 hover:bg-blue-700 text-white">OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
