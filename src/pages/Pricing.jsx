@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,6 +13,25 @@ export default function Pricing() {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const hadDark = root.classList.contains('dark');
+    const prevSkin = root.getAttribute('data-skin');
+    root.classList.add('dark');
+    root.setAttribute('data-skin', 'blackblu');
+
+    return () => {
+      if (!hadDark) {
+        root.classList.remove('dark');
+      }
+      if (prevSkin) {
+        root.setAttribute('data-skin', prevSkin);
+      } else {
+        root.removeAttribute('data-skin');
+      }
+    };
+  }, []);
+
   const features = [
     { icon: BarChart3, title: t('pricingFeature1Title'), desc: t('pricingFeature1Desc') },
     { icon: Brain, title: t('pricingFeature2Title'), desc: t('pricingFeature2Desc') },
@@ -24,7 +43,7 @@ export default function Pricing() {
 
   return (
     <>
-      <PublicNavbar />
+      <PublicNavbar variant="hero" />
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 pt-24 pb-16">
         {/* Hero Section */}
         <div className="container mx-auto px-6 py-12 text-center">
@@ -174,7 +193,7 @@ export default function Pricing() {
           </motion.div>
         </div>
       </div>
-      <Footer />
+      <Footer variant="hero" />
     </>
   );
 }

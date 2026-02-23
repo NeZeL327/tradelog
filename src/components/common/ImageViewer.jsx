@@ -1,7 +1,8 @@
 import React from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, ZoomIn, ZoomOut } from "lucide-react";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 export default function ImageViewer({ open, onOpenChange, imageUrl }) {
   const [zoom, setZoom] = React.useState(1);
@@ -54,6 +55,9 @@ export default function ImageViewer({ open, onOpenChange, imageUrl }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[95vw] max-h-[95vh] w-[95vw] h-[95vh] p-0 overflow-hidden">
+        <VisuallyHidden>
+          <DialogTitle>Image Viewer</DialogTitle>
+        </VisuallyHidden>
         <div className="relative">
           <div className="absolute top-2 right-2 z-10 flex gap-2">
             <Button size="icon" variant="secondary" onClick={() => setZoom(z => clampZoom(z - 0.25))}>

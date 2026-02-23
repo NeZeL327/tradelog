@@ -56,6 +56,7 @@ import Goals from './pages/Goals';
 import Home from './pages/Home';
 import Journal from './pages/Journal';
 import Notes from './pages/Notes';
+import Planned from './pages/Planned';
 import ProgressTracker from './pages/ProgressTracker';
 import Settings from './pages/Settings';
 import Strategies from './pages/Strategies';
@@ -73,6 +74,7 @@ export const PAGES = {
     "Goals": Goals,
     "Home": Home,
     "Journal": Journal,
+    "Planned": Planned,
     "Notes": Notes,
     "ProgressTracker": ProgressTracker,
     "Settings": Settings,

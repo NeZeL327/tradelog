@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useAuth } from '@/lib/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar, Settings, Activity, LogOut, User, NotebookPen, CreditCard } from "lucide-react";
+import { LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar, Settings, Activity, LogOut, User, NotebookPen, CreditCard, ListTodo } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -43,9 +43,9 @@ function LayoutContent({ children }) {
       icon: BookOpen,
     },
     {
-      title: t('notes'),
-      url: createPageUrl("Notes"),
-      icon: NotebookPen,
+      title: t('plannedTrades') || 'Planned',
+      url: createPageUrl("Planned"),
+      icon: ListTodo,
     },
     {
       title: t('calendar'),
@@ -71,6 +71,11 @@ function LayoutContent({ children }) {
       title: t('progressTracker'),
       url: createPageUrl("ProgressTracker"),
       icon: Activity,
+    },
+    {
+      title: t('notes'),
+      url: createPageUrl("Notes"),
+      icon: NotebookPen,
     },
     {
       title: t('settings'),
@@ -188,7 +193,7 @@ function LayoutContent({ children }) {
             <div className="flex items-center gap-4">
               <SidebarTrigger className="hover:bg-slate-100 dark:hover:bg-[#2d2d40] p-2 rounded-lg transition-colors duration-200" />
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               {user && (
                 <Button variant="outline" size="sm" className="h-8 gap-2 hidden sm:flex items-center">
                   <Avatar className="h-6 w-6">
@@ -201,7 +206,7 @@ function LayoutContent({ children }) {
                   </span>
                 </Button>
               )}
-              <div className="flex items-center gap-2 self-center shrink-0">
+              <div className="flex items-center gap-3 self-center shrink-0">
                 <LanguageToggle className="h-8" />
                 <ThemeToggle className="h-8" />
               </div>
@@ -218,7 +223,7 @@ function LayoutContent({ children }) {
             <div className="flex-1 w-full mx-auto px-3 sm:px-4" style={{ width: "90%", maxWidth: "90%" }}>
               {children}
             </div>
-            <Footer />
+            <Footer variant="app" />
           </div>
         </main>
         {user && <QuickAddTradeSidebar />}

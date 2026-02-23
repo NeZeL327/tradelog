@@ -37,18 +37,22 @@ import TradeFormNew from "../components/TradeFormNew";
 import TradeCard from "../components/TradeCard";
 import { ExportButton } from "../components/ExportButton";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, tradeStatusBadgeClass, tradeOutcomeBadgeClass } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass } from "@/lib/utils";
+import ImageViewer from "@/components/common/ImageViewer";
 
-export default function JournalSimple() {
+export default function JournalSimple({ mode = "all" }) {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const isPlannedMode = mode === "planned";
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilters, setStatusFilters] = useState(["all"]);
+  const [statusFilters, setStatusFilters] = useState(isPlannedMode ? ["Planned"] : ["all"]);
   const [timeFilter, setTimeFilter] = useState("all");
   const [accountFilter, setAccountFilter] = useState("all");
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTrade, setEditingTrade] = useState(null);
   const [viewingTrade, setViewingTrade] = useState(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerImage, setViewerImage] = useState("");
   const [sortField, setSortField] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
   const [outcomeFilter, setOutcomeFilter] = useState("all");
@@ -138,10 +142,10 @@ export default function JournalSimple() {
   };
 
   const toggleAllTrades = () => {
-    if (selectedTrades.size === executedTrades.length && executedTrades.length > 0) {
+    if (selectedTrades.size === displayTrades.length && displayTrades.length > 0) {
       setSelectedTrades(new Set());
     } else {
-      setSelectedTrades(new Set(executedTrades.map(t => t.id)));
+      setSelectedTrades(new Set(displayTrades.map(t => t.id)));
     }
   };
 
@@ -155,7 +159,7 @@ export default function JournalSimple() {
   };
 
   const handleViewTrade = (trade) => {
-    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && t.status !== "Planned");
+    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && isClosedTrade(t));
     const wins = symbolTrades.filter(t => t.outcome === "Win").length;
     const total = symbolTrades.length;
     const totalPL = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
@@ -195,6 +199,16 @@ export default function JournalSimple() {
     });
   };
 
+  const getScreenshotList = (trade) => {
+    return [trade?.screenshot_1, trade?.screenshot_2, trade?.screenshot_3].filter(Boolean).slice(0, 3);
+  };
+
+  const openQuickImage = (imageUrl) => {
+    if (!imageUrl) return;
+    setViewerImage(imageUrl);
+    setViewerOpen(true);
+  };
+
   // Filter and search (base)
   const baseFilteredTrades = trades.filter(t => {
     if (searchTerm && !t.symbol.toLowerCase().includes(searchTerm.toLowerCase())) return false;
@@ -232,6 +246,7 @@ export default function JournalSimple() {
       ? executedTradesBase
       : executedTradesBase.filter(t => statusFilters.includes(t.status))
   );
+  const displayTrades = isPlannedMode ? plannedTrades : executedTrades;
   const toggleStatusFilter = (value) => {
     setStatusFilters(prev => {
       if (value === "all") return ["all"];
@@ -243,12 +258,12 @@ export default function JournalSimple() {
   };
 
 
-  const statsSource = baseFilteredTrades;
+  const statsSource = isPlannedMode ? plannedTrades : baseFilteredTrades.filter(isClosedTrade);
   const stats = {
     total: statsSource.length,
-    open: statsSource.filter(t => t.status === "Open").length,
-    closed: statsSource.filter(t => t.status === "Closed").length,
-    planned: statsSource.filter(t => t.status === "Planned").length,
+    open: baseFilteredTrades.filter(t => t.status === "Open").length,
+    closed: baseFilteredTrades.filter(isClosedTrade).length,
+    planned: baseFilteredTrades.filter(t => t.status === "Planned").length,
     wins: statsSource.filter(t => t.outcome === "Win").length,
     losses: statsSource.filter(t => t.outcome === "Loss").length,
     totalPL: statsSource.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0)
@@ -310,19 +325,19 @@ export default function JournalSimple() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">Trade Journal</h1>
-            <p className="text-slate-600 dark:text-slate-400">Track and analyze your trading performance</p>
+            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : 'Trade Journal'}</h1>
+            <p className="text-slate-600 dark:text-slate-400">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : 'Track and analyze your trading performance'}</p>
           </div>
           <div className="flex gap-3">
             <ExportButton
-              trades={filteredTrades}
+              trades={displayTrades}
               accounts={accounts}
               strategies={strategies}
               analytics={{
-                totalTrades: filteredTrades.length,
-                totalPL: filteredTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0),
-                winRate: filteredTrades.length
-                  ? (filteredTrades.filter(t => t.outcome === "Win").length / filteredTrades.length) * 100
+                totalTrades: statsSource.length,
+                totalPL: statsSource.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0),
+                winRate: statsSource.length
+                  ? (statsSource.filter(t => t.outcome === "Win").length / statsSource.length) * 100
                   : 0,
                 profitFactor: 0,
                 avgWin: 0,
@@ -341,6 +356,7 @@ export default function JournalSimple() {
         </div>
 
         {/* Stats */}
+        {!isPlannedMode && (
         <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
           <Card
             className={`bg-white dark:bg-[#1a1a2e] shadow-lg cursor-pointer ${statusFilters.includes("all") && outcomeFilter === "all" ? "ring-2 ring-blue-500" : ""}`}
@@ -405,6 +421,7 @@ export default function JournalSimple() {
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Filters */}
         <Card className="bg-white dark:bg-slate-800 shadow-lg">
@@ -421,6 +438,7 @@ export default function JournalSimple() {
                   />
                 </div>
               </div>
+              {!isPlannedMode && (
               <div className="flex flex-wrap gap-3 items-center">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div 
@@ -491,6 +509,7 @@ export default function JournalSimple() {
                   <span>{t('plannedStatus')}</span>
                 </label>
               </div>
+              )}
               <select
                 value={timeFilter}
                 onChange={(e) => setTimeFilter(e.target.value)}
@@ -517,7 +536,7 @@ export default function JournalSimple() {
           </CardContent>
         </Card>
 
-        {(statusFilters.includes("all") || statusFilters.some(s => s !== "Planned")) && (
+        {(isPlannedMode || statusFilters.includes("all") || statusFilters.some(s => s !== "Planned")) && (
           <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl">
             <CardContent className="p-0">
               <div className="overflow-x-auto w-full">
@@ -549,7 +568,7 @@ export default function JournalSimple() {
                       <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('exit')}</th>
                     )}
                     {visibleColumns.position && (
-                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('lotSize')}</th>
+                      <th className="text-left px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[72px]">{t('lotSize')}</th>
                     )}
                     {visibleColumns.pl && (
                       <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
@@ -561,6 +580,7 @@ export default function JournalSimple() {
                     {visibleColumns.outcome && (
                       <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('outcome')}</th>
                     )}
+                    <th className="text-left px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[110px]">{t('screenshots') || 'Scr'}</th>
                     {visibleColumns.actions && (
                       <th className="text-right px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('actions')}</th>
                     )}
@@ -568,12 +588,12 @@ export default function JournalSimple() {
                       <div 
                         onClick={toggleAllTrades}
                         className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
-                          executedTrades.length > 0 && selectedTrades.size === executedTrades.length
+                          displayTrades.length > 0 && selectedTrades.size === displayTrades.length
                             ? 'bg-blue-600 border-blue-600'
                             : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                         }`}
                       >
-                        {executedTrades.length > 0 && selectedTrades.size === executedTrades.length && (
+                        {displayTrades.length > 0 && selectedTrades.size === displayTrades.length && (
                           <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
@@ -583,7 +603,7 @@ export default function JournalSimple() {
                   </tr>
                 </thead>
                 <tbody>
-                  {executedTrades.map((trade) => (
+                  {displayTrades.map((trade) => (
                     <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                       {visibleColumns.status && (
                         <td className="px-1.5 py-1">
@@ -607,38 +627,38 @@ export default function JournalSimple() {
                         </td>
                       )}
                       {visibleColumns.entry && (
-                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
+                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
                       )}
-                      <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
-                      <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
+                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
+                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
                       {visibleColumns.exit && (
-                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.exit_price || '-'}</td>
+                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.exit_price || '-'}</td>
                       )}
                       {visibleColumns.position && (
-                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.position_size}</td>
+                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap max-w-[72px] truncate" title={String(trade.position_size || '')}>{trade.position_size}</td>
                       )}
                       {visibleColumns.pl && (
                         <td className="px-1.5 py-1">
                           {trade.profit_loss != null ? (
                             <div className="flex items-center gap-0.5">
-                              {parseFloat(trade.profit_loss) > 0 ? (
+                              {parseFloat(trade.profit_loss || 0) > 0 ? (
                                 <TrendingUp className="w-3 h-3 text-green-600" />
-                              ) : parseFloat(trade.profit_loss) < 0 ? (
+                              ) : parseFloat(trade.profit_loss || 0) < 0 ? (
                                 <TrendingDown className="w-3 h-3 text-red-600" />
                               ) : null}
                               <span className={`text-sm font-semibold ${
-                                parseFloat(trade.profit_loss) > 0 ? 'text-green-600' :
-                                parseFloat(trade.profit_loss) < 0 ? 'text-red-600' :
+                                parseFloat(trade.profit_loss || 0) > 0 ? 'text-green-600' :
+                                parseFloat(trade.profit_loss || 0) < 0 ? 'text-red-600' :
                                 'text-slate-600'
                               }`}>
-                                {parseFloat(trade.profit_loss) > 0 ? '+' : ''}{parseFloat(trade.profit_loss).toFixed(2)}
+                                {parseFloat(trade.profit_loss || 0) > 0 ? '+' : ''}{parseFloat(trade.profit_loss || 0).toFixed(2)}
                               </span>
                             </div>
                           ) : <span className="text-sm text-slate-400">-</span>}
                         </td>
                       )}
                       {visibleColumns.outcome && (
-                        <td className="px-3 py-2.5">
+                        <td className="px-1 py-1">
                           {trade.outcome && (
                             <Badge variant="outline" className={`text-sm px-2 py-0.5 ${tradeOutcomeBadgeClass(trade.outcome)}`}>
                               {trade.outcome}
@@ -646,6 +666,25 @@ export default function JournalSimple() {
                           )}
                         </td>
                       )}
+                      <td className="px-1 py-1">
+                        <div className="flex items-center gap-1 min-w-[90px]">
+                          {getScreenshotList(trade).length > 0 ? (
+                            getScreenshotList(trade).map((imageUrl, index) => (
+                              <button
+                                key={`${trade.id}-shot-${index}`}
+                                type="button"
+                                className="h-7 w-7 rounded-md overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 shrink-0"
+                                onClick={() => openQuickImage(imageUrl)}
+                                title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
+                              >
+                                <img src={imageUrl} alt={`${t('screenshot') || 'Screenshot'} ${index + 1}`} className="h-full w-full object-cover" />
+                              </button>
+                            ))
+                          ) : (
+                            <span className="text-xs text-slate-400">-</span>
+                          )}
+                        </div>
+                      </td>
                       {visibleColumns.actions && (
                         <td className="px-1 py-1">
                           <div className="flex items-center justify-end gap-1">
@@ -683,7 +722,7 @@ export default function JournalSimple() {
               </table>
             </div>
 
-              {executedTrades.length === 0 && (
+              {displayTrades.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-slate-500">No trades to display</p>
                 </div>
@@ -692,7 +731,7 @@ export default function JournalSimple() {
           </Card>
         )}
 
-        {(statusFilters.includes("all") || statusFilters.includes("Planned")) && (
+        {!isPlannedMode && (statusFilters.includes("all") || statusFilters.includes("Planned")) && (
           <Card className="bg-yellow-50 dark:bg-[#2e2e1a] shadow-xl">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-yellow-700">{t('plannedTrades')}</CardTitle>
@@ -721,14 +760,15 @@ export default function JournalSimple() {
                         {visibleColumns.direction && (
                           <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('direction')}</th>
                         )}
-                        <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('entryPrice')}</th>
-                        <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('stopLossPips')}</th>
-                        <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('takeProfitPips')}</th>
+                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('entryPrice')}</th>
+                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('stopLossPips')}</th>
+                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('takeProfitPips')}</th>
                         {visibleColumns.notes && (
-                          <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('notes')}</th>
+                          <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('notes')}</th>
                         )}
+                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('screenshots') || 'Scr'}</th>
                         {visibleColumns.actions && (
-                          <th className="text-right px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('actions')}</th>
+                          <th className="text-right px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('actions')}</th>
                         )}
                       </tr>
                     </thead>
@@ -736,24 +776,43 @@ export default function JournalSimple() {
                       {plannedTrades.map((trade) => (
                         <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors">
                           {visibleColumns.date && (
-                            <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.date}</td>
+                            <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.date}</td>
                           )}
                           {visibleColumns.symbol && (
-                            <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.symbol}</td>
+                            <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.symbol}</td>
                           )}
                           {visibleColumns.direction && (
-                            <td className="px-1.5 py-1">
+                            <td className="px-1 py-1">
                               <Badge className={`${directionBadgeClass(trade.direction)} text-sm px-2 py-0.5`}>
                                 {directionLabel(trade.direction, t)}
                               </Badge>
                             </td>
                           )}
-                          <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
-                          <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
-                          <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
+                          <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
+                          <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
+                          <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
                           {visibleColumns.notes && (
-                            <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 line-clamp-2">{trade.notes}</td>
+                            <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 line-clamp-2">{trade.notes}</td>
                           )}
+                          <td className="px-1 py-1">
+                            <div className="flex items-center gap-1 min-w-[90px]">
+                              {getScreenshotList(trade).length > 0 ? (
+                                getScreenshotList(trade).map((imageUrl, index) => (
+                                  <button
+                                    key={`${trade.id}-planned-shot-${index}`}
+                                    type="button"
+                                    className="h-7 w-7 rounded-md overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 shrink-0"
+                                    onClick={() => openQuickImage(imageUrl)}
+                                    title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
+                                  >
+                                    <img src={imageUrl} alt={`${t('screenshot') || 'Screenshot'} ${index + 1}`} className="h-full w-full object-cover" />
+                                  </button>
+                                ))
+                              ) : (
+                                <span className="text-xs text-slate-400">-</span>
+                              )}
+                            </div>
+                          </td>
                           {visibleColumns.actions && (
                             <td className="px-1 py-1">
                               <div className="flex items-center justify-end gap-1">
@@ -854,6 +913,8 @@ export default function JournalSimple() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <ImageViewer open={viewerOpen} onOpenChange={setViewerOpen} imageUrl={viewerImage} />
 
         <AlertDialog
           open={deleteDialog.open}

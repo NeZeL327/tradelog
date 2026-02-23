@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
-import { getTradingAccounts, createTradingAccount, deleteTradingAccount, updateTradingAccount } from "@/lib/localStorage";
+import { getTradingAccounts, createTradingAccount, deleteTradingAccount, updateTradingAccount, getTrades } from "@/lib/localStorage";
+import { isClosedTrade } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,12 @@ export default function Accounts() {
       return user ? getTradingAccounts(user.id) : [];
     },
     enabled: !!user
+  });
+
+  const { data: trades = [], isLoading: isTradesLoading } = useQuery({
+    queryKey: ['trades', user?.id],
+    queryFn: () => (user ? getTrades(user.id) : []),
+    enabled: !!user,
   });
 
   const createMutation = useMutation({
@@ -98,7 +105,7 @@ export default function Accounts() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || isTradesLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-6">
         <div className="max-w-none mx-0 space-y-6">
@@ -185,6 +192,7 @@ export default function Accounts() {
               <AccountCard
                 key={account.id}
                 account={account}
+                trades={trades}
                 user={user}
                 queryClient={queryClient}
                 onEdit={(account) => {
@@ -222,21 +230,28 @@ export default function Accounts() {
   );
 }
 
-function AccountCard({ account, user, queryClient, onEdit, onDelete }) {
+function AccountCard({ account, trades, user, queryClient, onEdit, onDelete }) {
   const accountTypeColors = {
     Live: "#10b981",
     Demo: "#3b82f6",
     Challenge: "#8b5cf6",
     Funded: "#f59e0b"
   };
-  const profitLoss = account.current_balance - account.initial_balance;
-  const profitLossPercent = account.initial_balance > 0 ? ((profitLoss / account.initial_balance) * 100).toFixed(2) : 0;
+  const initialBalance = parseFloat(account.initial_balance) || 0;
+  const currentBalance = parseFloat(account.current_balance);
   const accentColor = account.color || accountTypeColors[account.account_type] || "#64748b";
 
-  // Oblicz statystyki (na razie przykładowe, później połączymy z transakcjami)
-  const totalTrades = 0; // TODO: pobrać z transakcji
-  const winningTrades = 0; // TODO: pobrać z transakcji
-  const losingTrades = 0; // TODO: pobrać z transakcji
+  const accountTrades = trades.filter(
+    (trade) => String(trade.account_id) === String(account.id) && isClosedTrade(trade)
+  );
+  const realizedPL = accountTrades.reduce((sum, trade) => sum + (parseFloat(trade.profit_loss) || 0), 0);
+  const balanceBasedPL = Number.isFinite(currentBalance) ? currentBalance - initialBalance : 0;
+  const profitLoss = accountTrades.length > 0 ? realizedPL : balanceBasedPL;
+  const displayedBalance = Number.isFinite(currentBalance) ? currentBalance : initialBalance + realizedPL;
+  const profitLossPercent = initialBalance > 0 ? ((profitLoss / initialBalance) * 100).toFixed(2) : 0;
+  const totalTrades = accountTrades.length;
+  const winningTrades = accountTrades.filter((trade) => trade.outcome === "Win").length;
+  const losingTrades = accountTrades.filter((trade) => trade.outcome === "Loss").length;
   const winRate = totalTrades > 0 ? ((winningTrades / totalTrades) * 100).toFixed(1) : 0;
   const avgWin = 0; // TODO: obliczyć średni zysk
   const avgLoss = 0; // TODO: obliczyć średnią stratę
@@ -322,7 +337,7 @@ function AccountCard({ account, user, queryClient, onEdit, onDelete }) {
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-1">
             <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Kapitał</span>
-            <div className="font-semibold text-sm">{account.current_balance?.toFixed(2)} {account.currency}</div>
+            <div className="font-semibold text-sm">{displayedBalance.toFixed(2)} {account.currency}</div>
           </div>
           <div className="space-y-1">
             <span className="text-xs font-medium text-slate-600 dark:text-slate-400">P&L</span>

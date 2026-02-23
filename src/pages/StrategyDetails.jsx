@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, TrendingUp, Target, Award, Star, AlertCircle } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
+import { isClosedTrade } from "@/lib/utils";
 
 export default function StrategyDetails() {
   const { id } = useParams();
@@ -58,7 +59,7 @@ export default function StrategyDetails() {
   }
 
   // Pobierz transakcje dla tej strategii
-  const strategyTrades = trades.filter(t => t.strategy_id === id);
+  const strategyTrades = trades.filter(t => t.strategy_id === id && isClosedTrade(t));
   const wins = strategyTrades.filter(t => t.outcome === "Win").length;
   const losses = strategyTrades.filter(t => t.outcome === "Loss").length;
   const breakevens = strategyTrades.filter(t => t.outcome === "Breakeven").length;

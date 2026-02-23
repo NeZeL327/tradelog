@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Code, Rocket, Target, Users, TrendingUp } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
@@ -8,6 +8,25 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export default function About() {
   const { t } = useLanguage();
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const hadDark = root.classList.contains('dark');
+    const prevSkin = root.getAttribute('data-skin');
+    root.classList.add('dark');
+    root.setAttribute('data-skin', 'blackblu');
+
+    return () => {
+      if (!hadDark) {
+        root.classList.remove('dark');
+      }
+      if (prevSkin) {
+        root.setAttribute('data-skin', prevSkin);
+      } else {
+        root.removeAttribute('data-skin');
+      }
+    };
+  }, []);
 
   const features = [
     {
@@ -29,8 +48,8 @@ export default function About() {
 
   return (
     <>
-      <PublicNavbar />
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pt-24 pb-12">
+      <PublicNavbar variant="hero" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 pt-24 pb-12 transition-colors duration-300">
         <div className="container mx-auto px-4 max-w-6xl">
           {/* Header */}
           <motion.div
@@ -42,7 +61,7 @@ export default function About() {
             <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent mb-4">
               O Trade Log
             </h1>
-            <p className="text-slate-400 text-lg max-w-3xl mx-auto">
+            <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
               Historia powstania profesjonalnego dziennika handlowego stworzonego w niekonwencjonalny sposób
             </p>
           </motion.div>
@@ -54,7 +73,7 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mb-16"
           >
-            <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 border-slate-700 overflow-hidden">
+            <Card className="bg-gradient-to-br from-card to-muted/40 border-border overflow-hidden">
               <CardContent className="p-12">
                 <div className="flex items-center justify-center">
                   <div className="relative">
@@ -62,7 +81,7 @@ export default function About() {
                       <span className="text-white font-bold text-6xl">TL</span>
                     </div>
                     <div className="absolute -top-4 -right-4">
-                      <Sparkles className="w-12 h-12 text-yellow-400 animate-pulse" />
+                      <Sparkles className="w-12 h-12 text-yellow-400 animate-[pulse_2.8s_ease-in-out_infinite]" />
                     </div>
                   </div>
                 </div>
@@ -77,11 +96,11 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="space-y-8 mb-16"
           >
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardContent className="p-8 space-y-6 text-slate-300 leading-relaxed">
+            <Card className="bg-card/85 border-border backdrop-blur-sm">
+              <CardContent className="p-8 space-y-6 text-foreground/90 leading-relaxed">
                 <div className="flex items-center gap-3 mb-4">
                   <Code className="w-8 h-8 text-emerald-400" />
-                  <h2 className="text-3xl font-bold text-slate-100">Niezwykła Historia Powstania</h2>
+                  <h2 className="text-3xl font-bold text-foreground">Niezwykła Historia Powstania</h2>
                 </div>
                 
                 <p className="text-lg">
@@ -97,7 +116,7 @@ export default function About() {
                 </p>
 
                 <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border-l-4 border-emerald-500 p-6 rounded-r-lg">
-                  <p className="text-lg font-semibold text-emerald-200 mb-2">
+                  <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-300 mb-2">
                     Sekret? Współpraca z AI! 🤖✨
                   </p>
                   <p className="text-base">
@@ -133,8 +152,8 @@ export default function About() {
                   AI rozumiało, tłumaczyło wizję na kod i pomagało debugować problemy.
                 </p>
 
-                <div className="bg-slate-800/50 p-6 rounded-lg border border-slate-700">
-                  <p className="text-lg font-semibold text-blue-300 mb-3">
+                <div className="bg-muted/50 p-6 rounded-lg border border-border">
+                  <p className="text-lg font-semibold text-blue-600 dark:text-blue-300 mb-3">
                     Co to oznacza dla Ciebie? 🚀
                   </p>
                   <p className="text-base">
@@ -150,7 +169,7 @@ export default function About() {
                   Musisz tylko wiedzieć, czego chcesz, i potrafić o to poprosić.
                 </p>
 
-                <p className="text-lg font-bold text-emerald-300">
+                <p className="text-lg font-bold text-emerald-600 dark:text-emerald-300">
                   Witaj w przyszłości, gdzie AI jest Twoim współprogramistą, a wyobraźnia jedynym ograniczeniem! 🌟
                 </p>
               </CardContent>
@@ -164,22 +183,30 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.6 }}
             className="mb-16"
           >
-            <h2 className="text-3xl font-bold text-slate-100 text-center mb-8">
+            <h2 className="text-3xl font-bold text-foreground text-center mb-8">
               Co oferuje Trade Log?
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
               {features.map((feature, index) => (
-                <Card key={index} className="bg-slate-900/50 border-slate-800 hover:border-slate-700 transition-colors">
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: 0.72 + index * 0.06 }}
+                  whileHover={{ y: -3 }}
+                >
+                <Card className="bg-card/80 border-border hover:border-primary/40 transition-all duration-200">
                   <CardContent className="p-6">
                     <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center mb-4">
                       <div className="text-emerald-400">
                         {feature.icon}
                       </div>
                     </div>
-                    <h3 className="text-xl font-semibold text-slate-100 mb-2">{feature.title}</h3>
-                    <p className="text-slate-400">{feature.description}</p>
+                    <h3 className="text-xl font-semibold text-foreground mb-2">{feature.title}</h3>
+                    <p className="text-muted-foreground">{feature.description}</p>
                   </CardContent>
                 </Card>
+                </motion.div>
               ))}
             </div>
           </motion.div>
@@ -191,28 +218,28 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.8 }}
             className="mb-16"
           >
-            <h2 className="text-3xl font-bold text-slate-100 text-center mb-8">
+            <h2 className="text-3xl font-bold text-foreground text-center mb-8">
               Zajrzyj do środka
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               {/* Screenshot placeholders */}
-              <Card className="bg-slate-900/50 border-slate-800 overflow-hidden">
+              <Card className="bg-card/80 border-border overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                  <div className="aspect-video bg-gradient-to-br from-muted/60 to-card flex items-center justify-center">
                     <div className="text-center">
                       <TrendingUp className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-                      <p className="text-slate-400">Dashboard z analityką</p>
+                      <p className="text-muted-foreground">Dashboard z analityką</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-slate-900/50 border-slate-800 overflow-hidden">
+              <Card className="bg-card/80 border-border overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
+                  <div className="aspect-video bg-gradient-to-br from-muted/60 to-card flex items-center justify-center">
                     <div className="text-center">
                       <Target className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                      <p className="text-slate-400">Dziennik transakcji</p>
+                      <p className="text-muted-foreground">Dziennik transakcji</p>
                     </div>
                   </div>
                 </CardContent>
@@ -230,18 +257,18 @@ export default function About() {
             <Card className="bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border-emerald-500/30">
               <CardContent className="p-12">
                 <Rocket className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-                <h2 className="text-3xl font-bold text-slate-100 mb-4">
+                <h2 className="text-3xl font-bold text-foreground mb-4">
                   Gotowy, by zacząć swoją podróż?
                 </h2>
-                <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
+                <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
                   Dołącz do społeczności traderów, którzy już korzystają z Trade Log. 
                   Zacznij śledzić swoje transakcje, analizować strategie i rozwijaj się jako trader!
                 </p>
                 <div className="flex gap-4 justify-center">
-                  <a href="/register" className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 rounded-lg text-white font-semibold transition-all">
+                  <a href="/register" className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 rounded-lg text-white font-semibold transition-all duration-200 hover:-translate-y-0.5">
                     Zarejestruj się za darmo
                   </a>
-                  <a href="/contact" className="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-white font-semibold transition-all">
+                  <a href="/contact" className="px-6 py-3 bg-secondary hover:bg-accent rounded-lg text-secondary-foreground font-semibold transition-all duration-200 hover:-translate-y-0.5">
                     Skontaktuj się z nami
                   </a>
                 </div>
@@ -250,7 +277,7 @@ export default function About() {
           </motion.div>
         </div>
       </div>
-      <Footer />
+      <Footer variant="hero" />
     </>
   );
 }

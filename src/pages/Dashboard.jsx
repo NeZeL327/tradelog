@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
@@ -6,8 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TrendingUp, TrendingDown, Target, Award, Calendar, BarChart3, Eye, ChevronDown, ChevronUp, Filter, CalendarDays, Wallet } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, ScatterChart, Scatter } from "recharts";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, subDays } from "date-fns";
@@ -16,7 +17,7 @@ import TradeCard from "../components/TradeCard";
 import TradeFormNew from "../components/TradeFormNew";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionLabel, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor, tradeStatusBadgeClass } from "@/lib/utils";
+import { directionLabel, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor, tradeStatusBadgeClass } from "@/lib/utils";
 
 export default function Dashboard() {
   const { t, language } = useLanguage();
@@ -29,14 +30,25 @@ export default function Dashboard() {
   const [expandedMetric, setExpandedMetric] = useState(null);
   const [plChartFilter, setPlChartFilter] = useState("all");
   const [plChartValue, setPlChartValue] = useState("all");
+  const [accountBalanceAccount, setAccountBalanceAccount] = useState("all");
+  const [accountBalanceFilterOpen, setAccountBalanceFilterOpen] = useState(false);
+  const accountBalanceFilterRef = useRef(null);
+  const [recentTradesAccountOpen, setRecentTradesAccountOpen] = useState(false);
+  const recentTradesAccountRef = useRef(null);
   const [dashboardAccount, setDashboardAccount] = useState("all");
   const [dashboardRange, setDashboardRange] = useState("30d");
+  const [rangeFilterOpen, setRangeFilterOpen] = useState(false);
+  const rangeFilterRef = useRef(null);
+  const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
+  const accountDropdownRef = useRef(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filterSymbol, setFilterSymbol] = useState("all");
   const [filterDirection, setFilterDirection] = useState("all");
   const [filterOutcome, setFilterOutcome] = useState("all");
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
+  const [yearSelectorOpen, setYearSelectorOpen] = useState(false);
+  const yearSelectorRef = useRef(null);
   const { data: trades = [], isLoading, refetch } = useQuery({
     queryKey: ['trades'],
     queryFn: () => getTrades(user?.id),
@@ -54,7 +66,7 @@ export default function Dashboard() {
 
   const handleViewTrade = (trade) => {
     if (!trade) return;
-    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && t.status !== "Planned");
+    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && isClosedTrade(t));
     const wins = symbolTrades.filter(t => t.outcome === "Win").length;
     const total = symbolTrades.length;
     const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
@@ -102,22 +114,24 @@ export default function Dashboard() {
     );
   });
 
+  const closedTrades = filteredTrades.filter(isClosedTrade);
+
   // Calculate metrics
-  const totalTrades = filteredTrades.length;
-  const wins = filteredTrades.filter(t => t.outcome === "Win").length;
-  const losses = filteredTrades.filter(t => t.outcome === "Loss").length;
-  const breakeven = filteredTrades.filter(t => t.outcome === "Breakeven").length;
+  const totalTrades = closedTrades.length;
+  const wins = closedTrades.filter(t => t.outcome === "Win").length;
+  const losses = closedTrades.filter(t => t.outcome === "Loss").length;
+  const breakeven = closedTrades.filter(t => t.outcome === "Breakeven").length;
   const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : 0;
   
-  const totalPL = filteredTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+  const totalPL = closedTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
   const avgPL = totalTrades > 0 ? (totalPL / totalTrades).toFixed(2) : 0;
-  const avgWin = wins > 0 ? (filteredTrades.filter(t => t.outcome === "Win").reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) / wins).toFixed(2) : 0;
-  const avgLoss = losses > 0 ? (filteredTrades.filter(t => t.outcome === "Loss").reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) / losses).toFixed(2) : 0;
+  const avgWin = wins > 0 ? (closedTrades.filter(t => t.outcome === "Win").reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) / wins).toFixed(2) : 0;
+  const avgLoss = losses > 0 ? (closedTrades.filter(t => t.outcome === "Loss").reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) / losses).toFixed(2) : 0;
   
   const profitFactor = (avgLoss !== 0 && avgWin !== 0) ? Math.abs(avgWin / avgLoss).toFixed(2) : 0;
 
   const todayStr = new Date().toISOString().slice(0, 10);
-  const dayTrades = filteredTrades.filter(t => t.date === todayStr);
+  const dayTrades = closedTrades.filter(t => t.date === todayStr);
   const dayWins = dayTrades.filter(t => t.outcome === "Win").length;
   const dayWinRate = dayTrades.length > 0 ? ((dayWins / dayTrades.length) * 100).toFixed(1) : 0;
   const avgWinLossRatio = avgLoss !== 0 ? Math.abs(avgWin / avgLoss).toFixed(2) : 0;
@@ -129,7 +143,7 @@ export default function Dashboard() {
   const avgWinLossRing = Math.min((parseFloat(avgWinLossRatio) || 0) / 3 * 100, 100);
 
   const dailyPLByDate = {};
-  filteredTrades.forEach(t => {
+  closedTrades.forEach(t => {
     if (t.date) {
       dailyPLByDate[t.date] = (dailyPLByDate[t.date] || 0) + (parseFloat(t.profit_loss) || 0);
     }
@@ -139,7 +153,7 @@ export default function Dashboard() {
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .slice(-10);
 
-  const recentTradesTable = [...filteredTrades]
+  const recentTradesTable = [...closedTrades]
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, 8);
 
@@ -149,7 +163,7 @@ export default function Dashboard() {
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   const tradesByDate = {};
-  filteredTrades.forEach(trade => {
+  closedTrades.forEach(trade => {
     if (trade.date) {
       if (!tradesByDate[trade.date]) tradesByDate[trade.date] = [];
       tradesByDate[trade.date].push(trade);
@@ -157,7 +171,7 @@ export default function Dashboard() {
   });
 
   const zellaScore = (() => {
-    const maxDrawdown = Math.abs(Math.min(...filteredTrades.map(t => parseFloat(t.profit_loss) || 0), 0));
+    const maxDrawdown = Math.abs(Math.min(...closedTrades.map(t => parseFloat(t.profit_loss) || 0), 0));
     const recovery = maxDrawdown > 0 ? totalPL / maxDrawdown : totalPL;
     const profitFactorScore = Math.min((parseFloat(profitFactor) || 0) * 10, 100);
     const winRateScore = Math.min(parseFloat(winRate) || 0, 100);
@@ -195,7 +209,7 @@ export default function Dashboard() {
 
   // Strategy performance
   const strategyStats = {};
-  filteredTrades.forEach(trade => {
+  closedTrades.forEach(trade => {
     if (trade.strategy) {
       if (!strategyStats[trade.strategy]) {
         strategyStats[trade.strategy] = { wins: 0, total: 0, pl: 0 };
@@ -215,21 +229,21 @@ export default function Dashboard() {
 
   // P&L over time (last 10 trades) with filters
   const getFilteredTradesForChart = () => {
-    if (plChartFilter === "all" || plChartValue === "all") return filteredTrades;
+    if (plChartFilter === "all" || plChartValue === "all") return closedTrades;
     
     if (plChartFilter === "account") {
-      return filteredTrades.filter(t => t.account_id === plChartValue);
+      return closedTrades.filter(t => t.account_id === plChartValue);
     } else if (plChartFilter === "strategy") {
-      return filteredTrades.filter(t => t.strategy_id === plChartValue);
+      return closedTrades.filter(t => t.strategy_id === plChartValue);
     } else if (plChartFilter === "symbol") {
-      return filteredTrades.filter(t => t.symbol === plChartValue);
+      return closedTrades.filter(t => t.symbol === plChartValue);
     } else if (plChartFilter === "direction") {
-      return filteredTrades.filter(t => normalizeDirection(t.direction) === plChartValue);
+      return closedTrades.filter(t => normalizeDirection(t.direction) === plChartValue);
     } else if (plChartFilter === "outcome") {
-      return filteredTrades.filter(t => t.outcome === plChartValue);
+      return closedTrades.filter(t => t.outcome === plChartValue);
     }
     
-    return filteredTrades;
+    return closedTrades;
   };
 
   const recentTrades = [...getFilteredTradesForChart()].reverse().slice(0, 20);
@@ -241,6 +255,90 @@ export default function Dashboard() {
       return {
         trade: `#${index + 1}`,
         pl: Math.round(cumulativePL * 100) / 100,
+        symbol: trade.symbol,
+        date: trade.date
+      };
+    })
+  ];
+
+  const accountBalanceTrades = accountBalanceAccount === "all"
+    ? closedTrades
+    : closedTrades.filter((trade) => String(trade.account_id) === String(accountBalanceAccount));
+
+  const selectedAccountBalanceLabel = accountBalanceAccount === "all"
+    ? t('allAccounts')
+    : (accounts.find(acc => String(acc.id) === String(accountBalanceAccount))?.name || t('myAccount'));
+
+  useEffect(() => {
+    if (!accountBalanceFilterOpen) return;
+
+    const handleOutsideClick = (event) => {
+      if (accountBalanceFilterRef.current && !accountBalanceFilterRef.current.contains(event.target)) {
+        setAccountBalanceFilterOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [accountBalanceFilterOpen]);
+
+  useEffect(() => {
+    if (!rangeFilterOpen) return;
+
+    const handleOutsideClick = (event) => {
+      if (rangeFilterRef.current && !rangeFilterRef.current.contains(event.target)) {
+        setRangeFilterOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [rangeFilterOpen]);
+
+  useEffect(() => {
+    if (!accountDropdownOpen) return;
+
+    const handleOutsideClick = (event) => {
+      if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target)) {
+        setAccountDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [accountDropdownOpen]);
+
+  useEffect(() => {
+    if (!yearSelectorOpen) return;
+    const handleOutsideClick = (event) => {
+      if (yearSelectorRef.current && !yearSelectorRef.current.contains(event.target)) {
+        setYearSelectorOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [yearSelectorOpen]);
+
+  const handlePrevMonth = () => {
+    setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1));
+  };
+
+  const handleMonthChange = (monthIndex) => {
+    setCalendarDate(new Date(calendarDate.getFullYear(), monthIndex, 1));
+  };
+
+  let accountBalanceCum = 0;
+  const accountBalanceOverTime = [
+    { trade: '#0', pl: 0, symbol: '', date: '' },
+    ...[...accountBalanceTrades].reverse().slice(0, 20).map((trade, index) => {
+      accountBalanceCum += parseFloat(trade.profit_loss) || 0;
+      return {
+        trade: `#${index + 1}`,
+        pl: Math.round(accountBalanceCum * 100) / 100,
         symbol: trade.symbol,
         date: trade.date
       };
@@ -361,105 +459,136 @@ export default function Dashboard() {
               <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 bordo:text-[#d4a5b8]">{t('overviewOfYourTradingPerformance')}</p>
             </div>
             <div className="flex items-center gap-3 md:gap-4 flex-wrap justify-end">
-              <Select value={dashboardAccount} onValueChange={setDashboardAccount}>
-                <SelectTrigger className="w-[170px] md:w-[210px] h-9 md:h-10 text-sm shrink-0">
+              <div className="relative" ref={accountDropdownRef}>
+                <button
+                  onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
+                  className="h-9 md:h-10 w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent shrink-0"
+                >
                   <div className="flex items-center gap-2 min-w-0">
                     <Wallet className="w-4 h-4 text-slate-500 shrink-0" />
-                    <SelectValue placeholder={t('myAccount')} />
+                    <span className="truncate">{dashboardAccount === 'all' ? t('allAccounts') : (accounts.find(a => a.id === dashboardAccount)?.name || t('myAccount'))}</span>
                   </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('allAccounts')}</SelectItem>
-                  {accounts.map(acc => (
-                    <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="sm" className="h-9 md:h-10 px-3 md:px-4 gap-2 text-sm shrink-0" onClick={() => setFiltersOpen(true)}>
-                <Filter className="w-4 h-4" />
-                {t('filters')}
-              </Button>
-              <Select value={dashboardRange} onValueChange={setDashboardRange}>
-                <SelectTrigger className="w-[170px] md:w-[210px] h-9 md:h-10 text-sm shrink-0">
+                  <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+                </button>
+                {accountDropdownOpen && (
+                  <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                    <button
+                      onClick={() => { setDashboardAccount('all'); setAccountDropdownOpen(false); }}
+                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${dashboardAccount === 'all' ? 'bg-accent' : ''}`}
+                    >
+                      {t('allAccounts')}
+                    </button>
+                    {accounts.map(acc => (
+                      <button
+                        key={acc.id}
+                        onClick={() => { setDashboardAccount(acc.id); setAccountDropdownOpen(false); }}
+                        className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${dashboardAccount === acc.id ? 'bg-accent' : ''}`}
+                      >
+                        {acc.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 md:h-10 px-3 md:px-4 gap-2 text-sm shrink-0">
+                    <Filter className="w-4 h-4" />
+                    {t('filters')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" side="bottom" className="w-[320px] sm:w-[420px] p-4">
+                  <div className="space-y-4">
+                    <div>
+                      <div className="text-xs text-slate-500 mb-2">{t('symbol')}</div>
+                      <Select value={filterSymbol} onValueChange={setFilterSymbol}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t('all')}</SelectItem>
+                          {uniqueSymbols.map(sym => (
+                            <SelectItem key={sym} value={sym}>{sym}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 mb-2">{t('direction')}</div>
+                      <Select value={filterDirection} onValueChange={setFilterDirection}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t('all')}</SelectItem>
+                          {uniqueDirections.map(dir => (
+                            <SelectItem key={dir} value={dir}>{directionLabel(dir, t)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500 mb-2">{t('outcome')}</div>
+                      <Select value={filterOutcome} onValueChange={setFilterOutcome}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t('all')}</SelectItem>
+                          {uniqueOutcomes.map(out => (
+                            <SelectItem key={out} value={out}>{out}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => {
+                        setFilterSymbol("all");
+                        setFilterDirection("all");
+                        setFilterOutcome("all");
+                      }}>{t('reset')}</Button>
+                      <Button onClick={() => setFiltersOpen(false)}>{t('apply')}</Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <div className="relative" ref={rangeFilterRef}>
+                <button
+                  onClick={() => setRangeFilterOpen(!rangeFilterOpen)}
+                  className="h-9 md:h-10 w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent shrink-0"
+                >
                   <div className="flex items-center gap-2 min-w-0">
                     <CalendarDays className="w-4 h-4 text-slate-500 shrink-0" />
-                    <SelectValue placeholder={t('dateRange')} />
+                    <span className="truncate">{dashboardRange === '7d' ? t('last7Days') : dashboardRange === '30d' ? t('last30Days') : t('last90Days')}</span>
                   </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7d">{t('last7Days')}</SelectItem>
-                  <SelectItem value="30d">{t('last30Days')}</SelectItem>
-                  <SelectItem value="90d">{t('last90Days')}</SelectItem>
-                </SelectContent>
-              </Select>
+                  <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+                </button>
+                {rangeFilterOpen && (
+                  <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md">
+                    <button
+                      onClick={() => { setDashboardRange('7d'); setRangeFilterOpen(false); }}
+                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${dashboardRange === '7d' ? 'bg-accent' : ''}`}
+                    >
+                      {t('last7Days')}
+                    </button>
+                    <button
+                      onClick={() => { setDashboardRange('30d'); setRangeFilterOpen(false); }}
+                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${dashboardRange === '30d' ? 'bg-accent' : ''}`}
+                    >
+                      {t('last30Days')}
+                    </button>
+                    <button
+                      onClick={() => { setDashboardRange('90d'); setRangeFilterOpen(false); }}
+                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${dashboardRange === '90d' ? 'bg-accent' : ''}`}
+                    >
+                      {t('last90Days')}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-
-          <div className="mt-3 flex items-center justify-between text-sm text-slate-500">
-            <div>{t('lastImport')}: Jan 08, 2026 10:09 AM · {t('resync')}</div>
-            <Button variant="outline" size="sm" className="opacity-70">{t('startMyDay')}</Button>
           </div>
         </div>
-
-        <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>{t('filters')}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <div className="text-xs text-slate-500 mb-2">{t('symbol')}</div>
-                <Select value={filterSymbol} onValueChange={setFilterSymbol}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('all')}</SelectItem>
-                    {uniqueSymbols.map(sym => (
-                      <SelectItem key={sym} value={sym}>{sym}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <div className="text-xs text-slate-500 mb-2">{t('direction')}</div>
-                <Select value={filterDirection} onValueChange={setFilterDirection}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('all')}</SelectItem>
-                    {uniqueDirections.map(dir => (
-                      <SelectItem key={dir} value={dir}>{directionLabel(dir, t)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <div className="text-xs text-slate-500 mb-2">{t('outcome')}</div>
-                <Select value={filterOutcome} onValueChange={setFilterOutcome}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('all')}</SelectItem>
-                    {uniqueOutcomes.map(out => (
-                      <SelectItem key={out} value={out}>{out}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => {
-                  setFilterSymbol("all");
-                  setFilterDirection("all");
-                  setFilterOutcome("all");
-                }}>{t('reset')}</Button>
-                <Button onClick={() => setFiltersOpen(false)}>{t('apply')}</Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
@@ -649,16 +778,52 @@ export default function Dashboard() {
           <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-slate-900 dark:text-white">{t('netDailyPL')}</CardTitle>
-              <Select value={dashboardRange} onValueChange={setDashboardRange}>
-                <SelectTrigger className="w-28 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7d">7d</SelectItem>
-                  <SelectItem value="30d">30d</SelectItem>
-                  <SelectItem value="90d">90d</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="relative" ref={rangeFilterRef}>
+                <Button
+                  variant="outline"
+                  className="w-24 md:w-28 justify-between text-xs md:text-sm h-9"
+                  onClick={() => setRangeFilterOpen((prev) => !prev)}
+                >
+                  <span className="truncate">
+                    {dashboardRange === '7d' ? '7 dni' : dashboardRange === '30d' ? '30 dni' : '90 dni'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 opacity-70" />
+                </Button>
+                {rangeFilterOpen && (
+                  <div className="absolute left-0 top-full mt-1 z-50 w-28 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                    <Button
+                      variant="ghost"
+                      className={`w-full justify-start text-xs ${dashboardRange === '7d' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                      onClick={() => {
+                        setDashboardRange('7d');
+                        setRangeFilterOpen(false);
+                      }}
+                    >
+                      7 dni
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className={`w-full justify-start text-xs ${dashboardRange === '30d' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                      onClick={() => {
+                        setDashboardRange('30d');
+                        setRangeFilterOpen(false);
+                      }}
+                    >
+                      30 dni
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className={`w-full justify-start text-xs ${dashboardRange === '90d' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                      onClick={() => {
+                        setDashboardRange('90d');
+                        setRangeFilterOpen(false);
+                      }}
+                    >
+                      90 dni
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="overflow-hidden p-3">
               <div className="w-full overflow-hidden">
@@ -686,17 +851,46 @@ export default function Dashboard() {
           <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-slate-900 dark:text-white text-sm">{t('recentTrades')}</CardTitle>
-              <Select value={dashboardAccount} onValueChange={setDashboardAccount}>
-                <SelectTrigger className="w-32 text-xs">
-                  <SelectValue placeholder={t('account')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('all')}</SelectItem>
-                  {accounts.map(acc => (
-                    <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative" ref={recentTradesAccountRef}>
+                <Button
+                  variant="outline"
+                  className="w-32 text-xs h-8 px-2 justify-between"
+                  onClick={() => setRecentTradesAccountOpen((prev) => !prev)}
+                >
+                  <span className="truncate">{dashboardAccount === 'all' ? t('all') : (accounts.find(acc => String(acc.id) === String(dashboardAccount))?.name || t('account'))}</span>
+                  <ChevronDown className="w-3 h-3 opacity-70" />
+                </Button>
+                {recentTradesAccountOpen && (
+                  <div className="absolute right-0 top-full mt-1 z-50 w-32 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                    <Button
+                      variant="ghost"
+                      className={`w-full justify-start text-xs ${dashboardAccount === 'all' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                      onClick={() => {
+                        setDashboardAccount('all');
+                        setRecentTradesAccountOpen(false);
+                      }}
+                    >
+                      {t('all')}
+                    </Button>
+                    {accounts.map((acc) => {
+                      const isActive = String(dashboardAccount) === String(acc.id);
+                      return (
+                        <Button
+                          key={acc.id}
+                          variant="ghost"
+                          className={`w-full justify-start text-xs ${isActive ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                          onClick={() => {
+                            setDashboardAccount(String(acc.id));
+                            setRecentTradesAccountOpen(false);
+                          }}
+                        >
+                          {acc.name}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
@@ -720,10 +914,10 @@ export default function Dashboard() {
                             {trade.status || '-'}
                           </Badge>
                         </td>
-                        <td className={`px-3 py-2 text-xs font-semibold text-right ${parseFloat(trade.profit_loss) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        <td className={`px-3 py-2 text-xs font-semibold text-right ${parseFloat(trade.profit_loss || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                           {trade.status === 'Planned' || trade.profit_loss == null
                             ? '-'
-                            : `${parseFloat(trade.profit_loss) >= 0 ? '+' : ''}${parseFloat(trade.profit_loss || 0).toFixed(2)}`}
+                            : `${parseFloat(trade.profit_loss || 0) >= 0 ? '+' : ''}${parseFloat(trade.profit_loss || 0).toFixed(2)}`}
                         </td>
                         <td className="px-3 py-2 text-center">
                           <div className="flex items-center justify-center gap-2">
@@ -748,12 +942,54 @@ export default function Dashboard() {
 
           <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
             <CardHeader className="pb-3">
-              <CardTitle className="text-slate-900 dark:text-white">{t('accountBalance')}</CardTitle>
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="text-slate-900 dark:text-white">{t('accountBalance')}</CardTitle>
+                <div className="relative" ref={accountBalanceFilterRef}>
+                  <Button
+                    variant="outline"
+                    className="w-40 md:w-48 justify-between text-xs md:text-sm h-9"
+                    onClick={() => setAccountBalanceFilterOpen((prev) => !prev)}
+                  >
+                    <span className="truncate">{selectedAccountBalanceLabel}</span>
+                    <ChevronDown className="w-4 h-4 opacity-70" />
+                  </Button>
+                  {accountBalanceFilterOpen && (
+                    <div className="absolute left-0 top-full mt-1 z-50 w-48 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                      <Button
+                        variant="ghost"
+                        className={`w-full justify-start text-xs md:text-sm ${accountBalanceAccount === 'all' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                        onClick={() => {
+                          setAccountBalanceAccount('all');
+                          setAccountBalanceFilterOpen(false);
+                        }}
+                      >
+                        {t('allAccounts')}
+                      </Button>
+                      {accounts.map((acc) => {
+                        const isActive = String(accountBalanceAccount) === String(acc.id);
+                        return (
+                          <Button
+                            key={acc.id}
+                            variant="ghost"
+                            className={`w-full justify-start text-xs md:text-sm ${isActive ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                            onClick={() => {
+                              setAccountBalanceAccount(String(acc.id));
+                              setAccountBalanceFilterOpen(false);
+                            }}
+                          >
+                            {acc.name}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="overflow-hidden p-3">
               <div className="w-full overflow-hidden">
                 <ResponsiveContainer width="100%" height={260}>
-                  <LineChart data={plOverTime} margin={{ top: 10, right: 25, left: 10, bottom: 10 }}>
+                  <LineChart data={accountBalanceOverTime} margin={{ top: 10, right: 25, left: 10, bottom: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="trade" stroke="#64748b" />
                     <YAxis stroke="#64748b" width={55} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]} />
@@ -771,43 +1007,97 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-          <Card className="bg-white shadow-xl border border-slate-200/60 lg:col-span-2">
-            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-              <CardTitle className="text-slate-900 text-sm md:text-base">{format(calendarDate, 'LLLL yyyy', { locale: dateLocale })}</CardTitle>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Select value={dashboardAccount} onValueChange={setDashboardAccount}>
-                  <SelectTrigger className="w-28 md:w-36 text-xs md:text-sm">
-                    <div className="flex items-center gap-2">
-                      <Wallet className="w-4 h-4 text-slate-500" />
-                      <SelectValue placeholder={t('myAccount')} />
+          <Card className="bg-white dark:bg-slate-900 shadow-xl border border-slate-200/60 dark:border-slate-700 lg:col-span-2">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-slate-900 dark:text-white text-sm md:text-base">{format(calendarDate, 'LLLL yyyy', { locale: dateLocale })}</CardTitle>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={handlePrevMonth} className="h-8 w-8 p-0">
+                      <ChevronUp className="w-4 h-4" style={{ transform: 'rotate(90deg)' }} />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setCalendarDate(new Date())} className="h-8 px-2 text-xs">
+                      {t('today')}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleNextMonth} className="h-8 w-8 p-0">
+                      <ChevronDown className="w-4 h-4" style={{ transform: 'rotate(-90deg)' }} />
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('account')}:</span>
+                    <Select value={dashboardAccount} onValueChange={setDashboardAccount}>
+                      <SelectTrigger className="w-24 text-xs h-8">
+                        <SelectValue placeholder={t('myAccount')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('allAccounts')}</SelectItem>
+                        {accounts.map(acc => (
+                          <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('year')}:</span>
+                    <div className="relative" ref={yearSelectorRef}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-2 text-xs"
+                        onClick={() => setYearSelectorOpen(!yearSelectorOpen)}
+                      >
+                        {calendarDate.getFullYear()}
+                        <ChevronDown className="w-3 h-3 ml-1" />
+                      </Button>
+                      {yearSelectorOpen && (
+                        <div className="absolute left-0 top-full mt-1 z-50 bg-white border rounded-md shadow-lg p-1">
+                          {[calendarDate.getFullYear() - 2, calendarDate.getFullYear() - 1, calendarDate.getFullYear(), calendarDate.getFullYear() + 1, calendarDate.getFullYear() + 2].map(year => (
+                            <button
+                              key={year}
+                              onClick={() => {
+                                setCalendarDate(new Date(year, calendarDate.getMonth(), 1));
+                                setYearSelectorOpen(false);
+                              }}
+                              className={`w-full px-3 py-1 text-sm text-left hover:bg-accent ${calendarDate.getFullYear() === year ? 'bg-accent font-semibold' : ''}`}
+                            >
+                              {year}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('allAccounts')}</SelectItem>
-                    {accounts.map(acc => (
-                      <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={String(calendarDate.getFullYear())} onValueChange={(val) => setCalendarDate(new Date(parseInt(val, 10), calendarDate.getMonth(), 1))}>
-                  <SelectTrigger className="w-24 md:w-28 text-xs md:text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[calendarDate.getFullYear() - 2, calendarDate.getFullYear() - 1, calendarDate.getFullYear(), calendarDate.getFullYear() + 1, calendarDate.getFullYear() + 2].map(year => (
-                      <SelectItem key={year} value={String(year)}>{year}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" size="sm" onClick={() => setCalendarDate(new Date())}>{t('thisMonth')}</Button>
+                  </div>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2">
+                  <div className="mb-3 grid grid-cols-12 gap-1">
+                    {[...Array(12)].map((_, i) => {
+                      const monthDate = new Date(calendarDate.getFullYear(), i, 1);
+                      const monthName = format(monthDate, 'MMM', { locale: dateLocale });
+                      const isCurrentMonth = i === calendarDate.getMonth();
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => handleMonthChange(i)}
+                          className={`text-center text-xs py-1.5 rounded font-medium transition-colors ${
+                            isCurrentMonth
+                              ? 'bg-slate-900 dark:bg-slate-700 text-white'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          {monthName}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <div className="grid grid-cols-7 gap-2">
                     {[t('monday'), t('tuesday'), t('wednesday'), t('thursday'), t('friday'), t('saturday'), t('sunday')].map(day => (
-                      <div key={day} className="text-center text-xs font-semibold text-slate-500">{day}</div>
+                      <div key={day} className="text-center text-xs font-semibold text-slate-500 dark:text-slate-400">{day}</div>
                     ))}
                     {calendarDays.map((day, index) => {
                       const dateStr = format(day, 'yyyy-MM-dd');
@@ -833,22 +1123,22 @@ export default function Dashboard() {
                     })}
                   </div>
                 </div>
-                <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
-                  <div className="text-xs font-semibold text-slate-600 mb-2">{selectedCalendarDate ? format(selectedCalendarDate, 'PPP', { locale: dateLocale }) : t('selectDay')}</div>
+                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+                  <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">{selectedCalendarDate ? format(selectedCalendarDate, 'PPP', { locale: dateLocale }) : t('selectDay')}</div>
                   <div className="space-y-2 max-h-72 overflow-auto">
                     {(selectedCalendarDate ? tradesByDate[format(selectedCalendarDate, 'yyyy-MM-dd')] || [] : []).map(trade => (
-                      <div key={trade.id} className="bg-white border border-slate-200 rounded-lg p-2">
+                      <div key={trade.id} className="bg-slate-900 border border-slate-700 rounded-lg p-2">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="font-semibold text-slate-800">{trade.symbol}</span>
-                          <span className={`font-semibold ${parseFloat(trade.profit_loss) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {parseFloat(trade.profit_loss) >= 0 ? '+' : ''}{parseFloat(trade.profit_loss || 0).toFixed(2)}
+                          <span className="font-semibold text-slate-800 dark:text-white">{trade.symbol}</span>
+                          <span className={`font-semibold ${parseFloat(trade.profit_loss || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {parseFloat(trade.profit_loss || 0) >= 0 ? '+' : ''}{parseFloat(trade.profit_loss || 0).toFixed(2)}
                           </span>
                         </div>
-                        <div className="text-[11px] text-slate-500">{trade.open_time || trade.time || '--:--'}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400">{trade.open_time || trade.time || '--:--'}</div>
                       </div>
                     ))}
                     {(!selectedCalendarDate || (tradesByDate[format(selectedCalendarDate, 'yyyy-MM-dd')] || []).length === 0) && (
-                      <div className="text-xs text-slate-500">{t('noTradesThisDay')}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{t('noTradesThisDay')}</div>
                     )}
                   </div>
                 </div>

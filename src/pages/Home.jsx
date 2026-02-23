@@ -46,7 +46,7 @@ export default function Home() {
 
   return (
     <>
-      <PublicNavbar />
+      <PublicNavbar variant="hero" />
       <div
         className="parallax-root min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex flex-col items-center justify-center p-4 pt-24 overflow-hidden relative"
         style={/** @type {any} */ ({ '--px': parallax.x, '--py': parallax.y })}
@@ -190,7 +190,7 @@ export default function Home() {
         </div>
       </motion.div>
       </div>
-      <Footer />
+      <Footer variant="hero" />
     </>
   );
 }

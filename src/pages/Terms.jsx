@@ -10,13 +10,30 @@ export default function Terms() {
   const { t, language } = useLanguage();
 
   useEffect(() => {
+    const root = document.documentElement;
+    const hadDark = root.classList.contains('dark');
+    const prevSkin = root.getAttribute('data-skin');
+    root.classList.add('dark');
+    root.setAttribute('data-skin', 'blackblu');
+
     window.scrollTo(0, 0);
+
+    return () => {
+      if (!hadDark) {
+        root.classList.remove('dark');
+      }
+      if (prevSkin) {
+        root.setAttribute('data-skin', prevSkin);
+      } else {
+        root.removeAttribute('data-skin');
+      }
+    };
   }, []);
 
   const isPolish = language === 'pl';
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950">
       <div className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -276,7 +293,7 @@ export default function Terms() {
         </div>
       </div>
       
-      <Footer />
+      <Footer variant="hero" />
     </div>
   );
 }

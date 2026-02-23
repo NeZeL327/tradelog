@@ -154,7 +154,7 @@ export default function Register() {
 
   return (
     <>
-      <PublicNavbar />
+      <PublicNavbar variant="hero" />
       <div
         className="parallax-root min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-6 overflow-hidden relative pt-24"
         style={/** @type {any} */ ({ '--px': parallax.x, '--py': parallax.y })}
@@ -422,7 +422,7 @@ export default function Register() {
         </motion.div>
       </div>
       </div>
-      <Footer />
+      <Footer variant="hero" />
     </>
   );
 }

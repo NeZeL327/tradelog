@@ -21,7 +21,8 @@ import {
   ShieldCheck,
   Target,
   Trash2,
-  XCircle
+  XCircle,
+  AlertCircle
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
@@ -508,12 +509,18 @@ export default function ProgressTracker() {
       <div className="max-w-none mx-0 space-y-6">
         <Card className="bg-white/90 dark:bg-[#14141f] border border-slate-200 dark:border-[#2d2d40] shadow-lg">
           <CardContent className="p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-start justify-between gap-6 flex-wrap">
               <div>
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t("progressTracker")}</h1>
                 <p className="text-sm text-slate-600 dark:text-slate-400">Zaawansowany monitoring dyscypliny i jakości tradingu</p>
+                <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 animate-blink w-full">
+                  <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-500 flex-shrink-0" />
+                  <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                    W fazie rozwoju – niektóre funkcje mogą być ograniczone
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-4 flex-wrap lg:flex-nowrap">
                 <Select value={range} onValueChange={setRange}>
                   <SelectTrigger className="w-36 h-9">
                     <div className="flex items-center gap-2">

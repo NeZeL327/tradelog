@@ -41,6 +41,8 @@ const normalizeTradeStatus = (status) => {
   return "default";
 };
 
+export const isClosedTrade = (trade) => normalizeTradeStatus(trade?.status) === "closed";
+
 const normalizeTradeOutcome = (outcome) => {
   const normalized = String(outcome || "").toLowerCase();
   if (normalized === "win") return "win";
@@ -88,7 +90,7 @@ export const tradePnLBarColor = (value) => {
 
 export const directionChartColor = (direction) => {
   const normalized = normalizeDirection(direction);
-  if (normalized === "Long") return "#10b981";
+  if (normalized === "Long") return "#22c55e";
   if (normalized === "Short") return "#ef4444";
   return "#64748b";
 };

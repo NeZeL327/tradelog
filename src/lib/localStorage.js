@@ -37,11 +37,10 @@ export const compressImage = async (file) => {
   if (!isImageFile(file)) return file;
 
   const options = {
-    maxSizeMB: 0.3,
-    maxWidthOrHeight: 1600,
+    maxSizeMB: 0.6,
+    maxWidthOrHeight: 2560,
     useWebWorker: true,
-    fileType: 'image/jpeg',
-    initialQuality: 0.8
+    initialQuality: 0.95
   };
 
   try {

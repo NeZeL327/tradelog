@@ -14,6 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "@/components/LanguageProvider";
+import { isClosedTrade } from "@/lib/utils";
 
 export default function Strategies() {
   const { t } = useLanguage();
@@ -52,7 +53,7 @@ export default function Strategies() {
 
   // Strategy comparison data
   const strategyStats = strategies.map(strategy => {
-    const strategyTrades = trades.filter(t => t.strategy_id === strategy.id);
+    const strategyTrades = trades.filter(t => t.strategy_id === strategy.id && isClosedTrade(t));
     const wins = strategyTrades.filter(t => t.outcome === "Win").length;
     const totalPL = strategyTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
     const avgPL = strategyTrades.length > 0 ? totalPL / strategyTrades.length : 0;

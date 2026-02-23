@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
-import { directionChartColor } from '@/lib/utils';
+import { directionChartColor, isClosedTrade } from '@/lib/utils';
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, TrendingUp, AlertCircle, Lightbulb, Target, Wallet, DollarSign, Activity, X } from "lucide-react";
+import { Brain, TrendingUp, AlertCircle, Lightbulb, Target, Wallet, DollarSign, Activity, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, ComposedChart } from "recharts";
@@ -23,6 +23,20 @@ export default function Analytics() {
   const [filterDirection, setFilterDirection] = useState("all");
   const [filterOutcome, setFilterOutcome] = useState("all");
   const [filterTimeframe, setFilterTimeframe] = useState("all");
+  
+  const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
+  const [symbolDropdownOpen, setSymbolDropdownOpen] = useState(false);
+  const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
+  const [directionDropdownOpen, setDirectionDropdownOpen] = useState(false);
+  const [outcomeDropdownOpen, setOutcomeDropdownOpen] = useState(false);
+  const [timeframeDropdownOpen, setTimeframeDropdownOpen] = useState(false);
+  
+  const accountDropdownRef = useRef(null);
+  const symbolDropdownRef = useRef(null);
+  const strategyDropdownRef = useRef(null);
+  const directionDropdownRef = useRef(null);
+  const outcomeDropdownRef = useRef(null);
+  const timeframeDropdownRef = useRef(null);
   const [selectedSymbol, setSelectedSymbol] = useState(null);
   const [selectedStrategy, setSelectedStrategy] = useState(null);
   const [timePeriod, setTimePeriod] = useState("daily");
@@ -43,6 +57,20 @@ export default function Analytics() {
     queryFn: () => getStrategies(user?.id),
   });
 
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target)) setAccountDropdownOpen(false);
+      if (symbolDropdownRef.current && !symbolDropdownRef.current.contains(event.target)) setSymbolDropdownOpen(false);
+      if (strategyDropdownRef.current && !strategyDropdownRef.current.contains(event.target)) setStrategyDropdownOpen(false);
+      if (directionDropdownRef.current && !directionDropdownRef.current.contains(event.target)) setDirectionDropdownOpen(false);
+      if (outcomeDropdownRef.current && !outcomeDropdownRef.current.contains(event.target)) setOutcomeDropdownOpen(false);
+      if (timeframeDropdownRef.current && !timeframeDropdownRef.current.contains(event.target)) setTimeframeDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
   const normalizeDirection = (direction) => {
     if (!direction) return "";
     const normalized = direction.toLowerCase();
@@ -58,6 +86,7 @@ export default function Analytics() {
 
   // Filter trades by selected filters
   const filteredTrades = trades.filter(t => (
+    isClosedTrade(t) &&
     (selectedAccount === "all" || t.account_id === selectedAccount) &&
     (filterSymbol === "all" || t.symbol === filterSymbol) &&
     (filterStrategy === "all" || t.strategy_id === filterStrategy) &&
@@ -80,12 +109,12 @@ export default function Analytics() {
   const symbolData = Object.entries(symbolStats)
     .map(([symbol, stats]) => ({
       symbol,
-      winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-      avgPL: (stats.pl / stats.total).toFixed(2),
-      totalPL: stats.pl.toFixed(2),
+      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+      avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
+      totalPL: Number(stats.pl.toFixed(2)),
       trades: stats.total
     }))
-    .sort((a, b) => parseFloat(b.totalPL) - parseFloat(a.totalPL))
+    .sort((a, b) => b.totalPL - a.totalPL)
     .slice(0, 10);
 
   // Strategy analysis
@@ -104,9 +133,9 @@ export default function Analytics() {
 
   const strategyData = Object.entries(strategyStats).map(([name, stats]) => ({
     name,
-    winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-    avgPL: (stats.pl / stats.total).toFixed(2),
-    totalPL: stats.pl.toFixed(2),
+    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
+    totalPL: Number(stats.pl.toFixed(2)),
     trades: stats.total
   }));
 
@@ -125,8 +154,8 @@ export default function Analytics() {
 
   const timeframeData = Object.entries(timeframeStats).map(([tf, stats]) => ({
     timeframe: tf,
-    winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-    avgPL: (stats.pl / stats.total).toFixed(2),
+    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
     trades: stats.total
   }));
 
@@ -143,9 +172,9 @@ export default function Analytics() {
 
   const directionData = Object.entries(directionStats).map(([dir, stats]) => ({
     direction: dir,
-    winRate: stats.total > 0 ? ((stats.wins / stats.total) * 100).toFixed(1) : 0,
-    avgPL: stats.total > 0 ? (stats.pl / stats.total).toFixed(2) : 0,
-    totalPL: stats.pl.toFixed(2),
+    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
+    totalPL: Number(stats.pl.toFixed(2)),
     trades: stats.total
   }));
 
@@ -164,8 +193,8 @@ export default function Analytics() {
 
   const sessionData = Object.entries(sessionStats).map(([session, stats]) => ({
     session,
-    winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-    avgPL: (stats.pl / stats.total).toFixed(2),
+    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
     trades: stats.total
   }));
 
@@ -184,8 +213,8 @@ export default function Analytics() {
 
   const setupData = Object.entries(setupStats).map(([quality, stats]) => ({
     quality,
-    winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-    avgPL: (stats.pl / stats.total).toFixed(2),
+    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
     trades: stats.total
   })).sort((a, b) => a.quality.localeCompare(b.quality));
 
@@ -204,8 +233,8 @@ export default function Analytics() {
 
   const emotionalData = Object.entries(emotionalStats).map(([state, stats]) => ({
     state,
-    winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-    avgPL: (stats.pl / stats.total).toFixed(2),
+    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
     trades: stats.total
   }));
 
@@ -253,29 +282,29 @@ export default function Analytics() {
       period,
       pl: Math.round(stats.pl * 100) / 100,
       trades: stats.total,
-      winRate: ((stats.wins / stats.total) * 100).toFixed(1)
+      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0
     }))
     .sort((a, b) => a.period.localeCompare(b.period));
 
   const bestPeriod = periodData.length
-    ? periodData.reduce((best, current) => (Number(current.pl) > Number(best.pl) ? current : best), periodData[0])
+    ? periodData.reduce((best, current) => (current.pl > best.pl ? current : best), periodData[0])
     : null;
   const bestWinRatePeriod = periodData.length
-    ? periodData.reduce((best, current) => (Number(current.winRate) > Number(best.winRate) ? current : best), periodData[0])
+    ? periodData.reduce((best, current) => (current.winRate > best.winRate ? current : best), periodData[0])
     : null;
 
   // Account comparison
   const accountData = accounts.map(account => {
-    const accountTrades = trades.filter(t => t.account_id === account.id);
+    const accountTrades = trades.filter(t => t.account_id === account.id && isClosedTrade(t));
     const wins = accountTrades.filter(t => t.outcome === "Win").length;
     const totalPL = accountTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
     
     return {
       name: account.name,
-      winRate: accountTrades.length > 0 ? ((wins / accountTrades.length) * 100).toFixed(1) : 0,
-      totalPL: totalPL.toFixed(2),
+      winRate: accountTrades.length > 0 ? Number(((wins / accountTrades.length) * 100).toFixed(1)) : 0,
+      totalPL: Number(totalPL.toFixed(2)),
       trades: accountTrades.length,
-      roi: account.initial_balance > 0 ? ((totalPL / parseFloat(account.initial_balance)) * 100).toFixed(2) : 0
+      roi: account.initial_balance > 0 ? Number(((totalPL / parseFloat(account.initial_balance)) * 100).toFixed(2)) : 0
     };
   }).filter(a => a.trades > 0);
 
@@ -374,92 +403,194 @@ export default function Analytics() {
         <div className="grid grid-cols-2 md:grid-cols-7 gap-3 items-end">
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('account')}</span>
-            <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('allAccounts')}</SelectItem>
-                {accounts.map(acc => (
-                  <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative" ref={accountDropdownRef}>
+              <button
+                onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
+                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+              >
+                {selectedAccount === 'all' ? t('allAccounts') : (accounts.find(a => a.id === selectedAccount)?.name || t('account'))}
+                <ChevronDown className="w-4 h-4 opacity-50" />
+              </button>
+              {accountDropdownOpen && (
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => { setSelectedAccount('all'); setAccountDropdownOpen(false); }}
+                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${selectedAccount === 'all' ? 'bg-accent' : ''}`}
+                  >
+                    {t('allAccounts')}
+                  </button>
+                  {accounts.map(acc => (
+                    <button
+                      key={acc.id}
+                      onClick={() => { setSelectedAccount(acc.id); setAccountDropdownOpen(false); }}
+                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${selectedAccount === acc.id ? 'bg-accent' : ''}`}
+                    >
+                      {acc.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('symbol')}</span>
-            <Select value={filterSymbol} onValueChange={setFilterSymbol}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue placeholder={t('symbol')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('all')}</SelectItem>
-                {uniqueSymbols.map(sym => (
-                  <SelectItem key={sym} value={sym}>{sym}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative" ref={symbolDropdownRef}>
+              <button
+                onClick={() => setSymbolDropdownOpen(!symbolDropdownOpen)}
+                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+              >
+                {filterSymbol === 'all' ? t('all') : filterSymbol}
+                <ChevronDown className="w-4 h-4 opacity-50" />
+              </button>
+              {symbolDropdownOpen && (
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => { setFilterSymbol('all'); setSymbolDropdownOpen(false); }}
+                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterSymbol === 'all' ? 'bg-accent' : ''}`}
+                  >
+                    {t('all')}
+                  </button>
+                  {uniqueSymbols.map(sym => (
+                    <button
+                      key={sym}
+                      onClick={() => { setFilterSymbol(sym); setSymbolDropdownOpen(false); }}
+                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterSymbol === sym ? 'bg-accent' : ''}`}
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('strategy')}</span>
-            <Select value={filterStrategy} onValueChange={setFilterStrategy}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue placeholder={t('strategy')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('all')}</SelectItem>
-                {strategies.map(strategy => (
-                  <SelectItem key={strategy.id} value={strategy.id}>{strategy.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative" ref={strategyDropdownRef}>
+              <button
+                onClick={() => setStrategyDropdownOpen(!strategyDropdownOpen)}
+                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+              >
+                {filterStrategy === 'all' ? t('all') : (strategies.find(s => s.id === filterStrategy)?.name || t('strategy'))}
+                <ChevronDown className="w-4 h-4 opacity-50" />
+              </button>
+              {strategyDropdownOpen && (
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => { setFilterStrategy('all'); setStrategyDropdownOpen(false); }}
+                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterStrategy === 'all' ? 'bg-accent' : ''}`}
+                  >
+                    {t('all')}
+                  </button>
+                  {strategies.map(strategy => (
+                    <button
+                      key={strategy.id}
+                      onClick={() => { setFilterStrategy(strategy.id); setStrategyDropdownOpen(false); }}
+                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterStrategy === strategy.id ? 'bg-accent' : ''}`}
+                    >
+                      {strategy.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('direction')}</span>
-            <Select value={filterDirection} onValueChange={setFilterDirection}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue placeholder={t('direction')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('all')}</SelectItem>
-                {uniqueDirections.map(dir => (
-                  <SelectItem key={dir} value={dir}>{dir}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative" ref={directionDropdownRef}>
+              <button
+                onClick={() => setDirectionDropdownOpen(!directionDropdownOpen)}
+                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+              >
+                {filterDirection === 'all' ? t('all') : filterDirection}
+                <ChevronDown className="w-4 h-4 opacity-50" />
+              </button>
+              {directionDropdownOpen && (
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => { setFilterDirection('all'); setDirectionDropdownOpen(false); }}
+                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterDirection === 'all' ? 'bg-accent' : ''}`}
+                  >
+                    {t('all')}
+                  </button>
+                  {uniqueDirections.map(dir => (
+                    <button
+                      key={dir}
+                      onClick={() => { setFilterDirection(dir); setDirectionDropdownOpen(false); }}
+                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterDirection === dir ? 'bg-accent' : ''}`}
+                    >
+                      {dir}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('outcome')}</span>
-            <Select value={filterOutcome} onValueChange={setFilterOutcome}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue placeholder={t('outcome')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('all')}</SelectItem>
-                {uniqueOutcomes.map(out => (
-                  <SelectItem key={out} value={out}>{out}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative" ref={outcomeDropdownRef}>
+              <button
+                onClick={() => setOutcomeDropdownOpen(!outcomeDropdownOpen)}
+                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+              >
+                {filterOutcome === 'all' ? t('all') : filterOutcome}
+                <ChevronDown className="w-4 h-4 opacity-50" />
+              </button>
+              {outcomeDropdownOpen && (
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => { setFilterOutcome('all'); setOutcomeDropdownOpen(false); }}
+                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterOutcome === 'all' ? 'bg-accent' : ''}`}
+                  >
+                    {t('all')}
+                  </button>
+                  {uniqueOutcomes.map(out => (
+                    <button
+                      key={out}
+                      onClick={() => { setFilterOutcome(out); setOutcomeDropdownOpen(false); }}
+                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterOutcome === out ? 'bg-accent' : ''}`}
+                    >
+                      {out}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('timeframe')}</span>
-            <Select value={filterTimeframe} onValueChange={setFilterTimeframe}>
-              <SelectTrigger className="h-10 w-full">
-                <SelectValue placeholder={t('timeframe')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('all')}</SelectItem>
-                {uniqueTimeframes.map(tf => (
-                  <SelectItem key={tf} value={tf}>{tf}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative" ref={timeframeDropdownRef}>
+              <button
+                onClick={() => setTimeframeDropdownOpen(!timeframeDropdownOpen)}
+                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+              >
+                {filterTimeframe === 'all' ? t('all') : filterTimeframe}
+                <ChevronDown className="w-4 h-4 opacity-50" />
+              </button>
+              {timeframeDropdownOpen && (
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                  <button
+                    onClick={() => { setFilterTimeframe('all'); setTimeframeDropdownOpen(false); }}
+                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterTimeframe === 'all' ? 'bg-accent' : ''}`}
+                  >
+                    {t('all')}
+                  </button>
+                  {uniqueTimeframes.map(tf => (
+                    <button
+                      key={tf}
+                      onClick={() => { setFilterTimeframe(tf); setTimeframeDropdownOpen(false); }}
+                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterTimeframe === tf ? 'bg-accent' : ''}`}
+                    >
+                      {tf}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-col gap-1">
@@ -516,8 +647,8 @@ export default function Analytics() {
                       <ComposedChart data={outcomeChartData} margin={{ top: 50, right: 50, left: 30, bottom: 70 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis dataKey="name" stroke="#64748b" />
-                        <YAxis yAxisId="left" stroke="#64748b" allowDecimals={false} width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" tickFormatter={(value) => `${value}%`} width={70} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                        <YAxis yAxisId="left" stroke="#64748b" allowDecimals={false} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" tickFormatter={(value) => `${value}%`} width={70} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <Tooltip
                           contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                           itemStyle={{ color: '#e2e8f0' }}
@@ -571,7 +702,7 @@ export default function Analytics() {
                     <ResponsiveContainer width="96%" height={320}>
                       <BarChart data={directionEdgeData} layout="vertical" margin={{ top: 50, right: 60, left: 90, bottom: 50 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis type="number" stroke="#64748b" domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1))]} />
+                        <XAxis type="number" stroke="#64748b" domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
                         <YAxis type="category" dataKey="direction" stroke="#64748b" width={80} />
                         <Tooltip
                           contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
@@ -680,7 +811,7 @@ export default function Analytics() {
                     <BarChart data={periodData} margin={{ top: 50, right: 50, left: 30, bottom: timePeriod === "weekly" ? 120 : 80 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="period" stroke="#64748b" angle={timePeriod === "weekly" ? -45 : 0} textAnchor={timePeriod === "weekly" ? "end" : "middle"} height={timePeriod === "weekly" ? 105 : 55} tickMargin={10} />
-                      <YAxis stroke="#64748b" width={75} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1))]} />
+                      <YAxis stroke="#64748b" width={75} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                         itemStyle={{ color: '#e2e8f0' }}
@@ -734,7 +865,7 @@ export default function Analytics() {
                       <BarChart data={timeframeData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis dataKey="timeframe" stroke="#64748b" />
-                        <YAxis stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                        <YAxis stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <Tooltip
                           contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                           itemStyle={{ color: '#e2e8f0' }}
@@ -762,8 +893,8 @@ export default function Analytics() {
                       <BarChart data={sessionData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis dataKey="session" stroke="#64748b" />
-                        <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                        <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                         <Tooltip
                           contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                           itemStyle={{ color: '#e2e8f0' }}
@@ -791,8 +922,8 @@ export default function Analytics() {
                   <ResponsiveContainer width="100%" height={450}>
                     <BarChart data={symbolData} layout="vertical" margin={{ top: 30, right: 35, left: 95, bottom: 30 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis xAxisId="bottom" type="number" stroke="#64748b" domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
-                        <XAxis xAxisId="top" orientation="top" type="number" stroke="#64748b" domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                        <XAxis xAxisId="bottom" type="number" stroke="#64748b" domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                        <XAxis xAxisId="top" orientation="top" type="number" stroke="#64748b" domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <YAxis dataKey="symbol" type="category" stroke="#64748b" width={90} />
                         <Tooltip
                           contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
@@ -827,14 +958,14 @@ export default function Analytics() {
                       </div>
                       <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-600 dark:text-slate-400">{t('avgPLLabel')}:</span>
-                      <span className={`font-bold ${parseFloat(symbol.avgPL) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {parseFloat(symbol.avgPL) > 0 ? '+' : ''}{symbol.avgPL}
+                      <span className={`font-bold ${symbol.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {symbol.avgPL > 0 ? '+' : ''}{symbol.avgPL.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-slate-600 dark:text-slate-400">{t('totalPLLabel')}:</span>
-                      <span className={`font-bold ${parseFloat(symbol.totalPL) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {parseFloat(symbol.totalPL) > 0 ? '+' : ''}{symbol.totalPL}
+                      <span className={`font-bold ${symbol.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {symbol.totalPL > 0 ? '+' : ''}{symbol.totalPL.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -883,8 +1014,8 @@ export default function Analytics() {
 
                     const accountBreakdownData = Object.entries(accountBreakdown).map(([name, stats]) => ({
                       name,
-                      winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-                      pl: stats.pl.toFixed(2),
+                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
                     }));
 
@@ -903,8 +1034,8 @@ export default function Analytics() {
 
                     const strategyBreakdownData = Object.entries(strategyBreakdown).map(([name, stats]) => ({
                       name,
-                      winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-                      pl: stats.pl.toFixed(2),
+                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
                     }));
 
@@ -923,8 +1054,8 @@ export default function Analytics() {
                       .filter(([_, stats]) => stats.total > 0)
                       .map(([dir, stats]) => ({
                         direction: dir,
-                        winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-                        pl: stats.pl.toFixed(2),
+                        winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                        pl: Number(stats.pl.toFixed(2)),
                         trades: stats.total
                       }));
 
@@ -943,8 +1074,8 @@ export default function Analytics() {
 
                     const timeframeBreakdownData = Object.entries(timeframeBreakdown).map(([tf, stats]) => ({
                       timeframe: tf,
-                      winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-                      pl: stats.pl.toFixed(2),
+                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
                     }));
 
@@ -976,8 +1107,8 @@ export default function Analytics() {
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-blue-600">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${parseFloat(item.pl) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {parseFloat(item.pl) > 0 ? '+' : ''}{item.pl}
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
                                   </div>
@@ -1004,8 +1135,8 @@ export default function Analytics() {
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-blue-600 dark:text-blue-400">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${parseFloat(item.pl) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {parseFloat(item.pl) > 0 ? '+' : ''}{item.pl}
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
                                   </div>
@@ -1039,7 +1170,7 @@ export default function Analytics() {
                                         <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
                                       ))}
                                     </Bar>
-                                    <Bar dataKey="trades" fill="#f59e0b" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill="#94a3b8" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1157,8 +1288,8 @@ export default function Analytics() {
                     <BarChart data={strategyData} margin={{ top: 30, right: 35, left: 20, bottom: 100 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="name" stroke="#64748b" angle={-45} textAnchor="end" height={95} />
-                      <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
-                      <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                      <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                      <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                         itemStyle={{ color: '#e2e8f0' }}
@@ -1193,16 +1324,16 @@ export default function Analytics() {
                         <p className="text-xs text-slate-600 dark:text-slate-400">{t('winRate')}</p>
                       </div>
                       <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg text-center">
-                        <p className={`text-2xl font-bold ${parseFloat(strategy.avgPL) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {parseFloat(strategy.avgPL) > 0 ? '+' : ''}{strategy.avgPL}
+                        <p className={`text-2xl font-bold ${strategy.avgPL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {strategy.avgPL > 0 ? '+' : ''}{strategy.avgPL.toFixed(2)}
                         </p>
                         <p className="text-xs text-slate-600 dark:text-slate-400">{t('avgPLLabel')}</p>
                         </div>
                         </div>
                         <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
                         <span className="text-sm text-slate-600 dark:text-slate-400">{t('totalPLLabel')}:</span>
-                      <span className={`font-bold ${parseFloat(strategy.totalPL) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {parseFloat(strategy.totalPL) > 0 ? '+' : ''}{strategy.totalPL}
+                      <span className={`font-bold ${strategy.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {strategy.totalPL > 0 ? '+' : ''}{strategy.totalPL.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
@@ -1254,8 +1385,8 @@ export default function Analytics() {
 
                     const accountBreakdownData = Object.entries(accountBreakdown).map(([name, stats]) => ({
                       name,
-                      winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-                      pl: stats.pl.toFixed(2),
+                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
                     }));
 
@@ -1272,10 +1403,10 @@ export default function Analytics() {
 
                     const symbolBreakdownData = Object.entries(symbolBreakdown).map(([symbol, stats]) => ({
                       symbol,
-                      winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-                      pl: stats.pl.toFixed(2),
+                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
-                    })).sort((a, b) => parseFloat(b.pl) - parseFloat(a.pl));
+                    })).sort((a, b) => b.pl - a.pl);
 
                     // Direction breakdown
                     const directionBreakdown = { Long: { wins: 0, total: 0, pl: 0 }, Short: { wins: 0, total: 0, pl: 0 } };
@@ -1292,8 +1423,8 @@ export default function Analytics() {
                       .filter(([_, stats]) => stats.total > 0)
                       .map(([dir, stats]) => ({
                         direction: dir,
-                        winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-                        pl: stats.pl.toFixed(2),
+                        winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                        pl: Number(stats.pl.toFixed(2)),
                         trades: stats.total
                       }));
 
@@ -1312,8 +1443,8 @@ export default function Analytics() {
 
                     const timeframeBreakdownData = Object.entries(timeframeBreakdown).map(([tf, stats]) => ({
                       timeframe: tf,
-                      winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-                      pl: stats.pl.toFixed(2),
+                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
                     }));
 
@@ -1345,8 +1476,8 @@ export default function Analytics() {
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-blue-600">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${parseFloat(item.pl) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {parseFloat(item.pl) > 0 ? '+' : ''}{item.pl}
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
                                   </div>
@@ -1373,8 +1504,8 @@ export default function Analytics() {
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-blue-600 dark:text-blue-400">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${parseFloat(item.pl) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {parseFloat(item.pl) > 0 ? '+' : ''}{item.pl}
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
                                   </div>
@@ -1408,7 +1539,7 @@ export default function Analytics() {
                                         <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
                                       ))}
                                     </Bar>
-                                    <Bar dataKey="trades" fill="#f59e0b" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill="#94a3b8" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1599,8 +1730,8 @@ export default function Analytics() {
                     <BarChart data={accountData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="name" stroke="#64748b" />
-                      <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
-                      <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                      <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                      <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                       <Tooltip
                         contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                         itemStyle={{ color: '#e2e8f0' }}
@@ -1632,8 +1763,8 @@ export default function Analytics() {
                         <p className="text-xs text-slate-600 dark:text-slate-400">{t('winRate')}</p>
                       </div>
                       <div className="p-3 bg-green-100 dark:bg-green-950 rounded-lg text-center">
-                        <p className={`text-xl font-bold ${parseFloat(account.roi) >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                          {parseFloat(account.roi) > 0 ? '+' : ''}{account.roi}%
+                        <p className={`text-xl font-bold ${account.roi >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                          {account.roi > 0 ? '+' : ''}{account.roi.toFixed(2)}%
                         </p>
                         <p className="text-xs text-slate-600 dark:text-slate-400">{t('roi')}</p>
                       </div>
@@ -1641,8 +1772,8 @@ export default function Analytics() {
                     <div className="p-3 bg-slate-100 dark:bg-slate-900 rounded-lg">
                       <div className="flex justify-between mb-1">
                         <span className="text-sm text-slate-600 dark:text-slate-400">{t('totalPLLabel')}:</span>
-                        <span className={`font-bold ${parseFloat(account.totalPL) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {parseFloat(account.totalPL) > 0 ? '+' : ''}{account.totalPL}
+                        <span className={`font-bold ${account.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {account.totalPL > 0 ? '+' : ''}{account.totalPL.toFixed(2)}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -1674,8 +1805,8 @@ export default function Analytics() {
                         <BarChart data={setupData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                           <XAxis dataKey="quality" stroke="#64748b" />
-                          <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
-                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                          <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                           <Tooltip
                             contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                             itemStyle={{ color: '#e2e8f0' }}
@@ -1706,8 +1837,8 @@ export default function Analytics() {
                         <BarChart data={emotionalData} margin={{ top: 30, right: 35, left: 20, bottom: 100 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                           <XAxis dataKey="state" stroke="#64748b" angle={-45} textAnchor="end" height={95} />
-                          <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
-                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.2)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.2))]} />
+                          <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                           <Tooltip
                             contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                             itemStyle={{ color: '#e2e8f0' }}
@@ -1743,8 +1874,8 @@ export default function Analytics() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-blue-600 dark:text-blue-400">{item.winRate}%</p>
-                        <p className={`text-xs ${parseFloat(item.avgPL) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {t('avg')}: {item.avgPL}
+                        <p className={`text-xs ${item.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {t('avg')}: {item.avgPL.toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -1770,8 +1901,8 @@ export default function Analytics() {
                       </div>
                       <div className="text-right">
                         <p className="font-semibold text-blue-600 dark:text-blue-400">{item.winRate}%</p>
-                        <p className={`text-xs ${parseFloat(item.avgPL) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {t('avg')}: {item.avgPL}
+                        <p className={`text-xs ${item.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {t('avg')}: {item.avgPL.toFixed(2)}
                         </p>
                       </div>
                     </div>
