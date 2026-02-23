@@ -37,7 +37,7 @@ import TradeFormNew from "../components/TradeFormNew";
 import TradeCard from "../components/TradeCard";
 import { ExportButton } from "../components/ExportButton";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, tradeStatusBadgeClass, tradeOutcomeBadgeClass } from "@/lib/utils";
 
 export default function JournalSimple() {
   const { t } = useLanguage();
@@ -587,10 +587,7 @@ export default function JournalSimple() {
                     <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                       {visibleColumns.status && (
                         <td className="px-1.5 py-1">
-                          <Badge className={trade.status === "Open" 
-                            ? "bg-blue-500 text-white dark:bg-blue-600 dark:text-white text-sm px-2 py-0.5" 
-                            : "bg-green-500 text-white dark:bg-green-600 dark:text-white text-sm px-2 py-0.5"
-                          }>
+                          <Badge className={`${tradeStatusBadgeClass(trade.status)} text-sm px-2 py-0.5`}>
                             {trade.status === "Open" ? <Clock className="w-2.5 h-2.5 mr-0.5" /> : <CheckCircle className="w-2.5 h-2.5 mr-0.5" />}
                             {trade.status}
                           </Badge>
@@ -643,11 +640,7 @@ export default function JournalSimple() {
                       {visibleColumns.outcome && (
                         <td className="px-3 py-2.5">
                           {trade.outcome && (
-                            <Badge variant="outline" className={`text-sm px-2 py-0.5 ${
-                              trade.outcome === "Win" ? "border-green-600 text-green-600" :
-                              trade.outcome === "Loss" ? "border-red-600 text-red-600" :
-                              "border-slate-600 text-slate-600"
-                            }`}>
+                            <Badge variant="outline" className={`text-sm px-2 py-0.5 ${tradeOutcomeBadgeClass(trade.outcome)}`}>
                               {trade.outcome}
                             </Badge>
                           )}

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Edit, Calendar, Clock, Target } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeStatusBadgeClass } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
 
 export default function TradeCard({ trade, onEdit = null }) {
@@ -13,8 +13,8 @@ export default function TradeCard({ trade, onEdit = null }) {
   const [viewerImage, setViewerImage] = useState("");
   const isWin = trade.outcome === "Win";
   const isLoss = trade.outcome === "Loss";
-  const plColor = isWin ? "text-green-600 dark:text-green-400" : isLoss ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400";
-  const bgColor = isWin ? "bg-green-50 border-green-200" : isLoss ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200";
+  const plColor = isWin ? "text-emerald-600 dark:text-emerald-300" : isLoss ? "text-rose-600 dark:text-rose-300" : "text-amber-600 dark:text-amber-300";
+  const bgColor = isWin ? "bg-emerald-50 border-emerald-200" : isLoss ? "bg-rose-50 border-rose-200" : "bg-amber-50 border-amber-200";
   const directionText = directionLabel(trade.direction, t);
   const toNumber = (value) => {
     if (value === "" || value === null || value === undefined) return null;
@@ -33,6 +33,30 @@ export default function TradeCard({ trade, onEdit = null }) {
     return (price - entryPrice) * size * directionSign;
   };
 
+  const normalizeText = (value) => {
+    if (value === null || value === undefined) return null;
+    const text = String(value).trim();
+    if (!text || text === "[object Object]") return null;
+    return text;
+  };
+
+  const looksLikeTechnicalId = (value) => {
+    const text = normalizeText(value);
+    if (!text) return false;
+    if (/\s|@/.test(text)) return false;
+    return /^[A-Za-z0-9_-]{12,}$/.test(text) || /^[a-f0-9]{16,}$/i.test(text);
+  };
+
+  const accountLabel = normalizeText(trade.accountName || trade.account_name || trade.account);
+  const strategyLabel = normalizeText(trade.strategyName || trade.strategy_name || trade.strategy);
+  const accountId = normalizeText(trade.account_id);
+  const strategyId = normalizeText(trade.strategy_id);
+  const accountDisplay = accountLabel || (looksLikeTechnicalId(accountId) ? null : accountId) || "-";
+  const strategyDisplay = strategyLabel || (looksLikeTechnicalId(strategyId) ? null : strategyId) || "-";
+
+  const outcomeRaw = normalizeText(trade.outcome);
+  const outcomeDisplay = outcomeRaw && /[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż]/.test(outcomeRaw) ? outcomeRaw : "-";
+
   return (
     <Card className={`hover:shadow-xl transition-all duration-300 ${bgColor} dark:bg-[#23233a] dark:border-slate-700 border`}>
       <CardHeader>
@@ -44,7 +68,7 @@ export default function TradeCard({ trade, onEdit = null }) {
                 {directionText}
               </Badge>
               {trade.outcome && (
-                <Badge variant="outline" className={`${plColor} border-current`}>
+                <Badge variant="outline" className={tradeOutcomeBadgeClass(trade.outcome)}>
                   {trade.outcome}
                 </Badge>
               )}
@@ -106,7 +130,7 @@ export default function TradeCard({ trade, onEdit = null }) {
               </div>
               <div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('totalPL')}</p>
-                <p className={`font-semibold ${parseFloat(trade.symbolStats.totalPL) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <p className={`font-semibold ${parseFloat(trade.symbolStats.totalPL) >= 0 ? 'text-emerald-600 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-300'}`}>
                   {parseFloat(trade.symbolStats.totalPL) >= 0 ? '+' : ''}{trade.symbolStats.totalPL}
                 </p>
               </div>
@@ -121,19 +145,23 @@ export default function TradeCard({ trade, onEdit = null }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl dark:border dark:border-slate-700">
           <div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('statusLabel')}</p>
-            <p className="font-semibold text-slate-900 dark:text-white">{trade.status || '-'}</p>
+            <Badge className={`${tradeStatusBadgeClass(trade.status)} truncate max-w-full`} title={trade.status || '-'}>
+              {trade.status || '-'}
+            </Badge>
           </div>
           <div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('account')}</p>
-            <p className="font-semibold text-slate-900 dark:text-white">{trade.accountName || trade.account_id || '-'}</p>
+            <p className="font-semibold text-slate-900 dark:text-white truncate" title={accountDisplay}>{accountDisplay}</p>
           </div>
           <div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('strategy')}</p>
-            <p className="font-semibold text-slate-900 dark:text-white">{trade.strategyName || trade.strategy_id || '-'}</p>
+            <p className="font-semibold text-slate-900 dark:text-white truncate" title={strategyDisplay}>{strategyDisplay}</p>
           </div>
           <div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('outcome')}</p>
-            <p className="font-semibold text-slate-900 dark:text-white">{trade.outcome || '-'}</p>
+            <Badge variant="outline" className={`truncate max-w-full ${tradeOutcomeBadgeClass(outcomeDisplay)}`} title={outcomeDisplay}>
+              {outcomeDisplay}
+            </Badge>
           </div>
         </div>
 
@@ -152,13 +180,13 @@ export default function TradeCard({ trade, onEdit = null }) {
           {trade.stop_loss_pips != null && (
             <div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('stopLossPips')}</p>
-              <p className="font-semibold text-red-600 dark:text-red-400">{trade.stop_loss_pips}</p>
+              <p className="font-semibold text-rose-600 dark:text-rose-300">{trade.stop_loss_pips}</p>
             </div>
           )}
           {trade.take_profit_pips != null && (
             <div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('takeProfitPips')}</p>
-              <p className="font-semibold text-green-600 dark:text-green-400">{trade.take_profit_pips}</p>
+              <p className="font-semibold text-amber-600 dark:text-amber-300">{trade.take_profit_pips}</p>
             </div>
           )}
           {trade.remaining_size != null && (
@@ -189,7 +217,7 @@ export default function TradeCard({ trade, onEdit = null }) {
                       {t('size')}: {scaleOut.size || '-'} | {t('price')}: {scaleOut.price || '-'}
                     </span>
                     <span className="ml-2 text-sm">
-                      | Kwota zamknięcia: <span className={`font-semibold ${partialPnl === null ? 'text-slate-500 dark:text-slate-400' : partialPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      | Kwota zamknięcia: <span className={`font-semibold ${partialPnl === null ? 'text-slate-500 dark:text-slate-400' : partialPnl >= 0 ? 'text-amber-600 dark:text-amber-300' : 'text-rose-600 dark:text-rose-300'}`}>
                         {partialPnl === null ? '-' : `${partialPnl.toFixed(2)}$`}
                       </span>
                     </span>

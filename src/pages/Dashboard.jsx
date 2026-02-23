@@ -5,6 +5,7 @@ import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, TrendingDown, Target, Award, Calendar, BarChart3, Eye, ChevronDown, ChevronUp, Filter, CalendarDays, Wallet } from "lucide-react";
@@ -12,9 +13,10 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, subDays } from "date-fns";
 import { enUS, pl } from "date-fns/locale";
 import TradeCard from "../components/TradeCard";
+import TradeFormNew from "../components/TradeFormNew";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionLabel, normalizeDirection } from "@/lib/utils";
+import { directionLabel, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor, tradeStatusBadgeClass } from "@/lib/utils";
 
 export default function Dashboard() {
   const { t, language } = useLanguage();
@@ -23,6 +25,7 @@ export default function Dashboard() {
   const dateLocale = language === "pl" ? pl : enUS;
   const dayLocale = language === "pl" ? "pl-PL" : "en-US";
   const [selectedTrade, setSelectedTrade] = useState(null);
+  const [editingTrade, setEditingTrade] = useState(null);
   const [expandedMetric, setExpandedMetric] = useState(null);
   const [plChartFilter, setPlChartFilter] = useState("all");
   const [plChartValue, setPlChartValue] = useState("all");
@@ -34,7 +37,7 @@ export default function Dashboard() {
   const [filterOutcome, setFilterOutcome] = useState("all");
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
-  const { data: trades = [], isLoading } = useQuery({
+  const { data: trades = [], isLoading, refetch } = useQuery({
     queryKey: ['trades'],
     queryFn: () => getTrades(user?.id),
   });
@@ -48,6 +51,31 @@ export default function Dashboard() {
     queryKey: ['strategies'],
     queryFn: () => getStrategies(user?.id),
   });
+
+  const handleViewTrade = (trade) => {
+    if (!trade) return;
+    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && t.status !== "Planned");
+    const wins = symbolTrades.filter(t => t.outcome === "Win").length;
+    const total = symbolTrades.length;
+    const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+    const avgPLForSymbol = total ? (totalPLForSymbol / total) : 0;
+
+    const account = accounts.find(a => String(a.id) === String(trade.account_id));
+    const strategy = strategies.find(s => String(s.id) === String(trade.strategy_id));
+
+    setSelectedTrade({
+      ...trade,
+      accountName: account?.name || "",
+      strategyName: strategy?.name || "",
+      symbolStats: {
+        total,
+        wins,
+        winRate: total ? ((wins / total) * 100).toFixed(1) : "0.0",
+        totalPL: totalPLForSymbol.toFixed(2),
+        avgPL: avgPLForSymbol.toFixed(2)
+      }
+    });
+  };
 
 
   const uniqueSymbols = [...new Set(trades.map(t => t.symbol).filter(Boolean))];
@@ -160,9 +188,9 @@ export default function Dashboard() {
 
   // Outcome distribution
   const outcomeData = [
-    { name: t('wins'), value: wins, color: "#10b981" },
-    { name: t('losses'), value: losses, color: "#ef4444" },
-    { name: t('breakeven'), value: breakeven, color: "#64748b" }
+    { name: t('wins'), value: wins, color: tradeOutcomeChartColor('Win') },
+    { name: t('losses'), value: losses, color: tradeOutcomeChartColor('Loss') },
+    { name: t('breakeven'), value: breakeven, color: tradeOutcomeChartColor('Breakeven') }
   ];
 
   // Strategy performance
@@ -646,7 +674,7 @@ export default function Dashboard() {
                     />
                     <Bar dataKey="pl" radius={[8, 8, 0, 0]}>
                       {dailyPLData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.pl >= 0 ? '#10b981' : '#ef4444'} />
+                        <Cell key={`cell-${index}`} fill={tradePnLBarColor(entry.pl)} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -688,7 +716,9 @@ export default function Dashboard() {
                         <td className="px-3 py-2 text-xs text-slate-700 dark:text-slate-400">{trade.date || '-'}</td>
                         <td className="px-3 py-2 text-xs font-medium text-slate-900 dark:text-white">{trade.symbol || '-'}</td>
                         <td className="px-3 py-2 text-xs text-slate-700 dark:text-slate-400">
-                          {trade.status || '-'}
+                          <Badge className={`${tradeStatusBadgeClass(trade.status)} text-[11px] px-2 py-0.5`}>
+                            {trade.status || '-'}
+                          </Badge>
                         </td>
                         <td className={`px-3 py-2 text-xs font-semibold text-right ${parseFloat(trade.profit_loss) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                           {trade.status === 'Planned' || trade.profit_loss == null
@@ -700,7 +730,7 @@ export default function Dashboard() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={() => setSelectedTrade(trade)}
+                              onClick={() => handleViewTrade(trade)}
                               className="h-7 w-7 hover:bg-blue-100 dark:hover:bg-blue-900/30"
                               title={t('viewDetails') || 'View Details'}
                             >
@@ -882,7 +912,7 @@ export default function Dashboard() {
                       />
                       <Scatter data={tradeTimeData} fill="#6d4dff" clipPath="url(#scatter-clip)">
                         {tradeTimeData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.pl >= 0 ? '#10b981' : '#ef4444'} />
+                          <Cell key={`cell-${index}`} fill={tradePnLBarColor(entry.pl)} />
                         ))}
                       </Scatter>
                     </ScatterChart>
@@ -1328,7 +1358,7 @@ export default function Dashboard() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    onClick={() => setSelectedTrade(bestTrade)}
+                    onClick={() => handleViewTrade(bestTrade)}
                     className="text-green-600 hover:text-green-700 hover:bg-green-100"
                   >
                     <Eye className="w-5 h-5" />
@@ -1357,7 +1387,7 @@ export default function Dashboard() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    onClick={() => setSelectedTrade(worstTrade)}
+                    onClick={() => handleViewTrade(worstTrade)}
                     className="text-red-600 hover:text-red-700 hover:bg-red-100"
                   >
                     <Eye className="w-5 h-5" />
@@ -1378,13 +1408,44 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Edit Trade Dialog */}
+        <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0">
+            <div className="sticky top-0 bg-white p-6 border-b">
+              <DialogTitle>Edit Trade</DialogTitle>
+            </div>
+            <div className="p-6">
+              {editingTrade && (
+                <TradeFormNew
+                  trade={editingTrade}
+                  onSuccess={() => {
+                    refetch();
+                    setEditingTrade(null);
+                  }}
+                  onClose={() => setEditingTrade(null)}
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Trade Detail Dialog */}
         <Dialog open={!!selectedTrade} onOpenChange={() => setSelectedTrade(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{t('tradeDetails')}</DialogTitle>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-[#1a1a2e] border-slate-200 dark:border-slate-700">
+            <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 text-white px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+              <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
             </DialogHeader>
-            {selectedTrade && <TradeCard trade={selectedTrade} />}
+            <div className="p-6 bg-white dark:bg-[#1a1a2e]">
+              {selectedTrade && (
+                <TradeCard
+                  trade={selectedTrade}
+                  onEdit={(tradeToEdit) => {
+                    setSelectedTrade(null);
+                    setEditingTrade(tradeToEdit);
+                  }}
+                />
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </div>

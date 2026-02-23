@@ -24,6 +24,7 @@ import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
 import PinnedNotesSidebar from "@/components/PinnedNotesSidebar";
+import QuickAddTradeSidebar from "@/components/QuickAddTradeSidebar";
 
 function LayoutContent({ children }) {
   const { t } = useLanguage();
@@ -220,6 +221,7 @@ function LayoutContent({ children }) {
             <Footer />
           </div>
         </main>
+        {user && <QuickAddTradeSidebar />}
         {user && <PinnedNotesSidebar />}
       </div>
     </SidebarProvider>

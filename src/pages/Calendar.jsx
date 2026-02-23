@@ -10,8 +10,9 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Calendar as Calend
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek } from "date-fns";
 import { pl, enUS } from "date-fns/locale";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeOutcomeToneClass } from "@/lib/utils";
 import TradeCard from "../components/TradeCard";
+import TradeFormNew from "../components/TradeFormNew";
 
 export default function Calendar() {
   const { t, language } = useLanguage();
@@ -20,8 +21,9 @@ export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [viewingTrade, setViewingTrade] = useState(null);
+  const [editingTrade, setEditingTrade] = useState(null);
 
-  const { data: trades = [] } = useQuery({
+  const { data: trades = [], refetch } = useQuery({
     queryKey: ['trades'],
     queryFn: () => getTrades(user?.id),
   });
@@ -35,6 +37,31 @@ export default function Calendar() {
     queryKey: ['strategies'],
     queryFn: () => getStrategies(user?.id),
   });
+
+  const handleViewTrade = (trade) => {
+    if (!trade) return;
+    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && t.status !== "Planned");
+    const wins = symbolTrades.filter(t => t.outcome === "Win").length;
+    const total = symbolTrades.length;
+    const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+    const avgPLForSymbol = total ? (totalPLForSymbol / total) : 0;
+
+    const account = accounts.find(a => String(a.id) === String(trade.account_id));
+    const strategy = strategies.find(s => String(s.id) === String(trade.strategy_id));
+
+    setViewingTrade({
+      ...trade,
+      accountName: account?.name || "",
+      strategyName: strategy?.name || "",
+      symbolStats: {
+        total,
+        wins,
+        winRate: total ? ((wins / total) * 100).toFixed(1) : "0.0",
+        totalPL: totalPLForSymbol.toFixed(2),
+        avgPL: avgPLForSymbol.toFixed(2)
+      }
+    });
+  };
 
   // Get calendar days
   const monthStart = startOfMonth(currentDate);
@@ -227,7 +254,7 @@ export default function Calendar() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => setViewingTrade(trade)}
+                                onClick={() => handleViewTrade(trade)}
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
@@ -260,21 +287,17 @@ export default function Calendar() {
                           </div>
 
                           {trade.profit_loss != null && (
-                            <div className={`mt-3 p-2 rounded-lg text-center ${
-                              trade.outcome === "Win" ? 'bg-green-100' : 
-                              trade.outcome === "Loss" ? 'bg-red-100' : 
-                              'bg-slate-100'
-                            }`}>
+                            <div className={`mt-3 p-2 rounded-lg text-center ${tradeOutcomeToneClass(trade.outcome)}`}>
                               <div className="flex items-center justify-center gap-2">
                                 {trade.outcome === "Win" ? (
-                                  <TrendingUp className="w-4 h-4 text-green-600" />
+                                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
                                 ) : trade.outcome === "Loss" ? (
-                                  <TrendingDown className="w-4 h-4 text-red-600" />
+                                  <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-300" />
                                 ) : null}
                                 <span className={`font-bold ${
-                                  trade.outcome === "Win" ? 'text-green-600' : 
-                                  trade.outcome === "Loss" ? 'text-red-600' : 
-                                  'text-slate-600'
+                                  trade.outcome === "Win" ? 'text-emerald-600 dark:text-emerald-300' : 
+                                  trade.outcome === "Loss" ? 'text-rose-600 dark:text-rose-300' : 
+                                  'text-amber-600 dark:text-amber-300'
                                 }`}>
                                   {parseFloat(trade.profit_loss) > 0 ? '+' : ''}{parseFloat(trade.profit_loss).toFixed(2)}
                                 </span>
@@ -438,11 +461,7 @@ export default function Calendar() {
                           </td>
                           <td className="p-4">
                             {trade.outcome && (
-                              <Badge variant="outline" className={
-                                trade.outcome === "Win" ? "border-green-600 text-green-600" :
-                                trade.outcome === "Loss" ? "border-red-600 text-red-600" :
-                                "border-slate-600 text-slate-600"
-                              }>
+                              <Badge variant="outline" className={tradeOutcomeBadgeClass(trade.outcome)}>
                                 {trade.outcome}
                               </Badge>
                             )}
@@ -452,7 +471,7 @@ export default function Calendar() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => setViewingTrade(trade)}
+                                onClick={() => handleViewTrade(trade)}
                                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                               >
                                 <Eye className="w-4 h-4" />
@@ -493,15 +512,44 @@ export default function Calendar() {
         </Card>
       </div>
 
+      {/* Edit Trade Dialog */}
+      <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0">
+          <div className="sticky top-0 bg-white p-6 border-b">
+            <DialogTitle>Edit Trade</DialogTitle>
+          </div>
+          <div className="p-6">
+            {editingTrade && (
+              <TradeFormNew
+                trade={editingTrade}
+                onSuccess={() => {
+                  refetch();
+                  setEditingTrade(null);
+                }}
+                onClose={() => setEditingTrade(null)}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Trade Details Dialog */}
       <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t('tradeDetails')}</DialogTitle>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-[#1a1a2e] border-slate-200 dark:border-slate-700">
+          <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 text-white px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
           </DialogHeader>
-          {viewingTrade && (
-            <TradeCard trade={viewingTrade} onEdit={() => setViewingTrade(null)} />
-          )}
+          <div className="p-6 bg-white dark:bg-[#1a1a2e]">
+            {viewingTrade && (
+              <TradeCard
+                trade={viewingTrade}
+                onEdit={(tradeToEdit) => {
+                  setViewingTrade(null);
+                  setEditingTrade(tradeToEdit);
+                }}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

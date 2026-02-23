@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
+import { directionChartColor } from '@/lib/utils';
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -711,8 +712,12 @@ export default function Analytics() {
                           labelStyle={{ color: '#f1f5f9' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="avgPL" fill="#10b981" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]}>
+                          {directionData.map((entry) => (
+                            <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
+                          ))}
+                        </Bar>
+                        <Bar dataKey="avgPL" fill="#f59e0b" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1029,8 +1034,12 @@ export default function Analytics() {
                                       labelStyle={{ color: '#f1f5f9' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                                    <Bar dataKey="trades" fill="#10b981" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]}>
+                                      {directionBreakdownData.map((entry) => (
+                                        <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
+                                      ))}
+                                    </Bar>
+                                    <Bar dataKey="trades" fill="#f59e0b" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1394,8 +1403,12 @@ export default function Analytics() {
                                       labelStyle={{ color: '#f1f5f9' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                                    <Bar dataKey="trades" fill="#10b981" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]}>
+                                      {directionBreakdownData.map((entry) => (
+                                        <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
+                                      ))}
+                                    </Bar>
+                                    <Bar dataKey="trades" fill="#f59e0b" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>

@@ -325,7 +325,7 @@ export default function PinnedNotesSidebar() {
   if (!user?.id) return null;
 
   return (
-    <div className="fixed right-3 top-24 z-40 pointer-events-none">
+    <div className="fixed right-3 top-48 z-40 pointer-events-none">
       <div
         className={cn(
           "pointer-events-auto rounded-xl border border-slate-200 bg-white/95 shadow-xl backdrop-blur-sm dark:border-slate-700 dark:bg-[#111827]/95 transition-all",
