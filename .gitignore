@@ -1,10 +1,12 @@
-#env
+# env
 .env
+tmpclaude-*
 
 # Windows reserved filename artifact
 nul
 NUL
 .env.*
+!.env.example
 
 # Logs
 logs
