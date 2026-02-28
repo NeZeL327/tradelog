@@ -1,6 +1,7 @@
 import functions from "firebase-functions";
 import admin from "firebase-admin";
 import Stripe from "stripe";
+import cors from "cors";
 
 admin.initializeApp();
 
@@ -8,79 +9,88 @@ const stripeSecret = process.env.STRIPE_SECRET_KEY || functions.config()?.stripe
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || functions.config()?.stripe?.webhook_secret || "";
 const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
 
-const applyCors = (req, res) => {
-  const origin = req.headers.origin || "*";
-  res.set("Access-Control-Allow-Origin", origin);
-  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return false;
+const corsHandler = cors({ origin: true });
+
+const getUserIdFromRequest = async (req) => {
+  const authHeader = req.headers.authorization || "";
+  if (authHeader.startsWith("Bearer ")) {
+    const idToken = authHeader.slice(7);
+    try {
+      const decoded = await admin.auth().verifyIdToken(idToken);
+      return decoded.uid;
+    } catch (err) {
+      console.warn("Token verification failed:", err?.message);
+      return null;
+    }
   }
-  return true;
+  return null;
 };
 
-export const createCheckoutSession = functions.https.onRequest(async (req, res) => {
-  if (!applyCors(req, res)) return;
-  if (!stripe) {
-    res.status(500).json({ error: "Stripe not configured" });
-    return;
-  }
-  try {
-    const { priceId, successUrl, cancelUrl, customerEmail, userId, trialDays } = req.body || {};
-    let effectiveTrialDays = Number(trialDays || 0);
-    if (!userId) {
-      effectiveTrialDays = 0;
-    } else if (effectiveTrialDays > 0) {
-      const existing = await admin.firestore().collection("subscriptions").doc(String(userId)).get();
-      if (existing.exists && existing.data()?.customerId) {
-        effectiveTrialDays = 0;
-      }
+export const createCheckoutSession = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    if (!stripe) {
+      res.status(500).json({ error: "Stripe not configured" });
+      return;
     }
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      customer_email: customerEmail,
-      client_reference_id: userId || undefined,
-      subscription_data: effectiveTrialDays > 0 ? { trial_period_days: effectiveTrialDays } : undefined,
-      metadata: {
-        userId: userId || ""
+    try {
+      const { priceId, successUrl, cancelUrl, customerEmail, trialDays } = req.body || {};
+      const userId = await getUserIdFromRequest(req) || req.body?.userId;
+      let effectiveTrialDays = Number(trialDays || 0);
+      if (!userId) {
+        effectiveTrialDays = 0;
+      } else if (effectiveTrialDays > 0) {
+        const existing = await admin.firestore().collection("subscriptions").doc(String(userId)).get();
+        if (existing.exists && existing.data()?.customerId) {
+          effectiveTrialDays = 0;
+        }
       }
-    });
-    res.json({ id: session.id, url: session.url });
-  } catch (error) {
-    res.status(500).json({ error: "Unable to create session" });
-  }
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        customer_email: customerEmail,
+        client_reference_id: userId || undefined,
+        subscription_data: effectiveTrialDays > 0 ? { trial_period_days: effectiveTrialDays } : undefined,
+        metadata: {
+          userId: userId || ""
+        }
+      });
+      res.json({ id: session.id, url: session.url });
+    } catch (error) {
+      res.status(500).json({ error: "Unable to create session" });
+    }
+  });
 });
 
-export const createPortalSession = functions.https.onRequest(async (req, res) => {
-  if (!applyCors(req, res)) return;
-  if (!stripe) {
-    res.status(500).json({ error: "Stripe not configured" });
-    return;
-  }
-  try {
-    const { returnUrl, userId } = req.body || {};
-    if (!userId) {
-      res.status(400).json({ error: "Missing userId" });
+export const createPortalSession = functions.https.onRequest((req, res) => {
+  corsHandler(req, res, async () => {
+    if (!stripe) {
+      res.status(500).json({ error: "Stripe not configured" });
       return;
     }
-    const doc = await admin.firestore().collection("subscriptions").doc(String(userId)).get();
-    const data = doc.data() || {};
-    if (!data.customerId) {
-      res.status(400).json({ error: "Missing customer" });
-      return;
+    try {
+      const { returnUrl } = req.body || {};
+      const userId = await getUserIdFromRequest(req) || req.body?.userId;
+      if (!userId) {
+        res.status(400).json({ error: "Missing userId" });
+        return;
+      }
+      const existing = await admin.firestore().collection("subscriptions").doc(String(userId)).get();
+      const data = existing.data() || {};
+      if (!data.customerId) {
+        res.status(400).json({ error: "Missing customer" });
+        return;
+      }
+      const portal = await stripe.billingPortal.sessions.create({
+        customer: data.customerId,
+        return_url: returnUrl
+      });
+      res.json({ url: portal.url });
+    } catch (error) {
+      res.status(500).json({ error: "Unable to create portal session" });
     }
-    const portal = await stripe.billingPortal.sessions.create({
-      customer: data.customerId,
-      return_url: returnUrl
-    });
-    res.json({ url: portal.url });
-  } catch (error) {
-    res.status(500).json({ error: "Unable to create portal session" });
-  }
+  });
 });
 
 export const stripeWebhook = functions.https.onRequest(async (req, res) => {
