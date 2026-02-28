@@ -1,4 +1,5 @@
 #env
+tmpclaude-*
 .env
 
 # Windows reserved filename artifact
