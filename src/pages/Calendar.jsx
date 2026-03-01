@@ -10,7 +10,7 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Calendar as Calend
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek } from "date-fns";
 import { pl, enUS } from "date-fns/locale";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeOutcomeToneClass } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass } from "@/lib/utils";
 import TradeCard from "../components/TradeCard";
 import TradeFormNew from "../components/TradeFormNew";
 
@@ -22,6 +22,25 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [viewingTrade, setViewingTrade] = useState(null);
   const [editingTrade, setEditingTrade] = useState(null);
+
+  const normalizeTradeStatus = (status) => {
+    const normalized = String(status || "").toLowerCase();
+    if (["open", "otwarta", "aktywna"].includes(normalized)) return "open";
+    if (["closed", "wykonana", "zamknięta", "zamknieta", "executed"].includes(normalized)) return "closed";
+    if (["planned", "planowana"].includes(normalized)) return "planned";
+    return "default";
+  };
+
+  const isCalendarVisibleTrade = (trade) => {
+    const status = normalizeTradeStatus(trade?.status);
+    return status === "open" || status === "closed";
+  };
+
+  const getTradeStatusLabel = (trade) => {
+    const status = normalizeTradeStatus(trade?.status);
+    if (status === "closed") return t('closedStatus') || 'Closed';
+    return t('openStatus') || 'Open';
+  };
 
   const { data: trades = [], refetch } = useQuery({
     queryKey: ['trades'],
@@ -40,7 +59,7 @@ export default function Calendar() {
 
   const handleViewTrade = (trade) => {
     if (!trade) return;
-    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && t.status !== "Planned");
+    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && isCalendarVisibleTrade(t));
     const wins = symbolTrades.filter(t => t.outcome === "Win").length;
     const total = symbolTrades.length;
     const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
@@ -71,8 +90,10 @@ export default function Calendar() {
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   // Group trades by date
+  const calendarVisibleTrades = trades.filter(isCalendarVisibleTrade);
+
   const tradesByDate = {};
-  trades.forEach(trade => {
+  calendarVisibleTrades.forEach(trade => {
     if (!tradesByDate[trade.date]) {
       tradesByDate[trade.date] = [];
     }
@@ -81,7 +102,7 @@ export default function Calendar() {
 
   // Get trades for selected date
   const selectedTrades = selectedDate 
-    ? trades.filter(t => isSameDay(new Date(t.date), selectedDate))
+    ? calendarVisibleTrades.filter(t => isSameDay(new Date(t.date), selectedDate))
     : [];
 
   // Calculate stats for a day
@@ -248,6 +269,9 @@ export default function Calendar() {
                               <p className="text-xs text-slate-600 dark:text-slate-400">{trade.open_time || trade.time || '--:--'}</p>
                             </div>
                             <div className="flex items-center gap-2">
+                              <Badge className={tradeStatusBadgeClass(trade.status)}>
+                                {getTradeStatusLabel(trade)}
+                              </Badge>
                               <Badge className={directionBadgeClass(trade.direction)}>
                                 {directionLabel(trade.direction, t)}
                               </Badge>
@@ -338,7 +362,7 @@ export default function Calendar() {
           <CardContent className="p-0">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(() => {
-                const monthTrades = trades.filter(t => {
+                const monthTrades = calendarVisibleTrades.filter(t => {
                   const tradeDate = new Date(t.date);
                   return isSameMonth(tradeDate, currentDate);
                 });

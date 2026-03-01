@@ -397,7 +397,8 @@ export function LanguageProvider({ children }) {
         planned: "Planowana",
         executed: "Wykonana",
         searchBySymbol: "Szukaj po symbolu...",
-        allTime: "Cały czas",
+        allTime: "Cały okres",
+        thisWeek: "Ten tydzień",
         timeFilterActive: "Aktywny filtr czasu",
         noTradesToDisplay: "Brak transakcji do wyświetlenia",
         newTrade: "Nowa transakcja",
@@ -468,6 +469,7 @@ export function LanguageProvider({ children }) {
         
         // Calendar
         today: "Dziś",
+        year: "Rok",
         thisMonth: "Ten miesiąc",
         trades: "Transakcje",
         tradingCalendar: "Kalendarz transakcji",
@@ -990,6 +992,7 @@ export function LanguageProvider({ children }) {
         executed: "Executed",
         searchBySymbol: "Search by symbol...",
         allTime: "All time",
+        thisWeek: "This week",
         timeFilterActive: "Time filter active",
         noTradesToDisplay: "No trades to display",
         newTrade: "New Transaction",
@@ -1060,6 +1063,7 @@ export function LanguageProvider({ children }) {
         
         // Calendar
         today: "Today",
+        year: "Year",
         thisMonth: "This Month",
         trades: "Trades",
         tradingCalendar: "Trading Calendar",

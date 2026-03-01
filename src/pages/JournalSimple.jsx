@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, deleteTrade, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -46,8 +46,12 @@ export default function JournalSimple({ mode = "all" }) {
   const isPlannedMode = mode === "planned";
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilters, setStatusFilters] = useState(isPlannedMode ? ["Planned"] : ["all"]);
-  const [timeFilter, setTimeFilter] = useState("all");
-  const [accountFilter, setAccountFilter] = useState("all");
+  const [timeFilters, setTimeFilters] = useState(["all"]);
+  const [timeFilterOpen, setTimeFilterOpen] = useState(false);
+  const timeFilterRef = useRef(null);
+  const [accountFilterOpen, setAccountFilterOpen] = useState(false);
+  const accountFilterRef = useRef(null);
+  const [accountFilters, setAccountFilters] = useState(["all"]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingTrade, setEditingTrade] = useState(null);
   const [viewingTrade, setViewingTrade] = useState(null);
@@ -55,7 +59,7 @@ export default function JournalSimple({ mode = "all" }) {
   const [viewerImage, setViewerImage] = useState("");
   const [sortField, setSortField] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
-  const [outcomeFilter, setOutcomeFilter] = useState("all");
+  const [outcomeFilters, setOutcomeFilters] = useState(["all"]);
   const [plannedOpen, setPlannedOpen] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState(new Set());
   const [deleteDialog, setDeleteDialog] = useState({ open: false, mode: null, tradeId: null, count: 0 });
@@ -209,22 +213,53 @@ export default function JournalSimple({ mode = "all" }) {
     setViewerOpen(true);
   };
 
+  useEffect(() => {
+    if (!timeFilterOpen) return;
+
+    const handleClickOutside = (event) => {
+      if (timeFilterRef.current && !timeFilterRef.current.contains(event.target)) {
+        setTimeFilterOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [timeFilterOpen]);
+
+  useEffect(() => {
+    if (!accountFilterOpen) return;
+
+    const handleClickOutside = (event) => {
+      if (accountFilterRef.current && !accountFilterRef.current.contains(event.target)) {
+        setAccountFilterOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [accountFilterOpen]);
+
   // Filter and search (base)
   const baseFilteredTrades = trades.filter(t => {
     if (searchTerm && !t.symbol.toLowerCase().includes(searchTerm.toLowerCase())) return false;
 
-    if (timeFilter !== "all") {
+    if (!timeFilters.includes("all")) {
       if (!t.date) return false;
       const tradeDate = parseISO(t.date);
       const now = new Date();
 
-      if (timeFilter === "day" && !isSameDay(tradeDate, now)) return false;
-      if (timeFilter === "week" && !isSameWeek(tradeDate, now, { weekStartsOn: 1 })) return false;
-      if (timeFilter === "month" && !isSameMonth(tradeDate, now)) return false;
+      const matchesSelectedTime =
+        (timeFilters.includes("day") && isSameDay(tradeDate, now)) ||
+        (timeFilters.includes("week") && isSameWeek(tradeDate, now, { weekStartsOn: 1 })) ||
+        (timeFilters.includes("month") && isSameMonth(tradeDate, now));
+
+      if (!matchesSelectedTime) return false;
     }
 
-    if (accountFilter !== "all") {
-      if (String(t.account_id) !== String(accountFilter)) return false;
+    if (!accountFilters.includes("all")) {
+      const tradeAccountId = String(t.account_id);
+      const matchesAccount = accountFilters.some((selectedAccountId) => String(selectedAccountId) === tradeAccountId);
+      if (!matchesAccount) return false;
     }
 
     return true;
@@ -234,9 +269,9 @@ export default function JournalSimple({ mode = "all" }) {
     ? baseFilteredTrades
     : baseFilteredTrades.filter(t => statusFilters.includes(t.status));
 
-  const outcomeFilteredTrades = outcomeFilter === "all"
+  const outcomeFilteredTrades = outcomeFilters.includes("all")
     ? statusFilteredTrades
-    : statusFilteredTrades.filter(t => t.outcome === outcomeFilter);
+    : statusFilteredTrades.filter(t => outcomeFilters.includes(t.outcome));
 
   const filteredTrades = sortTrades(outcomeFilteredTrades);
   const plannedTrades = sortTrades(baseFilteredTrades.filter(t => t.status === "Planned"));
@@ -256,6 +291,56 @@ export default function JournalSimple({ mode = "all" }) {
       return next.length ? next : ["all"];
     });
   };
+
+  const toggleTimeFilter = (value) => {
+    setTimeFilters((prev) => {
+      if (value === "all") return ["all"];
+      const withoutAll = prev.filter((item) => item !== "all");
+      const exists = withoutAll.includes(value);
+      const next = exists ? withoutAll.filter((item) => item !== value) : [...withoutAll, value];
+      return next.length ? next : ["all"];
+    });
+  };
+
+  const toggleAccountFilter = (value) => {
+    setAccountFilters((prev) => {
+      if (value === "all") return ["all"];
+      const withoutAll = prev.filter((item) => item !== "all");
+      const exists = withoutAll.includes(String(value));
+      const next = exists
+        ? withoutAll.filter((item) => item !== String(value))
+        : [...withoutAll, String(value)];
+      return next.length ? next : ["all"];
+    });
+  };
+
+  const toggleOutcomeFilter = (value) => {
+    setOutcomeFilters((prev) => {
+      if (value === "all") return ["all"];
+      const withoutAll = prev.filter((item) => item !== "all");
+      const exists = withoutAll.includes(value);
+      const next = exists ? withoutAll.filter((item) => item !== value) : [...withoutAll, value];
+      return next.length ? next : ["all"];
+    });
+  };
+
+  const activeAccountFilterLabel = accountFilters.includes("all")
+    ? (t('allAccounts') || 'All Accounts')
+    : accountFilters
+        .map((accountId) => accounts.find((account) => String(account.id) === String(accountId))?.name)
+        .filter(Boolean)
+        .join(", ");
+
+  const timeFilterLabels = {
+    all: t('allTime') || 'All Time',
+    day: t('today') || 'Today',
+    week: t('thisWeek') || 'This Week',
+    month: t('thisMonth') || 'This Month'
+  };
+
+  const activeTimeFilterLabel = timeFilters.includes("all")
+    ? timeFilterLabels.all
+    : timeFilters.map((filterKey) => timeFilterLabels[filterKey]).join(", ");
 
 
   const statsSource = isPlannedMode ? plannedTrades : baseFilteredTrades.filter(isClosedTrade);
@@ -359,8 +444,8 @@ export default function JournalSimple({ mode = "all" }) {
         {!isPlannedMode && (
         <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
           <Card
-            className={`bg-white dark:bg-[#1a1a2e] shadow-lg cursor-pointer ${statusFilters.includes("all") && outcomeFilter === "all" ? "ring-2 ring-blue-500" : ""}`}
-            onClick={() => { setStatusFilters(["all"]); setOutcomeFilter("all"); }}
+            className={`bg-white dark:bg-[#1a1a2e] shadow-lg cursor-pointer ${statusFilters.includes("all") && outcomeFilters.includes("all") ? "ring-2 ring-blue-500" : ""}`}
+            onClick={() => { setStatusFilters(["all"]); setOutcomeFilters(["all"]); }}
           >
             <CardContent className="p-4">
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">{t('totalTradesLabel')}</p>
@@ -369,7 +454,7 @@ export default function JournalSimple({ mode = "all" }) {
           </Card>
           <Card
             className={`bg-blue-50 dark:bg-blue-950 shadow-lg border-blue-200 dark:border-blue-800 cursor-pointer ${statusFilters.includes("Open") ? "ring-2 ring-blue-500" : ""}`}
-            onClick={() => { setStatusFilters(["Open"]); setOutcomeFilter("all"); }}
+            onClick={() => { setStatusFilters(["Open"]); setOutcomeFilters(["all"]); }}
           >
             <CardContent className="p-4">
               <p className="text-sm text-blue-700 dark:text-blue-400 mb-1">{t('openStatus')}</p>
@@ -378,7 +463,7 @@ export default function JournalSimple({ mode = "all" }) {
           </Card>
           <Card
             className={`bg-green-50 dark:bg-green-950 shadow-lg border-green-200 dark:border-green-800 cursor-pointer ${statusFilters.includes("Closed") ? "ring-2 ring-green-500" : ""}`}
-            onClick={() => { setStatusFilters(["Closed"]); setOutcomeFilter("all"); }}
+            onClick={() => { setStatusFilters(["Closed"]); setOutcomeFilters(["all"]); }}
           >
             <CardContent className="p-4">
               <p className="text-sm text-green-700 dark:text-green-400 mb-1">{t('closedStatus')}</p>
@@ -386,8 +471,8 @@ export default function JournalSimple({ mode = "all" }) {
             </CardContent>
           </Card>
           <Card
-            className={`bg-yellow-50 dark:bg-yellow-950 shadow-lg border-yellow-200 dark:border-yellow-800 cursor-pointer ${outcomeFilter === "Win" ? "ring-2 ring-yellow-500" : ""}`}
-            onClick={() => { setOutcomeFilter("Win"); }}
+            className={`bg-yellow-50 dark:bg-yellow-950 shadow-lg border-yellow-200 dark:border-yellow-800 cursor-pointer ${outcomeFilters.includes("Win") ? "ring-2 ring-yellow-500" : ""}`}
+            onClick={() => { toggleOutcomeFilter("Win"); }}
           >
             <CardContent className="p-4">
               <p className="text-sm text-yellow-700 dark:text-yellow-400 mb-1">{t('wins')}</p>
@@ -395,8 +480,8 @@ export default function JournalSimple({ mode = "all" }) {
             </CardContent>
           </Card>
           <Card
-            className={`bg-red-50 dark:bg-red-950 shadow-lg border-red-200 dark:border-red-800 cursor-pointer ${outcomeFilter === "Loss" ? "ring-2 ring-red-500" : ""}`}
-            onClick={() => { setOutcomeFilter("Loss"); }}
+            className={`bg-red-50 dark:bg-red-950 shadow-lg border-red-200 dark:border-red-800 cursor-pointer ${outcomeFilters.includes("Loss") ? "ring-2 ring-red-500" : ""}`}
+            onClick={() => { toggleOutcomeFilter("Loss"); }}
           >
             <CardContent className="p-4">
               <p className="text-sm text-red-700 dark:text-red-400 mb-1">{t('losses')}</p>
@@ -405,7 +490,7 @@ export default function JournalSimple({ mode = "all" }) {
           </Card>
           <Card
             className={`bg-amber-50 dark:bg-amber-950 shadow-lg border-amber-200 dark:border-amber-800 cursor-pointer ${statusFilters.includes("Planned") ? "ring-2 ring-amber-500" : ""}`}
-            onClick={() => { setStatusFilters(["Planned"]); setOutcomeFilter("all"); }}
+            onClick={() => { setStatusFilters(["Planned"]); setOutcomeFilters(["all"]); }}
           >
             <CardContent className="p-4">
               <p className="text-sm text-amber-700 dark:text-amber-400 mb-1">{t('planned')}</p>
@@ -447,7 +532,7 @@ export default function JournalSimple({ mode = "all" }) {
                         ? 'bg-blue-600 border-blue-600'
                         : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
-                    onClick={() => { toggleStatusFilter("all"); setOutcomeFilter("all"); }}
+                    onClick={() => { toggleStatusFilter("all"); setOutcomeFilters(["all"]); }}
                   >
                     {statusFilters.includes("all") && (
                       <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -464,7 +549,7 @@ export default function JournalSimple({ mode = "all" }) {
                         ? 'bg-blue-600 border-blue-600'
                         : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
-                    onClick={() => { toggleStatusFilter("Open"); setOutcomeFilter("all"); }}
+                    onClick={() => { toggleStatusFilter("Open"); setOutcomeFilters(["all"]); }}
                   >
                     {statusFilters.includes("Open") && (
                       <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -481,7 +566,7 @@ export default function JournalSimple({ mode = "all" }) {
                         ? 'bg-blue-600 border-blue-600'
                         : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
-                    onClick={() => { toggleStatusFilter("Closed"); setOutcomeFilter("all"); }}
+                    onClick={() => { toggleStatusFilter("Closed"); setOutcomeFilters(["all"]); }}
                   >
                     {statusFilters.includes("Closed") && (
                       <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -498,7 +583,7 @@ export default function JournalSimple({ mode = "all" }) {
                         ? 'bg-blue-600 border-blue-600'
                         : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
-                    onClick={() => { toggleStatusFilter("Planned"); setOutcomeFilter("all"); }}
+                    onClick={() => { toggleStatusFilter("Planned"); setOutcomeFilters(["all"]); }}
                   >
                     {statusFilters.includes("Planned") && (
                       <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -510,28 +595,117 @@ export default function JournalSimple({ mode = "all" }) {
                 </label>
               </div>
               )}
-              <select
-                value={timeFilter}
-                onChange={(e) => setTimeFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200"
-              >
-                <option value="all">All Time</option>
-                <option value="day">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-              </select>
-              <select
-                value={accountFilter}
-                onChange={(e) => setAccountFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200"
-              >
-                <option value="all">{t('allAccounts') || 'All Accounts'}</option>
-                {accounts.map(account => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative" ref={accountFilterRef}>
+                <button
+                  type="button"
+                  onClick={() => setAccountFilterOpen((prev) => !prev)}
+                  className="relative w-[220px] h-10 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200 flex items-center justify-center"
+                >
+                  <span className="truncate text-center w-full pr-4">
+                    {activeAccountFilterLabel || (t('allAccounts') || 'All Accounts')}
+                  </span>
+                  {accountFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
+                </button>
+                {accountFilterOpen && (
+                  <div className="absolute left-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1a2e] shadow-lg p-2 max-h-64 overflow-y-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleAccountFilter("all");
+                      }}
+                      className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      <span className="text-sm text-slate-700 dark:text-slate-200 truncate">{t('allAccounts') || 'All Accounts'}</span>
+                      <div
+                        className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
+                          accountFilters.includes("all")
+                            ? 'bg-blue-600 border-blue-600'
+                            : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500'
+                        }`}
+                      >
+                        {accountFilters.includes("all") && (
+                          <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </div>
+                    </button>
+                    {accounts.map((account) => {
+                      const isSelected = accountFilters.includes(String(account.id));
+                      return (
+                        <button
+                          key={account.id}
+                          type="button"
+                          onClick={() => {
+                            toggleAccountFilter(String(account.id));
+                          }}
+                          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          <span className="text-sm text-slate-700 dark:text-slate-200 truncate">{account.name}</span>
+                          <div
+                            className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
+                              isSelected
+                                ? 'bg-blue-600 border-blue-600'
+                                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500'
+                            }`}
+                          >
+                            {isSelected && (
+                              <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <div className="relative ml-auto" ref={timeFilterRef}>
+                <button
+                  type="button"
+                  onClick={() => setTimeFilterOpen((prev) => !prev)}
+                  className="relative min-w-[220px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200 flex items-center justify-center"
+                >
+                  <span className="truncate text-center w-full pr-4">{activeTimeFilterLabel}</span>
+                  {timeFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
+                </button>
+                {timeFilterOpen && (
+                  <div className="absolute right-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1a2e] shadow-lg p-2">
+                    {[
+                      { value: "all", label: timeFilterLabels.all },
+                      { value: "day", label: timeFilterLabels.day },
+                      { value: "week", label: timeFilterLabels.week },
+                      { value: "month", label: timeFilterLabels.month }
+                    ].map((option) => {
+                      const isChecked = timeFilters.includes(option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => toggleTimeFilter(option.value)}
+                          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                        >
+                          <span className="text-sm text-slate-700 dark:text-slate-200">{option.label}</span>
+                          <div
+                            className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
+                              isChecked
+                                ? 'bg-blue-600 border-blue-600'
+                                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500'
+                            }`}
+                          >
+                            {isChecked && (
+                              <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -857,7 +1031,11 @@ export default function JournalSimple({ mode = "all" }) {
 
         {/* Add Trade Dialog */}
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0">
+          <DialogContent
+            className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0"
+            onPointerDownOutside={(event) => event.preventDefault()}
+            onEscapeKeyDown={(event) => event.preventDefault()}
+          >
             <div className="sticky top-0 bg-white p-6 border-b">
               <DialogTitle>Add New Trade</DialogTitle>
             </div>

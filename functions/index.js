@@ -1,12 +1,17 @@
-import functions from "firebase-functions";
+import * as functions from "firebase-functions/v1";
+import { defineString } from "firebase-functions/params";
 import admin from "firebase-admin";
 import Stripe from "stripe";
 
 admin.initializeApp();
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY || functions.config()?.stripe?.secret_key || "";
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || functions.config()?.stripe?.webhook_secret || "";
-const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
+const stripeSecretParam = defineString("STRIPE_SECRET_KEY", { default: "" });
+const webhookSecretParam = defineString("STRIPE_WEBHOOK_SECRET", { default: "" });
+
+const getStripeClient = () => {
+  const stripeSecret = stripeSecretParam.value() || process.env.STRIPE_SECRET_KEY || "";
+  return stripeSecret ? new Stripe(stripeSecret) : null;
+};
 
 const applyCors = (req, res) => {
   const origin = req.headers.origin || "*";
@@ -22,6 +27,7 @@ const applyCors = (req, res) => {
 
 export const createCheckoutSession = functions.https.onRequest(async (req, res) => {
   if (!applyCors(req, res)) return;
+  const stripe = getStripeClient();
   if (!stripe) {
     res.status(500).json({ error: "Stripe not configured" });
     return;
@@ -57,6 +63,7 @@ export const createCheckoutSession = functions.https.onRequest(async (req, res) 
 
 export const createPortalSession = functions.https.onRequest(async (req, res) => {
   if (!applyCors(req, res)) return;
+  const stripe = getStripeClient();
   if (!stripe) {
     res.status(500).json({ error: "Stripe not configured" });
     return;
@@ -84,8 +91,14 @@ export const createPortalSession = functions.https.onRequest(async (req, res) =>
 });
 
 export const stripeWebhook = functions.https.onRequest(async (req, res) => {
+  const stripe = getStripeClient();
   if (!stripe) {
     res.status(500).send("Stripe not configured");
+    return;
+  }
+  const webhookSecret = webhookSecretParam.value() || process.env.STRIPE_WEBHOOK_SECRET || "";
+  if (!webhookSecret) {
+    res.status(500).send("Webhook secret not configured");
     return;
   }
   const signature = req.headers["stripe-signature"];

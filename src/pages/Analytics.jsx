@@ -17,12 +17,12 @@ import { useLanguage } from "@/components/LanguageProvider";
 export default function Analytics() {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [selectedAccount, setSelectedAccount] = useState("all");
-  const [filterSymbol, setFilterSymbol] = useState("all");
-  const [filterStrategy, setFilterStrategy] = useState("all");
-  const [filterDirection, setFilterDirection] = useState("all");
-  const [filterOutcome, setFilterOutcome] = useState("all");
-  const [filterTimeframe, setFilterTimeframe] = useState("all");
+  const [selectedAccounts, setSelectedAccounts] = useState(["all"]);
+  const [filterSymbols, setFilterSymbols] = useState(["all"]);
+  const [filterStrategies, setFilterStrategies] = useState(["all"]);
+  const [filterDirections, setFilterDirections] = useState(["all"]);
+  const [filterOutcomes, setFilterOutcomes] = useState(["all"]);
+  const [filterTimeframes, setFilterTimeframes] = useState(["all"]);
   
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
   const [symbolDropdownOpen, setSymbolDropdownOpen] = useState(false);
@@ -84,15 +84,51 @@ export default function Analytics() {
   const uniqueOutcomes = [...new Set(trades.map(t => t.outcome).filter(Boolean))];
   const uniqueTimeframes = [...new Set(trades.map(t => t.timeframe).filter(Boolean))];
 
+  const toggleMultiFilter = (setter, value) => {
+    setter((prev) => {
+      if (value === "all") return ["all"];
+      const normalizedValue = String(value);
+      const withoutAll = prev.filter((item) => item !== "all");
+      const exists = withoutAll.includes(normalizedValue);
+      const next = exists
+        ? withoutAll.filter((item) => item !== normalizedValue)
+        : [...withoutAll, normalizedValue];
+      return next.length ? next : ["all"];
+    });
+  };
+
+  const getMultiFilterLabel = (values, allLabel, resolver) => {
+    if (values.includes("all")) return allLabel;
+    return values
+      .map((value) => resolver(value))
+      .filter(Boolean)
+      .join(", ");
+  };
+
+  const selectedAccountsLabel = getMultiFilterLabel(
+    selectedAccounts,
+    t('allAccounts'),
+    (value) => accounts.find((account) => String(account.id) === String(value))?.name
+  );
+  const selectedSymbolsLabel = getMultiFilterLabel(filterSymbols, t('all'), (value) => value);
+  const selectedStrategiesLabel = getMultiFilterLabel(
+    filterStrategies,
+    t('all'),
+    (value) => strategies.find((strategy) => String(strategy.id) === String(value))?.name
+  );
+  const selectedDirectionsLabel = getMultiFilterLabel(filterDirections, t('all'), (value) => value);
+  const selectedOutcomesLabel = getMultiFilterLabel(filterOutcomes, t('all'), (value) => value);
+  const selectedTimeframesLabel = getMultiFilterLabel(filterTimeframes, t('all'), (value) => value);
+
   // Filter trades by selected filters
   const filteredTrades = trades.filter(t => (
     isClosedTrade(t) &&
-    (selectedAccount === "all" || t.account_id === selectedAccount) &&
-    (filterSymbol === "all" || t.symbol === filterSymbol) &&
-    (filterStrategy === "all" || t.strategy_id === filterStrategy) &&
-    (filterDirection === "all" || normalizeDirection(t.direction) === filterDirection) &&
-    (filterOutcome === "all" || t.outcome === filterOutcome) &&
-    (filterTimeframe === "all" || t.timeframe === filterTimeframe)
+    (selectedAccounts.includes("all") || selectedAccounts.includes(String(t.account_id))) &&
+    (filterSymbols.includes("all") || filterSymbols.includes(String(t.symbol))) &&
+    (filterStrategies.includes("all") || filterStrategies.includes(String(t.strategy_id))) &&
+    (filterDirections.includes("all") || filterDirections.includes(String(normalizeDirection(t.direction)))) &&
+    (filterOutcomes.includes("all") || filterOutcomes.includes(String(t.outcome))) &&
+    (filterTimeframes.includes("all") || filterTimeframes.includes(String(t.timeframe)))
   ));
 
   // Symbol analysis
@@ -316,7 +352,7 @@ export default function Analytics() {
     );
   }
 
-  const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#14b8a6'];
+  const COLORS = ['#3b82f6', '#22c55e', '#8b5cf6', '#f59e0b', '#f43f5e', '#06b6d4', '#ec4899', '#14b8a6'];
 
   const outcomeCounts = {
     wins: filteredTrades.filter(t => t.outcome === 'Win').length,
@@ -406,27 +442,51 @@ export default function Analytics() {
             <div className="relative" ref={accountDropdownRef}>
               <button
                 onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
-                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
               >
-                {selectedAccount === 'all' ? t('allAccounts') : (accounts.find(a => a.id === selectedAccount)?.name || t('account'))}
-                <ChevronDown className="w-4 h-4 opacity-50" />
+                <span className="truncate text-center w-full pr-5">{selectedAccountsLabel || t('allAccounts')}</span>
+                <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {accountDropdownOpen && (
                 <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                  {(() => {
+                    const isSelected = selectedAccounts.includes('all');
+                    return (
                   <button
-                    onClick={() => { setSelectedAccount('all'); setAccountDropdownOpen(false); }}
-                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${selectedAccount === 'all' ? 'bg-accent' : ''}`}
+                    onClick={() => toggleMultiFilter(setSelectedAccounts, 'all')}
+                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
-                    {t('allAccounts')}
+                    <span className="truncate">{t('allAccounts')}</span>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      {isSelected && (
+                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </span>
                   </button>
+                    );
+                  })()}
                   {accounts.map(acc => (
+                    (() => {
+                      const isSelected = selectedAccounts.includes(String(acc.id));
+                      return (
                     <button
                       key={acc.id}
-                      onClick={() => { setSelectedAccount(acc.id); setAccountDropdownOpen(false); }}
-                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${selectedAccount === acc.id ? 'bg-accent' : ''}`}
+                      onClick={() => toggleMultiFilter(setSelectedAccounts, acc.id)}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
-                      {acc.name}
+                      <span className="truncate">{acc.name}</span>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {isSelected && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </button>
+                      );
+                    })()
                   ))}
                 </div>
               )}
@@ -438,27 +498,51 @@ export default function Analytics() {
             <div className="relative" ref={symbolDropdownRef}>
               <button
                 onClick={() => setSymbolDropdownOpen(!symbolDropdownOpen)}
-                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
               >
-                {filterSymbol === 'all' ? t('all') : filterSymbol}
-                <ChevronDown className="w-4 h-4 opacity-50" />
+                <span className="truncate text-center w-full pr-5">{selectedSymbolsLabel || t('all')}</span>
+                <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {symbolDropdownOpen && (
                 <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                  {(() => {
+                    const isSelected = filterSymbols.includes('all');
+                    return (
                   <button
-                    onClick={() => { setFilterSymbol('all'); setSymbolDropdownOpen(false); }}
-                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterSymbol === 'all' ? 'bg-accent' : ''}`}
+                    onClick={() => toggleMultiFilter(setFilterSymbols, 'all')}
+                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
-                    {t('all')}
+                    <span className="truncate">{t('all')}</span>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      {isSelected && (
+                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </span>
                   </button>
+                    );
+                  })()}
                   {uniqueSymbols.map(sym => (
+                    (() => {
+                      const isSelected = filterSymbols.includes(String(sym));
+                      return (
                     <button
                       key={sym}
-                      onClick={() => { setFilterSymbol(sym); setSymbolDropdownOpen(false); }}
-                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterSymbol === sym ? 'bg-accent' : ''}`}
+                      onClick={() => toggleMultiFilter(setFilterSymbols, sym)}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
-                      {sym}
+                      <span className="truncate">{sym}</span>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {isSelected && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </button>
+                      );
+                    })()
                   ))}
                 </div>
               )}
@@ -470,26 +554,40 @@ export default function Analytics() {
             <div className="relative" ref={strategyDropdownRef}>
               <button
                 onClick={() => setStrategyDropdownOpen(!strategyDropdownOpen)}
-                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
               >
-                {filterStrategy === 'all' ? t('all') : (strategies.find(s => s.id === filterStrategy)?.name || t('strategy'))}
-                <ChevronDown className="w-4 h-4 opacity-50" />
+                <span className="truncate text-center w-full pr-5">{selectedStrategiesLabel || t('all')}</span>
+                <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {strategyDropdownOpen && (
                 <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
                   <button
-                    onClick={() => { setFilterStrategy('all'); setStrategyDropdownOpen(false); }}
-                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterStrategy === 'all' ? 'bg-accent' : ''}`}
+                    onClick={() => toggleMultiFilter(setFilterStrategies, 'all')}
+                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes('all') ? 'bg-accent' : ''}`}
                   >
-                    {t('all')}
+                    <span className="truncate">{t('all')}</span>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      {filterStrategies.includes('all') && (
+                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </span>
                   </button>
                   {strategies.map(strategy => (
                     <button
                       key={strategy.id}
-                      onClick={() => { setFilterStrategy(strategy.id); setStrategyDropdownOpen(false); }}
-                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterStrategy === strategy.id ? 'bg-accent' : ''}`}
+                      onClick={() => toggleMultiFilter(setFilterStrategies, strategy.id)}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes(String(strategy.id)) ? 'bg-accent' : ''}`}
                     >
-                      {strategy.name}
+                      <span className="truncate">{strategy.name}</span>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes(String(strategy.id)) ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {filterStrategies.includes(String(strategy.id)) && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -502,27 +600,51 @@ export default function Analytics() {
             <div className="relative" ref={directionDropdownRef}>
               <button
                 onClick={() => setDirectionDropdownOpen(!directionDropdownOpen)}
-                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
               >
-                {filterDirection === 'all' ? t('all') : filterDirection}
-                <ChevronDown className="w-4 h-4 opacity-50" />
+                <span className="truncate text-center w-full pr-5">{selectedDirectionsLabel || t('all')}</span>
+                <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {directionDropdownOpen && (
                 <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                  {(() => {
+                    const isSelected = filterDirections.includes('all');
+                    return (
                   <button
-                    onClick={() => { setFilterDirection('all'); setDirectionDropdownOpen(false); }}
-                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterDirection === 'all' ? 'bg-accent' : ''}`}
+                    onClick={() => toggleMultiFilter(setFilterDirections, 'all')}
+                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
-                    {t('all')}
+                    <span className="truncate">{t('all')}</span>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      {isSelected && (
+                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </span>
                   </button>
+                    );
+                  })()}
                   {uniqueDirections.map(dir => (
+                    (() => {
+                      const isSelected = filterDirections.includes(String(dir));
+                      return (
                     <button
                       key={dir}
-                      onClick={() => { setFilterDirection(dir); setDirectionDropdownOpen(false); }}
-                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterDirection === dir ? 'bg-accent' : ''}`}
+                      onClick={() => toggleMultiFilter(setFilterDirections, dir)}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
-                      {dir}
+                      <span className="truncate">{dir}</span>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {isSelected && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </button>
+                      );
+                    })()
                   ))}
                 </div>
               )}
@@ -534,27 +656,51 @@ export default function Analytics() {
             <div className="relative" ref={outcomeDropdownRef}>
               <button
                 onClick={() => setOutcomeDropdownOpen(!outcomeDropdownOpen)}
-                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
               >
-                {filterOutcome === 'all' ? t('all') : filterOutcome}
-                <ChevronDown className="w-4 h-4 opacity-50" />
+                <span className="truncate text-center w-full pr-5">{selectedOutcomesLabel || t('all')}</span>
+                <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {outcomeDropdownOpen && (
                 <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                  {(() => {
+                    const isSelected = filterOutcomes.includes('all');
+                    return (
                   <button
-                    onClick={() => { setFilterOutcome('all'); setOutcomeDropdownOpen(false); }}
-                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterOutcome === 'all' ? 'bg-accent' : ''}`}
+                    onClick={() => toggleMultiFilter(setFilterOutcomes, 'all')}
+                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
-                    {t('all')}
+                    <span className="truncate">{t('all')}</span>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      {isSelected && (
+                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </span>
                   </button>
+                    );
+                  })()}
                   {uniqueOutcomes.map(out => (
+                    (() => {
+                      const isSelected = filterOutcomes.includes(String(out));
+                      return (
                     <button
                       key={out}
-                      onClick={() => { setFilterOutcome(out); setOutcomeDropdownOpen(false); }}
-                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterOutcome === out ? 'bg-accent' : ''}`}
+                      onClick={() => toggleMultiFilter(setFilterOutcomes, out)}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
-                      {out}
+                      <span className="truncate">{out}</span>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {isSelected && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </button>
+                      );
+                    })()
                   ))}
                 </div>
               )}
@@ -566,27 +712,51 @@ export default function Analytics() {
             <div className="relative" ref={timeframeDropdownRef}>
               <button
                 onClick={() => setTimeframeDropdownOpen(!timeframeDropdownOpen)}
-                className="h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
               >
-                {filterTimeframe === 'all' ? t('all') : filterTimeframe}
-                <ChevronDown className="w-4 h-4 opacity-50" />
+                <span className="truncate text-center w-full pr-5">{selectedTimeframesLabel || t('all')}</span>
+                <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {timeframeDropdownOpen && (
                 <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                  {(() => {
+                    const isSelected = filterTimeframes.includes('all');
+                    return (
                   <button
-                    onClick={() => { setFilterTimeframe('all'); setTimeframeDropdownOpen(false); }}
-                    className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterTimeframe === 'all' ? 'bg-accent' : ''}`}
+                    onClick={() => toggleMultiFilter(setFilterTimeframes, 'all')}
+                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
-                    {t('all')}
+                    <span className="truncate">{t('all')}</span>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      {isSelected && (
+                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </span>
                   </button>
+                    );
+                  })()}
                   {uniqueTimeframes.map(tf => (
+                    (() => {
+                      const isSelected = filterTimeframes.includes(String(tf));
+                      return (
                     <button
                       key={tf}
-                      onClick={() => { setFilterTimeframe(tf); setTimeframeDropdownOpen(false); }}
-                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${filterTimeframe === tf ? 'bg-accent' : ''}`}
+                      onClick={() => toggleMultiFilter(setFilterTimeframes, tf)}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
-                      {tf}
+                      <span className="truncate">{tf}</span>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {isSelected && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </button>
+                      );
+                    })()
                   ))}
                 </div>
               )}
@@ -599,11 +769,12 @@ export default function Analytics() {
               variant="outline"
               className="h-10 w-full border-rose-300 text-rose-700 hover:bg-rose-50 hover:border-rose-400"
               onClick={() => {
-                setFilterSymbol("all");
-                setFilterStrategy("all");
-                setFilterDirection("all");
-                setFilterOutcome("all");
-                setFilterTimeframe("all");
+                setFilterSymbols(["all"]);
+                setFilterStrategies(["all"]);
+                setFilterDirections(["all"]);
+                setFilterOutcomes(["all"]);
+                setFilterTimeframes(["all"]);
+                setSelectedAccounts(["all"]);
               }}
             >
               {t('reset')}
@@ -712,7 +883,7 @@ export default function Analytics() {
                         />
                         <Bar dataKey="netPL" radius={[0, 10, 10, 0]}>
                           {directionEdgeData.map((entry) => (
-                            <Cell key={entry.direction} fill={entry.netPL >= 0 ? '#38bdf8' : '#fb7185'} />
+                            <Cell key={entry.direction} fill={entry.netPL >= 0 ? '#22c55e' : '#f43f5e'} />
                           ))}
                         </Bar>
                       </BarChart>
@@ -931,7 +1102,7 @@ export default function Analytics() {
                           labelStyle={{ color: '#f1f5f9' }}
                         />
                         <Legend />
-                        <Bar dataKey="totalPL" xAxisId="bottom" fill="#10b981" name={t('totalPLLabel')} radius={[0, 8, 8, 0]} />
+                        <Bar dataKey="totalPL" xAxisId="bottom" fill="#22c55e" name={t('totalPLLabel')} radius={[0, 8, 8, 0]} />
                         <Bar dataKey="winRate" xAxisId="top" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[0, 8, 8, 0]} />
                       </BarChart>
                   </ResponsiveContainer>
@@ -1297,7 +1468,7 @@ export default function Analytics() {
                       />
                       <Legend />
                       <Bar dataKey="winRate" yAxisId="left" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="avgPL" yAxisId="right" fill="#10b981" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="avgPL" yAxisId="right" fill="#22c55e" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
                       <Bar dataKey="trades" yAxisId="left" fill="#8b5cf6" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -1659,7 +1830,7 @@ export default function Analytics() {
                       <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
                         <Pie
                           data={[
-                            { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: '#10b981' },
+                            { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: '#22c55e' },
                             { name: 'Demo', value: accounts.filter(a => a.account_type === 'Demo').length, fill: '#3b82f6' },
                             { name: 'Challenge', value: accounts.filter(a => a.account_type === 'Challenge').length, fill: '#8b5cf6' },
                             { name: 'Funded', value: accounts.filter(a => a.account_type === 'Funded').length, fill: '#f59e0b' }
@@ -1672,7 +1843,7 @@ export default function Analytics() {
                           dataKey="value"
                         >
                           {[
-                            { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: '#10b981' },
+                            { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: '#22c55e' },
                             { name: 'Demo', value: accounts.filter(a => a.account_type === 'Demo').length, fill: '#3b82f6' },
                             { name: 'Challenge', value: accounts.filter(a => a.account_type === 'Challenge').length, fill: '#8b5cf6' },
                             { name: 'Funded', value: accounts.filter(a => a.account_type === 'Funded').length, fill: '#f59e0b' }
@@ -1699,10 +1870,10 @@ export default function Analytics() {
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="100%" height={340}>
                       <BarChart data={[
-                        { status: 'Aktywne', count: accounts.filter(a => a.status === 'Active').length, fill: '#10b981' },
+                        { status: 'Aktywne', count: accounts.filter(a => a.status === 'Active').length, fill: '#22c55e' },
                         { status: 'Nieaktywne', count: accounts.filter(a => a.status === 'Inactive').length, fill: '#64748b' },
                         { status: 'Zawieszone', count: accounts.filter(a => a.status === 'Suspended').length, fill: '#f59e0b' },
-                        { status: 'Zamknięte', count: accounts.filter(a => a.status === 'Closed').length, fill: '#ef4444' }
+                        { status: 'Zamknięte', count: accounts.filter(a => a.status === 'Closed').length, fill: '#f43f5e' }
                       ].filter(item => item.count > 0)} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis dataKey="status" stroke="#64748b" />
@@ -1739,7 +1910,7 @@ export default function Analytics() {
                       />
                       <Legend />
                       <Bar dataKey="winRate" yAxisId="left" fill="#3b82f6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="roi" yAxisId="right" fill="#10b981" name={t('roi')} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="roi" yAxisId="right" fill="#22c55e" name={t('roi')} radius={[8, 8, 0, 0]} />
                       <Bar dataKey="trades" yAxisId="left" fill="#8b5cf6" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -1814,7 +1985,7 @@ export default function Analytics() {
                           />
                           <Legend />
                           <Bar dataKey="winRate" yAxisId="left" fill="#f59e0b" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                          <Bar dataKey="avgPL" yAxisId="right" fill="#10b981" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="avgPL" yAxisId="right" fill="#22c55e" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>

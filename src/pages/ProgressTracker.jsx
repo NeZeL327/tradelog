@@ -22,7 +22,8 @@ import {
   Target,
   Trash2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  ChevronDown
 } from "lucide-react";
 import { format, subDays } from "date-fns";
 import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
@@ -159,8 +160,12 @@ export default function ProgressTracker() {
   const { t } = useLanguage();
   const { user } = useAuth();
 
-  const [range, setRange] = useState("30d");
-  const [accountFilter, setAccountFilter] = useState("all");
+  const [rangeFilters, setRangeFilters] = useState(["30d"]);
+  const [accountFilters, setAccountFilters] = useState(["all"]);
+  const [rangeFilterOpen, setRangeFilterOpen] = useState(false);
+  const [accountFilterOpen, setAccountFilterOpen] = useState(false);
+  const rangeFilterRef = useRef(null);
+  const accountFilterRef = useRef(null);
   const [isRulesOpen, setIsRulesOpen] = useState(false);
   const [isChecklistOpen, setIsChecklistOpen] = useState(false);
   const [isDayOpen, setIsDayOpen] = useState(false);
@@ -243,12 +248,66 @@ export default function ProgressTracker() {
     );
   }, [rules, checklistTemplate, dailyChecks, user?.id]);
 
+  const toggleRangeFilter = (value) => {
+    setRangeFilters((prev) => {
+      const exists = prev.includes(value);
+      const next = exists ? prev.filter((item) => item !== value) : [...prev, value];
+      return next.length ? next : ["30d"];
+    });
+  };
+
+  const toggleAccountFilter = (value) => {
+    setAccountFilters((prev) => {
+      if (value === "all") return ["all"];
+      const normalizedValue = String(value);
+      const withoutAll = prev.filter((item) => item !== "all");
+      const exists = withoutAll.includes(normalizedValue);
+      const next = exists
+        ? withoutAll.filter((item) => item !== normalizedValue)
+        : [...withoutAll, normalizedValue];
+      return next.length ? next : ["all"];
+    });
+  };
+
   const daysCount = useMemo(() => {
-    if (range === "7d") return 7;
-    if (range === "90d") return 90;
-    if (range === "180d") return 180;
-    return 30;
-  }, [range]);
+    const values = rangeFilters.map((value) => {
+      if (value === "7d") return 7;
+      if (value === "90d") return 90;
+      if (value === "180d") return 180;
+      return 30;
+    });
+    return Math.max(...values);
+  }, [rangeFilters]);
+
+  const selectedRangeLabel = rangeFilters
+    .map((value) => {
+      if (value === "7d") return "7 dni";
+      if (value === "90d") return "90 dni";
+      if (value === "180d") return "180 dni";
+      return "30 dni";
+    })
+    .join(", ");
+
+  const selectedAccountLabel = accountFilters.includes("all")
+    ? "Wszystkie konta"
+    : accountFilters
+        .map((accountId) => accounts.find((account) => String(account.id) === String(accountId))?.name)
+        .filter(Boolean)
+        .join(", ");
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (rangeFilterRef.current && !rangeFilterRef.current.contains(event.target)) {
+        setRangeFilterOpen(false);
+      }
+      if (accountFilterRef.current && !accountFilterRef.current.contains(event.target)) {
+        setAccountFilterOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   const sinceDate = useMemo(() => subDays(new Date(), daysCount - 1), [daysCount]);
 
@@ -259,16 +318,16 @@ export default function ProgressTracker() {
         if (!date) return false;
         if (date < sinceDate) return false;
 
-        if (accountFilter === "all") return true;
+        if (accountFilters.includes("all")) return true;
         const tradeAccount = String(trade.account_id || trade.accountId || "");
-        return tradeAccount === String(accountFilter);
+        return accountFilters.some((selectedAccountId) => String(selectedAccountId) === tradeAccount);
       })
       .sort((a, b) => {
         const da = parseDateFromTrade(a)?.getTime() || 0;
         const db = parseDateFromTrade(b)?.getTime() || 0;
         return da - db;
       });
-  }, [trades, sinceDate, accountFilter]);
+  }, [trades, sinceDate, accountFilters]);
 
   const tradesByDay = useMemo(() => {
     const map = {};
@@ -521,32 +580,95 @@ export default function ProgressTracker() {
                 </div>
               </div>
               <div className="flex items-center gap-4 flex-wrap lg:flex-nowrap">
-                <Select value={range} onValueChange={setRange}>
-                  <SelectTrigger className="w-36 h-9">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="w-4 h-4 text-slate-500" />
-                      <SelectValue />
+                <div className="relative" ref={rangeFilterRef}>
+                  <button
+                    type="button"
+                    onClick={() => setRangeFilterOpen((prev) => !prev)}
+                    className="relative w-44 h-9 px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
+                  >
+                    <CalendarDays className="absolute left-3 w-4 h-4 text-slate-500" />
+                    <span className="truncate text-center w-full px-6">{selectedRangeLabel}</span>
+                    <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
+                  </button>
+                  {rangeFilterOpen && (
+                    <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                      {[
+                        { value: "7d", label: "7 dni" },
+                        { value: "30d", label: "30 dni" },
+                        { value: "90d", label: "90 dni" },
+                        { value: "180d", label: "180 dni" }
+                      ].map((option) => {
+                        const isSelected = rangeFilters.includes(option.value);
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => toggleRangeFilter(option.value)}
+                            className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
+                          >
+                            <span className="truncate">{option.label}</span>
+                            <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                              {isSelected && (
+                                <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7d">7 dni</SelectItem>
-                    <SelectItem value="30d">30 dni</SelectItem>
-                    <SelectItem value="90d">90 dni</SelectItem>
-                    <SelectItem value="180d">180 dni</SelectItem>
-                  </SelectContent>
-                </Select>
+                  )}
+                </div>
 
-                <Select value={accountFilter} onValueChange={setAccountFilter}>
-                  <SelectTrigger className="w-44 h-9">
-                    <SelectValue placeholder="Konto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Wszystkie konta</SelectItem>
-                    {accounts.map((acc) => (
-                      <SelectItem key={acc.id} value={String(acc.id)}>{acc.name || acc.id}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative" ref={accountFilterRef}>
+                  <button
+                    type="button"
+                    onClick={() => setAccountFilterOpen((prev) => !prev)}
+                    className="relative w-52 h-9 px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
+                  >
+                    <span className="truncate text-center w-full pr-4">{selectedAccountLabel || "Wszystkie konta"}</span>
+                    <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
+                  </button>
+                  {accountFilterOpen && (
+                    <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                      <button
+                        type="button"
+                        onClick={() => toggleAccountFilter("all")}
+                        className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${accountFilters.includes('all') ? 'bg-accent' : ''}`}
+                      >
+                        <span className="truncate">Wszystkie konta</span>
+                        <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${accountFilters.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                          {accountFilters.includes('all') && (
+                            <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </span>
+                      </button>
+                      {accounts.map((acc) => {
+                        const isSelected = accountFilters.includes(String(acc.id));
+                        return (
+                          <button
+                            key={acc.id}
+                            type="button"
+                            onClick={() => toggleAccountFilter(acc.id)}
+                            className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
+                          >
+                            <span className="truncate">{acc.name || acc.id}</span>
+                            <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                              {isSelected && (
+                                <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
 
                 <Button variant="outline" className="h-9 gap-2" onClick={() => setIsChecklistOpen(true)}>
                   <CheckCircle2 className="w-4 h-4" /> Checklist dnia

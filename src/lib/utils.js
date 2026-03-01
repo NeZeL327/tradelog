@@ -77,20 +77,20 @@ export const tradeOutcomeToneClass = (outcome) => {
 
 export const tradeOutcomeChartColor = (outcome) => {
   const normalized = normalizeTradeOutcome(outcome);
-  if (normalized === "win") return "#10b981";
-  if (normalized === "loss") return "#ef4444";
+  if (normalized === "win") return "#22c55e";
+  if (normalized === "loss") return "#f43f5e";
   if (normalized === "breakeven") return "#f59e0b";
   return "#64748b";
 };
 
 export const tradePnLBarColor = (value) => {
   const parsed = Number(value) || 0;
-  return parsed >= 0 ? "#f59e0b" : "#ef4444";
+  return parsed >= 0 ? "#22c55e" : "#f43f5e";
 };
 
 export const directionChartColor = (direction) => {
   const normalized = normalizeDirection(direction);
   if (normalized === "Long") return "#22c55e";
-  if (normalized === "Short") return "#ef4444";
+  if (normalized === "Short") return "#f43f5e";
   return "#64748b";
 };

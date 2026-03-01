@@ -36,10 +36,13 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
     notes: "",
     entry_time: "",
     exit_time: "",
+    timeframe: "",
+    session: "",
     stop_loss_pips: "",
     take_profit_pips: "",
     stop_loss_amount: "",
     take_profit_amount: "",
+    commission: "",
     profit_loss_manual: "",
     scale_outs: [],
     breakeven_moved: false,
@@ -120,10 +123,19 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
       notes: trade.notes || "",
       entry_time: trade.entry_time || "",
       exit_time: trade.exit_time || "",
+      timeframe: trade.timeframe || "",
+      session: trade.session || "",
       stop_loss_pips: trade.stop_loss_pips != null ? String(trade.stop_loss_pips) : "",
       take_profit_pips: trade.take_profit_pips != null ? String(trade.take_profit_pips) : "",
       stop_loss_amount: trade.stop_loss_amount != null ? String(trade.stop_loss_amount) : "",
       take_profit_amount: trade.take_profit_amount != null ? String(trade.take_profit_amount) : "",
+      commission: trade.commission != null
+        ? String(
+            trade.commission_operation
+              ? (trade.commission_operation === "add" ? Math.abs(Number(trade.commission)) : -Math.abs(Number(trade.commission)))
+              : Number(trade.commission)
+          )
+        : "",
       profit_loss_manual: trade.profit_loss_manual != null ? String(trade.profit_loss_manual) : "",
       scale_outs: Array.isArray(trade.scale_outs) ? trade.scale_outs.map((item) => ({
         id: item.id || `${Date.now()}_${Math.random().toString(16).slice(2)}`,
@@ -286,13 +298,16 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
       return null;
     }
 
+    const commissionAdjustment = toNumber(formData.commission) || 0;
+
     if (manualPLOvride && formData.profit_loss_manual !== "") {
       const manual = parseFloat(formData.profit_loss_manual);
       if (!Number.isNaN(manual)) {
+        const finalManual = manual + commissionAdjustment;
         return {
-          profit_loss: manual.toFixed(2),
+          profit_loss: finalManual.toFixed(2),
           profit_loss_percent: "",
-          outcome: manual > 0 ? "Win" : manual < 0 ? "Loss" : "Breakeven"
+          outcome: finalManual > 0 ? "Win" : finalManual < 0 ? "Loss" : "Breakeven"
         };
       }
     }
@@ -320,10 +335,12 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
       return null;
     }
 
+    const finalRealized = totalRealized + commissionAdjustment;
+
     return {
-      profit_loss: totalRealized.toFixed(2),
+      profit_loss: finalRealized.toFixed(2),
       profit_loss_percent: "",
-      outcome: totalRealized > 0 ? "Win" : totalRealized < 0 ? "Loss" : "Breakeven"
+      outcome: finalRealized > 0 ? "Win" : finalRealized < 0 ? "Loss" : "Breakeven"
     };
   };
 
@@ -377,6 +394,9 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
         take_profit_pips: toNumber(formData.take_profit_pips),
         stop_loss_amount: toNumber(formData.stop_loss_amount),
         take_profit_amount: toNumber(formData.take_profit_amount),
+        timeframe: formData.timeframe || null,
+        session: formData.session || null,
+        commission: toNumber(formData.commission),
         scale_outs: (formData.scale_outs || []).map(item => ({
           id: item.id,
           size: toNumber(item.size),
@@ -418,10 +438,13 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
           notes: "",
           entry_time: "",
           exit_time: "",
+          timeframe: "",
+          session: "",
           stop_loss_pips: "",
           take_profit_pips: "",
           stop_loss_amount: "",
           take_profit_amount: "",
+          commission: "",
           profit_loss_manual: "",
           scale_outs: [],
           breakeven_moved: false,
@@ -580,6 +603,40 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                   <option value="Planned">{t('plannedStatus')}</option>
                 </select>
               </div>
+
+              <div>
+                <Label className="block text-sm font-semibold mb-2">{t('timeframe')}</Label>
+                <select
+                  name="timeframe"
+                  value={formData.timeframe}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-md bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Wybierz interwał</option>
+                  <option value="1m">1m</option>
+                  <option value="5m">5m</option>
+                  <option value="15m">15m</option>
+                  <option value="30m">30m</option>
+                  <option value="1h">1h</option>
+                  <option value="4h">4h</option>
+                  <option value="1d">1d</option>
+                </select>
+              </div>
+
+              <div>
+                <Label className="block text-sm font-semibold mb-2">Sesja</Label>
+                <select
+                  name="session"
+                  value={formData.session}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-md bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Wybierz sesję</option>
+                  <option value="Asia">Asia</option>
+                  <option value="Londyn">Londyn</option>
+                  <option value="Nowy Jork">Nowy Jork</option>
+                </select>
+              </div>
             </div>
 
             {/* Time Info */}
@@ -607,7 +664,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
             {/* Price Info */}
             {formData.status !== 'Planned' && (
               <div className="p-4 bg-purple-50 rounded-lg space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div>
                     <Label className="block text-sm font-semibold mb-2">{t('entryPrice')} *</Label>
                     <Input
@@ -618,6 +675,18 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                       value={formData.entry_price}
                       onChange={handleChange}
                       required={formData.status !== 'Planned'}
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="block text-sm font-semibold mb-2">{t('exitPrice')}</Label>
+                    <Input
+                      type="number"
+                      name="exit_price"
+                      placeholder="1.1100"
+                      step="0.00001"
+                      value={formData.exit_price}
+                      onChange={handleChange}
                     />
                   </div>
 
@@ -679,6 +748,20 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                       placeholder="np. 300"
                       step="0.01"
                       value={formData.take_profit_amount}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="block text-sm font-semibold mb-2">Commission</Label>
+                    <Input
+                      type="number"
+                      name="commission"
+                      placeholder="np. 5"
+                      step="0.01"
+                      value={formData.commission}
                       onChange={handleChange}
                     />
                   </div>
@@ -856,7 +939,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                 )}
               </div>
               <div className="flex items-end text-sm text-slate-500">
-                {manualPLOvride ? t('profitLossManualHint') : 'Auto: wartosc aktualizuje sie na podstawie wszystkich czesci zamkniec.'}
+                {manualPLOvride ? t('profitLossManualHint') : 'Auto: wartosc aktualizuje sie na podstawie wszystkich czesci zamkniec i commission.'}
               </div>
             </div>
 

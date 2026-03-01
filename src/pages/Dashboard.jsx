@@ -35,20 +35,22 @@ export default function Dashboard() {
   const accountBalanceFilterRef = useRef(null);
   const [recentTradesAccountOpen, setRecentTradesAccountOpen] = useState(false);
   const recentTradesAccountRef = useRef(null);
-  const [dashboardAccount, setDashboardAccount] = useState("all");
-  const [dashboardRange, setDashboardRange] = useState("30d");
+  const [dashboardAccounts, setDashboardAccounts] = useState(["all"]);
+  const [dashboardRanges, setDashboardRanges] = useState(["30d"]);
   const [rangeFilterOpen, setRangeFilterOpen] = useState(false);
   const rangeFilterRef = useRef(null);
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
   const accountDropdownRef = useRef(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [filterSymbol, setFilterSymbol] = useState("all");
-  const [filterDirection, setFilterDirection] = useState("all");
-  const [filterOutcome, setFilterOutcome] = useState("all");
+  const [filterSymbols, setFilterSymbols] = useState(["all"]);
+  const [filterDirections, setFilterDirections] = useState(["all"]);
+  const [filterOutcomes, setFilterOutcomes] = useState(["all"]);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
   const [yearSelectorOpen, setYearSelectorOpen] = useState(false);
   const yearSelectorRef = useRef(null);
+  const [calendarAccountOpen, setCalendarAccountOpen] = useState(false);
+  const calendarAccountRef = useRef(null);
   const { data: trades = [], isLoading, refetch } = useQuery({
     queryKey: ['trades'],
     queryFn: () => getTrades(user?.id),
@@ -94,11 +96,59 @@ export default function Dashboard() {
   const uniqueDirections = [...new Set(trades.map(t => normalizeDirection(t.direction)).filter(Boolean))];
   const uniqueOutcomes = [...new Set(trades.map(t => t.outcome).filter(Boolean))];
 
+  const toggleMultiFilter = (setter, value) => {
+    setter((prev) => {
+      if (value === "all") return ["all"];
+      const normalizedValue = String(value);
+      const withoutAll = prev.filter((item) => item !== "all");
+      const exists = withoutAll.includes(normalizedValue);
+      const next = exists
+        ? withoutAll.filter((item) => item !== normalizedValue)
+        : [...withoutAll, normalizedValue];
+      return next.length ? next : ["all"];
+    });
+  };
+
+  const buildFilterLabel = (values, allLabel, resolver) => {
+    if (values.includes("all")) return allLabel;
+    return values.map((value) => resolver(value)).filter(Boolean).join(", ");
+  };
+
+  const filterSymbolLabel = buildFilterLabel(filterSymbols, t('all'), (value) => value);
+  const filterDirectionLabel = buildFilterLabel(filterDirections, t('all'), (value) => directionLabel(value, t));
+  const filterOutcomeLabel = buildFilterLabel(filterOutcomes, t('all'), (value) => value);
+  const dashboardAccountLabel = buildFilterLabel(
+    dashboardAccounts,
+    t('allAccounts'),
+    (value) => accounts.find((account) => String(account.id) === String(value))?.name
+  );
+  const dashboardRangeLabel = buildFilterLabel(
+    dashboardRanges,
+    t('last30Days'),
+    (value) => (value === '7d' ? t('last7Days') : value === '90d' ? t('last90Days') : t('last30Days'))
+  );
+
+  const toggleDashboardAccount = (value) => toggleMultiFilter(setDashboardAccounts, value);
+  const toggleDashboardRange = (value) => {
+    setDashboardRanges((prev) => {
+      const normalizedValue = String(value);
+      const exists = prev.includes(normalizedValue);
+      const next = exists
+        ? prev.filter((item) => item !== normalizedValue)
+        : [...prev, normalizedValue];
+      return next.length ? next : ["30d"];
+    });
+  };
+
   const rangeStartDate = (() => {
+    const selectedDays = dashboardRanges.map((value) => {
+      if (value === "7d") return 7;
+      if (value === "90d") return 90;
+      return 30;
+    });
+    const maxDays = Math.max(...selectedDays);
     const d = new Date();
-    if (dashboardRange === "7d") d.setDate(d.getDate() - 7);
-    if (dashboardRange === "30d") d.setDate(d.getDate() - 30);
-    if (dashboardRange === "90d") d.setDate(d.getDate() - 90);
+    d.setDate(d.getDate() - maxDays);
     return d;
   })();
 
@@ -106,10 +156,10 @@ export default function Dashboard() {
     const tradeDate = t.date ? new Date(t.date) : null;
     const inRange = tradeDate ? tradeDate >= rangeStartDate : true;
     return (
-      (dashboardAccount === "all" || t.account_id === dashboardAccount) &&
-      (filterSymbol === "all" || t.symbol === filterSymbol) &&
-      (filterDirection === "all" || normalizeDirection(t.direction) === filterDirection) &&
-      (filterOutcome === "all" || t.outcome === filterOutcome) &&
+      (dashboardAccounts.includes("all") || dashboardAccounts.includes(String(t.account_id))) &&
+      (filterSymbols.includes("all") || filterSymbols.includes(String(t.symbol))) &&
+      (filterDirections.includes("all") || filterDirections.includes(String(normalizeDirection(t.direction)))) &&
+      (filterOutcomes.includes("all") || filterOutcomes.includes(String(t.outcome))) &&
       inRange
     );
   });
@@ -319,6 +369,19 @@ export default function Dashboard() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [yearSelectorOpen]);
 
+  useEffect(() => {
+    if (!calendarAccountOpen) return;
+
+    const handleOutsideClick = (event) => {
+      if (calendarAccountRef.current && !calendarAccountRef.current.contains(event.target)) {
+        setCalendarAccountOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [calendarAccountOpen]);
+
   const handlePrevMonth = () => {
     setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1));
   };
@@ -462,30 +525,47 @@ export default function Dashboard() {
               <div className="relative" ref={accountDropdownRef}>
                 <button
                   onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
-                  className="h-9 md:h-10 w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent shrink-0"
+                  className="relative h-9 md:h-10 w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent shrink-0"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Wallet className="w-4 h-4 text-slate-500 shrink-0" />
-                    <span className="truncate">{dashboardAccount === 'all' ? t('allAccounts') : (accounts.find(a => a.id === dashboardAccount)?.name || t('myAccount'))}</span>
-                  </div>
-                  <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+                  <Wallet className="absolute left-3 w-4 h-4 text-slate-500" />
+                  <span className="truncate text-center w-full px-6">{dashboardAccountLabel || t('allAccounts')}</span>
+                  <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
                 </button>
                 {accountDropdownOpen && (
                   <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
                     <button
-                      onClick={() => { setDashboardAccount('all'); setAccountDropdownOpen(false); }}
-                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${dashboardAccount === 'all' ? 'bg-accent' : ''}`}
+                      onClick={() => { toggleDashboardAccount('all'); }}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardAccounts.includes('all') ? 'bg-accent' : ''}`}
                     >
-                      {t('allAccounts')}
+                      <span className="truncate">{t('allAccounts')}</span>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${dashboardAccounts.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {dashboardAccounts.includes('all') && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </button>
                     {accounts.map(acc => (
+                      (() => {
+                        const isSelected = dashboardAccounts.includes(String(acc.id));
+                        return (
                       <button
                         key={acc.id}
-                        onClick={() => { setDashboardAccount(acc.id); setAccountDropdownOpen(false); }}
-                        className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${dashboardAccount === acc.id ? 'bg-accent' : ''}`}
+                        onClick={() => { toggleDashboardAccount(acc.id); }}
+                        className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                       >
-                        {acc.name}
+                        <span className="truncate">{acc.name}</span>
+                        <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                          {isSelected && (
+                            <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </span>
                       </button>
+                        );
+                      })()
                     ))}
                   </div>
                 )}
@@ -501,51 +581,144 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     <div>
                       <div className="text-xs text-slate-500 mb-2">{t('symbol')}</div>
-                      <Select value={filterSymbol} onValueChange={setFilterSymbol}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">{t('all')}</SelectItem>
-                          {uniqueSymbols.map(sym => (
-                            <SelectItem key={sym} value={sym}>{sym}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <button
+                        type="button"
+                        className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm text-left"
+                      >
+                        <span className="truncate block">{filterSymbolLabel || t('all')}</span>
+                      </button>
+                      <div className="mt-2 rounded-md border bg-popover p-1 max-h-40 overflow-y-auto">
+                        <button
+                          type="button"
+                          onClick={() => toggleMultiFilter(setFilterSymbols, 'all')}
+                          className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterSymbols.includes('all') ? 'bg-accent' : ''}`}
+                        >
+                          <span>{t('all')}</span>
+                          <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${filterSymbols.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                            {filterSymbols.includes('all') && (
+                              <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </span>
+                        </button>
+                        {uniqueSymbols.map((sym) => {
+                          const isSelected = filterSymbols.includes(String(sym));
+                          return (
+                            <button
+                              key={sym}
+                              type="button"
+                              onClick={() => toggleMultiFilter(setFilterSymbols, sym)}
+                              className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
+                            >
+                              <span>{sym}</span>
+                              <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                                {isSelected && (
+                                  <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div>
                       <div className="text-xs text-slate-500 mb-2">{t('direction')}</div>
-                      <Select value={filterDirection} onValueChange={setFilterDirection}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">{t('all')}</SelectItem>
-                          {uniqueDirections.map(dir => (
-                            <SelectItem key={dir} value={dir}>{directionLabel(dir, t)}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <button
+                        type="button"
+                        className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm text-left"
+                      >
+                        <span className="truncate block">{filterDirectionLabel || t('all')}</span>
+                      </button>
+                      <div className="mt-2 rounded-md border bg-popover p-1 max-h-40 overflow-y-auto">
+                        <button
+                          type="button"
+                          onClick={() => toggleMultiFilter(setFilterDirections, 'all')}
+                          className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterDirections.includes('all') ? 'bg-accent' : ''}`}
+                        >
+                          <span>{t('all')}</span>
+                          <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${filterDirections.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                            {filterDirections.includes('all') && (
+                              <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </span>
+                        </button>
+                        {uniqueDirections.map((dir) => {
+                          const isSelected = filterDirections.includes(String(dir));
+                          return (
+                            <button
+                              key={dir}
+                              type="button"
+                              onClick={() => toggleMultiFilter(setFilterDirections, dir)}
+                              className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
+                            >
+                              <span>{directionLabel(dir, t)}</span>
+                              <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                                {isSelected && (
+                                  <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div>
                       <div className="text-xs text-slate-500 mb-2">{t('outcome')}</div>
-                      <Select value={filterOutcome} onValueChange={setFilterOutcome}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">{t('all')}</SelectItem>
-                          {uniqueOutcomes.map(out => (
-                            <SelectItem key={out} value={out}>{out}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <button
+                        type="button"
+                        className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm text-left"
+                      >
+                        <span className="truncate block">{filterOutcomeLabel || t('all')}</span>
+                      </button>
+                      <div className="mt-2 rounded-md border bg-popover p-1 max-h-40 overflow-y-auto">
+                        <button
+                          type="button"
+                          onClick={() => toggleMultiFilter(setFilterOutcomes, 'all')}
+                          className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterOutcomes.includes('all') ? 'bg-accent' : ''}`}
+                        >
+                          <span>{t('all')}</span>
+                          <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${filterOutcomes.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                            {filterOutcomes.includes('all') && (
+                              <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </span>
+                        </button>
+                        {uniqueOutcomes.map((out) => {
+                          const isSelected = filterOutcomes.includes(String(out));
+                          return (
+                            <button
+                              key={out}
+                              type="button"
+                              onClick={() => toggleMultiFilter(setFilterOutcomes, out)}
+                              className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
+                            >
+                              <span>{out}</span>
+                              <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                                {isSelected && (
+                                  <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div className="flex justify-end gap-2">
                       <Button variant="outline" onClick={() => {
-                        setFilterSymbol("all");
-                        setFilterDirection("all");
-                        setFilterOutcome("all");
+                        setFilterSymbols(["all"]);
+                        setFilterDirections(["all"]);
+                        setFilterOutcomes(["all"]);
                       }}>{t('reset')}</Button>
                       <Button onClick={() => setFiltersOpen(false)}>{t('apply')}</Button>
                     </div>
@@ -555,33 +728,52 @@ export default function Dashboard() {
               <div className="relative" ref={rangeFilterRef}>
                 <button
                   onClick={() => setRangeFilterOpen(!rangeFilterOpen)}
-                  className="h-9 md:h-10 w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm text-left flex items-center justify-between hover:bg-accent shrink-0"
+                  className="relative h-9 md:h-10 w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent shrink-0"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <CalendarDays className="w-4 h-4 text-slate-500 shrink-0" />
-                    <span className="truncate">{dashboardRange === '7d' ? t('last7Days') : dashboardRange === '30d' ? t('last30Days') : t('last90Days')}</span>
-                  </div>
-                  <ChevronDown className="w-4 h-4 opacity-50 shrink-0" />
+                  <CalendarDays className="absolute left-3 w-4 h-4 text-slate-500" />
+                  <span className="truncate text-center w-full px-6">{dashboardRangeLabel || t('last30Days')}</span>
+                  <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
                 </button>
                 {rangeFilterOpen && (
                   <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md">
                     <button
-                      onClick={() => { setDashboardRange('7d'); setRangeFilterOpen(false); }}
-                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${dashboardRange === '7d' ? 'bg-accent' : ''}`}
+                      onClick={() => { toggleDashboardRange('7d'); }}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardRanges.includes('7d') ? 'bg-accent' : ''}`}
                     >
-                      {t('last7Days')}
+                      <span>{t('last7Days')}</span>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('7d') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {dashboardRanges.includes('7d') && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </button>
                     <button
-                      onClick={() => { setDashboardRange('30d'); setRangeFilterOpen(false); }}
-                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${dashboardRange === '30d' ? 'bg-accent' : ''}`}
+                      onClick={() => { toggleDashboardRange('30d'); }}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardRanges.includes('30d') ? 'bg-accent' : ''}`}
                     >
-                      {t('last30Days')}
+                      <span>{t('last30Days')}</span>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('30d') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {dashboardRanges.includes('30d') && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </button>
                     <button
-                      onClick={() => { setDashboardRange('90d'); setRangeFilterOpen(false); }}
-                      className={`w-full px-3 py-2 text-sm text-left rounded hover:bg-accent ${dashboardRange === '90d' ? 'bg-accent' : ''}`}
+                      onClick={() => { toggleDashboardRange('90d'); }}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardRanges.includes('90d') ? 'bg-accent' : ''}`}
                     >
-                      {t('last90Days')}
+                      <span>{t('last90Days')}</span>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('90d') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {dashboardRanges.includes('90d') && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </button>
                   </div>
                 )}
@@ -605,7 +797,7 @@ export default function Dashboard() {
                   </div>
                   <p className="text-xs text-slate-500 mt-1 truncate">{t('from')} {totalTrades} {t('trades')}</p>
                 </div>
-                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${totalPL >= 0 ? '#10b981' : '#ef4444'} ${plRing}%, #e5e7eb 0)` }} />
+                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${totalPL >= 0 ? '#22c55e' : '#f43f5e'} ${plRing}%, #e5e7eb 0)` }} />
               </div>
             </CardContent>
           </Card>
@@ -685,7 +877,7 @@ export default function Dashboard() {
                     <circle cx="60" cy="60" r="52" fill="none" stroke="#e2e8f0" strokeWidth="9" className="dark:!stroke-slate-700" style={{ stroke: 'var(--score-track, #e2e8f0)' }} />
                     <circle cx="60" cy="60" r="52" fill="none" strokeWidth="9" strokeLinecap="round"
                       style={{
-                        stroke: zellaScore.total >= 80 ? '#10b981' : zellaScore.total >= 60 ? '#3b82f6' : zellaScore.total >= 40 ? '#f59e0b' : '#ef4444',
+                        stroke: zellaScore.total >= 80 ? '#22c55e' : zellaScore.total >= 60 ? '#3b82f6' : zellaScore.total >= 40 ? '#f59e0b' : '#f43f5e',
                         strokeDasharray: `${zellaScore.total * 3.267} 326.7`,
                         transition: 'stroke-dasharray 0.8s ease'
                       }}
@@ -698,7 +890,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1 space-y-1.5">
                   {zellaScore.metrics.map((metric, i) => {
-                    const colors = ['#6d4dff', '#10b981', '#3b82f6', '#f59e0b', '#ec4899'];
+                    const colors = ['#6d4dff', '#22c55e', '#3b82f6', '#f59e0b', '#ec4899'];
                     return (
                       <div key={metric.subject}>
                         <div className="flex justify-between text-[10px] mb-0.5">
@@ -781,45 +973,63 @@ export default function Dashboard() {
               <div className="relative" ref={rangeFilterRef}>
                 <Button
                   variant="outline"
-                  className="w-24 md:w-28 justify-between text-xs md:text-sm h-9"
+                  className="relative w-24 md:w-28 justify-center text-xs md:text-sm h-9"
                   onClick={() => setRangeFilterOpen((prev) => !prev)}
                 >
-                  <span className="truncate">
-                    {dashboardRange === '7d' ? '7 dni' : dashboardRange === '30d' ? '30 dni' : '90 dni'}
+                  <span className="truncate text-center w-full pr-4">
+                    {dashboardRangeLabel || '30 dni'}
                   </span>
-                  <ChevronDown className="w-4 h-4 opacity-70" />
+                  <ChevronDown className="absolute right-2 w-4 h-4 opacity-70" />
                 </Button>
                 {rangeFilterOpen && (
-                  <div className="absolute left-0 top-full mt-1 z-50 w-28 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                  <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
                     <Button
                       variant="ghost"
-                      className={`w-full justify-start text-xs ${dashboardRange === '7d' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                      className={`w-full justify-between text-xs ${dashboardRanges.includes('7d') ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                       onClick={() => {
-                        setDashboardRange('7d');
-                        setRangeFilterOpen(false);
+                        toggleDashboardRange('7d');
                       }}
                     >
-                      7 dni
+                      <span>7 dni</span>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('7d') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {dashboardRanges.includes('7d') && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </Button>
                     <Button
                       variant="ghost"
-                      className={`w-full justify-start text-xs ${dashboardRange === '30d' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                      className={`w-full justify-between text-xs ${dashboardRanges.includes('30d') ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                       onClick={() => {
-                        setDashboardRange('30d');
-                        setRangeFilterOpen(false);
+                        toggleDashboardRange('30d');
                       }}
                     >
-                      30 dni
+                      <span>30 dni</span>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('30d') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {dashboardRanges.includes('30d') && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </Button>
                     <Button
                       variant="ghost"
-                      className={`w-full justify-start text-xs ${dashboardRange === '90d' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                      className={`w-full justify-between text-xs ${dashboardRanges.includes('90d') ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                       onClick={() => {
-                        setDashboardRange('90d');
-                        setRangeFilterOpen(false);
+                        toggleDashboardRange('90d');
                       }}
                     >
-                      90 dni
+                      <span>90 dni</span>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('90d') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {dashboardRanges.includes('90d') && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </Button>
                   </div>
                 )}
@@ -854,37 +1064,49 @@ export default function Dashboard() {
               <div className="relative" ref={recentTradesAccountRef}>
                 <Button
                   variant="outline"
-                  className="w-32 text-xs h-8 px-2 justify-between"
+                  className="relative w-44 text-xs h-8 px-2 justify-center"
                   onClick={() => setRecentTradesAccountOpen((prev) => !prev)}
                 >
-                  <span className="truncate">{dashboardAccount === 'all' ? t('all') : (accounts.find(acc => String(acc.id) === String(dashboardAccount))?.name || t('account'))}</span>
-                  <ChevronDown className="w-3 h-3 opacity-70" />
+                  <span className="truncate text-center w-full pr-4">{dashboardAccountLabel || t('allAccounts')}</span>
+                  <ChevronDown className="absolute right-2 w-3 h-3 opacity-70" />
                 </Button>
                 {recentTradesAccountOpen && (
-                  <div className="absolute right-0 top-full mt-1 z-50 w-32 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                  <div className="absolute left-0 top-full mt-1 z-50 w-44 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
                     <Button
                       variant="ghost"
-                      className={`w-full justify-start text-xs ${dashboardAccount === 'all' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                      className={`w-full justify-between text-xs ${dashboardAccounts.includes('all') ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                       onClick={() => {
-                        setDashboardAccount('all');
-                        setRecentTradesAccountOpen(false);
+                        toggleDashboardAccount('all');
                       }}
                     >
-                      {t('all')}
+                      <span className="truncate">{t('allAccounts')}</span>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${dashboardAccounts.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                        {dashboardAccounts.includes('all') && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
                     </Button>
                     {accounts.map((acc) => {
-                      const isActive = String(dashboardAccount) === String(acc.id);
+                      const isActive = dashboardAccounts.includes(String(acc.id));
                       return (
                         <Button
                           key={acc.id}
                           variant="ghost"
-                          className={`w-full justify-start text-xs ${isActive ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                          className={`w-full justify-between text-xs ${isActive ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                           onClick={() => {
-                            setDashboardAccount(String(acc.id));
-                            setRecentTradesAccountOpen(false);
+                            toggleDashboardAccount(String(acc.id));
                           }}
                         >
-                          {acc.name}
+                          <span className="truncate">{acc.name}</span>
+                          <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isActive ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                            {isActive && (
+                              <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </span>
                         </Button>
                       );
                     })}
@@ -947,23 +1169,30 @@ export default function Dashboard() {
                 <div className="relative" ref={accountBalanceFilterRef}>
                   <Button
                     variant="outline"
-                    className="w-40 md:w-48 justify-between text-xs md:text-sm h-9"
+                    className="relative w-40 md:w-48 justify-center text-xs md:text-sm h-9"
                     onClick={() => setAccountBalanceFilterOpen((prev) => !prev)}
                   >
-                    <span className="truncate">{selectedAccountBalanceLabel}</span>
-                    <ChevronDown className="w-4 h-4 opacity-70" />
+                    <span className="truncate text-center w-full pr-4">{selectedAccountBalanceLabel}</span>
+                    <ChevronDown className="absolute right-2 w-4 h-4 opacity-70" />
                   </Button>
                   {accountBalanceFilterOpen && (
-                    <div className="absolute left-0 top-full mt-1 z-50 w-48 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                    <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
                       <Button
                         variant="ghost"
-                        className={`w-full justify-start text-xs md:text-sm ${accountBalanceAccount === 'all' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                        className={`w-full justify-between text-xs md:text-sm ${accountBalanceAccount === 'all' ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                         onClick={() => {
                           setAccountBalanceAccount('all');
                           setAccountBalanceFilterOpen(false);
                         }}
                       >
-                        {t('allAccounts')}
+                        <span className="truncate">{t('allAccounts')}</span>
+                        <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${accountBalanceAccount === 'all' ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                          {accountBalanceAccount === 'all' && (
+                            <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </span>
                       </Button>
                       {accounts.map((acc) => {
                         const isActive = String(accountBalanceAccount) === String(acc.id);
@@ -971,13 +1200,20 @@ export default function Dashboard() {
                           <Button
                             key={acc.id}
                             variant="ghost"
-                            className={`w-full justify-start text-xs md:text-sm ${isActive ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                            className={`w-full justify-between text-xs md:text-sm ${isActive ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                             onClick={() => {
                               setAccountBalanceAccount(String(acc.id));
                               setAccountBalanceFilterOpen(false);
                             }}
                           >
-                            {acc.name}
+                            <span className="truncate">{acc.name}</span>
+                            <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isActive ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                              {isActive && (
+                                <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </span>
                           </Button>
                         );
                       })}
@@ -1011,7 +1247,12 @@ export default function Dashboard() {
             <CardHeader className="pb-3">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-slate-900 dark:text-white text-sm md:text-base">{format(calendarDate, 'LLLL yyyy', { locale: dateLocale })}</CardTitle>
+                  <CardTitle className="text-slate-900 dark:text-white text-sm md:text-base">
+                    {(() => {
+                      const monthYearLabel = format(calendarDate, 'LLLL yyyy', { locale: dateLocale });
+                      return monthYearLabel.charAt(0).toUpperCase() + monthYearLabel.slice(1);
+                    })()}
+                  </CardTitle>
                   <div className="flex items-center gap-1">
                     <Button variant="outline" size="sm" onClick={handlePrevMonth} className="h-8 w-8 p-0">
                       <ChevronUp className="w-4 h-4" style={{ transform: 'rotate(90deg)' }} />
@@ -1027,17 +1268,60 @@ export default function Dashboard() {
                 <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('account')}:</span>
-                    <Select value={dashboardAccount} onValueChange={setDashboardAccount}>
-                      <SelectTrigger className="w-24 text-xs h-8">
-                        <SelectValue placeholder={t('myAccount')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t('allAccounts')}</SelectItem>
-                        {accounts.map(acc => (
-                          <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="relative" ref={calendarAccountRef}>
+                      <Button
+                        variant="outline"
+                        className="relative w-44 md:w-48 text-xs h-8 px-2 justify-center"
+                        onClick={() => setCalendarAccountOpen((prev) => !prev)}
+                      >
+                        <span className="truncate text-center w-full">
+                          {dashboardAccountLabel || t('allAccounts')}
+                        </span>
+                        <ChevronDown className="absolute right-2 w-3 h-3 opacity-70" />
+                      </Button>
+                      {calendarAccountOpen && (
+                        <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                          <Button
+                            variant="ghost"
+                            className={`w-full justify-between text-xs ${dashboardAccounts.includes('all') ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                            onClick={() => {
+                              toggleDashboardAccount('all');
+                            }}
+                          >
+                            <span className="truncate">{t('allAccounts')}</span>
+                            <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${dashboardAccounts.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                              {dashboardAccounts.includes('all') && (
+                                <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </span>
+                          </Button>
+                          {accounts.map((acc) => {
+                            const isActive = dashboardAccounts.includes(String(acc.id));
+                            return (
+                              <Button
+                                key={acc.id}
+                                variant="ghost"
+                                className={`w-full justify-between text-xs ${isActive ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
+                                onClick={() => {
+                                  toggleDashboardAccount(String(acc.id));
+                                }}
+                              >
+                                <span className="truncate">{acc.name}</span>
+                                <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isActive ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                                  {isActive && (
+                                    <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                </span>
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('year')}:</span>
@@ -1128,13 +1412,27 @@ export default function Dashboard() {
                   <div className="space-y-2 max-h-72 overflow-auto">
                     {(selectedCalendarDate ? tradesByDate[format(selectedCalendarDate, 'yyyy-MM-dd')] || [] : []).map(trade => (
                       <div key={trade.id} className="bg-slate-900 border border-slate-700 rounded-lg p-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-semibold text-slate-800 dark:text-white">{trade.symbol}</span>
-                          <span className={`font-semibold ${parseFloat(trade.profit_loss || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {parseFloat(trade.profit_loss || 0) >= 0 ? '+' : ''}{parseFloat(trade.profit_loss || 0).toFixed(2)}
-                          </span>
+                        <div className="flex items-center justify-between gap-2 min-h-10">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-slate-800 dark:text-white truncate text-sm">{trade.symbol}</div>
+                            <div className="text-[11px] leading-none mt-1 text-slate-500 dark:text-slate-400">{trade.open_time || trade.time || '--:--'}</div>
+                          </div>
+                          <div className="flex items-center self-center gap-2.5 shrink-0">
+                            <span className={`inline-block min-w-[90px] text-right tabular-nums leading-none font-semibold text-sm ${parseFloat(trade.profit_loss || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              {parseFloat(trade.profit_loss || 0) >= 0 ? '+' : ''}{parseFloat(trade.profit_loss || 0).toFixed(2)}
+                            </span>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleViewTrade(trade)}
+                              className="h-6 w-6 p-0 self-center text-blue-400 hover:text-blue-300 hover:bg-slate-800"
+                              aria-label="Podgląd transakcji"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400">{trade.open_time || trade.time || '--:--'}</div>
                       </div>
                     ))}
                     {(!selectedCalendarDate || (tradesByDate[format(selectedCalendarDate, 'yyyy-MM-dd')] || []).length === 0) && (
@@ -1160,8 +1458,8 @@ export default function Dashboard() {
                           <rect x="0" y="0" width="100%" height="100%" />
                         </clipPath>
                         <linearGradient id="ddFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.25} />
-                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                          <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -1172,7 +1470,7 @@ export default function Dashboard() {
                         itemStyle={{ color: '#e2e8f0' }}
                         labelStyle={{ color: '#f1f5f9' }}
                       />
-                      <Area type="monotone" dataKey="drawdown" stroke="#ef4444" fill="url(#ddFill)" strokeWidth={2} dot={false} clipPath="url(#drawdown-clip)" />
+                      <Area type="monotone" dataKey="drawdown" stroke="#f43f5e" fill="url(#ddFill)" strokeWidth={2} dot={false} clipPath="url(#drawdown-clip)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -1393,8 +1691,8 @@ export default function Dashboard() {
                     <div className="w-full overflow-hidden">
                       <ResponsiveContainer width="100%" height={200}>
                         <BarChart data={[
-                          { name: t('avgWinShort'), value: parseFloat(avgWin), fill: '#10b981' },
-                          { name: t('avgLossShort'), value: Math.abs(parseFloat(avgLoss)), fill: '#ef4444' }
+                          { name: t('avgWinShort'), value: parseFloat(avgWin), fill: '#22c55e' },
+                          { name: t('avgLossShort'), value: Math.abs(parseFloat(avgLoss)), fill: '#f43f5e' }
                         ]} margin={{ top: 10, right: 20, left: 5, bottom: 5 }}>
                           <defs>
                             <clipPath id="trade-efficiency-clip">
