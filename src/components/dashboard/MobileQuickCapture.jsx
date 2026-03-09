@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import { useRef } from "react";
 import { Camera } from "lucide-react";
 
 export default function MobileQuickCapture({ onCapture }) {

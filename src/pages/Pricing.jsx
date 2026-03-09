@@ -1,4 +1,3 @@
-import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,25 +12,6 @@ export default function Pricing() {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  useEffect(() => {
-    const root = document.documentElement;
-    const hadDark = root.classList.contains('dark');
-    const prevSkin = root.getAttribute('data-skin');
-    root.classList.add('dark');
-    root.setAttribute('data-skin', 'blackblu');
-
-    return () => {
-      if (!hadDark) {
-        root.classList.remove('dark');
-      }
-      if (prevSkin) {
-        root.setAttribute('data-skin', prevSkin);
-      } else {
-        root.removeAttribute('data-skin');
-      }
-    };
-  }, []);
-
   const features = [
     { icon: BarChart3, title: t('pricingFeature1Title'), desc: t('pricingFeature1Desc') },
     { icon: Brain, title: t('pricingFeature2Title'), desc: t('pricingFeature2Desc') },
@@ -44,7 +24,7 @@ export default function Pricing() {
   return (
     <>
       <PublicNavbar variant="hero" />
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 pt-24 pb-16">
+      <div className="public-trading-bg min-h-screen pt-24 pb-16">
         {/* Hero Section */}
         <div className="container mx-auto px-6 py-12 text-center">
           <motion.div
@@ -77,7 +57,7 @@ export default function Pricing() {
                     <Zap className="w-8 h-8 text-white" />
                   </div>
                 </div>
-                <CardTitle className="text-3xl text-white mb-2">Trade Log Pro</CardTitle>
+                <CardTitle className="text-3xl text-white mb-2">AiKeepTrade Pro</CardTitle>
                 <CardDescription className="text-slate-300 text-lg">
                   {t('pricingPlanDesc')}
                 </CardDescription>
@@ -122,7 +102,7 @@ export default function Pricing() {
 
                 <Button
                   onClick={() => navigate('/register')}
-                  className="w-full h-12 text-lg bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700"
+                  className="hero-cta hero-cta-pulse w-full h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white text-base font-bold shadow-lg shadow-emerald-500/25"
                   size="lg"
                 >
                   {t('pricingStartTrial')}
@@ -186,7 +166,7 @@ export default function Pricing() {
             <Button
               onClick={() => navigate('/register')}
               size="lg"
-              className="h-14 px-8 text-lg bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700"
+              className="hero-cta hero-cta-pulse h-11 rounded-xl px-8 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white text-base font-bold shadow-lg shadow-emerald-500/25"
             >
               {t('pricingGetStarted')}
             </Button>

@@ -28,9 +28,9 @@ export const directionLabel = (direction, t) => {
 
 export const directionBadgeClass = (direction) => {
   const normalized = normalizeDirection(direction);
-  if (normalized === "Long") return "bg-emerald-500 text-white border-transparent shadow-sm shadow-emerald-500/30";
-  if (normalized === "Short") return "bg-rose-500 text-white border-transparent shadow-sm shadow-rose-500/30";
-  return "bg-slate-500 text-white border-transparent";
+  if (normalized === "Long") return "bg-emerald-500 text-white border border-emerald-300/80 shadow-sm shadow-emerald-500/30 text-xs font-semibold px-1.5 py-0.5";
+  if (normalized === "Short") return "bg-rose-500 text-white border border-rose-300/80 shadow-sm shadow-rose-500/30 text-xs font-semibold px-1.5 py-0.5";
+  return "bg-slate-500 text-white border border-slate-300/80 text-xs font-semibold px-1.5 py-0.5";
 };
 
 const normalizeTradeStatus = (status) => {
@@ -53,18 +53,18 @@ const normalizeTradeOutcome = (outcome) => {
 
 export const tradeStatusBadgeClass = (status) => {
   const normalized = normalizeTradeStatus(status);
-  if (normalized === "open") return "bg-amber-500 text-white border-transparent shadow-sm shadow-amber-500/30";
-  if (normalized === "closed") return "bg-emerald-500 text-white border-transparent shadow-sm shadow-emerald-500/30";
-  if (normalized === "planned") return "bg-slate-500 text-white border-transparent shadow-sm shadow-slate-500/30";
-  return "bg-slate-500 text-white border-transparent";
+  if (normalized === "open") return "bg-amber-500 text-white border border-amber-300/80 shadow-sm shadow-amber-500/30 text-xs font-semibold px-1.5 py-0.5";
+  if (normalized === "closed") return "bg-emerald-500 text-white border border-emerald-300/80 shadow-sm shadow-emerald-500/30 text-xs font-semibold px-1.5 py-0.5";
+  if (normalized === "planned") return "bg-slate-500 text-white border border-slate-300/80 shadow-sm shadow-slate-500/30 text-xs font-semibold px-1.5 py-0.5";
+  return "bg-slate-500 text-white border border-slate-300/80 text-xs font-semibold px-1.5 py-0.5";
 };
 
 export const tradeOutcomeBadgeClass = (outcome) => {
   const normalized = normalizeTradeOutcome(outcome);
-  if (normalized === "win") return "border-emerald-500/80 text-emerald-600 dark:text-emerald-300 bg-emerald-500/5";
-  if (normalized === "loss") return "border-rose-500/80 text-rose-600 dark:text-rose-300 bg-rose-500/5";
-  if (normalized === "breakeven") return "border-amber-500/80 text-amber-600 dark:text-amber-300 bg-amber-500/5";
-  return "border-slate-500/70 text-slate-600 dark:text-slate-300";
+  if (normalized === "win") return "border-emerald-500/90 text-emerald-700 dark:text-emerald-300 bg-emerald-500/5 text-xs font-semibold px-1.5 py-0.5";
+  if (normalized === "loss") return "border-rose-500/90 text-rose-700 dark:text-rose-300 bg-rose-500/5 text-xs font-semibold px-1.5 py-0.5";
+  if (normalized === "breakeven") return "border-amber-500/90 text-amber-700 dark:text-amber-300 bg-amber-500/5 text-xs font-semibold px-1.5 py-0.5";
+  return "border-slate-500/80 text-slate-700 dark:text-slate-300 text-xs font-semibold px-1.5 py-0.5";
 };
 
 export const tradeOutcomeToneClass = (outcome) => {

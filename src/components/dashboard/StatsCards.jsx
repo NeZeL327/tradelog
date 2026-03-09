@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardHeader } from "@/components/ui/card";
 
 export default function StatsCards({ title, value, icon: Icon, gradient }) {

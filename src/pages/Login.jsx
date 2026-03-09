@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, LogIn, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import LanguageToggle from '@/components/LanguageToggle';
 import { useLanguage } from '@/components/LanguageProvider';
 import PublicNavbar from '@/components/PublicNavbar';
 import Footer from '@/components/Footer';
@@ -25,25 +24,6 @@ export default function Login() {
     email: '',
     password: ''
   });
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const hadDark = root.classList.contains('dark');
-    const prevSkin = root.getAttribute('data-skin');
-    root.classList.add('dark');
-    root.setAttribute('data-skin', 'blackblu');
-
-    return () => {
-      if (!hadDark) {
-        root.classList.remove('dark');
-      }
-      if (prevSkin) {
-        root.setAttribute('data-skin', prevSkin);
-      } else {
-        root.removeAttribute('data-skin');
-      }
-    };
-  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -90,7 +70,7 @@ export default function Login() {
     <>
       <PublicNavbar variant="hero" />
       <div
-        className="parallax-root min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-6 overflow-hidden relative pt-24"
+        className="parallax-root public-trading-bg min-h-screen flex items-center justify-center p-6 overflow-hidden relative pt-24"
         style={/** @type {any} */ ({ '--px': parallax.x, '--py': parallax.y })}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -147,13 +127,13 @@ export default function Login() {
           <div className="inline-flex items-center justify-center mb-6 md:justify-start">
             <div className="logo-arrow hero-logo w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex-shrink-0">
               <span className="logo-arrow-path" />
-              <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">T</span></span>
-              <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">L</span></span>
+              <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
+              <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
               <span className="logo-arrow-wave" />
             </div>
           </div>
           <h1 className="hero-title premium-title text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-emerald-300 to-blue-400 bg-clip-text text-transparent mb-3">
-            TRADE LOG
+            AiKeepTrade
           </h1>
           <p className="premium-subtitle text-base sm:text-lg text-slate-200 mb-2">{t('loginWelcomeTitle')}</p>
           <p className="text-slate-400 text-sm max-w-md">{t('loginWelcomeDescription')}</p>
@@ -248,7 +228,7 @@ export default function Login() {
 
                 <Button
                   type="submit"
-                  className="hero-cta hero-cta-pulse w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2.5 shadow-lg shadow-blue-500/30 h-10"
+                  className="hero-cta hero-cta-pulse w-full h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white text-base font-bold shadow-lg shadow-emerald-500/25"
                   disabled={isLoading}
                 >
                   {isLoading ? (

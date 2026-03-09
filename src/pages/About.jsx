@@ -1,4 +1,3 @@
-import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Code, Rocket, Target, Users, TrendingUp } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
@@ -8,25 +7,6 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export default function About() {
   const { t } = useLanguage();
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const hadDark = root.classList.contains('dark');
-    const prevSkin = root.getAttribute('data-skin');
-    root.classList.add('dark');
-    root.setAttribute('data-skin', 'blackblu');
-
-    return () => {
-      if (!hadDark) {
-        root.classList.remove('dark');
-      }
-      if (prevSkin) {
-        root.setAttribute('data-skin', prevSkin);
-      } else {
-        root.removeAttribute('data-skin');
-      }
-    };
-  }, []);
 
   const features = [
     {
@@ -49,7 +29,7 @@ export default function About() {
   return (
     <>
       <PublicNavbar variant="hero" />
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 pt-24 pb-12 transition-colors duration-300">
+      <div className="public-trading-bg min-h-screen pt-24 pb-12 transition-colors duration-300">
         <div className="container mx-auto px-4 max-w-6xl">
           {/* Header */}
           <motion.div
@@ -59,7 +39,7 @@ export default function About() {
             className="text-center mb-16"
           >
             <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent mb-4">
-              O Trade Log
+              O AiKeepTrade
             </h1>
             <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
               Historia powstania profesjonalnego dziennika handlowego stworzonego w niekonwencjonalny sposób
@@ -77,8 +57,11 @@ export default function About() {
               <CardContent className="p-12">
                 <div className="flex items-center justify-center">
                   <div className="relative">
-                    <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-blue-500/50">
-                      <span className="text-white font-bold text-6xl">TL</span>
+                    <div className="logo-arrow hero-logo w-32 h-32 rounded-3xl shadow-2xl shadow-blue-500/50">
+                      <span className="logo-arrow-path" />
+                      <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
+                      <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
+                      <span className="logo-arrow-wave" />
                     </div>
                     <div className="absolute -top-4 -right-4">
                       <Sparkles className="w-12 h-12 text-yellow-400 animate-[pulse_2.8s_ease-in-out_infinite]" />
@@ -104,7 +87,7 @@ export default function About() {
                 </div>
                 
                 <p className="text-lg">
-                  Trade Log to wyjątkowy projekt, który udowadnia, że w erze sztucznej inteligencji granice między możliwym 
+                  AiKeepTrade to wyjątkowy projekt, który udowadnia, że w erze sztucznej inteligencji granice między możliwym 
                   a niemożliwym zacierają się w niesamowity sposób. Ta aplikacja powstała dzięki wizji, determinacji 
                   i... całkowitemu brakowi znajomości programowania!
                 </p>
@@ -128,7 +111,7 @@ export default function About() {
 
                 <p className="text-lg">
                   Ten projekt to dowód na rewolucję, która właśnie się dokonuje. AI nie zastępuje programistów - 
-                  daje możliwości każdemu, kto ma wizję. Trade Log nie jest tylko aplikacją do śledzenia transakcji. 
+                  daje możliwości każdemu, kto ma wizję. AiKeepTrade nie jest tylko aplikacją do śledzenia transakcji. 
                   To manifest nowej ery developmentu, gdzie bariera wejścia do świata technologii praktycznie przestaje istnieć.
                 </p>
 
@@ -157,14 +140,14 @@ export default function About() {
                     Co to oznacza dla Ciebie? 🚀
                   </p>
                   <p className="text-base">
-                    Jeśli twórca Trade Log mógł stworzyć profesjonalną aplikację bez znajomości programowania, 
+                    Jeśli twórca AiKeepTrade mógł stworzyć profesjonalną aplikację bez znajomości programowania, 
                     Ty też możesz! Nie musisz spędzać lat na nauce składni i frameworków. Wystarczy pomysł, 
                     ciekawość i gotowość do eksperymentowania.
                   </p>
                 </div>
 
                 <p className="text-lg">
-                  Trade Log to więcej niż narzędzie - to inspiracja. Dowód, że w 2026 roku każdy może być 
+                  AiKeepTrade to więcej niż narzędzie - to inspiracja. Dowód, że w 2026 roku każdy może być 
                   twórcą oprogramowania. Nie musisz być programistą, by tworzyć rozwiązania technologiczne. 
                   Musisz tylko wiedzieć, czego chcesz, i potrafić o to poprosić.
                 </p>
@@ -184,7 +167,7 @@ export default function About() {
             className="mb-16"
           >
             <h2 className="text-3xl font-bold text-foreground text-center mb-8">
-              Co oferuje Trade Log?
+              Co oferuje AiKeepTrade?
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
               {features.map((feature, index) => (
@@ -261,7 +244,7 @@ export default function About() {
                   Gotowy, by zacząć swoją podróż?
                 </h2>
                 <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                  Dołącz do społeczności traderów, którzy już korzystają z Trade Log. 
+                  Dołącz do społeczności traderów, którzy już korzystają z AiKeepTrade. 
                   Zacznij śledzić swoje transakcje, analizować strategie i rozwijaj się jako trader!
                 </p>
                 <div className="flex gap-4 justify-center">

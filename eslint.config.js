@@ -37,15 +37,7 @@ export default [
       "no-unused-vars": "off",
       "react/jsx-uses-vars": "error",
       "unused-imports/no-unused-imports": "error",
-      "unused-imports/no-unused-vars": [
-        "warn",
-        {
-          vars: "all",
-          varsIgnorePattern: "^_",
-          args: "after-used",
-          argsIgnorePattern: "^_",
-        },
-      ],
+      "unused-imports/no-unused-vars": "off",
       "react/prop-types": "off",
       "react/react-in-jsx-scope": "off",
       "react/no-unknown-property": [

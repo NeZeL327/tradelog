@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { directionChartColor, isClosedTrade } from '@/lib/utils';
@@ -6,10 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, TrendingUp, AlertCircle, Lightbulb, Target, Wallet, DollarSign, Activity, X, ChevronDown } from "lucide-react";
+import { Brain, TrendingUp, AlertCircle, Wallet, Activity, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, ComposedChart } from "recharts";
+import { BarChart, Bar, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, ComposedChart } from "recharts";
 import { ExportButton } from "../components/ExportButton";
 import { ImportButton } from "../components/ImportButton";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -52,6 +51,10 @@ export default function Analytics() {
     queryFn: () => getTradingAccounts(user?.id),
   });
 
+  const activeAccounts = accounts.filter((account) => account.is_active !== false && account.status !== 'Inactive');
+  const activeAccountIds = new Set(activeAccounts.map((account) => String(account.id)));
+  const tradesFromActiveAccounts = trades.filter((trade) => activeAccountIds.has(String(trade.account_id)));
+
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies'],
     queryFn: () => getStrategies(user?.id),
@@ -71,6 +74,15 @@ export default function Analytics() {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
+  useEffect(() => {
+    const validIds = new Set(activeAccounts.map((acc) => String(acc.id)));
+    setSelectedAccounts((prev) => {
+      if (prev.includes('all')) return prev;
+      const sanitized = prev.filter((id) => validIds.has(String(id)));
+      return sanitized.length ? sanitized : ['all'];
+    });
+  }, [accounts]);
+
   const normalizeDirection = (direction) => {
     if (!direction) return "";
     const normalized = direction.toLowerCase();
@@ -79,10 +91,10 @@ export default function Analytics() {
     return direction;
   };
 
-  const uniqueSymbols = [...new Set(trades.map(t => t.symbol).filter(Boolean))];
-  const uniqueDirections = [...new Set(trades.map(t => normalizeDirection(t.direction)).filter(Boolean))];
-  const uniqueOutcomes = [...new Set(trades.map(t => t.outcome).filter(Boolean))];
-  const uniqueTimeframes = [...new Set(trades.map(t => t.timeframe).filter(Boolean))];
+  const uniqueSymbols = [...new Set(tradesFromActiveAccounts.map(t => t.symbol).filter(Boolean))];
+  const uniqueDirections = [...new Set(tradesFromActiveAccounts.map(t => normalizeDirection(t.direction)).filter(Boolean))];
+  const uniqueOutcomes = [...new Set(tradesFromActiveAccounts.map(t => t.outcome).filter(Boolean))];
+  const uniqueTimeframes = [...new Set(tradesFromActiveAccounts.map(t => t.timeframe).filter(Boolean))];
 
   const toggleMultiFilter = (setter, value) => {
     setter((prev) => {
@@ -108,7 +120,7 @@ export default function Analytics() {
   const selectedAccountsLabel = getMultiFilterLabel(
     selectedAccounts,
     t('allAccounts'),
-    (value) => accounts.find((account) => String(account.id) === String(value))?.name
+    (value) => activeAccounts.find((account) => String(account.id) === String(value))?.name
   );
   const selectedSymbolsLabel = getMultiFilterLabel(filterSymbols, t('all'), (value) => value);
   const selectedStrategiesLabel = getMultiFilterLabel(
@@ -121,7 +133,7 @@ export default function Analytics() {
   const selectedTimeframesLabel = getMultiFilterLabel(filterTimeframes, t('all'), (value) => value);
 
   // Filter trades by selected filters
-  const filteredTrades = trades.filter(t => (
+  const filteredTrades = tradesFromActiveAccounts.filter(t => (
     isClosedTrade(t) &&
     (selectedAccounts.includes("all") || selectedAccounts.includes(String(t.account_id))) &&
     (filterSymbols.includes("all") || filterSymbols.includes(String(t.symbol))) &&
@@ -330,7 +342,7 @@ export default function Analytics() {
     : null;
 
   // Account comparison
-  const accountData = accounts.map(account => {
+  const accountData = activeAccounts.map(account => {
     const accountTrades = trades.filter(t => t.account_id === account.id && isClosedTrade(t));
     const wins = accountTrades.filter(t => t.outcome === "Win").length;
     const totalPL = accountTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
@@ -467,7 +479,7 @@ export default function Analytics() {
                   </button>
                     );
                   })()}
-                  {accounts.map(acc => (
+                  {activeAccounts.map(acc => (
                     (() => {
                       const isSelected = selectedAccounts.includes(String(acc.id));
                       return (

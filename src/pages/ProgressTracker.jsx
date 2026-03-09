@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { getTrades, getTradingAccounts } from "@/lib/localStorage";
@@ -19,7 +19,6 @@ import {
   Flame,
   Plus,
   ShieldCheck,
-  Target,
   Trash2,
   XCircle,
   AlertCircle,
@@ -159,6 +158,8 @@ const evaluateRuleForDay = (rule, dayTrades) => {
 export default function ProgressTracker() {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const progressFiltersStorageKey = `progress_filters_${user?.id || 'guest'}`;
+  const hasLoadedProgressFilters = useRef(false);
 
   const [rangeFilters, setRangeFilters] = useState(["30d"]);
   const [accountFilters, setAccountFilters] = useState(["all"]);
@@ -195,6 +196,50 @@ export default function ProgressTracker() {
     queryFn: () => getTradingAccounts(user?.id),
     enabled: Boolean(user?.id)
   });
+
+  useEffect(() => {
+    hasLoadedProgressFilters.current = false;
+
+    setRangeFilters(["30d"]);
+    setAccountFilters(["all"]);
+
+    try {
+      const raw = localStorage.getItem(progressFiltersStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const validRanges = ["7d", "30d", "90d", "180d"];
+
+        if (Array.isArray(parsed.rangeFilters) && parsed.rangeFilters.length > 0) {
+          const normalizedRange = String(parsed.rangeFilters[0]);
+          setRangeFilters(validRanges.includes(normalizedRange) ? [normalizedRange] : ["30d"]);
+        }
+
+        if (Array.isArray(parsed.accountFilters) && parsed.accountFilters.length > 0) {
+          setAccountFilters(parsed.accountFilters.map((value) => String(value)));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load progress tracker filters from localStorage:', error);
+    } finally {
+      hasLoadedProgressFilters.current = true;
+    }
+  }, [progressFiltersStorageKey]);
+
+  useEffect(() => {
+    if (!hasLoadedProgressFilters.current) return;
+
+    try {
+      localStorage.setItem(
+        progressFiltersStorageKey,
+        JSON.stringify({
+          rangeFilters: [rangeFilters[0] || "30d"],
+          accountFilters
+        })
+      );
+    } catch (error) {
+      console.error('Failed to save progress tracker filters to localStorage:', error);
+    }
+  }, [progressFiltersStorageKey, rangeFilters, accountFilters]);
 
   useEffect(() => {
     if (!user?.id) return undefined;
@@ -249,11 +294,10 @@ export default function ProgressTracker() {
   }, [rules, checklistTemplate, dailyChecks, user?.id]);
 
   const toggleRangeFilter = (value) => {
-    setRangeFilters((prev) => {
-      const exists = prev.includes(value);
-      const next = exists ? prev.filter((item) => item !== value) : [...prev, value];
-      return next.length ? next : ["30d"];
-    });
+    const normalizedValue = String(value);
+    if (!["7d", "30d", "90d", "180d"].includes(normalizedValue)) return;
+    setRangeFilters([normalizedValue]);
+    setRangeFilterOpen(false);
   };
 
   const toggleAccountFilter = (value) => {
@@ -270,23 +314,20 @@ export default function ProgressTracker() {
   };
 
   const daysCount = useMemo(() => {
-    const values = rangeFilters.map((value) => {
-      if (value === "7d") return 7;
-      if (value === "90d") return 90;
-      if (value === "180d") return 180;
-      return 30;
-    });
-    return Math.max(...values);
+    const selectedRange = rangeFilters[0] || "30d";
+    if (selectedRange === "7d") return 7;
+    if (selectedRange === "90d") return 90;
+    if (selectedRange === "180d") return 180;
+    return 30;
   }, [rangeFilters]);
 
-  const selectedRangeLabel = rangeFilters
-    .map((value) => {
-      if (value === "7d") return "7 dni";
-      if (value === "90d") return "90 dni";
-      if (value === "180d") return "180 dni";
-      return "30 dni";
-    })
-    .join(", ");
+  const selectedRangeLabel = (() => {
+    const selectedRange = rangeFilters[0] || "30d";
+    if (selectedRange === "7d") return "7 dni";
+    if (selectedRange === "90d") return "90 dni";
+    if (selectedRange === "180d") return "180 dni";
+    return "30 dni";
+  })();
 
   const selectedAccountLabel = accountFilters.includes("all")
     ? "Wszystkie konta"

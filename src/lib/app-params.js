@@ -13,7 +13,7 @@ const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl =
 	if (isNode) {
 		return defaultValue;
 	}
-	const storageKey = `tradelog_${toSnakeCase(paramName)}`;
+	const storageKey = `aikeeptrade_${toSnakeCase(paramName)}`;
 	const urlParams = new URLSearchParams(window.location.search);
 	const searchParam = urlParams.get(paramName);
 	if (removeFromUrl) {
@@ -39,7 +39,7 @@ const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl =
 
 const getAppParams = () => {
 	return {
-		appId: getAppParamValue("app_id", { defaultValue: "tradelog" }),
+		appId: getAppParamValue("app_id", { defaultValue: "aikeeptrade" }),
 		serverUrl: getAppParamValue("server_url", { defaultValue: "http://localhost:5178" }),
 		token: getAppParamValue("access_token", { removeFromUrl: true }),
 		fromUrl: getAppParamValue("from_url", { defaultValue: window.location.href }),

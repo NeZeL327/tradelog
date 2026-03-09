@@ -1,4 +1,3 @@
-import React from 'react';
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

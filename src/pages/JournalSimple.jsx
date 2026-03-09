@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, deleteTrade, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -17,7 +17,6 @@ import {
   Clock,
   ArrowUpDown,
   Eye,
-  Calendar as CalendarIcon,
   ChevronDown,
   ChevronUp
 } from "lucide-react";
@@ -44,6 +43,8 @@ export default function JournalSimple({ mode = "all" }) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const isPlannedMode = mode === "planned";
+  const journalFiltersStorageKey = `journal_filters_${user?.id || 'guest'}_${mode}`;
+  const hasLoadedJournalFilters = useRef(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilters, setStatusFilters] = useState(isPlannedMode ? ["Planned"] : ["all"]);
   const [timeFilters, setTimeFilters] = useState(["all"]);
@@ -79,6 +80,75 @@ export default function JournalSimple({ mode = "all" }) {
 
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    hasLoadedJournalFilters.current = false;
+
+    const defaultStatusFilters = isPlannedMode ? ["Planned"] : ["all"];
+    setSearchTerm("");
+    setStatusFilters(defaultStatusFilters);
+    setTimeFilters(["all"]);
+    setAccountFilters(["all"]);
+    setOutcomeFilters(["all"]);
+
+    try {
+      const raw = localStorage.getItem(journalFiltersStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+
+        if (typeof parsed.searchTerm === "string") {
+          setSearchTerm(parsed.searchTerm);
+        }
+
+        if (Array.isArray(parsed.timeFilters) && parsed.timeFilters.length > 0) {
+          setTimeFilters(parsed.timeFilters.map((value) => String(value)));
+        }
+
+        if (Array.isArray(parsed.accountFilters) && parsed.accountFilters.length > 0) {
+          setAccountFilters(parsed.accountFilters.map((value) => String(value)));
+        }
+
+        if (Array.isArray(parsed.outcomeFilters) && parsed.outcomeFilters.length > 0) {
+          setOutcomeFilters(parsed.outcomeFilters.map((value) => String(value)));
+        }
+
+        if (!isPlannedMode && Array.isArray(parsed.statusFilters) && parsed.statusFilters.length > 0) {
+          setStatusFilters(parsed.statusFilters.map((value) => String(value)));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load journal filters from localStorage:', error);
+    } finally {
+      hasLoadedJournalFilters.current = true;
+    }
+  }, [journalFiltersStorageKey, isPlannedMode]);
+
+  useEffect(() => {
+    if (!hasLoadedJournalFilters.current) return;
+
+    try {
+      localStorage.setItem(
+        journalFiltersStorageKey,
+        JSON.stringify({
+          searchTerm,
+          statusFilters: isPlannedMode ? ["Planned"] : statusFilters,
+          timeFilters,
+          accountFilters,
+          outcomeFilters
+        })
+      );
+    } catch (error) {
+      console.error('Failed to save journal filters to localStorage:', error);
+    }
+  }, [
+    journalFiltersStorageKey,
+    isPlannedMode,
+    searchTerm,
+    statusFilters,
+    timeFilters,
+    accountFilters,
+    outcomeFilters
+  ]);
+
   const { data: trades = [], isLoading, refetch } = useQuery({
     queryKey: ['trades', user?.id],
     queryFn: () => getTrades(user?.id),
@@ -91,6 +161,10 @@ export default function JournalSimple({ mode = "all" }) {
     queryFn: () => getTradingAccounts(user?.id),
     enabled: !!user?.id
   });
+
+  const activeAccounts = accounts.filter((account) => account.is_active !== false && account.status !== 'Inactive');
+  const activeAccountIds = new Set(activeAccounts.map((account) => String(account.id)));
+  const tradesFromActiveAccounts = trades.filter((trade) => activeAccountIds.has(String(trade.account_id)));
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies', user?.id],
@@ -163,7 +237,7 @@ export default function JournalSimple({ mode = "all" }) {
   };
 
   const handleViewTrade = (trade) => {
-    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && isClosedTrade(t));
+    const symbolTrades = tradesFromActiveAccounts.filter(t => t.symbol === trade.symbol && isClosedTrade(t));
     const wins = symbolTrades.filter(t => t.outcome === "Win").length;
     const total = symbolTrades.length;
     const totalPL = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
@@ -239,8 +313,17 @@ export default function JournalSimple({ mode = "all" }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [accountFilterOpen]);
 
+  useEffect(() => {
+    const validIds = new Set(activeAccounts.map((account) => String(account.id)));
+    setAccountFilters((prev) => {
+      if (prev.includes("all")) return prev;
+      const sanitized = prev.filter((id) => validIds.has(String(id)));
+      return sanitized.length ? sanitized : ["all"];
+    });
+  }, [accounts]);
+
   // Filter and search (base)
-  const baseFilteredTrades = trades.filter(t => {
+  const baseFilteredTrades = tradesFromActiveAccounts.filter(t => {
     if (searchTerm && !t.symbol.toLowerCase().includes(searchTerm.toLowerCase())) return false;
 
     if (!timeFilters.includes("all")) {
@@ -275,12 +358,7 @@ export default function JournalSimple({ mode = "all" }) {
 
   const filteredTrades = sortTrades(outcomeFilteredTrades);
   const plannedTrades = sortTrades(baseFilteredTrades.filter(t => t.status === "Planned"));
-  const executedTradesBase = baseFilteredTrades.filter(t => t.status !== "Planned");
-  const executedTrades = sortTrades(
-    statusFilters.includes("all")
-      ? executedTradesBase
-      : executedTradesBase.filter(t => statusFilters.includes(t.status))
-  );
+  const executedTrades = filteredTrades.filter(t => t.status !== "Planned");
   const displayTrades = isPlannedMode ? plannedTrades : executedTrades;
   const toggleStatusFilter = (value) => {
     setStatusFilters(prev => {
@@ -314,20 +392,10 @@ export default function JournalSimple({ mode = "all" }) {
     });
   };
 
-  const toggleOutcomeFilter = (value) => {
-    setOutcomeFilters((prev) => {
-      if (value === "all") return ["all"];
-      const withoutAll = prev.filter((item) => item !== "all");
-      const exists = withoutAll.includes(value);
-      const next = exists ? withoutAll.filter((item) => item !== value) : [...withoutAll, value];
-      return next.length ? next : ["all"];
-    });
-  };
-
   const activeAccountFilterLabel = accountFilters.includes("all")
     ? (t('allAccounts') || 'All Accounts')
     : accountFilters
-        .map((accountId) => accounts.find((account) => String(account.id) === String(accountId))?.name)
+        .map((accountId) => activeAccounts.find((account) => String(account.id) === String(accountId))?.name)
         .filter(Boolean)
         .join(", ");
 
@@ -341,6 +409,22 @@ export default function JournalSimple({ mode = "all" }) {
   const activeTimeFilterLabel = timeFilters.includes("all")
     ? timeFilterLabels.all
     : timeFilters.map((filterKey) => timeFilterLabels[filterKey]).join(", ");
+
+  const accountNameById = useMemo(() => {
+    const map = {};
+    accounts.forEach((account) => {
+      map[String(account.id)] = account.name;
+    });
+    return map;
+  }, [accounts]);
+
+  const strategyNameById = useMemo(() => {
+    const map = {};
+    strategies.forEach((strategy) => {
+      map[String(strategy.id)] = strategy.name;
+    });
+    return map;
+  }, [strategies]);
 
 
   const statsSource = isPlannedMode ? plannedTrades : baseFilteredTrades.filter(isClosedTrade);
@@ -472,7 +556,7 @@ export default function JournalSimple({ mode = "all" }) {
           </Card>
           <Card
             className={`bg-yellow-50 dark:bg-yellow-950 shadow-lg border-yellow-200 dark:border-yellow-800 cursor-pointer ${outcomeFilters.includes("Win") ? "ring-2 ring-yellow-500" : ""}`}
-            onClick={() => { toggleOutcomeFilter("Win"); }}
+            onClick={() => { setStatusFilters(["all"]); setOutcomeFilters(["Win"]); }}
           >
             <CardContent className="p-4">
               <p className="text-sm text-yellow-700 dark:text-yellow-400 mb-1">{t('wins')}</p>
@@ -481,7 +565,7 @@ export default function JournalSimple({ mode = "all" }) {
           </Card>
           <Card
             className={`bg-red-50 dark:bg-red-950 shadow-lg border-red-200 dark:border-red-800 cursor-pointer ${outcomeFilters.includes("Loss") ? "ring-2 ring-red-500" : ""}`}
-            onClick={() => { toggleOutcomeFilter("Loss"); }}
+            onClick={() => { setStatusFilters(["all"]); setOutcomeFilters(["Loss"]); }}
           >
             <CardContent className="p-4">
               <p className="text-sm text-red-700 dark:text-red-400 mb-1">{t('losses')}</p>
@@ -630,7 +714,7 @@ export default function JournalSimple({ mode = "all" }) {
                         )}
                       </div>
                     </button>
-                    {accounts.map((account) => {
+                    {activeAccounts.map((account) => {
                       const isSelected = accountFilters.includes(String(account.id));
                       return (
                         <button
@@ -714,12 +798,13 @@ export default function JournalSimple({ mode = "all" }) {
           <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl">
             <CardContent className="p-0">
               <div className="overflow-x-auto w-full">
-                <table className="w-full text-sm border-collapse">
+                <table className="w-full table-fixed text-xs border-collapse [&_th]:px-1 [&_td]:px-1 [&_th]:py-1 [&_td]:py-1 [&_th]:leading-tight [&_td]:leading-tight [&_th]:overflow-hidden [&_th]:text-ellipsis [&_td]:overflow-hidden [&_td]:text-ellipsis [&_button]:min-h-0 [&_button]:min-w-0">
                 <thead className="bg-slate-50 dark:bg-[#14141f] border-b border-slate-200 dark:border-[#2d2d40]">
                   <tr>
                     {visibleColumns.status && (
                       <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('statusLabel')}</th>
                     )}
+                    <th className="text-left px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[92px]">{t('account') || 'Account'}</th>
                     {visibleColumns.date && (
                       <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         <button onClick={() => handleSort("date")} className="flex items-center gap-0.5 hover:text-blue-600">
@@ -733,6 +818,7 @@ export default function JournalSimple({ mode = "all" }) {
                     {visibleColumns.direction && (
                       <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('direction')}</th>
                     )}
+                    <th className="text-left px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[92px]">{t('strategy') || 'Strategy'}</th>
                     {visibleColumns.entry && (
                       <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('entryPrice')}</th>
                     )}
@@ -781,12 +867,15 @@ export default function JournalSimple({ mode = "all" }) {
                     <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                       {visibleColumns.status && (
                         <td className="px-1.5 py-1">
-                          <Badge className={`${tradeStatusBadgeClass(trade.status)} text-sm px-2 py-0.5`}>
-                            {trade.status === "Open" ? <Clock className="w-2.5 h-2.5 mr-0.5" /> : <CheckCircle className="w-2.5 h-2.5 mr-0.5" />}
+                          <Badge className={`${tradeStatusBadgeClass(trade.status)} text-xs font-semibold px-1.5 py-0.5 border`}> 
+                            {trade.status === "Open" ? <Clock className="w-3 h-3 mr-0.5" /> : <CheckCircle className="w-3 h-3 mr-0.5" />}
                             {trade.status}
                           </Badge>
                         </td>
                       )}
+                      <td className="px-1 py-1 text-xs text-slate-900 dark:text-slate-100 max-w-[92px] truncate" title={accountNameById[String(trade.account_id)] || '-'}>
+                        {accountNameById[String(trade.account_id)] || '-'}
+                      </td>
                       {visibleColumns.date && (
                         <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.date}</td>
                       )}
@@ -795,11 +884,14 @@ export default function JournalSimple({ mode = "all" }) {
                       )}
                       {visibleColumns.direction && (
                         <td className="px-1.5 py-1">
-                          <Badge className={`${directionBadgeClass(trade.direction)} text-sm px-2 py-0.5`}>
+                          <Badge className={`${directionBadgeClass(trade.direction)} text-xs font-semibold px-1.5 py-0.5 border`}>
                             {directionLabel(trade.direction, t)}
                           </Badge>
                         </td>
                       )}
+                      <td className="px-1 py-1 text-xs text-slate-900 dark:text-slate-100 max-w-[92px] truncate" title={strategyNameById[String(trade.strategy_id)] || '-'}>
+                        {strategyNameById[String(trade.strategy_id)] || '-'}
+                      </td>
                       {visibleColumns.entry && (
                         <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
                       )}
@@ -834,20 +926,20 @@ export default function JournalSimple({ mode = "all" }) {
                       {visibleColumns.outcome && (
                         <td className="px-1 py-1">
                           {trade.outcome && (
-                            <Badge variant="outline" className={`text-sm px-2 py-0.5 ${tradeOutcomeBadgeClass(trade.outcome)}`}>
+                            <Badge variant="outline" className={`text-xs font-semibold px-1.5 py-0.5 border ${tradeOutcomeBadgeClass(trade.outcome)}`}>
                               {trade.outcome}
                             </Badge>
                           )}
                         </td>
                       )}
                       <td className="px-1 py-1">
-                        <div className="flex items-center gap-1 min-w-[90px]">
+                        <div className="flex items-center gap-1 w-[72px]">
                           {getScreenshotList(trade).length > 0 ? (
                             getScreenshotList(trade).map((imageUrl, index) => (
                               <button
                                 key={`${trade.id}-shot-${index}`}
                                 type="button"
-                                className="h-7 w-7 rounded-md overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 shrink-0"
+                                className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 shrink-0"
                                 onClick={() => openQuickImage(imageUrl)}
                                 title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
                               >
@@ -862,13 +954,13 @@ export default function JournalSimple({ mode = "all" }) {
                       {visibleColumns.actions && (
                         <td className="px-1 py-1">
                           <div className="flex items-center justify-end gap-1">
-                            <Button size="sm" variant="outline" onClick={() => handleViewTrade(trade)} className="h-6 w-6 p-0">
+                            <Button size="sm" variant="outline" onClick={() => handleViewTrade(trade)} className="h-5 w-5 p-0">
                               <Eye className="w-3 h-3" />
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => setEditingTrade(trade)} className="h-6 w-6 p-0">
+                            <Button size="sm" variant="outline" onClick={() => setEditingTrade(trade)} className="h-5 w-5 p-0">
                               <Edit className="w-3 h-3" />
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-red-600 h-6 w-6 p-0">
+                            <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-red-600 h-5 w-5 p-0">
                               <Trash2 className="w-3 h-3" />
                             </Button>
                           </div>
@@ -922,18 +1014,20 @@ export default function JournalSimple({ mode = "all" }) {
             {plannedOpen ? (
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-slate-200 dark:divide-[#23233a] text-sm">
+                  <table className="w-full table-fixed divide-y divide-slate-200 dark:divide-[#23233a] text-xs [&_th]:px-1 [&_td]:px-1 [&_th]:py-1 [&_td]:py-1 [&_th]:leading-tight [&_td]:leading-tight [&_th]:overflow-hidden [&_th]:text-ellipsis [&_td]:overflow-hidden [&_td]:text-ellipsis [&_button]:min-h-0 [&_button]:min-w-0">
                     <thead>
                       <tr>
                         {visibleColumns.date && (
                           <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('date')}</th>
                         )}
+                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[92px]">{t('account') || 'Account'}</th>
                         {visibleColumns.symbol && (
                           <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('symbol')}</th>
                         )}
                         {visibleColumns.direction && (
                           <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('direction')}</th>
                         )}
+                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[92px]">{t('strategy') || 'Strategy'}</th>
                         <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('entryPrice')}</th>
                         <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('stopLossPips')}</th>
                         <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('takeProfitPips')}</th>
@@ -952,16 +1046,22 @@ export default function JournalSimple({ mode = "all" }) {
                           {visibleColumns.date && (
                             <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.date}</td>
                           )}
+                          <td className="px-1 py-1 text-xs text-slate-900 dark:text-slate-100 max-w-[92px] truncate" title={accountNameById[String(trade.account_id)] || '-'}>
+                            {accountNameById[String(trade.account_id)] || '-'}
+                          </td>
                           {visibleColumns.symbol && (
                             <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.symbol}</td>
                           )}
                           {visibleColumns.direction && (
                             <td className="px-1 py-1">
-                              <Badge className={`${directionBadgeClass(trade.direction)} text-sm px-2 py-0.5`}>
+                              <Badge className={`${directionBadgeClass(trade.direction)} text-xs font-semibold px-1.5 py-0.5 border`}>
                                 {directionLabel(trade.direction, t)}
                               </Badge>
                             </td>
                           )}
+                          <td className="px-1 py-1 text-xs text-slate-900 dark:text-slate-100 max-w-[92px] truncate" title={strategyNameById[String(trade.strategy_id)] || '-'}>
+                            {strategyNameById[String(trade.strategy_id)] || '-'}
+                          </td>
                           <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
                           <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
                           <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
@@ -969,13 +1069,13 @@ export default function JournalSimple({ mode = "all" }) {
                             <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 line-clamp-2">{trade.notes}</td>
                           )}
                           <td className="px-1 py-1">
-                            <div className="flex items-center gap-1 min-w-[90px]">
+                            <div className="flex items-center gap-1 w-[72px]">
                               {getScreenshotList(trade).length > 0 ? (
                                 getScreenshotList(trade).map((imageUrl, index) => (
                                   <button
                                     key={`${trade.id}-planned-shot-${index}`}
                                     type="button"
-                                    className="h-7 w-7 rounded-md overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 shrink-0"
+                                    className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 shrink-0"
                                     onClick={() => openQuickImage(imageUrl)}
                                     title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
                                   >
@@ -990,18 +1090,18 @@ export default function JournalSimple({ mode = "all" }) {
                           {visibleColumns.actions && (
                             <td className="px-1 py-1">
                               <div className="flex items-center justify-end gap-1">
-                                <Button size="sm" variant="outline" onClick={() => handleViewTrade(trade)} className="h-6 w-6 p-0">
+                                <Button size="sm" variant="outline" onClick={() => handleViewTrade(trade)} className="h-5 w-5 p-0">
                                   <Eye className="w-3 h-3" />
                                 </Button>
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setEditingTrade(trade)}
-                                  className="text-blue-600 h-6 w-6 p-0"
+                                  className="text-blue-600 h-5 w-5 p-0"
                                 >
                                   <Edit className="w-3 h-3" />
                                 </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-red-600 h-6 w-6 p-0">
+                                <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-red-600 h-5 w-5 p-0">
                                   <Trash2 className="w-3 h-3" />
                                 </Button>
                               </div>

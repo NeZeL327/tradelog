@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -479,6 +479,12 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
     );
   }
 
+  const availableAccounts = accounts.filter((acc) => {
+    const isCurrent = String(acc.id) === String(formData.account_id);
+    const isActive = acc.is_active !== false && acc.status !== "Inactive";
+    return isCurrent || isActive;
+  });
+
   return (
     <div className="w-full max-w-4xl mx-auto">
       <Card className="border border-slate-200/80 shadow-xl shadow-slate-900/5 overflow-hidden">
@@ -512,10 +518,10 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                   className="w-full px-3 py-2 border border-slate-200 rounded-md bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">{t('selectAccountPlaceholder')}</option>
-                  {accounts.length === 0 ? (
+                  {availableAccounts.length === 0 ? (
                     <option disabled>{t('noAccountsAvailable')}</option>
                   ) : (
-                    accounts.map(acc => (
+                    availableAccounts.map(acc => (
                       <option key={acc.id} value={String(acc.id)}>
                         {acc.name} ({acc.currency || 'USD'})
                       </option>
@@ -944,7 +950,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
             </div>
 
             {/* Notes & Tags */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border">
+            <div className="p-4 bg-white rounded-lg border">
               <div>
                 <Label className="block text-sm font-semibold mb-2">{t('notes')}</Label>
                 <Textarea

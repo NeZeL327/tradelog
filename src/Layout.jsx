@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useAuth } from '@/lib/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar, Settings, Activity, LogOut, User, NotebookPen, CreditCard, ListTodo } from "lucide-react";
+import { LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar, Settings, Activity, LogOut, User, NotebookPen, CreditCard, ListTodo, CheckSquare } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -78,6 +78,11 @@ function LayoutContent({ children }) {
       icon: NotebookPen,
     },
     {
+      title: t('notesChecklists') || 'Checklisty',
+      url: createPageUrl("Checklist"),
+      icon: CheckSquare,
+    },
+    {
       title: t('settings'),
       url: createPageUrl("Settings"),
       icon: Settings,
@@ -105,12 +110,16 @@ function LayoutContent({ children }) {
     
     // Apply theme
     if (user) {
-      const theme = user.theme || 'light';
+      const savedTheme = localStorage.getItem('appTheme');
+      const savedSkin = localStorage.getItem('appSkin');
+      const effectiveTheme = savedTheme === 'dark' || savedTheme === 'light'
+        ? savedTheme
+        : (user.theme || 'light');
       document.documentElement.classList.remove('dark');
 
-      if (theme === 'dark') {
+      if (effectiveTheme === 'dark') {
         document.documentElement.classList.add('dark');
-      } else if (theme === 'light') {
+      } else if (effectiveTheme === 'light') {
         // Already removed all classes
       } else {
         // auto - use system preference
@@ -120,7 +129,11 @@ function LayoutContent({ children }) {
       }
 
       const allowedSkins = new Set(['default', 'ocean', 'blackblu']);
-      const nextSkin = allowedSkins.has(user.skin) ? user.skin : 'ocean';
+      const nextSkin = allowedSkins.has(savedSkin)
+        ? savedSkin
+        : ((savedTheme === 'dark' || savedTheme === 'light')
+        ? (effectiveTheme === 'dark' ? 'blackblu' : 'default')
+        : (allowedSkins.has(user.skin) ? user.skin : 'ocean'));
       document.documentElement.setAttribute('data-skin', nextSkin || 'ocean');
     }
   }, [user]);
@@ -133,12 +146,12 @@ function LayoutContent({ children }) {
             <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
               <div className="logo-arrow logo-arrow-square w-[46px] h-[46px] rounded-2xl">
                 <span className="logo-arrow-path" />
-                <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">T</span></span>
-                <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">L</span></span>
+                <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
+                <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
                 <span className="logo-arrow-wave" />
               </div>
               <div className="group-data-[collapsible=icon]:hidden">
-                <h2 className="font-bold text-lg bg-gradient-to-r from-emerald-400 to-blue-500 dark:from-emerald-300 dark:to-blue-400 bg-clip-text text-transparent">TRADE LOG</h2>
+                <h2 className="font-bold text-lg bg-gradient-to-r from-emerald-400 to-blue-500 dark:from-emerald-300 dark:to-blue-400 bg-clip-text text-transparent">AiKeepTrade</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Trading Journal</p>
               </div>
             </div>
@@ -180,7 +193,7 @@ function LayoutContent({ children }) {
             <div className="flex items-center justify-between gap-2 sm:gap-4">
               <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                 <SidebarTrigger className="hover:bg-slate-100 dark:hover:bg-[#2d2d40] p-2 rounded-lg transition-colors duration-200 flex-shrink-0" />
-                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 dark:from-emerald-300 dark:to-blue-400 bg-clip-text text-transparent truncate">TRADE LOG</h1>
+                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 dark:from-emerald-300 dark:to-blue-400 bg-clip-text text-transparent truncate">AiKeepTrade</h1>
               </div>
               <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                 <LanguageToggle />

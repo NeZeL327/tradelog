@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2, ShieldCheck, TrendingUp, BarChart3, Brain, Target } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 import PublicNavbar from "@/components/PublicNavbar";
 import Footer from "@/components/Footer";
@@ -11,7 +11,6 @@ export default function Home() {
   const { isAuthenticated } = useAuth();
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(true);
-  const [parallax, setParallax] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -27,168 +26,236 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <div className="public-trading-bg min-h-screen flex items-center justify-center">
         <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"></div>
       </div>
     );
   }
 
-  const handleMouseMove = (event) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-    setParallax({ x, y });
-  };
-
-  const handleMouseLeave = () => {
-    setParallax({ x: 0, y: 0 });
-  };
+  const homeCards = [
+    {
+      icon: BarChart3,
+      title: t('homeFeatureAnalysisTitle'),
+      text: t('homeFeatureAnalysisSubtitle')
+    },
+    {
+      icon: Brain,
+      title: t('homeFeatureJournalTitle'),
+      text: t('homeFeatureJournalSubtitle')
+    },
+    {
+      icon: Target,
+      title: t('homeFeatureStrategiesTitle'),
+      text: t('homeFeatureStrategiesSubtitle')
+    }
+  ];
 
   return (
     <>
       <PublicNavbar variant="hero" />
-      <div
-        className="parallax-root min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex flex-col items-center justify-center p-4 pt-24 overflow-hidden relative"
-        style={/** @type {any} */ ({ '--px': parallax.x, '--py': parallax.y })}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      >
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="hero-grid parallax-layer parallax-layer-slow" />
-        <div className="hero-stars parallax-layer" />
-        <div className="hero-trail" />
-        <div className="hero-vignette" />
-        <div className="parallax-layer parallax-layer-fast">
-          <motion.div
-            className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.3, 1],
-              opacity: [0.2, 0.4, 0.2],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        </div>
-        <div className="parallax-layer">
-          <motion.div
-            className="absolute -bottom-40 -left-40 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"
-            animate={{
-              scale: [1.2, 1, 1.2],
-              opacity: [0.3, 0.2, 0.3],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-        </div>
-        <div className="parallax-layer parallax-layer-slow">
-          <motion.div
-            className="absolute top-1/4 right-24 w-56 h-56 border border-blue-500/20 rounded-full"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-          />
-        </div>
-        <div className="parallax-layer parallax-layer-fast">
-          <motion.div
-            className="absolute bottom-16 left-1/3 w-36 h-36 border border-emerald-400/20 rounded-full"
-            animate={{ rotate: -360 }}
-            transition={{ duration: 36, repeat: Infinity, ease: "linear" }}
-          />
-        </div>
-      </div>
+      <div className="market-home public-trading-bg min-h-screen pt-24">
+        <div className="market-chart-bg" aria-hidden="true" />
 
-      {/* Hero Section */}
-      <motion.div
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="relative z-10 text-center mb-8 sm:mb-12 max-w-2xl px-4"
-      >
-        <div className="inline-flex items-center justify-center mb-4 sm:mb-6">
-          <div className="logo-arrow hero-logo w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex-shrink-0">
-            <span className="logo-arrow-path" />
-              <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">T</span></span>
-              <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">L</span></span>
-            <span className="logo-arrow-wave" />
-          </div>
-        </div>
-        <h1 className="hero-title premium-title text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent mb-3 sm:mb-4">
-          TRADE LOG
-        </h1>
-        <p className="premium-subtitle text-base sm:text-lg text-slate-200 mb-2">{t('homeSubtitle')}</p>
-        <p className="text-slate-400 text-sm max-w-md mx-auto">{t('homeDescription')}</p>
-        <div className="hero-signal mt-6 mx-auto" />
-      </motion.div>
+        <main className="relative z-10">
+          <section className="container mx-auto px-4 py-10 md:py-16">
+            <div className="grid items-center gap-10 lg:grid-cols-[1fr_0.95fr]">
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55 }}
+                className="space-y-6"
+              >
+                <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-400/35 bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-300">
+                  <span className="logo-arrow w-5 h-5 rounded-md">
+                    <span className="logo-arrow-path" />
+                    <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
+                    <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
+                    <span className="logo-arrow-wave" />
+                  </span>
+                  AiKeepTrade
+                </span>
 
-      {/* Login Button */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="relative z-10 w-full max-w-sm px-4"
-      >
-        <motion.button
-          onClick={() => window.location.href = '/login'}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="hero-cta hero-cta-pulse w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 sm:py-4 px-6 rounded-xl shadow-lg shadow-blue-500/40 transition-all flex items-center justify-center gap-2 text-base sm:text-lg"
-        >
-          {t('homeLoginButton')}
-          <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-        </motion.button>
+                <h1 className="text-5xl md:text-6xl xl:text-7xl font-extrabold leading-[1.04] text-white">
+                  AiKeepTrade<br />
+                  <span className="bg-gradient-to-r from-emerald-300 to-blue-400 bg-clip-text text-transparent">{t('homeSubtitle')}</span>
+                </h1>
 
-        <p className="text-center text-slate-400 text-xs sm:text-sm mt-4 sm:mt-6">
-          {t('homeSecureLogin')}
-        </p>
-        <p className="text-center text-slate-400 text-xs sm:text-sm mt-2">
-          {t('loginNoAccount')} <button type="button" onClick={() => window.location.href = '/register'} className="text-emerald-300 hover:text-emerald-200 underline">{t('loginRegisterLink')}</button>
-        </p>
-      </motion.div>
+                <p className="max-w-2xl text-xl leading-relaxed text-slate-300">
+                  {t('homeDescription')}
+                </p>
 
-      {/* Features */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-        className="mt-12 sm:mt-16 z-10 text-center px-4 w-full"
-      >
-        <p className="text-slate-300 text-xs sm:text-sm font-semibold mb-4 sm:mb-6">{t('homeAccessTo')}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 max-w-2xl mx-auto">
-          <motion.div
-            className="hero-feature hero-feature-blue hero-feature-neon"
-            animate={{ y: [0, -8, 0], rotate: [0, 1.2, 0] }}
-            transition={{ duration: 5.6, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <div className="hero-feature-icon text-2xl sm:text-3xl">📊</div>
-            <p className="hero-feature-title text-xs sm:text-sm">{t('homeFeatureAnalysisTitle')}</p>
-            <p className="hero-feature-sub text-xs">{t('homeFeatureAnalysisSubtitle')}</p>
-          </motion.div>
-          <motion.div
-            className="hero-feature hero-feature-cyan hero-feature-neon"
-            animate={{ y: [0, -10, 0], rotate: [0, -1.4, 0] }}
-            transition={{ duration: 6.2, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <div className="hero-feature-icon text-2xl sm:text-3xl">📝</div>
-            <p className="hero-feature-title text-xs sm:text-sm">{t('homeFeatureJournalTitle')}</p>
-            <p className="hero-feature-sub text-xs">{t('homeFeatureJournalSubtitle')}</p>
-          </motion.div>
-          <motion.div
-            className="hero-feature hero-feature-indigo hero-feature-neon"
-            animate={{ y: [0, -7, 0], rotate: [0, 1, 0] }}
-            transition={{ duration: 5.1, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <div className="hero-feature-icon text-2xl sm:text-3xl">🎯</div>
-            <p className="hero-feature-title text-xs sm:text-sm">{t('homeFeatureStrategiesTitle')}</p>
-            <p className="hero-feature-sub text-xs">{t('homeFeatureStrategiesSubtitle')}</p>
-          </motion.div>
-        </div>
-      </motion.div>
+                <div className="flex flex-wrap gap-3">
+                  {homeCards.map((card) => {
+                    const Icon = card.icon;
+                    return (
+                      <span key={card.title} className="inline-flex items-center gap-2 rounded-lg border border-slate-700/80 bg-slate-900/75 px-3 py-2 text-sm text-slate-200">
+                        <Icon className="w-4 h-4 text-emerald-300" />
+                        {card.title}
+                      </span>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-wrap gap-4 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => window.location.href = createPageUrl("Register")}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-600 px-7 py-4 text-xl font-bold text-white shadow-lg shadow-blue-500/30 transition-transform hover:-translate-y-0.5"
+                  >
+                    {t('pricingGetStarted')}
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.location.href = createPageUrl("Login")}
+                    className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-600 bg-slate-900/75 px-7 py-4 text-xl font-bold text-slate-100 transition-colors hover:bg-slate-800/75"
+                  >
+                    {t('homeLoginButton')}
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400">
+                  <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> {t('homeSecureLogin')}</span>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> {t('homeAccessTo')}</span>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> {t('pricingNoCreditCard')}</span>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.12 }}
+                className="rounded-3xl border border-slate-700/75 bg-slate-900/70 p-5 shadow-xl backdrop-blur-sm"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="text-3xl font-bold text-slate-100">{t('liveStats')}</h3>
+                  <span className="rounded-full bg-emerald-500 px-3 py-1 text-sm font-semibold text-white">{t('liveStats')}</span>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-4">
+                    <p className="text-sm text-slate-400">{t('winRate')}</p>
+                    <p className="text-3xl font-bold text-emerald-300">{t('homeFeatureAnalysisTitle')}</p>
+                    <p className="text-sm text-slate-300">{t('homeFeatureAnalysisSubtitle')}</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-700 bg-slate-950/70 p-4">
+                    <p className="text-sm text-slate-400">{t('totalPL')}</p>
+                    <p className="text-3xl font-bold text-emerald-300">{t('homeFeatureJournalTitle')}</p>
+                    <p className="text-sm text-slate-300">{t('homeFeatureJournalSubtitle')}</p>
+                  </div>
+                  <div className="rounded-xl border border-blue-500/45 bg-blue-500/10 p-4">
+                    <p className="text-sm font-semibold text-blue-200">{t('pricingFeature1Title')}</p>
+                    <p className="mt-1 text-xl font-bold text-slate-100">{t('pricingFeature1Desc')}</p>
+                    <p className="mt-2 text-sm text-emerald-300">{t('homeFeatureAnalysisSubtitle')}</p>
+                  </div>
+                  <div className="rounded-xl border border-emerald-500/45 bg-emerald-500/10 p-4">
+                    <p className="text-sm font-semibold text-emerald-200">{t('pricingFeature3Title')}</p>
+                    <p className="mt-1 text-xl font-bold text-slate-100">{t('pricingFeature3Desc')}</p>
+                    <p className="mt-2 text-sm text-emerald-300">{t('homeFeatureStrategiesSubtitle')}</p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </section>
+
+          <section id="features" className="bg-slate-950/75 py-16 md:py-20">
+            <div className="container mx-auto px-4">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.5 }}
+                className="mx-auto max-w-4xl text-center"
+              >
+                <h2 className="text-5xl md:text-6xl font-extrabold text-slate-100">{t('pricingWhyChoose')}</h2>
+                <p className="mt-4 text-2xl text-slate-400">{t('pricingCTADesc')}</p>
+              </motion.div>
+
+              <div className="mt-12 grid gap-6 md:grid-cols-3">
+                {homeCards.map((item, index) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.article
+                      key={item.title}
+                      initial={{ opacity: 0, y: 18 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.25 }}
+                      transition={{ duration: 0.45, delay: index * 0.06 }}
+                      className="rounded-2xl border border-slate-700 bg-slate-900/80 p-7 shadow-sm"
+                    >
+                      <div className="mb-5 inline-flex rounded-full bg-blue-500/15 p-3 text-blue-300">
+                        <Icon className="w-7 h-7" />
+                      </div>
+                      <h3 className="text-4xl font-bold text-slate-100 leading-tight">{item.title}</h3>
+                      <p className="mt-4 text-xl leading-relaxed text-slate-400">{item.text}</p>
+                    </motion.article>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          <section className="py-16 md:py-20">
+            <div className="container mx-auto px-4">
+              <div className="mx-auto max-w-5xl text-center">
+                <span className="inline-flex rounded-lg bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-300">AiKeepTrade</span>
+                <h2 className="mt-5 text-5xl md:text-6xl font-extrabold text-slate-100">{t('pricingTitle')}</h2>
+                <p className="mt-4 text-2xl text-slate-400">{t('pricingSubtitle')}</p>
+              </div>
+
+              <div className="mt-12 grid items-center gap-8 lg:grid-cols-[1fr_1fr]">
+                <div className="rounded-3xl border border-slate-700 bg-slate-900/70 p-6 md:p-7 shadow-lg backdrop-blur-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-lg text-slate-300">{t('pricingPlanDesc')}</p>
+                    <span className="shrink-0 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
+                      {t('pricing14DayTrial')}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 flex items-end gap-2">
+                    <p className="text-5xl font-extrabold tracking-tight text-slate-100">$9.9</p>
+                    <p className="pb-1 text-lg text-slate-400">/ {t('pricingPerMonth')}</p>
+                  </div>
+
+                  <div className="mt-6 rounded-2xl border border-slate-700/80 bg-slate-950/50 p-4">
+                    <ul className="space-y-2 text-sm text-slate-300">
+                      <li className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> {t('pricingInclude1')}</li>
+                      <li className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> {t('pricingInclude2')}</li>
+                      <li className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> {t('pricingInclude3')}</li>
+                    </ul>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => window.location.href = createPageUrl("Register")}
+                    className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-600 px-6 py-3 text-lg font-bold text-white shadow-lg shadow-emerald-500/25 hover:from-emerald-600 hover:to-blue-700 transition-colors"
+                  >
+                    {t('pricingStartTrial')}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-emerald-300">
+                    <CheckCircle2 className="w-4 h-4" /> {t('pricingNoCreditCard')}
+                  </p>
+                </div>
+
+                <div>
+                  <span className="inline-flex rounded-lg bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-300">{t('pricingBadge')}</span>
+                  <h3 className="mt-4 text-5xl font-extrabold text-slate-100 leading-tight">{t('pricingCTATitle')}</h3>
+                  <p className="mt-5 text-2xl text-slate-400 leading-relaxed">{t('pricingCTADesc')}</p>
+
+                  <ul className="mt-6 space-y-3 text-xl text-slate-300">
+                    <li className="inline-flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-emerald-400" /> {t('pricingInclude1')}</li>
+                    <li className="inline-flex items-center gap-2"><TrendingUp className="w-5 h-5 text-blue-400" /> {t('pricingInclude2')}</li>
+                    <li className="inline-flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-emerald-400" /> {t('pricingInclude3')}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
       </div>
       <Footer variant="hero" />
     </>

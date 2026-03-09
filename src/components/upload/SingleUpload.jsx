@@ -1,12 +1,10 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Camera, Upload, Loader2, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { compressImage } from "@/lib/localStorage";
 
 import CameraCapture from "./CameraCapture";
 import ExpensePreview from "./ExpensePreview";

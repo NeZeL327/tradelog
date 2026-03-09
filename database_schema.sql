@@ -1,4 +1,4 @@
--- Schema bazy danych dla aplikacji Expense Flow / Trade Log
+-- Schema bazy danych dla aplikacji Expense Flow / AiKeepTrade
 -- Aplikacja do śledzenia transakcji handlowych i wydatków
 
 -- Tabela użytkowników

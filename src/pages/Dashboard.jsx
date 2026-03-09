@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TrendingUp, TrendingDown, Target, Award, Calendar, BarChart3, Eye, ChevronDown, ChevronUp, Filter, CalendarDays, Wallet } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, Eye, ChevronDown, ChevronUp, Filter, CalendarDays, Wallet } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, ScatterChart, Scatter } from "recharts";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, subDays } from "date-fns";
 import { enUS, pl } from "date-fns/locale";
@@ -23,8 +23,10 @@ export default function Dashboard() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const dashboardFiltersStorageKey = `dashboard_filters_${user?.id || 'guest'}`;
   const dateLocale = language === "pl" ? pl : enUS;
   const dayLocale = language === "pl" ? "pl-PL" : "en-US";
+  const hasLoadedDashboardFilters = useRef(false);
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [editingTrade, setEditingTrade] = useState(null);
   const [expandedMetric, setExpandedMetric] = useState(null);
@@ -38,7 +40,8 @@ export default function Dashboard() {
   const [dashboardAccounts, setDashboardAccounts] = useState(["all"]);
   const [dashboardRanges, setDashboardRanges] = useState(["30d"]);
   const [rangeFilterOpen, setRangeFilterOpen] = useState(false);
-  const rangeFilterRef = useRef(null);
+  const rangeFilterMainRef = useRef(null);
+  const rangeFilterChartRef = useRef(null);
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
   const accountDropdownRef = useRef(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -51,6 +54,68 @@ export default function Dashboard() {
   const yearSelectorRef = useRef(null);
   const [calendarAccountOpen, setCalendarAccountOpen] = useState(false);
   const calendarAccountRef = useRef(null);
+
+  useEffect(() => {
+    hasLoadedDashboardFilters.current = false;
+    try {
+      const raw = localStorage.getItem(dashboardFiltersStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+
+        if (Array.isArray(parsed.dashboardAccounts) && parsed.dashboardAccounts.length > 0) {
+          setDashboardAccounts(parsed.dashboardAccounts.map((value) => String(value)));
+        }
+
+        const validRanges = ["7d", "30d", "90d"];
+        if (Array.isArray(parsed.dashboardRanges) && parsed.dashboardRanges.length > 0) {
+          const normalizedRange = String(parsed.dashboardRanges[0]);
+          setDashboardRanges(validRanges.includes(normalizedRange) ? [normalizedRange] : ["30d"]);
+        }
+
+        if (Array.isArray(parsed.filterSymbols) && parsed.filterSymbols.length > 0) {
+          setFilterSymbols(parsed.filterSymbols.map((value) => String(value)));
+        }
+
+        if (Array.isArray(parsed.filterDirections) && parsed.filterDirections.length > 0) {
+          setFilterDirections(parsed.filterDirections.map((value) => String(value)));
+        }
+
+        if (Array.isArray(parsed.filterOutcomes) && parsed.filterOutcomes.length > 0) {
+          setFilterOutcomes(parsed.filterOutcomes.map((value) => String(value)));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load dashboard filters from localStorage:', error);
+    } finally {
+      hasLoadedDashboardFilters.current = true;
+    }
+  }, [dashboardFiltersStorageKey]);
+
+  useEffect(() => {
+    if (!hasLoadedDashboardFilters.current) return;
+
+    try {
+      localStorage.setItem(
+        dashboardFiltersStorageKey,
+        JSON.stringify({
+          dashboardAccounts,
+          dashboardRanges: [dashboardRanges[0] || "30d"],
+          filterSymbols,
+          filterDirections,
+          filterOutcomes
+        })
+      );
+    } catch (error) {
+      console.error('Failed to save dashboard filters to localStorage:', error);
+    }
+  }, [
+    dashboardFiltersStorageKey,
+    dashboardAccounts,
+    dashboardRanges,
+    filterSymbols,
+    filterDirections,
+    filterOutcomes
+  ]);
   const { data: trades = [], isLoading, refetch } = useQuery({
     queryKey: ['trades'],
     queryFn: () => getTrades(user?.id),
@@ -60,6 +125,10 @@ export default function Dashboard() {
     queryKey: ['accounts'],
     queryFn: () => getTradingAccounts(user?.id),
   });
+
+  const activeAccounts = accounts.filter((account) => account.is_active !== false && account.status !== 'Inactive');
+  const activeAccountIds = new Set(activeAccounts.map((account) => String(account.id)));
+  const tradesFromActiveAccounts = trades.filter((trade) => activeAccountIds.has(String(trade.account_id)));
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies'],
@@ -92,9 +161,9 @@ export default function Dashboard() {
   };
 
 
-  const uniqueSymbols = [...new Set(trades.map(t => t.symbol).filter(Boolean))];
-  const uniqueDirections = [...new Set(trades.map(t => normalizeDirection(t.direction)).filter(Boolean))];
-  const uniqueOutcomes = [...new Set(trades.map(t => t.outcome).filter(Boolean))];
+  const uniqueSymbols = [...new Set(tradesFromActiveAccounts.map(t => t.symbol).filter(Boolean))];
+  const uniqueDirections = [...new Set(tradesFromActiveAccounts.map(t => normalizeDirection(t.direction)).filter(Boolean))];
+  const uniqueOutcomes = [...new Set(tradesFromActiveAccounts.map(t => t.outcome).filter(Boolean))];
 
   const toggleMultiFilter = (setter, value) => {
     setter((prev) => {
@@ -120,7 +189,7 @@ export default function Dashboard() {
   const dashboardAccountLabel = buildFilterLabel(
     dashboardAccounts,
     t('allAccounts'),
-    (value) => accounts.find((account) => String(account.id) === String(value))?.name
+    (value) => activeAccounts.find((account) => String(account.id) === String(value))?.name
   );
   const dashboardRangeLabel = buildFilterLabel(
     dashboardRanges,
@@ -130,29 +199,21 @@ export default function Dashboard() {
 
   const toggleDashboardAccount = (value) => toggleMultiFilter(setDashboardAccounts, value);
   const toggleDashboardRange = (value) => {
-    setDashboardRanges((prev) => {
-      const normalizedValue = String(value);
-      const exists = prev.includes(normalizedValue);
-      const next = exists
-        ? prev.filter((item) => item !== normalizedValue)
-        : [...prev, normalizedValue];
-      return next.length ? next : ["30d"];
-    });
+    const normalizedValue = String(value);
+    if (!["7d", "30d", "90d"].includes(normalizedValue)) return;
+    setDashboardRanges([normalizedValue]);
+    setRangeFilterOpen(false);
   };
 
   const rangeStartDate = (() => {
-    const selectedDays = dashboardRanges.map((value) => {
-      if (value === "7d") return 7;
-      if (value === "90d") return 90;
-      return 30;
-    });
-    const maxDays = Math.max(...selectedDays);
+    const selectedRange = dashboardRanges[0] || "30d";
+    const maxDays = selectedRange === "7d" ? 7 : selectedRange === "90d" ? 90 : 30;
     const d = new Date();
     d.setDate(d.getDate() - maxDays);
     return d;
   })();
 
-  const filteredTrades = trades.filter(t => {
+  const filteredTrades = tradesFromActiveAccounts.filter(t => {
     const tradeDate = t.date ? new Date(t.date) : null;
     const inRange = tradeDate ? tradeDate >= rangeStartDate : true;
     return (
@@ -317,7 +378,26 @@ export default function Dashboard() {
 
   const selectedAccountBalanceLabel = accountBalanceAccount === "all"
     ? t('allAccounts')
-    : (accounts.find(acc => String(acc.id) === String(accountBalanceAccount))?.name || t('myAccount'));
+    : (activeAccounts.find(acc => String(acc.id) === String(accountBalanceAccount))?.name || t('myAccount'));
+
+  useEffect(() => {
+    const activeIds = new Set(activeAccounts.map((acc) => String(acc.id)));
+    setDashboardAccounts((prev) => {
+      if (prev.includes('all')) return prev;
+      const sanitized = prev.filter((id) => activeIds.has(String(id)));
+      return sanitized.length ? sanitized : ['all'];
+    });
+
+    setAccountBalanceAccount((prev) => {
+      if (prev === 'all') return prev;
+      return activeIds.has(String(prev)) ? prev : 'all';
+    });
+
+    setPlChartValue((prev) => {
+      if (prev === 'all' || plChartFilter !== 'account') return prev;
+      return activeIds.has(String(prev)) ? prev : 'all';
+    });
+  }, [accounts, plChartFilter]);
 
   useEffect(() => {
     if (!accountBalanceFilterOpen) return;
@@ -336,7 +416,9 @@ export default function Dashboard() {
     if (!rangeFilterOpen) return;
 
     const handleOutsideClick = (event) => {
-      if (rangeFilterRef.current && !rangeFilterRef.current.contains(event.target)) {
+      const clickedInsideMain = rangeFilterMainRef.current?.contains(event.target);
+      const clickedInsideChart = rangeFilterChartRef.current?.contains(event.target);
+      if (!clickedInsideMain && !clickedInsideChart) {
         setRangeFilterOpen(false);
       }
     };
@@ -546,7 +628,7 @@ export default function Dashboard() {
                         )}
                       </span>
                     </button>
-                    {accounts.map(acc => (
+                    {activeAccounts.map(acc => (
                       (() => {
                         const isSelected = dashboardAccounts.includes(String(acc.id));
                         return (
@@ -725,9 +807,10 @@ export default function Dashboard() {
                   </div>
                 </PopoverContent>
               </Popover>
-              <div className="relative" ref={rangeFilterRef}>
+              <div className="relative" ref={rangeFilterMainRef}>
                 <button
-                  onClick={() => setRangeFilterOpen(!rangeFilterOpen)}
+                  type="button"
+                  onClick={() => setRangeFilterOpen((prev) => !prev)}
                   className="relative h-9 md:h-10 w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent shrink-0"
                 >
                   <CalendarDays className="absolute left-3 w-4 h-4 text-slate-500" />
@@ -737,6 +820,7 @@ export default function Dashboard() {
                 {rangeFilterOpen && (
                   <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md">
                     <button
+                      type="button"
                       onClick={() => { toggleDashboardRange('7d'); }}
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardRanges.includes('7d') ? 'bg-accent' : ''}`}
                     >
@@ -750,6 +834,7 @@ export default function Dashboard() {
                       </span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => { toggleDashboardRange('30d'); }}
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardRanges.includes('30d') ? 'bg-accent' : ''}`}
                     >
@@ -763,6 +848,7 @@ export default function Dashboard() {
                       </span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => { toggleDashboardRange('90d'); }}
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardRanges.includes('90d') ? 'bg-accent' : ''}`}
                     >
@@ -970,9 +1056,10 @@ export default function Dashboard() {
           <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-slate-900 dark:text-white">{t('netDailyPL')}</CardTitle>
-              <div className="relative" ref={rangeFilterRef}>
+              <div className="relative" ref={rangeFilterChartRef}>
                 <Button
                   variant="outline"
+                  type="button"
                   className="relative w-24 md:w-28 justify-center text-xs md:text-sm h-9"
                   onClick={() => setRangeFilterOpen((prev) => !prev)}
                 >
@@ -985,6 +1072,7 @@ export default function Dashboard() {
                   <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
                     <Button
                       variant="ghost"
+                      type="button"
                       className={`w-full justify-between text-xs ${dashboardRanges.includes('7d') ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                       onClick={() => {
                         toggleDashboardRange('7d');
@@ -1001,6 +1089,7 @@ export default function Dashboard() {
                     </Button>
                     <Button
                       variant="ghost"
+                      type="button"
                       className={`w-full justify-between text-xs ${dashboardRanges.includes('30d') ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                       onClick={() => {
                         toggleDashboardRange('30d');
@@ -1017,6 +1106,7 @@ export default function Dashboard() {
                     </Button>
                     <Button
                       variant="ghost"
+                      type="button"
                       className={`w-full justify-between text-xs ${dashboardRanges.includes('90d') ? 'bg-slate-100 dark:bg-slate-700' : ''}`}
                       onClick={() => {
                         toggleDashboardRange('90d');
@@ -1088,7 +1178,7 @@ export default function Dashboard() {
                         )}
                       </span>
                     </Button>
-                    {accounts.map((acc) => {
+                    {activeAccounts.map((acc) => {
                       const isActive = dashboardAccounts.includes(String(acc.id));
                       return (
                         <Button
@@ -1132,7 +1222,7 @@ export default function Dashboard() {
                         <td className="px-3 py-2 text-xs text-slate-700 dark:text-slate-400">{trade.date || '-'}</td>
                         <td className="px-3 py-2 text-xs font-medium text-slate-900 dark:text-white">{trade.symbol || '-'}</td>
                         <td className="px-3 py-2 text-xs text-slate-700 dark:text-slate-400">
-                          <Badge className={`${tradeStatusBadgeClass(trade.status)} text-[11px] px-2 py-0.5`}>
+                          <Badge className={`${tradeStatusBadgeClass(trade.status)} text-xs font-semibold px-1.5 py-0.5 border`}>
                             {trade.status || '-'}
                           </Badge>
                         </td>
@@ -1194,7 +1284,7 @@ export default function Dashboard() {
                           )}
                         </span>
                       </Button>
-                      {accounts.map((acc) => {
+                      {activeAccounts.map((acc) => {
                         const isActive = String(accountBalanceAccount) === String(acc.id);
                         return (
                           <Button
@@ -1297,7 +1387,7 @@ export default function Dashboard() {
                               )}
                             </span>
                           </Button>
-                          {accounts.map((acc) => {
+                          {activeAccounts.map((acc) => {
                             const isActive = dashboardAccounts.includes(String(acc.id));
                             return (
                               <Button
@@ -1862,7 +1952,7 @@ export default function Dashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">{t('all')}</SelectItem>
-                      {plChartFilter === "account" && accounts.map(acc => (
+                      {plChartFilter === "account" && activeAccounts.map(acc => (
                         <SelectItem key={acc.id} value={acc.id}>{acc.name}</SelectItem>
                       ))}
                       {plChartFilter === "strategy" && strategies.map(str => (

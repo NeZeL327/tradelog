@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage } from '@/components/LanguageProvider';
@@ -26,15 +25,18 @@ export default function Footer({ variant = 'default' }) {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-sm">
-                TL
+              <div className="logo-arrow h-9 w-9 rounded-lg">
+                <span className="logo-arrow-path" />
+                <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
+                <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
+                <span className="logo-arrow-wave" />
               </div>
-              <span className={isHero ? 'text-base font-semibold text-slate-100' : isApp ? 'text-base font-semibold text-slate-800 dark:text-slate-100' : 'text-base font-semibold text-foreground'}>Trade Log</span>
+              <span className={isHero ? 'text-base font-semibold text-slate-100' : isApp ? 'text-base font-semibold text-slate-800 dark:text-slate-100' : 'text-base font-semibold text-foreground'}>AiKeepTrade</span>
             </div>
             <p className={isHero ? 'max-w-xs text-sm leading-relaxed text-slate-400' : isApp ? 'max-w-xs text-sm leading-relaxed text-slate-500 dark:text-slate-400' : 'max-w-xs text-sm leading-relaxed text-muted-foreground'}>
               {t('footerTagline') || 'Professional trading journal for serious traders'}
             </p>
-            <p className={isHero ? 'text-xs text-slate-500' : isApp ? 'text-xs text-slate-500/90 dark:text-slate-500' : 'text-xs text-muted-foreground/80'}>© 2026 Trade Log App</p>
+            <p className={isHero ? 'text-xs text-slate-500' : isApp ? 'text-xs text-slate-500/90 dark:text-slate-500' : 'text-xs text-muted-foreground/80'}>© 2026 AiKeepTrade App</p>
           </div>
 
           <div className="space-y-4">

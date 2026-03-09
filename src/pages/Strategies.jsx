@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
-import { getStrategies, createStrategy, updateStrategy, getTrades } from '@/lib/localStorage';
+import { getStrategies, createStrategy, updateStrategy, getTrades, getTradingAccounts } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +33,17 @@ export default function Strategies() {
     queryFn: () => getTrades(user?.id),
   });
 
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => getTradingAccounts(user?.id),
+  });
+
+  const activeAccountIds = new Set(
+    accounts
+      .filter((account) => account.is_active !== false && account.status !== 'Inactive')
+      .map((account) => String(account.id))
+  );
+
   const createMutation = useMutation({
     mutationFn: (data) => createStrategy(user?.id, data),
     onSuccess: () => {
@@ -53,7 +64,9 @@ export default function Strategies() {
 
   // Strategy comparison data
   const strategyStats = strategies.map(strategy => {
-    const strategyTrades = trades.filter(t => t.strategy_id === strategy.id && isClosedTrade(t));
+    const strategyTrades = trades.filter(
+      (t) => t.strategy_id === strategy.id && isClosedTrade(t) && activeAccountIds.has(String(t.account_id))
+    );
     const wins = strategyTrades.filter(t => t.outcome === "Win").length;
     const totalPL = strategyTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
     const avgPL = strategyTrades.length > 0 ? totalPL / strategyTrades.length : 0;

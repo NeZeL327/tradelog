@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getGoals, createGoal, updateGoal, deleteGoal, getTrades, getTradingAccounts } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, CheckCircle2, Circle, AlertCircle, Target } from "lucide-react";
+import { Plus, Edit, Trash2, CheckCircle2, Circle, Target } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";

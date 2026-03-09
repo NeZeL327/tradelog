@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import { CheckCircle, AlertCircle, X } from "lucide-react";
 

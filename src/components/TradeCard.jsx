@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -307,7 +307,7 @@ export default function TradeCard({ trade, onEdit = null }) {
                     key={index}
                     src={screenshot}
                     alt={`Screenshot ${index + 1}`}
-                    className="w-full rounded-lg border border-slate-200 hover:scale-105 transition-transform cursor-pointer"
+                    className="w-full rounded-[6px] border border-slate-200 hover:scale-105 transition-transform cursor-pointer"
                     onClick={() => {
                       setViewerImage(screenshot);
                       setViewerOpen(true);
@@ -328,7 +328,7 @@ export default function TradeCard({ trade, onEdit = null }) {
                   key={index}
                   src={screenshot} 
                   alt={`Chart ${index + 1}`} 
-                  className="w-full rounded-lg border border-slate-200 hover:scale-105 transition-transform cursor-pointer"
+                  className="w-full rounded-[6px] border border-slate-200 hover:scale-105 transition-transform cursor-pointer"
                   onClick={() => {
                     setViewerImage(screenshot);
                     setViewerOpen(true);

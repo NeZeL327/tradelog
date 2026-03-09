@@ -17,6 +17,12 @@ export default function NavigationTracker() {
         }, '*');
     }, [location]);
 
+    useEffect(() => {
+        const pathname = location.pathname || '/';
+        document.body.setAttribute('data-route', pathname);
+        document.body.setAttribute('data-is-home', pathname === '/' ? 'true' : 'false');
+    }, [location.pathname]);
+
     // Log user activity when navigating to a page
     useEffect(() => {
         // Extract page name from pathname

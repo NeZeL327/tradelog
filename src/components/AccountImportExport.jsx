@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
 import { createTrade } from "@/lib/localStorage";

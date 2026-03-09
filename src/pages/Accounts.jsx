@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
 import { getTradingAccounts, createTradingAccount, deleteTradingAccount, updateTradingAccount, getTrades } from "@/lib/localStorage";
@@ -7,13 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash, Wallet, Upload } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
+import { Plus, Edit, Trash, Wallet, Power } from "lucide-react";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { AccountImportButton } from "@/components/AccountImportExport";
 
@@ -23,6 +23,7 @@ export default function Accounts() {
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [deletingAccount, setDeletingAccount] = useState(null);
+  const [accountVisibilityFilter, setAccountVisibilityFilter] = useState('all');
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ['accounts', user?.id],
@@ -91,6 +92,26 @@ export default function Accounts() {
     }
   });
 
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }) => {
+      if (!user) throw new Error('Użytkownik nie jest zalogowany');
+      return updateTradingAccount(user.id, id, {
+        is_active: isActive,
+        status: isActive ? 'Active' : 'Inactive'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['trades', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['trades'] });
+      toast.success('Dostępność konta została zaktualizowana');
+    },
+    onError: (error) => {
+      console.error('Error toggling account active state:', error);
+      toast.error('Nie udało się zmienić dostępności konta');
+    }
+  });
+
 
   if (!user) {
     return (
@@ -118,6 +139,13 @@ export default function Accounts() {
     );
   }
 
+  const isAccountActive = (account) => account.is_active !== false && account.status !== 'Inactive';
+  const visibleAccounts = accounts.filter((account) => {
+    if (accountVisibilityFilter === 'active') return isAccountActive(account);
+    if (accountVisibilityFilter === 'inactive') return !isAccountActive(account);
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-4 sm:p-6">
       <div className="max-w-none mx-0 space-y-6">
@@ -126,37 +154,50 @@ export default function Accounts() {
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-2">Konta tradingowe</h1>
             <p className="text-slate-600 dark:text-slate-400 text-sm">Zarządzaj swoimi kontami handlowymi</p>
           </div>
-          <Dialog open={showForm} onOpenChange={(open) => {
-            setShowForm(open);
-            if (!open) setEditingAccount(null);
-          }}>
-            <DialogTrigger asChild>
-              <Button className="bg-blue-600 hover:bg-blue-700 gap-2 whitespace-nowrap">
-                <Plus className="w-4 h-4" />
-                Dodaj konto
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>{editingAccount ? 'Edytuj konto' : 'Dodaj nowe konto'}</DialogTitle>
-              </DialogHeader>
-              <AccountForm
-                account={editingAccount}
-                onSubmit={(data) => {
-                  if (editingAccount) {
-                    updateMutation.mutate({ id: editingAccount.id, data });
-                  } else {
-                    createMutation.mutate(data);
-                  }
-                }}
-                onCancel={() => {
-                  setShowForm(false);
-                  setEditingAccount(null);
-                }}
-                isLoading={createMutation.isPending || updateMutation.isPending}
-              />
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Select value={accountVisibilityFilter} onValueChange={setAccountVisibilityFilter}>
+              <SelectTrigger className="w-[190px] bg-white dark:bg-slate-800">
+                <SelectValue placeholder="Filtr kont" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Pokaż wszystkie</SelectItem>
+                <SelectItem value="active">Pokaż tylko aktywne</SelectItem>
+                <SelectItem value="inactive">Pokaż tylko nieaktywne</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Dialog open={showForm} onOpenChange={(open) => {
+              setShowForm(open);
+              if (!open) setEditingAccount(null);
+            }}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700 gap-2 whitespace-nowrap">
+                  <Plus className="w-4 h-4" />
+                  Dodaj konto
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>{editingAccount ? 'Edytuj konto' : 'Dodaj nowe konto'}</DialogTitle>
+                </DialogHeader>
+                <AccountForm
+                  account={editingAccount}
+                  onSubmit={(data) => {
+                    if (editingAccount) {
+                      updateMutation.mutate({ id: editingAccount.id, data });
+                    } else {
+                      createMutation.mutate(data);
+                    }
+                  }}
+                  onCancel={() => {
+                    setShowForm(false);
+                    setEditingAccount(null);
+                  }}
+                  isLoading={createMutation.isPending || updateMutation.isPending}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {accounts.length === 0 ? (
@@ -186,9 +227,15 @@ export default function Accounts() {
               </DialogContent>
             </Dialog>
           </div>
+        ) : visibleAccounts.length === 0 ? (
+          <div className="text-center py-12 px-4">
+            <Wallet className="w-16 h-16 text-slate-400 dark:text-slate-500 mx-auto mb-4" />
+            <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-2">Brak kont w tym filtrze</h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">Zmień filtr na „Pokaż wszystkie” lub aktywuj konto przełącznikiem.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {accounts.map((account) => (
+            {visibleAccounts.map((account) => (
               <AccountCard
                 key={account.id}
                 account={account}
@@ -200,6 +247,9 @@ export default function Accounts() {
                   setShowForm(true);
                 }}
                 onDelete={(account) => setDeletingAccount(account)}
+                onToggleActive={(account, nextActive) => {
+                  toggleActiveMutation.mutate({ id: account.id, isActive: nextActive });
+                }}
               />
             ))}
           </div>
@@ -230,7 +280,7 @@ export default function Accounts() {
   );
 }
 
-function AccountCard({ account, trades, user, queryClient, onEdit, onDelete }) {
+function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onToggleActive }) {
   const accountTypeColors = {
     Live: "#10b981",
     Demo: "#3b82f6",
@@ -240,6 +290,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete }) {
   const initialBalance = parseFloat(account.initial_balance) || 0;
   const currentBalance = parseFloat(account.current_balance);
   const accentColor = account.color || accountTypeColors[account.account_type] || "#64748b";
+  const isAccountActive = account.is_active !== false && account.status !== 'Inactive';
 
   const accountTrades = trades.filter(
     (trade) => String(trade.account_id) === String(account.id) && isClosedTrade(trade)
@@ -301,7 +352,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete }) {
   };
 
   return (
-    <Card className={`transition-all duration-200 ${getAccountTypeColor()} hover:shadow-xl`} style={{ borderLeftColor: accentColor }}>
+    <Card className={`transition-all duration-200 ${getAccountTypeColor()} hover:shadow-xl ${isAccountActive ? '' : 'opacity-75'}`} style={{ borderLeftColor: accentColor }}>
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
           <div className="flex-1 min-w-0">
@@ -314,9 +365,27 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete }) {
               {account.broker && <span className="truncate">{account.broker}</span>}
               {account.account_number && <span className="truncate">Nr: {account.account_number}</span>}
               <span className={`${getStatusColor(account.status)} whitespace-nowrap`}>{getStatusText(account.status)}</span>
+              <span className={`whitespace-nowrap ${isAccountActive ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                {isAccountActive ? 'Aktywne' : 'Nieaktywne'}
+              </span>
             </div>
           </div>
           <div className="flex gap-1 flex-shrink-0">
+            <div className="flex items-center gap-1 px-1.5 border rounded-md bg-white/70 dark:bg-slate-900/50">
+              <Power className={`w-3 h-3 shrink-0 ${isAccountActive ? 'text-green-600' : 'text-slate-400'}`} />
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isAccountActive}
+                onClick={() => onToggleActive(account, !isAccountActive)}
+                aria-label={`Przełącz aktywność konta ${account.name}`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isAccountActive ? 'bg-green-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${isAccountActive ? 'translate-x-[22px]' : 'translate-x-[1px]'}`}
+                />
+              </button>
+            </div>
             <AccountImportButton 
               account={account} 
               onImportSuccess={() => {
@@ -421,6 +490,7 @@ function AccountForm({ account, onSubmit, onCancel, isLoading }) {
     max_daily_loss_percent: '',
     max_account_loss: '',
     status: 'Active',
+    is_active: true,
     profit_target: '',
     notes: '',
     color: accountTypeColors.Demo
@@ -440,6 +510,7 @@ function AccountForm({ account, onSubmit, onCancel, isLoading }) {
         max_daily_loss_percent: account.max_daily_loss_percent?.toString() || '',
         max_account_loss: account.max_account_loss?.toString() || '',
         status: account.status || 'Active',
+        is_active: account.is_active !== false,
         profit_target: account.profit_target?.toString() || '',
         notes: account.notes || '',
         color: account.color || accountTypeColors[account.account_type] || accountTypeColors.Demo
@@ -457,6 +528,7 @@ function AccountForm({ account, onSubmit, onCancel, isLoading }) {
         max_daily_loss_percent: '',
         max_account_loss: '',
         status: 'Active',
+        is_active: true,
         profit_target: '',
         notes: '',
         color: accountTypeColors.Demo

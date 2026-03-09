@@ -1,4 +1,3 @@
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -74,7 +73,7 @@ export default function Billing() {
                   <CreditCard className="h-8 w-8 text-white" />
                 </div>
               </div>
-              <CardTitle className="text-2xl">Trade Log Pro</CardTitle>
+              <CardTitle className="text-2xl">AiKeepTrade Pro</CardTitle>
               <p className="text-slate-600 dark:text-slate-400">{t("billingPlanDesc")}</p>
             </CardHeader>
             <CardContent className="space-y-6">

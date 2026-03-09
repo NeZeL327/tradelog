@@ -1,57 +1,85 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 import { updateUser } from "@/lib/localStorage";
 
+const APP_THEME_EVENT = "app-theme-changed";
+
 const themes = [
-  { value: "light", label: "LIGHT", skin: "default" },
-  { value: "dark", label: "DARK", skin: "blackblu" }
+  { value: "light", label: "LIGHT" },
+  { value: "dark", label: "DARK" }
 ];
 
-const applyThemeToDocument = (theme) => {
-  document.documentElement.classList.remove("dark");
-  if (theme === "dark") {
-    document.documentElement.classList.add("dark");
-  }
+const normalizeTheme = (value) => (value === "dark" ? "dark" : value === "light" ? "light" : null);
+
+const resolveTheme = (user) => {
+  const savedTheme = normalizeTheme(localStorage.getItem("appTheme"));
+  if (savedTheme) return savedTheme;
+
+  const profileTheme = normalizeTheme(user?.theme);
+  if (profileTheme) return profileTheme;
+
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
 };
 
-const applySkinToDocument = (skin) => {
-  document.documentElement.setAttribute("data-skin", skin);
+const applyThemeToDocument = (theme) => {
+  const root = document.documentElement;
+  root.classList.remove("dark");
+  if (theme === "dark") {
+    root.classList.add("dark");
+  }
+  root.setAttribute("data-skin", theme === "dark" ? "blackblu" : "default");
+  localStorage.setItem("appTheme", theme);
+  localStorage.setItem("appSkin", theme === "dark" ? "blackblu" : "default");
 };
 
 export default function ThemeToggle({ className = "" }) {
   const { user } = useAuth();
-  const [theme, setTheme] = useState(() => {
-    // Initialize from localStorage or user preference
-    const saved = localStorage.getItem("appTheme");
-    if (saved) return saved;
-    return user?.theme || "dark";
-  });
+  const [theme, setTheme] = useState(() => resolveTheme(user));
 
-  // Apply theme when component mounts and theme changes
+  useEffect(() => {
+    const nextTheme = resolveTheme(user);
+    setTheme((prev) => (prev === nextTheme ? prev : nextTheme));
+  }, [user?.id, user?.theme]);
+
   useEffect(() => {
     applyThemeToDocument(theme);
-    const skin = theme === "dark" ? "blackblu" : "default";
-    applySkinToDocument(skin);
-    localStorage.setItem("appTheme", theme);
+    window.dispatchEvent(new CustomEvent(APP_THEME_EVENT, { detail: { theme } }));
   }, [theme]);
 
-  // Sync to user profile when user changes (but don't reset local theme)
+  useEffect(() => {
+    const handleThemeEvent = (event) => {
+      const nextTheme = normalizeTheme(event?.detail?.theme);
+      if (nextTheme && nextTheme !== theme) {
+        setTheme(nextTheme);
+      }
+    };
+
+    window.addEventListener(APP_THEME_EVENT, handleThemeEvent);
+    return () => {
+      window.removeEventListener(APP_THEME_EVENT, handleThemeEvent);
+    };
+  }, [theme]);
+
   useEffect(() => {
     if (user?.id && user?.theme !== theme) {
       try {
-        updateUser(user.id, { theme, skin: theme === "dark" ? "blackblu" : "default" });
+        updateUser(user.id, {
+          theme,
+          skin: theme === "dark" ? "blackblu" : "default"
+        });
       } catch (error) {
         console.error("Theme update error:", error);
       }
     }
-  }, [user?.id]);
+  }, [user?.id, user?.theme, theme]);
 
   const handleThemeChange = (nextTheme) => {
     const normalizedTheme = nextTheme === "dark" ? "dark" : "light";
-    setTheme(normalizedTheme);
-    // Don't call checkSession - just update local state
+    if (normalizedTheme !== theme) {
+      setTheme(normalizedTheme);
+    }
   };
 
   return (

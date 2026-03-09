@@ -1,6 +1,6 @@
 {
-  "name": "TradeLog",
-  "short_name": "TradeLog",
+  "name": "AiKeepTrade",
+  "short_name": "AiKeepTrade",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",

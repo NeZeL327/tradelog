@@ -1,13 +1,12 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
-import { getStrategies, getTrades } from '@/lib/localStorage';
+import { getStrategies, getTrades, getTradingAccounts } from '@/lib/localStorage';
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, TrendingUp, Target, Award, Star, AlertCircle } from "lucide-react";
-import { AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
 import { isClosedTrade } from "@/lib/utils";
 
@@ -31,6 +30,12 @@ export default function StrategyDetails() {
     queryKey: ['trades'],
     enabled: Boolean(user?.id),
     queryFn: () => getTrades(user?.id)
+  });
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts'],
+    enabled: Boolean(user?.id),
+    queryFn: () => getTradingAccounts(user?.id)
   });
 
   if (!user?.id || !id) {
@@ -59,7 +64,15 @@ export default function StrategyDetails() {
   }
 
   // Pobierz transakcje dla tej strategii
-  const strategyTrades = trades.filter(t => t.strategy_id === id && isClosedTrade(t));
+  const activeAccountIds = new Set(
+    accounts
+      .filter((account) => account.is_active !== false && account.status !== 'Inactive')
+      .map((account) => String(account.id))
+  );
+
+  const strategyTrades = trades.filter(
+    (t) => t.strategy_id === id && isClosedTrade(t) && activeAccountIds.has(String(t.account_id))
+  );
   const wins = strategyTrades.filter(t => t.outcome === "Win").length;
   const losses = strategyTrades.filter(t => t.outcome === "Loss").length;
   const breakevens = strategyTrades.filter(t => t.outcome === "Breakeven").length;

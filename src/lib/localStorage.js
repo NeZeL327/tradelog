@@ -19,8 +19,35 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
 
 const userCollection = (userId, name) => collection(db, 'users', String(userId), name);
+const TRADE_TRASH_RETENTION_DAYS = 30;
+const TRADE_TRASH_RETENTION_MS = TRADE_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
 const mapDocs = (snapshot) => snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+
+const toMillis = (value) => {
+  if (!value) return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const purgeExpiredDeletedTrades = async (userId, trades = []) => {
+  const now = Date.now();
+  const expired = trades.filter((trade) => {
+    if (!trade.deleted_at) return false;
+    const expiresAt = toMillis(trade.deleted_expires_at);
+    return expiresAt !== null && expiresAt <= now;
+  });
+
+  if (!expired.length) return;
+
+  await Promise.all(
+    expired.map((trade) => {
+      const refDoc = doc(db, 'users', String(userId), 'trades', String(trade.id));
+      return deleteDoc(refDoc);
+    })
+  );
+};
 
 const runSafe = async (label, action) => {
   try {
@@ -73,7 +100,10 @@ export const getTradingAccounts = async (userId) => {
   return runSafe('getTradingAccounts', async () => {
     if (!userId) return [];
     const snapshot = await getDocs(userCollection(userId, 'accounts'));
-    return mapDocs(snapshot);
+    return mapDocs(snapshot).map((account) => ({
+      ...account,
+      is_active: account.is_active !== false
+    }));
   });
 };
 
@@ -82,6 +112,7 @@ export const createTradingAccount = async (userId, accountData) => {
     if (!userId) throw new Error('Użytkownik nie jest zalogowany');
     const payload = {
       ...accountData,
+      is_active: accountData?.is_active ?? true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
@@ -126,7 +157,32 @@ export const getTrades = async (userId, filters = {}) => {
       ? query(baseRef, ...constraints, orderBy('date', 'desc'))
       : query(baseRef, orderBy('date', 'desc'));
     const snapshot = await getDocs(q);
-    return mapDocs(snapshot);
+    const allTrades = mapDocs(snapshot);
+    await purgeExpiredDeletedTrades(userId, allTrades);
+    return allTrades.filter((trade) => !trade.deleted_at);
+  });
+};
+
+export const getDeletedTrades = async (userId) => {
+  return runSafe('getDeletedTrades', async () => {
+    if (!userId) return [];
+    const baseRef = userCollection(userId, 'trades');
+    const snapshot = await getDocs(query(baseRef, orderBy('date', 'desc')));
+    const allTrades = mapDocs(snapshot);
+    await purgeExpiredDeletedTrades(userId, allTrades);
+
+    const now = Date.now();
+    return allTrades
+      .filter((trade) => {
+        if (!trade.deleted_at) return false;
+        const expiresAt = toMillis(trade.deleted_expires_at);
+        return expiresAt === null || expiresAt > now;
+      })
+      .sort((a, b) => {
+        const aExp = toMillis(a.deleted_expires_at) ?? Number.MAX_SAFE_INTEGER;
+        const bExp = toMillis(b.deleted_expires_at) ?? Number.MAX_SAFE_INTEGER;
+        return aExp - bExp;
+      });
   });
 };
 
@@ -157,6 +213,34 @@ export const updateTrade = async (userId, tradeId, tradeData) => {
 
 export const deleteTrade = async (userId, tradeId) => {
   return runSafe('deleteTrade', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const refDoc = doc(db, 'users', String(userId), 'trades', String(tradeId));
+    const deletedAt = new Date();
+    const expiresAt = new Date(deletedAt.getTime() + TRADE_TRASH_RETENTION_MS);
+    await updateDoc(refDoc, {
+      deleted_at: deletedAt.toISOString(),
+      deleted_expires_at: expiresAt.toISOString(),
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  });
+};
+
+export const restoreTrade = async (userId, tradeId) => {
+  return runSafe('restoreTrade', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const refDoc = doc(db, 'users', String(userId), 'trades', String(tradeId));
+    await updateDoc(refDoc, {
+      deleted_at: null,
+      deleted_expires_at: null,
+      updatedAt: serverTimestamp()
+    });
+    return true;
+  });
+};
+
+export const permanentlyDeleteTrade = async (userId, tradeId) => {
+  return runSafe('permanentlyDeleteTrade', async () => {
     if (!userId) throw new Error('Użytkownik nie jest zalogowany');
     const refDoc = doc(db, 'users', String(userId), 'trades', String(tradeId));
     await deleteDoc(refDoc);

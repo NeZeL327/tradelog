@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Upload, X, Loader2, CheckCircle2, AlertCircle, AlertTriangle } from "lucide-react";
@@ -6,7 +6,6 @@ import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { compressImage } from "@/lib/localStorage";
 
 const EXPENSE_SCHEMA = {
   "type": "object",

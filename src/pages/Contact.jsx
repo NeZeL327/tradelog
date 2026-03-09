@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Send, Clock } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
@@ -19,25 +19,6 @@ export default function Contact() {
     message: ''
   });
 
-  useEffect(() => {
-    const root = document.documentElement;
-    const hadDark = root.classList.contains('dark');
-    const prevSkin = root.getAttribute('data-skin');
-    root.classList.add('dark');
-    root.setAttribute('data-skin', 'blackblu');
-
-    return () => {
-      if (!hadDark) {
-        root.classList.remove('dark');
-      }
-      if (prevSkin) {
-        root.setAttribute('data-skin', prevSkin);
-      } else {
-        root.removeAttribute('data-skin');
-      }
-    };
-  }, []);
-
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
@@ -48,7 +29,7 @@ export default function Contact() {
   return (
     <>
       <PublicNavbar variant="hero" />
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 pt-24 pb-12">
+      <div className="public-trading-bg min-h-screen pt-24 pb-12">
         <div className="container mx-auto px-4 max-w-6xl">
           {/* Header */}
           <motion.div
@@ -88,8 +69,8 @@ export default function Contact() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-100 mb-1">Email</h3>
-                      <p className="text-slate-400">kontakt@tradelog.pl</p>
-                      <p className="text-slate-400">support@tradelog.pl</p>
+                      <p className="text-slate-400">kontakt@aikeeptrade.pl</p>
+                      <p className="text-slate-400">support@aikeeptrade.pl</p>
                     </div>
                   </div>
 
