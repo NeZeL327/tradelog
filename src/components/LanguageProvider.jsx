@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth } from '@/lib/AuthContext';
+import { useOptionalAuth } from '@/lib/AuthContext';
 import { updateUser } from '@/lib/localStorage';
 
 const LanguageContext = createContext(undefined);
@@ -13,7 +13,9 @@ export function useLanguage() {
 }
 
 export function LanguageProvider({ children }) {
-  const { user, checkSession } = useAuth();
+  const auth = useOptionalAuth();
+  const user = auth?.user ?? null;
+  const checkSession = auth?.checkSession ?? null;
   const [language, setLanguage] = useState(() => {
     // Initialize from localStorage
     const saved = localStorage.getItem("appLanguage");
@@ -566,13 +568,13 @@ export function LanguageProvider({ children }) {
         homeDescription: "Śledź swoje transakcje, analizuj strategie i rozwijaj swoje umiejętności",
         homeLoginButton: "Zaloguj się",
         homeSecureLogin: "Bezpieczne logowanie szyfrowane end-to-end",
-        homeAccessTo: "Uzyskaj dostęp do:",
-        homeFeatureAnalysisTitle: "Analiza",
-        homeFeatureAnalysisSubtitle: "Wyniki i raporty",
-        homeFeatureJournalTitle: "Dziennik",
-        homeFeatureJournalSubtitle: "Transakcje na osi",
-        homeFeatureStrategiesTitle: "Własne setupy",
-        homeFeatureStrategiesSubtitle: "Dziennik i analiza własnych trejdów",
+        homeAccessTo: "Uzyskaj dostęp do analizy wyników, dziennika transakcji i własnych setupów:",
+        homeFeatureAnalysisTitle: "Zaawansowana analiza",
+        homeFeatureAnalysisSubtitle: "Przejrzyste raporty wyników i ryzyka",
+        homeFeatureJournalTitle: "Profesjonalny dziennik",
+        homeFeatureJournalSubtitle: "Chronologiczny zapis wszystkich transakcji",
+        homeFeatureStrategiesTitle: "Biblioteka setupów",
+        homeFeatureStrategiesSubtitle: "Dziennik i ocena Twoich strategii",
         loginWelcomeTitle: "Witaj ponownie",
         loginWelcomeDescription: "Zaloguj się, aby wrócić do swoich statystyk, strategii i pełnego dziennika transakcji.",
         loginTitle: "Zaloguj się",

@@ -145,10 +145,18 @@ export const updateUser = (id, updates) => {
   }
 };
 
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 16) {
+    throw new Error('JWT_SECRET must be set and at least 16 characters (backend env)');
+  }
+  return secret;
+}
+
 // Funkcje sesji
 export const createSession = (userId) => {
   try {
-    const sessionToken = jwt.sign({ userId }, process.env.JWT_SECRET || 'your-secret-key', { expiresIn: '7d' });
+    const sessionToken = jwt.sign({ userId }, getJwtSecret(), { expiresIn: '7d' });
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 dni
 
     const stmt = db.prepare(`
@@ -166,7 +174,7 @@ export const createSession = (userId) => {
 export const validateSession = (sessionToken) => {
   try {
     // Najpierw sprawdź JWT
-    const decoded = jwt.verify(sessionToken, process.env.JWT_SECRET || 'your-secret-key');
+    const decoded = jwt.verify(sessionToken, getJwtSecret());
 
     // Następnie sprawdź w bazie danych
     const stmt = db.prepare(`

@@ -77,11 +77,26 @@ module.exports = {
   				to: {
   					height: '0'
   				}
+  			},
+  			'shiny-text': {
+  				'0%, 90%, 100%': { backgroundPosition: 'calc(-100% - var(--shiny-width, 120px)) 0' },
+  				'30%, 60%': { backgroundPosition: 'calc(100% + var(--shiny-width, 120px)) 0' }
+  			},
+  			'text-pop-in': {
+  				'0%': { opacity: '0', transform: 'translateY(0.4em) scale(0.96)' },
+  				'100%': { opacity: '1', transform: 'translateY(0) scale(1)' }
+  			},
+  			'button-shine': {
+  				'0%': { transform: 'translateX(-100%) skewX(-12deg)' },
+  				'100%': { transform: 'translateX(200%) skewX(-12deg)' }
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'shiny-text': 'shiny-text 6s ease-in-out infinite',
+  			'text-pop-in': 'text-pop-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+  			'button-shine': 'button-shine 0.8s ease-in-out'
   		}
   	}
   },

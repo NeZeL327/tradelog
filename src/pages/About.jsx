@@ -1,26 +1,30 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Code, Rocket, Target, Users, TrendingUp } from 'lucide-react';
+import { Sparkles, Code, Rocket, Activity, BookOpen, UsersRound, TrendingUp } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import PublicNavbar from '@/components/PublicNavbar';
 import Footer from '@/components/Footer';
+import AnimatedPublicBackground from '@/components/AnimatedPublicBackground';
+import TradingWallpaper from '@/components/TradingWallpaper';
+import AnimatedFeatureIcon from '@/components/AnimatedFeatureIcon';
 import { Card, CardContent } from '@/components/ui/card';
+import LiveCard from '@/components/LiveCard';
 
 export default function About() {
   const { t } = useLanguage();
 
   const features = [
     {
-      icon: <Target className="w-6 h-6" />,
+      icon: Activity,
       title: "Analiza transakcji",
       description: "Śledź swoje wyniki i analizuj strategie handlowe"
     },
     {
-      icon: <TrendingUp className="w-6 h-6" />,
+      icon: TrendingUp,
       title: "Statystyki w czasie rzeczywistym",
       description: "Przegląd wydajności i postępów na bieżąco"
     },
     {
-      icon: <Users className="w-6 h-6" />,
+      icon: UsersRound,
       title: "Wspólnota traderów",
       description: "Dołącz do rosnącej społeczności profesjonalistów"
     }
@@ -29,8 +33,10 @@ export default function About() {
   return (
     <>
       <PublicNavbar variant="hero" />
-      <div className="public-trading-bg min-h-screen pt-24 pb-12 transition-colors duration-300">
-        <div className="container mx-auto px-4 max-w-6xl">
+      <div className="public-trading-bg use-trading-wallpaper min-h-screen pt-24 pb-12 transition-colors duration-300 relative">
+        <TradingWallpaper variant="candlestickChart" />
+        <AnimatedPublicBackground />
+        <div className="container mx-auto px-4 max-w-6xl relative z-10">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -53,7 +59,8 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mb-16"
           >
-            <Card className="bg-gradient-to-br from-card to-muted/40 border-border overflow-hidden">
+            <LiveCard variant="main">
+            <Card className="feature-card-live feature-card-live-main bg-slate-950/80 border-slate-800 shadow-2xl shadow-emerald-500/15 overflow-hidden">
               <CardContent className="p-12">
                 <div className="flex items-center justify-center">
                   <div className="relative">
@@ -70,6 +77,7 @@ export default function About() {
                 </div>
               </CardContent>
             </Card>
+            </LiveCard>
           </motion.div>
 
           {/* Story Section */}
@@ -79,8 +87,9 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="space-y-8 mb-16"
           >
-            <Card className="bg-card/85 border-border backdrop-blur-sm">
-              <CardContent className="p-8 space-y-6 text-foreground/90 leading-relaxed">
+            <LiveCard variant="main">
+            <Card className="feature-card-live feature-card-live-main bg-slate-950/75 border-slate-800 backdrop-blur-sm">
+              <CardContent className="p-8 space-y-6 text-slate-200 leading-relaxed">
                 <div className="flex items-center gap-3 mb-4">
                   <Code className="w-8 h-8 text-emerald-400" />
                   <h2 className="text-3xl font-bold text-foreground">Niezwykła Historia Powstania</h2>
@@ -98,7 +107,7 @@ export default function About() {
                   fiction? A jednak to prawda!
                 </p>
 
-                <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border-l-4 border-emerald-500 p-6 rounded-r-lg">
+                <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border-l-4 border-emerald-500/80 p-6 rounded-r-lg">
                   <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-300 mb-2">
                     Sekret? Współpraca z AI! 🤖✨
                   </p>
@@ -135,8 +144,8 @@ export default function About() {
                   AI rozumiało, tłumaczyło wizję na kod i pomagało debugować problemy.
                 </p>
 
-                <div className="bg-muted/50 p-6 rounded-lg border border-border">
-                  <p className="text-lg font-semibold text-blue-600 dark:text-blue-300 mb-3">
+                <div className="bg-slate-900/60 p-6 rounded-lg border border-slate-700">
+                  <p className="text-lg font-semibold text-blue-400 mb-3">
                     Co to oznacza dla Ciebie? 🚀
                   </p>
                   <p className="text-base">
@@ -157,6 +166,7 @@ export default function About() {
                 </p>
               </CardContent>
             </Card>
+            </LiveCard>
           </motion.div>
 
           {/* Features Grid */}
@@ -166,7 +176,7 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.6 }}
             className="mb-16"
           >
-            <h2 className="text-3xl font-bold text-foreground text-center mb-8">
+            <h2 className="text-3xl font-bold text-slate-100 text-center mb-8">
               Co oferuje AiKeepTrade?
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
@@ -176,19 +186,22 @@ export default function About() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, delay: 0.72 + index * 0.06 }}
-                  whileHover={{ y: -3 }}
+                  whileHover={{ translateY: -6, scale: 1.02 }}
+                  className="h-full"
                 >
-                <Card className="bg-card/80 border-border hover:border-primary/40 transition-all duration-200">
+                <LiveCard variant="main" className="h-full">
+                <Card className="feature-card-live feature-card-live-main bg-slate-950/70 border-slate-800 hover:border-emerald-500/40 transition-all duration-200 h-full">
                   <CardContent className="p-6">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center mb-4">
-                      <div className="text-emerald-400">
-                        {feature.icon}
-                      </div>
-                    </div>
-                    <h3 className="text-xl font-semibold text-foreground mb-2">{feature.title}</h3>
-                    <p className="text-muted-foreground">{feature.description}</p>
+                    <AnimatedFeatureIcon
+                      icon={feature.icon}
+                      variant="main"
+                      className="mb-4"
+                    />
+                    <h3 className="text-xl font-semibold text-slate-100 mb-2">{feature.title}</h3>
+                    <p className="text-slate-300">{feature.description}</p>
                   </CardContent>
                 </Card>
+                </LiveCard>
                 </motion.div>
               ))}
             </div>
@@ -201,32 +214,36 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.8 }}
             className="mb-16"
           >
-            <h2 className="text-3xl font-bold text-foreground text-center mb-8">
+            <h2 className="text-3xl font-bold text-slate-100 text-center mb-8">
               Zajrzyj do środka
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               {/* Screenshot placeholders */}
-              <Card className="bg-card/80 border-border overflow-hidden">
+              <LiveCard variant="main">
+              <Card className="feature-card-live feature-card-live-main bg-slate-950/70 border-slate-800 overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="aspect-video bg-gradient-to-br from-muted/60 to-card flex items-center justify-center">
+                  <div className="aspect-video bg-gradient-to-br from-slate-900/80 to-slate-950/80 flex items-center justify-center">
                     <div className="text-center">
                       <TrendingUp className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-                      <p className="text-muted-foreground">Dashboard z analityką</p>
+                      <p className="text-slate-300">Dashboard z analityką</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+              </LiveCard>
 
-              <Card className="bg-card/80 border-border overflow-hidden">
+              <LiveCard variant="main">
+              <Card className="feature-card-live feature-card-live-main bg-slate-950/70 border-slate-800 overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="aspect-video bg-gradient-to-br from-muted/60 to-card flex items-center justify-center">
+                  <div className="aspect-video bg-gradient-to-br from-slate-900/80 to-slate-950/80 flex items-center justify-center">
                     <div className="text-center">
-                      <Target className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                      <p className="text-muted-foreground">Dziennik transakcji</p>
+                      <BookOpen className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                      <p className="text-slate-300">Dziennik transakcji</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+              </LiveCard>
             </div>
           </motion.div>
 
@@ -237,13 +254,14 @@ export default function About() {
             transition={{ duration: 0.6, delay: 1 }}
             className="text-center"
           >
-            <Card className="bg-gradient-to-br from-emerald-500/10 to-blue-500/10 border-emerald-500/30">
+            <LiveCard variant="main">
+            <Card className="feature-card-live feature-card-live-main bg-slate-950/80 border-emerald-500/40">
               <CardContent className="p-12">
                 <Rocket className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-                <h2 className="text-3xl font-bold text-foreground mb-4">
+                <h2 className="text-3xl font-bold text-slate-100 mb-4">
                   Gotowy, by zacząć swoją podróż?
                 </h2>
-                <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
                   Dołącz do społeczności traderów, którzy już korzystają z AiKeepTrade. 
                   Zacznij śledzić swoje transakcje, analizować strategie i rozwijaj się jako trader!
                 </p>
@@ -251,12 +269,16 @@ export default function About() {
                   <a href="/register" className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 rounded-lg text-white font-semibold transition-all duration-200 hover:-translate-y-0.5">
                     Zarejestruj się za darmo
                   </a>
-                  <a href="/contact" className="px-6 py-3 bg-secondary hover:bg-accent rounded-lg text-secondary-foreground font-semibold transition-all duration-200 hover:-translate-y-0.5">
+                  <a
+                    href="/contact"
+                    className="px-6 py-3 rounded-lg border border-emerald-400/60 text-emerald-200 font-semibold transition-all duration-200 hover:bg-emerald-500/10 hover:-translate-y-0.5"
+                  >
                     Skontaktuj się z nami
                   </a>
                 </div>
               </CardContent>
             </Card>
+            </LiveCard>
           </motion.div>
         </div>
       </div>

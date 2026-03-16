@@ -2,16 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  zoom: 0.85;
+/* Tlo strony - min-height zeby przy przewijaniu nie bylo obciec */
+html {
+  min-height: 100%;
+}
+html.dark {
+  background: linear-gradient(to bottom right, #0f0f16, #14141f);
+  background-attachment: fixed;
+}
+html:not(.dark) {
+  background: linear-gradient(to bottom right, rgb(248 250 252), rgb(239 246 255));
+  background-attachment: fixed;
+}
+
+/* Zoom tylko na większych ekranach – na mobile bez zoomu, żeby uniknąć overflow */
+@media (min-width: 1024px) {
+  body {
+    zoom: 0.85;
+  }
 }
 
 @supports not (zoom: 1) {
-  #root {
-    transform: scale(0.85);
-    transform-origin: top center;
-    width: 117.647%;
+  @media (min-width: 1024px) {
+    #root {
+      transform: scale(0.85);
+      transform-origin: top center;
+      width: 117.647%;
+      min-height: 100vh;
+    }
   }
+}
+
+#root {
+  min-height: 100%;
+  width: 100%;
 }
 
 .analytics-page .recharts-wrapper {
@@ -22,22 +46,6 @@ body {
 .analytics-page .recharts-surface {
   overflow: hidden !important;
   clip-path: inset(1px);
-}
-
-
-/* :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -51,10 +59,9 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  /* Bez place-items: center - unikamy centrowania i przycinania przy scrollu */
 }
 
 h1 {
@@ -80,21 +87,6 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-} */
-
-
 
 @layer base {
   :root {
@@ -310,6 +302,16 @@ button:focus-visible {
   }
 }
 
+/* To samo tło co dashboard – brak szarego paska przy przewijaniu (override po base) */
+html.dark body {
+  background: linear-gradient(to bottom right, #0f0f16, #14141f) !important;
+  background-attachment: fixed;
+}
+html:not(.dark) body {
+  background: linear-gradient(to bottom right, rgb(248 250 252), rgb(239 246 255)) !important;
+  background-attachment: fixed;
+}
+
 body[data-is-home="false"] {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -319,6 +321,13 @@ body[data-is-home="false"] {
 body[data-is-home="false"] .public-trading-bg:not(.market-home) > * {
   position: relative;
   z-index: 2;
+}
+
+/* Na stronach z tapetą trading (Funkcje, Cennik, Kontakt, itd.) tapeta i tło muszą zostać absolute, żeby wypełniały ekran i były widoczne */
+body[data-is-home="false"] .public-trading-bg.use-trading-wallpaper > .trading-wallpaper,
+body[data-is-home="false"] .public-trading-bg.use-trading-wallpaper > .animated-public-bg {
+  position: absolute !important;
+  z-index: 0;
 }
 
 body[data-is-home="false"] .text-muted-foreground {
@@ -1472,21 +1481,21 @@ body[data-is-home="false"] .text-slate-200 {
   position: absolute;
   inset: -10% -20%;
   background-image:
-    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
-  background-size: 120px 120px;
-  mask-image: radial-gradient(circle at 30% 20%, rgba(0, 0, 0, 0.9), transparent 60%);
-  opacity: 0.28;
-  animation: gridFloat 22s linear infinite;
+    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 40%, rgba(0, 0, 0, 0.85), transparent 70%);
+  opacity: 0.4;
+  animation: gridFloat 18s ease-in-out infinite;
 }
 
 .hero-stars {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.5) 1px, transparent 1px);
-  background-size: 140px 140px;
-  opacity: 0.12;
-  animation: starDrift 26s ease-in-out infinite;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.6) 1px, transparent 1px);
+  background-size: 100px 100px;
+  opacity: 0.22;
+  animation: starDrift 20s ease-in-out infinite;
 }
 
 .hero-trail {
@@ -1503,8 +1512,287 @@ body[data-is-home="false"] .text-slate-200 {
 .hero-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 40%, rgba(15, 23, 42, 0) 0%, rgba(8, 12, 26, 0.4) 45%, rgba(8, 12, 26, 0.75) 75%);
+  background: radial-gradient(ellipse 95% 90% at 50% 45%, rgba(15, 23, 42, 0) 0%, rgba(8, 12, 26, 0.2) 50%, rgba(8, 12, 26, 0.65) 80%);
   pointer-events: none;
+}
+
+/* Animowana tapeta 3D – nad warstwą ::before/::after (strony publiczne) */
+.animated-public-bg {
+  z-index: 1;
+}
+
+/* Mesh glow – dobrze widoczny, pulsacja */
+.public-mesh-glow {
+  background: radial-gradient(
+    ellipse 130% 100% at 70% 30%,
+    rgba(16, 185, 129, 0.22) 0%,
+    transparent 48%
+  ),
+  radial-gradient(
+    ellipse 110% 100% at 30% 70%,
+    rgba(34, 211, 238, 0.2) 0%,
+    transparent 45%
+  );
+  animation: meshGlow 12s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes meshGlow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+/* Sweep – widoczny pas światła */
+.public-mesh-sweep {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(
+    ellipse 70% 120% at 50% 50%,
+    rgba(52, 211, 153, 0.18) 0%,
+    transparent 45%
+  );
+  animation: meshSweep 22s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes meshSweep {
+  0%, 100% { transform: translate(0, 0); opacity: 0.8; }
+  50% { transform: translate(5%, -3%); opacity: 1; }
+}
+
+/* Siatka – wyraźna, wolny ruch */
+.hero-grid.animated-public-grid {
+  opacity: 0.5;
+  animation: gridFloat 18s ease-in-out infinite;
+}
+
+/* Tapeta: siatka mesh – widoczna */
+.trading-wallpaper-grid-mesh {
+  mask-image: radial-gradient(ellipse 88% 82% at 50% 50%, rgba(0, 0, 0, 0.5), transparent 62%);
+  animation: gridMeshFade 20s ease-in-out infinite;
+}
+
+@keyframes gridMeshFade {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+/* Siatka kropek – wyraźna */
+.trading-dot-grid {
+  background-image: radial-gradient(circle, rgba(34, 211, 238, 0.28) 1.2px, transparent 1.2px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 48%, rgba(0, 0, 0, 0.4), transparent 58%);
+  animation: dotGridPulse 6s ease-in-out infinite;
+}
+
+@keyframes dotGridPulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trading-wallpaper-grid-mesh,
+  .trading-dot-grid,
+  .public-mesh-glow,
+  .public-mesh-sweep {
+    animation: none !important;
+  }
+  .trading-dot-grid { opacity: 0.8; }
+}
+
+/* ========== Tapeta tradingowa (wykres, świece, linia trendu) ========== */
+.trading-wallpaper {
+  z-index: 0;
+}
+
+.trading-framer-animation {
+  z-index: 2;
+}
+
+/* Karty Funkcje – obracająca się obwódka (conic), błysk, glow (insp. 2024) */
+@property --feature-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.feature-card-border-wrap {
+  position: relative;
+  border-radius: 0.75rem;
+  overflow: visible;
+}
+.feature-card-rotating-border {
+  position: absolute;
+  inset: -2px;
+  border-radius: 0.75rem;
+  background: conic-gradient(
+    from var(--feature-angle),
+    rgba(16, 185, 129, 0.9),
+    rgba(34, 211, 238, 0.9),
+    rgba(59, 130, 246, 0.7),
+    rgba(16, 185, 129, 0.9)
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.feature-card-rotating-border::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: calc(0.75rem - 2px);
+  background: rgb(15 23 42);
+}
+.feature-card-border-wrap:hover .feature-card-rotating-border {
+  opacity: 1;
+  animation: feature-rotate-angle 2.5s linear infinite;
+}
+.feature-card-border-wrap.feature-card-live-more .feature-card-rotating-border {
+  background: conic-gradient(
+    from var(--feature-angle),
+    rgba(59, 130, 246, 0.9),
+    rgba(34, 211, 238, 0.9),
+    rgba(16, 185, 129, 0.8),
+    rgba(59, 130, 246, 0.9)
+  );
+}
+@keyframes feature-rotate-angle {
+  to { --feature-angle: 360deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .feature-card-rotating-border {
+    animation: none !important;
+    opacity: 0;
+  }
+  .feature-card-border-wrap:hover .feature-card-rotating-border {
+    opacity: 0.6;
+  }
+}
+
+/* Glow podążający za kursorem – zmienna ustawiana z JS */
+.feature-card-glow {
+  position: absolute;
+  inset: -20px;
+  border-radius: 1rem;
+  background: radial-gradient(
+    circle 80px at calc(var(--mouse-x, 50%) * 1%) calc(var(--mouse-y, 50%) * 1%),
+    rgba(16, 185, 129, 0.25),
+    rgba(34, 211, 238, 0.12),
+    transparent 60%
+  );
+  filter: blur(20px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+.feature-card-border-wrap:hover .feature-card-glow {
+  opacity: 1;
+}
+.feature-card-border-wrap.feature-card-live-more .feature-card-glow {
+  background: radial-gradient(
+    circle 80px at calc(var(--mouse-x, 50%) * 1%) calc(var(--mouse-y, 50%) * 1%),
+    rgba(59, 130, 246, 0.22),
+    rgba(34, 211, 238, 0.1),
+    transparent 60%
+  );
+}
+
+.feature-card-live {
+  position: relative;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+  z-index: 1;
+}
+/* Przesuwający się błysk */
+.feature-card-live::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 20%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.03) 80%,
+    transparent 100%
+  );
+  transform: skewX(-18deg);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.feature-card-live:hover::after {
+  opacity: 1;
+  animation: feature-card-sweep 0.7s ease-out forwards;
+}
+@keyframes feature-card-sweep {
+  0% { left: -100%; }
+  100% { left: 150%; }
+}
+
+.trading-wallpaper-svg {
+  opacity: 1;
+}
+
+/* Linie trendu – płynne rysowanie w pętli */
+.trading-wallpaper-trendline {
+  animation: tradingLineDrawPro 8s ease-in-out infinite;
+}
+
+.trading-wallpaper-trendline-2 {
+  animation: tradingLineDrawPro 10s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+@keyframes tradingLineDrawPro {
+  0% { stroke-dashoffset: 1400; }
+  38% { stroke-dashoffset: 0; }
+  62% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -1400; }
+}
+
+/* Świece japońskie / Matrix – spadające linie w tle (nad siatką i Framer) */
+.falling-candles {
+  z-index: 3;
+}
+.falling-candle {
+  position: absolute;
+  left: var(--fc-left);
+  top: 0;
+  width: var(--fc-width);
+  height: var(--fc-height);
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(16, 185, 129, 0.7) 18%,
+    rgba(34, 211, 238, 0.65) 50%,
+    rgba(16, 185, 129, 0.5) 82%,
+    transparent 100%
+  );
+  opacity: var(--fc-opacity);
+  animation: falling-candle-fall var(--fc-duration) linear infinite;
+  animation-delay: var(--fc-delay);
+  border-radius: 2px;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .falling-candle {
+    animation: none;
+    opacity: 0;
+  }
+}
+@keyframes falling-candle-fall {
+  0% {
+    transform: translateY(-10vh);
+  }
+  100% {
+    transform: translateY(110vh);
+  }
 }
 
 .parallax-root {
@@ -1707,13 +1995,15 @@ body[data-is-home="false"] .text-slate-200 {
 
 @keyframes gridFloat {
   0% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(2%, -1.5%, 0); }
+  25% { transform: translate3d(3%, -2%, 0); }
+  50% { transform: translate3d(-2%, 2%, 0); }
+  75% { transform: translate3d(2%, 1%, 0); }
   100% { transform: translate3d(0, 0, 0); }
 }
 
 @keyframes starDrift {
-  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.12; }
-  50% { transform: translate3d(-2%, 1.5%, 0); opacity: 0.2; }
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.22; }
+  50% { transform: translate3d(-3%, 2%, 0); opacity: 0.35; }
 }
 
 @keyframes borderSweep {
@@ -2400,6 +2690,98 @@ table th, table td {
   animation: blink 1.5s infinite;
 }
 
+/* Hero: shiny text (gradient sweep) */
+.hero-shiny-text {
+  --shiny-width: 100px;
+  background-size: 200% 100%;
+  background-image: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(255, 255, 255, 0.25) 45%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.25) 55%,
+    transparent 60%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  background-position: calc(-100% - var(--shiny-width)) 0;
+  animation: hero-shiny-text 5s ease-in-out infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-shiny-text {
+    animation: none;
+    background-position: 120% 0;
+  }
+}
+@keyframes hero-shiny-text {
+  0%, 85%, 100% {
+    background-position: calc(-100% - var(--shiny-width)) 0;
+  }
+  35%, 55% {
+    background-position: calc(100% + var(--shiny-width)) 0;
+  }
+}
+
+/* Subtitle with gradient + moving shine (two layers) */
+.hero-subtitle-shine {
+  background-image:
+    linear-gradient(105deg, transparent 0%, transparent 38%, rgba(255, 255, 255, 0.32) 48%, transparent 58%, transparent 100%),
+    linear-gradient(to right, #6ee7b7, #93c5fd);
+  background-size: 220% 100%, 100% 100%;
+  background-position: calc(-100% - 90px) 0, 0 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: hero-subtitle-shine 5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-subtitle-shine {
+    animation: none;
+  }
+}
+@keyframes hero-subtitle-shine {
+  0%, 82%, 100% {
+    background-position: calc(-100% - 90px) 0, 0 0;
+  }
+  38%, 58% {
+    background-position: calc(100% + 90px) 0, 0 0;
+  }
+}
+
+/* CTA button shine overlay on hover */
+.btn-shine-wrap {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shine-wrap .btn-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 35%,
+    rgba(255, 255, 255, 0.2) 45%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.2) 55%,
+    transparent 65%,
+    transparent 100%
+  );
+  transform: translateX(-100%) skewX(-12deg);
+  pointer-events: none;
+  transition: none;
+}
+.btn-shine-wrap:hover .btn-shine {
+  animation: button-shine-overlay 0.7s ease-out forwards;
+}
+@keyframes button-shine-overlay {
+  to {
+    transform: translateX(200%) skewX(-12deg);
+  }
+}
+
 .market-home,
 .public-trading-bg {
   --public-bg-focus-x: 50%;
@@ -2413,6 +2795,19 @@ table th, table td {
     linear-gradient(180deg, rgba(2, 6, 23, 0.1), rgba(2, 6, 23, 0.34)),
     url('/trading-bg-user.png?v=7') var(--public-bg-focus-x) var(--public-bg-focus-y) / var(--public-bg-main-size) no-repeat,
     linear-gradient(180deg, #020617 0%, #081126 44%, #030a19 100%);
+}
+
+/* Gdy używana jest własna tapeta tradingowa – bez starego obrazka */
+.public-trading-bg.use-trading-wallpaper,
+.market-home.use-trading-wallpaper {
+  background: linear-gradient(180deg, #020617 0%, #0f172a 45%, #0c1222 100%);
+}
+
+.public-trading-bg.use-trading-wallpaper::before,
+.public-trading-bg.use-trading-wallpaper::after,
+.market-home.use-trading-wallpaper::before,
+.market-home.use-trading-wallpaper::after {
+  opacity: 0;
 }
 
 .market-home::before,
@@ -2485,5 +2880,10 @@ table th, table td {
   .market-home::before,
   .public-trading-bg::before {
     opacity: 0.28;
+  }
+
+  .public-trading-bg.use-trading-wallpaper,
+  .market-home.use-trading-wallpaper {
+    background: linear-gradient(180deg, #020617 0%, #0f172a 45%, #0c1222 100%);
   }
 }

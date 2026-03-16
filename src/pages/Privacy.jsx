@@ -1,10 +1,13 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import LiveCard from '@/components/LiveCard';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Shield } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import Footer from '@/components/Footer';
+import AnimatedPublicBackground from '@/components/AnimatedPublicBackground';
+import TradingWallpaper from '@/components/TradingWallpaper';
 
 export default function Privacy() {
   const { t, language } = useLanguage();
@@ -16,8 +19,10 @@ export default function Privacy() {
   const isPolish = language === 'pl';
 
   return (
-    <div className="public-trading-bg min-h-screen flex flex-col">
-      <div className="container mx-auto px-4 py-8 flex-1">
+    <div className="public-trading-bg use-trading-wallpaper min-h-screen flex flex-col relative">
+      <TradingWallpaper />
+      <AnimatedPublicBackground />
+      <div className="container mx-auto px-4 py-8 flex-1 relative z-10">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -43,7 +48,8 @@ export default function Privacy() {
           </div>
 
           {/* Content */}
-          <Card>
+          <LiveCard variant="main">
+          <Card className="feature-card-live feature-card-live-main bg-slate-950/80 border-slate-800">
             <CardHeader>
               <CardTitle>
                 {isPolish ? 'Twoja prywatność ma dla nas znaczenie' : 'Your Privacy Matters to Us'}
@@ -284,6 +290,7 @@ export default function Privacy() {
               </section>
             </CardContent>
           </Card>
+          </LiveCard>
         </div>
       </div>
       

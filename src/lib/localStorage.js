@@ -17,6 +17,7 @@ import {
 import imageCompression from 'browser-image-compression';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
+import { logger } from '@/lib/logger';
 
 const userCollection = (userId, name) => collection(db, 'users', String(userId), name);
 const TRADE_TRASH_RETENTION_DAYS = 30;
@@ -53,7 +54,7 @@ const runSafe = async (label, action) => {
   try {
     return await action();
   } catch (error) {
-    console.error(`${label} error:`, error);
+    logger.error(`${label} error`, error);
     throw error;
   }
 };
@@ -73,7 +74,7 @@ export const compressImage = async (file) => {
   try {
     return await imageCompression(file, options);
   } catch (error) {
-    console.error('compressImage error:', error);
+    logger.error('compressImage error', error);
     return file;
   }
 };
@@ -194,9 +195,7 @@ export const createTrade = async (userId, tradeData) => {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
-    console.log('Creating trade in Firestore with payload:', payload);
     const refDoc = await addDoc(userCollection(userId, 'trades'), payload);
-    console.log('Trade created with ID:', refDoc.id);
     return { id: refDoc.id, ...payload };
   });
 };

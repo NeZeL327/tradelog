@@ -5,12 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import LiveCard from '@/components/LiveCard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, UserPlus, Mail, Lock, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import PublicNavbar from '@/components/PublicNavbar';
 import Footer from '@/components/Footer';
+import AnimatedPublicBackground from '@/components/AnimatedPublicBackground';
+import TradingWallpaper from '@/components/TradingWallpaper';
 import { useLanguage } from '@/components/LanguageProvider';
 import { createUserWithEmailAndPassword, deleteUser } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -137,52 +140,13 @@ export default function Register() {
     <>
       <PublicNavbar variant="hero" />
       <div
-        className="parallax-root public-trading-bg min-h-screen flex items-center justify-center p-6 overflow-hidden relative pt-24"
+        className="parallax-root public-trading-bg use-trading-wallpaper min-h-screen flex items-center justify-center p-6 overflow-hidden relative pt-24"
         style={/** @type {any} */ ({ '--px': parallax.x, '--py': parallax.y })}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="hero-grid parallax-layer parallax-layer-slow" />
-        <div className="hero-stars parallax-layer" />
-        <div className="hero-trail" />
-        <div className="hero-vignette" />
-        <div className="parallax-layer parallax-layer-fast">
-          <motion.div
-            className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"
-            animate={{ scale: [1, 1.25, 1], opacity: [0.2, 0.4, 0.2] }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        </div>
-        <div className="parallax-layer">
-          <motion.div
-            className="absolute -bottom-40 -left-40 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"
-            animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.2, 0.3] }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        </div>
-        <div className="parallax-layer parallax-layer-slow">
-          <motion.div
-            className="absolute top-1/3 -left-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-2xl"
-            animate={{ y: [0, -18, 0], opacity: [0.25, 0.5, 0.25] }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        </div>
-        <div className="parallax-layer">
-          <motion.div
-            className="absolute top-20 right-1/3 w-52 h-52 border border-blue-500/20 rounded-full"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
-          />
-        </div>
-        <div className="parallax-layer parallax-layer-fast">
-          <motion.div
-            className="absolute bottom-16 left-1/4 w-40 h-40 border border-emerald-400/20 rounded-full"
-            animate={{ rotate: -360 }}
-            transition={{ duration: 36, repeat: Infinity, ease: 'linear' }}
-          />
-        </div>
-      </div>
+      <TradingWallpaper variant="candlestickChart" />
+      <AnimatedPublicBackground />
 
       <div className="relative z-10 w-full max-w-5xl grid items-center gap-10 md:grid-cols-[1.1fr_0.9fr]">
         <motion.div
@@ -242,7 +206,8 @@ export default function Register() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <Card className="hero-card border border-slate-800/60 bg-slate-950/70 shadow-2xl shadow-blue-500/10 backdrop-blur-sm">
+          <LiveCard variant="more">
+          <Card className="feature-card-live feature-card-live-more hero-card border border-slate-800/60 bg-slate-950/70 shadow-2xl shadow-blue-500/10 backdrop-blur-sm">
             <CardHeader className="text-center space-y-2">
               <CardTitle className="text-2xl font-bold text-white">{t('registerTitle')}</CardTitle>
               <CardDescription className="text-slate-400">{t('registerSubtitle')}</CardDescription>
@@ -400,6 +365,7 @@ export default function Register() {
               </div>
             </CardContent>
           </Card>
+          </LiveCard>
         </motion.div>
       </div>
       </div>
