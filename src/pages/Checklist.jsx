@@ -27,6 +27,8 @@ const createChecklistItem = (text = "") => ({
   note: ""
 });
 
+const DEFAULT_SIDEBAR_COLOR = "#bfdbfe";
+
 export default function Checklist() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -96,6 +98,7 @@ export default function Checklist() {
         dueDate: "",
         reminderAt: "",
         reminderSentAt: "",
+        sidebarColor: DEFAULT_SIDEBAR_COLOR,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
@@ -171,6 +174,14 @@ export default function Checklist() {
       pinned: nextPinned,
       pinnedToSidebar: nextPinned
     });
+
+    if (nextPinned && typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("pinned-checklist-panels:open", {
+          detail: { noteId: card.id }
+        })
+      );
+    }
   };
 
   return (
@@ -237,6 +248,14 @@ export default function Checklist() {
                       <div className="text-xs text-slate-500">{doneCount}/{tasks.length} zadan wykonanych</div>
                     </div>
                     <div className="flex items-center gap-1">
+                      <input
+                        type="color"
+                        value={card.sidebarColor || DEFAULT_SIDEBAR_COLOR}
+                        onChange={(event) => void updateCard(card.id, { sidebarColor: event.target.value })}
+                        className="h-8 w-8 cursor-pointer rounded border border-slate-300 bg-white p-0.5 dark:border-slate-600"
+                        title="Kolor okienka po prawej"
+                        aria-label="Kolor okienka po prawej"
+                      />
                       <Button size="icon" variant={card.pinnedToSidebar ? "default" : "outline"} onClick={() => togglePinCard(card)}>
                         <Pin className="h-4 w-4" />
                       </Button>

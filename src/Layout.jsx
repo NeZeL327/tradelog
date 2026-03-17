@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useAuth } from '@/lib/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar, Settings, Activity, LogOut, User, NotebookPen, CreditCard, ListTodo, CheckSquare } from "lucide-react";
+import { LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar, Settings, LogOut, User, NotebookPen, CreditCard, ListTodo, CheckSquare } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -23,6 +23,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
+import PinnedChecklistPanels from "@/components/PinnedChecklistPanels";
 import PinnedNotesSidebar from "@/components/PinnedNotesSidebar";
 import QuickAddTradeSidebar from "@/components/QuickAddTradeSidebar";
 
@@ -66,11 +67,6 @@ function LayoutContent({ children }) {
       title: t('strategies'),
       url: createPageUrl("Strategies"),
       icon: Brain,
-    },
-    {
-      title: t('progressTracker'),
-      url: createPageUrl("ProgressTracker"),
-      icon: Activity,
     },
     {
       title: t('notes'),
@@ -240,7 +236,12 @@ function LayoutContent({ children }) {
           </div>
         </main>
         {user && <QuickAddTradeSidebar />}
-        {user && <PinnedNotesSidebar />}
+        {user && (
+          <div className="fixed right-3 top-48 z-40 flex w-[320px] flex-col items-end gap-5 pointer-events-none">
+            <PinnedNotesSidebar />
+            <PinnedChecklistPanels />
+          </div>
+        )}
       </div>
     </SidebarProvider>
   );

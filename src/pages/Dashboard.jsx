@@ -300,17 +300,6 @@ export default function Dashboard() {
     };
   })();
 
-  const progressDays = (() => {
-    const days = [];
-    for (let i = 34; i >= 0; i--) {
-      const day = subDays(new Date(), i);
-      const dateStr = format(day, 'yyyy-MM-dd');
-      const count = (tradesByDate[dateStr] || []).length;
-      days.push({ date: dateStr, count });
-    }
-    return days;
-  })();
-
   // Outcome distribution
   const outcomeData = [
     { name: t('wins'), value: wins, color: tradeOutcomeChartColor('Win') },
@@ -584,6 +573,50 @@ export default function Dashboard() {
       maxLossStreak = Math.max(maxLossStreak, currentLossStreak);
     }
   });
+
+  // Current streak (based on filtered closed trades)
+  const streakTrades = [...closedTrades].sort((a, b) => {
+    const dateA = `${a.date || ''}T${a.open_time || a.time || '00:00'}`;
+    const dateB = `${b.date || ''}T${b.open_time || b.time || '00:00'}`;
+    return new Date(dateA) - new Date(dateB);
+  });
+
+  let filteredMaxWinStreak = 0;
+  let filteredMaxLossStreak = 0;
+  let runningWinStreak = 0;
+  let runningLossStreak = 0;
+
+  streakTrades.forEach((trade) => {
+    if (trade.outcome === 'Win') {
+      runningWinStreak += 1;
+      runningLossStreak = 0;
+      filteredMaxWinStreak = Math.max(filteredMaxWinStreak, runningWinStreak);
+    } else if (trade.outcome === 'Loss') {
+      runningLossStreak += 1;
+      runningWinStreak = 0;
+      filteredMaxLossStreak = Math.max(filteredMaxLossStreak, runningLossStreak);
+    } else {
+      runningWinStreak = 0;
+      runningLossStreak = 0;
+    }
+  });
+
+  let activeStreakType = 'none';
+  let activeStreakCount = 0;
+  for (let i = streakTrades.length - 1; i >= 0; i -= 1) {
+    const outcome = streakTrades[i].outcome;
+    if (outcome !== 'Win' && outcome !== 'Loss') break;
+    if (activeStreakType === 'none') {
+      activeStreakType = outcome;
+      activeStreakCount = 1;
+      continue;
+    }
+    if (outcome === activeStreakType) {
+      activeStreakCount += 1;
+    } else {
+      break;
+    }
+  }
 
   if (isLoading) {
     return (
@@ -995,32 +1028,46 @@ export default function Dashboard() {
           </Card>
 
           <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-slate-900 dark:text-white text-sm md:text-base">{t('progressTracker')}</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => navigate('/ProgressTracker')} className="text-xs">{t('view')}</Button>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-slate-900 dark:text-white text-sm md:text-base">{t('currentStreak')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-7 gap-2">
-                {progressDays.map((day) => (
-                  <div
-                    key={day.date}
-                    className={`progress-square ${day.count === 0 ? 'progress-0' : day.count === 1 ? 'progress-1' : day.count === 2 ? 'progress-2' : 'progress-3'}`}
-                    title={`${day.date} • ${day.count} ${t('trades')}`}
-                  />
-                ))}
-              </div>
-              <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-4 gap-2">
-                <span className="flex-shrink-0">{t('less')}</span>
-                <div className="flex items-center gap-1 flex-1 justify-center">
-                  <span className="progress-0 progress-legend" />
-                  <span className="progress-1 progress-legend" />
-                  <span className="progress-2 progress-legend" />
-                  <span className="progress-3 progress-legend" />
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('streakDirection')}</p>
+                    <p className={`text-2xl font-bold ${activeStreakType === 'Win' ? 'text-emerald-600' : activeStreakType === 'Loss' ? 'text-rose-600' : 'text-slate-700 dark:text-slate-200'}`}>
+                      {activeStreakType === 'Win'
+                        ? `${activeStreakCount}W`
+                        : activeStreakType === 'Loss'
+                          ? `${activeStreakCount}L`
+                          : '0'}
+                    </p>
+                  </div>
+                  <div className={`rounded-full p-3 ${activeStreakType === 'Win' ? 'bg-emerald-100 dark:bg-emerald-900/30' : activeStreakType === 'Loss' ? 'bg-rose-100 dark:bg-rose-900/30' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                    {activeStreakType === 'Loss' ? (
+                      <TrendingDown className="w-5 h-5 text-rose-600" />
+                    ) : (
+                      <TrendingUp className="w-5 h-5 text-emerald-600" />
+                    )}
+                  </div>
                 </div>
-                <span className="flex-shrink-0">{t('more')}</span>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-emerald-200/70 dark:border-emerald-700/40 bg-emerald-50/70 dark:bg-emerald-950/20 p-3">
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300">{t('maxWins')}</p>
+                    <p className="text-lg font-semibold text-emerald-800 dark:text-emerald-200">{filteredMaxWinStreak}</p>
+                  </div>
+                  <div className="rounded-lg border border-rose-200/70 dark:border-rose-700/40 bg-rose-50/70 dark:bg-rose-950/20 p-3">
+                    <p className="text-[11px] text-rose-700 dark:text-rose-300">{t('maxLosses')}</p>
+                    <p className="text-lg font-semibold text-rose-800 dark:text-rose-200">{filteredMaxLossStreak}</p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
+
+
 
           <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
             <CardHeader className="pb-3">

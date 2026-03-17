@@ -29,7 +29,9 @@ export default function LanguageToggle({ className = "", variant = "light" }) {
             type="button"
             size="sm"
             variant="ghost"
-            onClick={() => setLanguage(lang.code)}
+            onClick={() => {
+              if (!isActive) setLanguage(lang.code);
+            }}
             className={cn(
               "h-7 rounded-sm px-2 text-xs font-semibold",
               isDark

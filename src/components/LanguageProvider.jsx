@@ -13,7 +13,7 @@ export function useLanguage() {
 }
 
 export function LanguageProvider({ children }) {
-  const { user, checkSession } = useAuth();
+  const { user } = useAuth();
   const [language, setLanguage] = useState(() => {
     // Initialize from localStorage
     const saved = localStorage.getItem("appLanguage");
@@ -33,7 +33,7 @@ export function LanguageProvider({ children }) {
         dashboard: "Dashboard",
         journal: "Dziennik",
         calendar: "Kalendarz",
-        analytics: "Analiza",
+        analytics: "Analityka",
         accounts: "Konta",
         strategies: "Strategie",
         goals: "Cele",
@@ -43,7 +43,6 @@ export function LanguageProvider({ children }) {
         // Common
         save: "Zapisz",
         cancel: "Anuluj",
-        progressTracker: "Progress Tracker",
         edit: "Edytuj",
         delete: "Usuń",
         add: "Dodaj",
@@ -74,13 +73,13 @@ export function LanguageProvider({ children }) {
         noStrategiesAvailable: "Brak dostępnych strategii",
         notesPlaceholder: "Dodatkowe notatki...",
         notesTitle: "Moje notatki",
-        notesSubtitle: "Organizuj pomysly, checklisty i plany jak w nowoczesnym notatniku",
+        notesSubtitle: "Organizuj pomysły, checklisty i plany w nowoczesnym notatniku",
         notesNew: "Nowa notatka",
         notesNewChecklist: "Nowa lista",
         notesNewPlan: "Nowy plan",
         notesExport: "Eksport",
         notesImport: "Import",
-        notesSearch: "Szukaj notatek, zadan lub tagow...",
+        notesSearch: "Szukaj notatek, zadań lub tagów...",
         notesAll: "Wszystkie",
         notesNotes: "Notatki",
         notesChecklists: "Checklisty",
@@ -91,38 +90,38 @@ export function LanguageProvider({ children }) {
         notesNotebooks: "Notatniki",
         notesSections: "Sekcje",
         notesSelectNotebook: "Wybierz notatnik",
-        notesSelectSection: "Wybierz sekcje",
+        notesSelectSection: "Wybierz sekcję",
         notesNewNotebook: "Nowy notatnik",
         notesNewSection: "Nowa sekcja",
-        notesRenameNotebook: "Zmien nazwe notatnika",
-        notesRenameSection: "Zmien nazwe sekcji",
-        notesDefaultNotebook: "Glowny notatnik",
-        notesDefaultSection: "Ogolne",
+        notesRenameNotebook: "Zmień nazwę notatnika",
+        notesRenameSection: "Zmień nazwę sekcji",
+        notesDefaultNotebook: "Główny notatnik",
+        notesDefaultSection: "Ogólne",
         notesAdd: "Dodaj",
-        notesAddPage: "Dodaj strone",
-        notesAddSubpage: "Dodaj podstrone",
-        notesAddSection: "Dodaj sekcje",
-        notesDeleteSection: "Usun sekcje",
-        notesRenamePage: "Zmien nazwe strony",
-        notesRenameSectionPrompt: "Podaj nowa nazwe sekcji",
-        notesRenamePagePrompt: "Podaj nowa nazwe strony",
-        notesEmpty: "Brak notatek. Stworz pierwsza notatke lub plan.",
-        notesUntitled: "Bez tytulu",
-        notesChecklistItems: "Lista zadan",
-        notesNoPreview: "Brak podgladu",
+        notesAddPage: "Dodaj stronę",
+        notesAddSubpage: "Dodaj podstronę",
+        notesAddSection: "Dodaj sekcję",
+        notesDeleteSection: "Usuń sekcję",
+        notesRenamePage: "Zmień nazwę strony",
+        notesRenameSectionPrompt: "Podaj nową nazwę sekcji",
+        notesRenamePagePrompt: "Podaj nową nazwę strony",
+        notesEmpty: "Brak notatek. Utwórz pierwszą notatkę lub plan.",
+        notesUntitled: "Bez tytułu",
+        notesChecklistItems: "Lista zadań",
+        notesNoPreview: "Brak podglądu",
         notesEditor: "Edytor",
         notesPin: "Przypnij",
         notesUnpin: "Odepnij",
-        notesDelete: "Usun",
-        notesSelect: "Wybierz notatke z listy lub utworz nowa.",
-        notesSelectFirst: "Najpierw wybierz notatke lub utworz nowa.",
-        notesTitleLabel: "Tytul",
-        notesTitlePlaceholder: "Tytul notatki",
-        notesBody: "Tresc",
-        notesBodyPlaceholder: "Piszesz tutaj. Wspieramy pomysly, plany i checklisty...",
+        notesDelete: "Usuń",
+        notesSelect: "Wybierz notatkę z listy lub utwórz nową.",
+        notesSelectFirst: "Najpierw wybierz notatkę albo utwórz nową.",
+        notesTitleLabel: "Tytuł",
+        notesTitlePlaceholder: "Tytuł notatki",
+        notesBody: "Treść",
+        notesBodyPlaceholder: "Pisz tutaj. Zapisuj pomysły, plany i checklisty...",
         notesChecklist: "Checklist",
         notesAddTask: "Dodaj zadanie",
-        notesChecklistEmpty: "Brak zadan. Dodaj pierwszy punkt.",
+        notesChecklistEmpty: "Brak zadań. Dodaj pierwszy punkt.",
         notesTaskPlaceholder: "Nowe zadanie...",
         notesType_note: "Notatka",
         notesType_checklist: "Checklist",
@@ -130,11 +129,11 @@ export function LanguageProvider({ children }) {
         notesType: "Typ",
         notesStatus: "Status",
         notesStatus_active: "Aktywna",
-        notesStatus_done: "Zakonczona",
+        notesStatus_done: "Zakończona",
         notesStatus_archived: "Archiwum",
         notesPriority: "Priorytet",
         notesPriority_low: "Niski",
-        notesPriority_medium: "Sredni",
+        notesPriority_medium: "Średni",
         notesPriority_high: "Wysoki",
         notesDueDate: "Termin",
         notesReminder: "Przypomnienie",
@@ -294,6 +293,8 @@ export function LanguageProvider({ children }) {
         plBySymbol: "P&L według symbolu",
         detailedWinRateAnalysis: "Szczegółowa analiza Win Rate",
         ofAll: "wszystkich",
+        currentStreak: "Aktualna seria",
+        streakDirection: "Bieżący kierunek",
         streaks: "Serie",
         maxWins: "Max wygrane",
         maxLosses: "Max przegrane",
@@ -354,6 +355,7 @@ export function LanguageProvider({ children }) {
         byTimeframe: "Według interwału",
         bestTradeSingle: "Najlepsza transakcja",
         worstTradeSingle: "Najgorsza transakcja",
+        strategiesComparison: "Porównanie strategii",
         
         // Journal
         addTrade: "Dodaj transakcję",
@@ -670,7 +672,6 @@ export function LanguageProvider({ children }) {
         // Common
         save: "Save",
         cancel: "Cancel",
-        progressTracker: "Progress Tracker",
         edit: "Edit",
         delete: "Delete",
         add: "Add",
@@ -718,7 +719,7 @@ export function LanguageProvider({ children }) {
         notesNotebooks: "Notebooks",
         notesSections: "Sections",
         notesSelectNotebook: "Select notebook",
-        notesSelectSection: "Select section",
+        notesSelectSection: "Select a section",
         notesNewNotebook: "New notebook",
         notesNewSection: "New section",
         notesRenameNotebook: "Rename notebook",
@@ -735,7 +736,7 @@ export function LanguageProvider({ children }) {
         notesRenamePagePrompt: "Enter a new page name",
         notesEmpty: "No notes yet. Create your first note or plan.",
         notesUntitled: "Untitled",
-        notesChecklistItems: "Checklist",
+        notesChecklistItems: "Checklist items",
         notesNoPreview: "No preview",
         notesEditor: "Editor",
         notesPin: "Pin",
@@ -921,6 +922,8 @@ export function LanguageProvider({ children }) {
         plBySymbol: "P&L by symbol",
         detailedWinRateAnalysis: "Detailed Win Rate analysis",
         ofAll: "of all",
+        currentStreak: "Current streak",
+        streakDirection: "Current direction",
         streaks: "Streaks",
         maxWins: "Max wins",
         maxLosses: "Max losses",
@@ -1265,11 +1268,12 @@ export function LanguageProvider({ children }) {
 
   // Initialize from user preferences on mount
   useEffect(() => {
-    if (user?.language) {
-      const normalized = normalizeLanguage(user.language);
-      if (normalized !== language) {
-        setLanguage(normalized);
-      }
+    const savedRaw = localStorage.getItem('appLanguage');
+    const saved = savedRaw ? normalizeLanguage(savedRaw) : null;
+    const fromUser = normalizeLanguage(user?.language);
+    const preferred = saved ?? fromUser;
+    if (preferred !== language) {
+      setLanguage(preferred);
     }
     setIsLoading(false);
   }, [user?.language]);
@@ -1280,18 +1284,16 @@ export function LanguageProvider({ children }) {
 
   const updateLanguage = (newLang) => {
     const normalized = normalizeLanguage(newLang);
+    if (normalized === language) return;
+
     setLanguage(normalized);
+    localStorage.setItem('appLanguage', normalized);
     
     // Update user preferences in database
     if (user?.id) {
-      try {
-        updateUser(user.id, { language: normalized });
-        if (checkSession) {
-          setTimeout(() => checkSession(), 100);
-        }
-      } catch (error) {
+      updateUser(user.id, { language: normalized }).catch((error) => {
         console.error('Failed to update language:', error);
-      }
+      });
     }
   };
 

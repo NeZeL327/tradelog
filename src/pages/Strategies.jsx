@@ -122,32 +122,41 @@ export default function Strategies() {
         </AnimatePresence>
 
         {/* Strategy Comparison Chart */}
-        {strategyStats.length > 0 && strategyStats.some(s => s.trades > 0) && (
-          <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 dark:text-white">
-                <TrendingUp className="w-5 h-5" />
-                {t('strategiesComparison')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={strategyStats.filter(s => s.trades > 0)}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" stroke="#64748b" />
-                  <YAxis stroke="#64748b" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                  />
-                  <Legend />
-                  <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" />
-                  <Bar dataKey="avgPL" fill="#10b981" name="Średni P&L" />
-                  <Bar dataKey="trades" fill="#8b5cf6" name="Liczba transakcji" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )}
+        {strategyStats.length > 0 && strategyStats.some(s => s.trades > 0) && (() => {
+          const chartData = strategyStats.filter(s => s.trades > 0);
+          const allValues = chartData.flatMap(s => [s.winRate, s.avgPL, s.trades]);
+          const rawMin = Math.min(0, ...allValues);
+          const rawMax = Math.max(0, ...allValues);
+          const pad = (rawMax - rawMin) * 0.15 + 1;
+          const yMin = Math.floor(rawMin - pad);
+          const yMax = Math.ceil(rawMax + pad);
+          return (
+            <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 dark:text-white">
+                  <TrendingUp className="w-5 h-5" />
+                  {t('strategiesComparison')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={350}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="name" stroke="#64748b" />
+                    <YAxis stroke="#64748b" domain={[yMin, yMax]} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                    />
+                    <Legend />
+                    <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" />
+                    <Bar dataKey="avgPL" fill="#10b981" name="Średni P&L" />
+                    <Bar dataKey="trades" fill="#8b5cf6" name="Liczba transakcji" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Strategy Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -47,6 +47,13 @@ const stripHtml = (value) =>
     .replace(/\s+/g, " ")
     .trim();
 
+const withAlpha = (hex, alphaHex) => {
+  if (typeof hex !== "string") return null;
+  const value = hex.trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(value)) return null;
+  return `${value}${alphaHex}`;
+};
+
 export default function PinnedNotesSidebar() {
   const { user } = useAuth();
   const location = useLocation();
@@ -111,8 +118,32 @@ export default function PinnedNotesSidebar() {
     }
   }, [collapsed]);
 
+  useEffect(() => {
+    const handleOpenSidebar = (event) => {
+      setCollapsed(false);
+      const noteId = event?.detail?.noteId;
+      if (noteId) {
+        setExpandedNotes((prev) => ({
+          ...prev,
+          [noteId]: true
+        }));
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("pinned-notes-sidebar:open", handleOpenSidebar);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("pinned-notes-sidebar:open", handleOpenSidebar);
+      }
+    };
+  }, []);
+
   const visibleNotes = useMemo(() => {
     return notes
+      .filter((note) => note.type !== "checklist")
       .filter((note) => note.pinnedToSidebar === true)
       .filter((note) => {
         const scope = note.visibilityScope || "all";
@@ -162,7 +193,7 @@ export default function PinnedNotesSidebar() {
 
   const toggleChecklistItem = async (noteId, itemId, nextDone) => {
     if (!user?.id) return;
-    const note = visibleNotes.find((entry) => entry.id === noteId);
+    const note = notes.find((entry) => entry.id === noteId);
     if (!note) return;
 
     const nextChecklist = (note.checklist || []).map((item) =>
@@ -211,6 +242,7 @@ export default function PinnedNotesSidebar() {
       dueDate: "",
       reminderAt: "",
       reminderSentAt: "",
+      sidebarColor: "#bfdbfe",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       createdAtClient: now,
@@ -265,10 +297,19 @@ export default function PinnedNotesSidebar() {
   const renderNoteItem = (note, byParent, depth = 0) => {
     const children = byParent.get(note.id) || [];
     const isExpanded = Boolean(expandedNotes[note.id]);
+    const containerBg = withAlpha(note.sidebarColor, "2b");
+    const contentBg = withAlpha(note.sidebarColor, "1a");
+    const borderColor = withAlpha(note.sidebarColor, "80") || undefined;
 
     return (
       <div key={note.id} className="space-y-1">
-        <div className={cn("rounded-md border border-slate-200 bg-slate-50/70 p-2 dark:border-slate-700 dark:bg-slate-800/50", depth > 0 && "ml-3")}> 
+        <div
+          className={cn("rounded-md border border-slate-200 bg-slate-50/70 p-2 dark:border-slate-700 dark:bg-slate-800/50", depth > 0 && "ml-3")}
+          style={{
+            backgroundColor: containerBg || undefined,
+            borderColor
+          }}
+        > 
           <div className="flex items-center justify-between gap-2">
             <button
               type="button"
@@ -291,7 +332,13 @@ export default function PinnedNotesSidebar() {
             </button>
           </div>
           {isExpanded && (
-            <div className="mt-2 rounded-md border border-slate-200 bg-white/80 p-2 dark:border-slate-700 dark:bg-slate-800/50">
+            <div
+              className="mt-2 rounded-md border border-slate-200 bg-white/80 p-2 dark:border-slate-700 dark:bg-slate-800/50"
+              style={{
+                backgroundColor: contentBg || undefined,
+                borderColor
+              }}
+            >
               {(note.checklist || []).length > 0 ? (
                 <div className="space-y-1">
                   {(note.checklist || []).map((item) => (
@@ -325,33 +372,18 @@ export default function PinnedNotesSidebar() {
   if (!user?.id) return null;
 
   return (
-    <div className="fixed right-3 top-48 z-40 pointer-events-none">
-      <div
-        className={cn(
-          "pointer-events-auto rounded-xl border border-slate-200 bg-white shadow-xl backdrop-blur-sm dark:border-slate-600 dark:bg-slate-700 transition-all",
-          collapsed ? "w-12" : "w-[320px]"
-        )}
-      >
-        <div className="flex items-center justify-between border-b border-slate-200 px-2 py-2 dark:border-slate-700">
-          {!collapsed && (
+    <div className={cn("pointer-events-auto relative w-[320px]", collapsed && "h-16")}>
+      {!collapsed && (
+        <div className="mr-14 rounded-xl border border-slate-200 bg-white shadow-xl backdrop-blur-sm dark:border-slate-600 dark:bg-slate-700 transition-[transform,box-shadow,opacity] duration-300">
+          <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 dark:border-slate-700">
             <div className="flex items-center gap-2 px-1">
-              <CheckSquare className="h-4 w-4 text-slate-500" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-blue-200/70 bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600 text-[13px] font-black text-white shadow-sm dark:border-slate-500/70">
+                N
+              </div>
               <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Szybkie notatki</span>
             </div>
-          )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 dark:hover:text-white"
-            onClick={() => setCollapsed((prev) => !prev)}
-            aria-label={collapsed ? "Rozwiń panel notatek" : "Zwiń panel notatek"}
-          >
-            {collapsed ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </Button>
-        </div>
+          </div>
 
-        {!collapsed && (
           <div className="p-3 space-y-3">
             <div className="space-y-2">
               <Input
@@ -375,7 +407,7 @@ export default function PinnedNotesSidebar() {
                   />
                   Wszystkie strony
                 </label>
-                <Button type="button" size="sm" className="h-8 gap-1" onClick={handleQuickCreateChecklist}>
+                <Button type="button" size="sm" className="h-8 gap-1 border-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-sm transition-all hover:brightness-105 hover:shadow-md" onClick={handleQuickCreateChecklist}>
                   <Plus className="h-4 w-4" />
                   Dodaj
                 </Button>
@@ -434,8 +466,18 @@ export default function PinnedNotesSidebar() {
               )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="absolute right-0 top-3 h-10 w-10 rounded-xl border border-blue-200/70 bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600 text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl dark:border-slate-500/70"
+          onClick={() => setCollapsed((prev) => !prev)}
+          aria-label={collapsed ? "Rozwiń panel notatek" : "Zwiń panel notatek"}
+        >
+          <span className="text-sm font-black tracking-wide">N</span>
+        </Button>
     </div>
   );
 }

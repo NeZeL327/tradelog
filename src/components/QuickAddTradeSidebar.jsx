@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import TradeFormNew from "@/components/TradeFormNew";
 import { useAuth } from "@/lib/AuthContext";
@@ -43,10 +43,10 @@ export default function QuickAddTradeSidebar() {
           <div className="flex flex-col items-center gap-0 p-2">
             <Button
               onClick={() => setShowAddForm(true)}
-              className="h-10 w-10 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              className="h-10 w-10 rounded-xl border border-emerald-200/50 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 text-white shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl dark:border-slate-500/60"
               title="Szybko dodaj trade"
             >
-              <Plus className="h-5 w-5" />
+              <span className="text-sm font-black tracking-wide">T</span>
             </Button>
             <Button
               variant="ghost"
