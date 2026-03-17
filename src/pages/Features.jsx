@@ -101,7 +101,7 @@ export default function Features() {
                   >
                     <motion.div whileHover={v.hover} className="h-full">
                       <LiveCard variant="main" className="h-full">
-                        <Card className="feature-card-live feature-card-live-main bg-slate-950/80 border-slate-800 hover:border-emerald-500/50 h-full overflow-hidden shadow-lg group">
+                        <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-slate-800 hover:border-emerald-500/50 h-full overflow-hidden shadow-lg group">
                           <CardContent className="p-6 relative">
                             <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-emerald-400/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                             <motion.div
@@ -154,7 +154,7 @@ export default function Features() {
                   >
                     <motion.div whileHover={v.hover} className="h-full">
                       <LiveCard variant="more" className="h-full">
-                        <Card className="feature-card-live feature-card-live-more bg-slate-950/70 border-slate-800 hover:border-primary/50 h-full overflow-hidden shadow-lg group">
+                        <Card className="feature-card-live feature-card-live-more bg-slate-800/70 border-slate-800 hover:border-primary/50 h-full overflow-hidden shadow-lg group">
                           <CardContent className="p-6 relative">
                             <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-blue-400/8 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                             <AnimatedFeatureIcon
@@ -185,7 +185,7 @@ export default function Features() {
             className="text-center"
           >
             <LiveCard variant="main" className="max-w-2xl mx-auto">
-            <Card className="feature-card-live feature-card-live-main bg-slate-950/80 border-emerald-500/40 max-w-2xl mx-auto">
+            <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-emerald-500/40 max-w-2xl mx-auto">
               <CardContent className="p-8">
                 <h2 className="text-2xl font-bold text-slate-100 mb-3">
                   Gotowy na start?

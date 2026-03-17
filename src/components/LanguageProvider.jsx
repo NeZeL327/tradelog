@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { useOptionalAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 import { updateUser } from '@/lib/localStorage';
 
 const LanguageContext = createContext(undefined);
@@ -13,9 +13,7 @@ export function useLanguage() {
 }
 
 export function LanguageProvider({ children }) {
-  const auth = useOptionalAuth();
-  const user = auth?.user ?? null;
-  const checkSession = auth?.checkSession ?? null;
+  const { user, checkSession } = useAuth();
   const [language, setLanguage] = useState(() => {
     // Initialize from localStorage
     const saved = localStorage.getItem("appLanguage");

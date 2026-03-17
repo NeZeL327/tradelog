@@ -268,7 +268,7 @@ export default function PinnedNotesSidebar() {
 
     return (
       <div key={note.id} className="space-y-1">
-        <div className={cn("rounded-md border border-slate-200 bg-slate-50/70 p-2 dark:border-slate-700 dark:bg-slate-900/50", depth > 0 && "ml-3")}> 
+        <div className={cn("rounded-md border border-slate-200 bg-slate-50/70 p-2 dark:border-slate-700 dark:bg-slate-800/50", depth > 0 && "ml-3")}> 
           <div className="flex items-center justify-between gap-2">
             <button
               type="button"
@@ -291,7 +291,7 @@ export default function PinnedNotesSidebar() {
             </button>
           </div>
           {isExpanded && (
-            <div className="mt-2 rounded-md border border-slate-200 bg-white/80 p-2 dark:border-slate-700 dark:bg-slate-950/50">
+            <div className="mt-2 rounded-md border border-slate-200 bg-white/80 p-2 dark:border-slate-700 dark:bg-slate-800/50">
               {(note.checklist || []).length > 0 ? (
                 <div className="space-y-1">
                   {(note.checklist || []).map((item) => (
@@ -328,7 +328,7 @@ export default function PinnedNotesSidebar() {
     <div className="fixed right-3 top-48 z-40 pointer-events-none">
       <div
         className={cn(
-          "pointer-events-auto rounded-xl border border-slate-200 bg-white/95 shadow-xl backdrop-blur-sm dark:border-slate-700 dark:bg-[#111827]/95 transition-all",
+          "pointer-events-auto rounded-xl border border-slate-200 bg-white shadow-xl backdrop-blur-sm dark:border-slate-600 dark:bg-slate-700 transition-all",
           collapsed ? "w-12" : "w-[320px]"
         )}
       >
@@ -343,7 +343,7 @@ export default function PinnedNotesSidebar() {
             type="button"
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-600 dark:text-slate-200 dark:hover:bg-slate-500 dark:hover:text-white"
             onClick={() => setCollapsed((prev) => !prev)}
             aria-label={collapsed ? "Rozwiń panel notatek" : "Zwiń panel notatek"}
           >
@@ -405,7 +405,7 @@ export default function PinnedNotesSidebar() {
                     const { topLevel, byParent } = getSectionNotes(section.id);
                     const sectionExpanded = Boolean(expandedSections[section.id]);
                     return (
-                      <div key={section.id} className="rounded-md border border-slate-200 bg-white/80 p-2 dark:border-slate-700 dark:bg-slate-900/50">
+                      <div key={section.id} className="rounded-md border border-slate-200 bg-white/80 p-2 dark:border-slate-700 dark:bg-slate-800/50">
                         <button
                           type="button"
                           className="w-full flex items-center justify-between gap-2 text-left"

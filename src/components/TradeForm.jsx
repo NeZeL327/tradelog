@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -160,7 +160,7 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Account & Strategy */}
-        <div className="md:col-span-2 lg:col-span-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800">
+        <div className="md:col-span-2 lg:col-span-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800">
           <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">📊 Account & Strategy</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -211,7 +211,7 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
         </div>
 
         {/* Basic Trade Info */}
-        <div className="md:col-span-2 lg:col-span-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-800">
+        <div className="md:col-span-2 lg:col-span-3 p-4 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-200 dark:border-green-800">
           <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-3">📈 Basic Trade Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
@@ -307,7 +307,7 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
         </div>
 
         {/* Risk Management */}
-        <div className="md:col-span-2 lg:col-span-3 p-4 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-200 dark:border-red-800">
+        <div className="md:col-span-2 lg:col-span-3 p-4 bg-red-50 dark:bg-red-900/30 rounded-xl border border-red-200 dark:border-red-800">
           <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-3">⚠️ Risk Management</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
@@ -354,7 +354,7 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
         </div>
 
         {/* Market Conditions */}
-        <div className="md:col-span-2 lg:col-span-3 p-4 bg-purple-50 dark:bg-purple-950/20 rounded-xl border border-purple-200 dark:border-purple-800">
+        <div className="md:col-span-2 lg:col-span-3 p-4 bg-purple-50 dark:bg-purple-900/30 rounded-xl border border-purple-200 dark:border-purple-800">
           <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-3">🌍 Market Conditions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
@@ -665,7 +665,7 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
         </div>
 
         {/* General Notes */}
-        <div className="md:col-span-2 lg:col-span-3 p-4 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="md:col-span-2 lg:col-span-3 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-800">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">📝 General Notes</h3>
           <div>
             <Label>Additional Notes</Label>

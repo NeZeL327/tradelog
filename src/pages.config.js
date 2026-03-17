@@ -58,7 +58,6 @@ import Home from './pages/Home';
 import Journal from './pages/Journal';
 import Notes from './pages/Notes';
 import Planned from './pages/Planned';
-import ProgressTracker from './pages/ProgressTracker';
 import Settings from './pages/Settings';
 import Strategies from './pages/Strategies';
 import StrategyDetails from './pages/StrategyDetails';
@@ -78,7 +77,6 @@ export const PAGES = {
     "Journal": Journal,
     "Planned": Planned,
     "Notes": Notes,
-    "ProgressTracker": ProgressTracker,
     "Settings": Settings,
     "Strategies": Strategies,
     "StrategyDetails": StrategyDetails,

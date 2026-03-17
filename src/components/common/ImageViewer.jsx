@@ -71,7 +71,7 @@ export default function ImageViewer({ open, onOpenChange, imageUrl }) {
             </Button>
           </div>
           <div
-            className={`max-h-[95vh] h-[95vh] p-4 bg-slate-900 flex items-center justify-center select-none ${
+            className={`max-h-[95vh] h-[95vh] p-4 bg-slate-800 flex items-center justify-center select-none ${
               dragging ? "cursor-grabbing" : "cursor-grab"
             }`}
             onWheel={handleWheel}

@@ -23,8 +23,8 @@ export class ErrorBoundary extends React.Component {
         return this.props.fallback;
       }
       return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
-          <div className="max-w-md w-full rounded-2xl border border-slate-700 bg-slate-900/90 p-8 text-center">
+        <div className="min-h-screen flex items-center justify-center bg-slate-800 p-4">
+          <div className="max-w-md w-full rounded-2xl border border-slate-700 bg-slate-800/90 p-8 text-center">
             <h1 className="text-xl font-bold text-slate-100 mb-2">Coś poszło nie tak</h1>
             <p className="text-slate-400 text-sm mb-6">
               Wystąpił nieoczekiwany błąd. Odśwież stronę lub wróć na stronę główną.

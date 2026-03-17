@@ -4,15 +4,11 @@ import { Mail, Phone, MapPin, Send, Clock } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import PublicNavbar from '@/components/PublicNavbar';
 import Footer from '@/components/Footer';
-import AnimatedPublicBackground from '@/components/AnimatedPublicBackground';
-import TradingWallpaper from '@/components/TradingWallpaper';
-import AnimatedFeatureIcon from '@/components/AnimatedFeatureIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import LiveCard from '@/components/LiveCard';
 
 export default function Contact() {
   const { t } = useLanguage();
@@ -25,17 +21,16 @@ export default function Contact() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: Implement actual form submission (np. do API / email)
+    console.log('Form submitted:', formData);
+    // TODO: Implement actual form submission
     alert('Dziękujemy za wiadomość! Skontaktujemy się wkrótce.');
   };
 
   return (
     <>
       <PublicNavbar variant="hero" />
-      <div className="public-trading-bg use-trading-wallpaper min-h-screen pt-24 pb-12 relative">
-        <TradingWallpaper variant="lineChart" />
-        <AnimatedPublicBackground />
-        <div className="container mx-auto px-4 max-w-6xl relative z-10">
+      <div className="public-trading-bg min-h-screen pt-24 pb-12">
+        <div className="container mx-auto px-4 max-w-6xl">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -59,8 +54,7 @@ export default function Contact() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="space-y-6"
             >
-              <LiveCard variant="more">
-              <Card className="feature-card-live feature-card-live-more bg-slate-900/50 border-slate-800">
+              <Card className="bg-slate-900/50 border-slate-800">
                 <CardHeader>
                   <CardTitle className="text-2xl text-slate-100">Informacje kontaktowe</CardTitle>
                   <CardDescription className="text-slate-400">
@@ -70,7 +64,9 @@ export default function Contact() {
                 <CardContent className="space-y-6">
                   {/* Email */}
                   <div className="flex items-start gap-4">
-                    <AnimatedFeatureIcon icon={Mail} variant="more" className="flex-shrink-0" />
+                    <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-6 h-6 text-blue-400" />
+                    </div>
                     <div>
                       <h3 className="font-semibold text-slate-100 mb-1">Email</h3>
                       <p className="text-slate-400">kontakt@aikeeptrade.pl</p>
@@ -80,7 +76,9 @@ export default function Contact() {
 
                   {/* Phone */}
                   <div className="flex items-start gap-4">
-                    <AnimatedFeatureIcon icon={Phone} variant="main" className="flex-shrink-0" />
+                    <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-6 h-6 text-emerald-400" />
+                    </div>
                     <div>
                       <h3 className="font-semibold text-slate-100 mb-1">Telefon</h3>
                       <p className="text-slate-400">+48 123 456 789</p>
@@ -90,7 +88,9 @@ export default function Contact() {
 
                   {/* Address */}
                   <div className="flex items-start gap-4">
-                    <AnimatedFeatureIcon icon={MapPin} variant="more" className="flex-shrink-0" />
+                    <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-6 h-6 text-purple-400" />
+                    </div>
                     <div>
                       <h3 className="font-semibold text-slate-100 mb-1">Adres</h3>
                       <p className="text-slate-400">ul. Handlowa 123</p>
@@ -100,7 +100,9 @@ export default function Contact() {
 
                   {/* Hours */}
                   <div className="flex items-start gap-4">
-                    <AnimatedFeatureIcon icon={Clock} variant="more" className="flex-shrink-0" />
+                    <div className="w-12 h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-6 h-6 text-cyan-400" />
+                    </div>
                     <div>
                       <h3 className="font-semibold text-slate-100 mb-1">Godziny wsparcia</h3>
                       <p className="text-slate-400">Poniedziałek - Piątek: 9:00 - 17:00</p>
@@ -109,11 +111,9 @@ export default function Contact() {
                   </div>
                 </CardContent>
               </Card>
-              </LiveCard>
 
               {/* Social Media */}
-              <LiveCard variant="more">
-              <Card className="feature-card-live feature-card-live-more bg-slate-900/50 border-slate-800">
+              <Card className="bg-slate-900/50 border-slate-800">
                 <CardHeader>
                   <CardTitle className="text-xl text-slate-100">Media społecznościowe</CardTitle>
                 </CardHeader>
@@ -131,7 +131,6 @@ export default function Contact() {
                   </div>
                 </CardContent>
               </Card>
-              </LiveCard>
             </motion.div>
 
             {/* Contact Form */}
@@ -140,8 +139,7 @@ export default function Contact() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
             >
-              <LiveCard variant="more">
-              <Card className="feature-card-live feature-card-live-more bg-slate-900/50 border-slate-800">
+              <Card className="bg-slate-900/50 border-slate-800">
                 <CardHeader>
                   <CardTitle className="text-2xl text-slate-100">Wyślij wiadomość</CardTitle>
                   <CardDescription className="text-slate-400">
@@ -210,7 +208,6 @@ export default function Contact() {
                   </form>
                 </CardContent>
               </Card>
-              </LiveCard>
             </motion.div>
           </div>
         </div>

@@ -12,7 +12,7 @@ export default function PublicNavbar({ variant = 'default' }) {
   const isHero = variant === 'hero';
 
   const menuItems = [
-    { label: t('features') || 'Funkcje', href: '/features' },
+    { label: t('features') || 'Features', href: '#features' },
     { label: t('pricing') || 'Pricing', href: '/pricing' },
     { label: t('about') || 'About', href: '/about' },
     { label: t('contact') || 'Contact', href: '/contact' },
@@ -56,9 +56,9 @@ export default function PublicNavbar({ variant = 'default' }) {
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8">
+          <div className="hidden md:flex items-center gap-8">
             {menuItems.map((item) => (
-              item.href.includes('#') ? (
+              item.href.startsWith('#') ? (
                 <a
                   key={item.label}
                   href={item.href}
@@ -79,7 +79,7 @@ export default function PublicNavbar({ variant = 'default' }) {
           </div>
 
           {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-2 lg:gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <LanguageToggle variant={isHero ? 'dark' : 'light'} />
             <Button
               variant="ghost"
@@ -122,7 +122,7 @@ export default function PublicNavbar({ variant = 'default' }) {
         {mobileMenuOpen && (
           <div className={mobileMenuClassName}>
             {menuItems.map((item) => (
-              item.href.includes('#') ? (
+              item.href.startsWith('#') ? (
                 <a
                   key={item.label}
                   href={item.href}

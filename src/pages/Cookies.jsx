@@ -1,13 +1,10 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import LiveCard from '@/components/LiveCard';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Cookie } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import Footer from '@/components/Footer';
-import AnimatedPublicBackground from '@/components/AnimatedPublicBackground';
-import TradingWallpaper from '@/components/TradingWallpaper';
 
 export default function Cookies() {
   const { t, language } = useLanguage();
@@ -19,10 +16,8 @@ export default function Cookies() {
   const isPolish = language === 'pl';
 
   return (
-    <div className="public-trading-bg use-trading-wallpaper min-h-screen flex flex-col relative">
-      <TradingWallpaper />
-      <AnimatedPublicBackground />
-      <div className="container mx-auto px-4 py-8 flex-1 relative z-10">
+    <div className="public-trading-bg min-h-screen flex flex-col">
+      <div className="container mx-auto px-4 py-8 flex-1">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -48,8 +43,7 @@ export default function Cookies() {
           </div>
 
           {/* Content */}
-          <LiveCard variant="main">
-          <Card className="feature-card-live feature-card-live-main bg-slate-950/80 border-slate-800">
+          <Card>
             <CardHeader>
               <CardTitle>
                 {isPolish ? 'Jak używamy plików cookies' : 'How We Use Cookies'}
@@ -337,7 +331,6 @@ export default function Cookies() {
               </section>
             </CardContent>
           </Card>
-          </LiveCard>
         </div>
       </div>
       

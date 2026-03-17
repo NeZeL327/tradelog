@@ -1,30 +1,26 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Code, Rocket, Activity, BookOpen, UsersRound, TrendingUp } from 'lucide-react';
+import { Sparkles, Code, Rocket, Target, Users, TrendingUp } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import PublicNavbar from '@/components/PublicNavbar';
 import Footer from '@/components/Footer';
-import AnimatedPublicBackground from '@/components/AnimatedPublicBackground';
-import TradingWallpaper from '@/components/TradingWallpaper';
-import AnimatedFeatureIcon from '@/components/AnimatedFeatureIcon';
 import { Card, CardContent } from '@/components/ui/card';
-import LiveCard from '@/components/LiveCard';
 
 export default function About() {
   const { t } = useLanguage();
 
   const features = [
     {
-      icon: Activity,
+      icon: <Target className="w-6 h-6" />,
       title: "Analiza transakcji",
       description: "Śledź swoje wyniki i analizuj strategie handlowe"
     },
     {
-      icon: TrendingUp,
+      icon: <TrendingUp className="w-6 h-6" />,
       title: "Statystyki w czasie rzeczywistym",
       description: "Przegląd wydajności i postępów na bieżąco"
     },
     {
-      icon: UsersRound,
+      icon: <Users className="w-6 h-6" />,
       title: "Wspólnota traderów",
       description: "Dołącz do rosnącej społeczności profesjonalistów"
     }
@@ -33,10 +29,8 @@ export default function About() {
   return (
     <>
       <PublicNavbar variant="hero" />
-      <div className="public-trading-bg use-trading-wallpaper min-h-screen pt-24 pb-12 transition-colors duration-300 relative">
-        <TradingWallpaper variant="candlestickChart" />
-        <AnimatedPublicBackground />
-        <div className="container mx-auto px-4 max-w-6xl relative z-10">
+      <div className="public-trading-bg min-h-screen pt-24 pb-12 transition-colors duration-300">
+        <div className="container mx-auto px-4 max-w-6xl">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -59,8 +53,7 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mb-16"
           >
-            <LiveCard variant="main">
-            <Card className="feature-card-live feature-card-live-main bg-slate-950/80 border-slate-800 shadow-2xl shadow-emerald-500/15 overflow-hidden">
+            <Card className="bg-slate-950/80 border-slate-800 shadow-2xl shadow-emerald-500/15 overflow-hidden">
               <CardContent className="p-12">
                 <div className="flex items-center justify-center">
                   <div className="relative">
@@ -77,7 +70,6 @@ export default function About() {
                 </div>
               </CardContent>
             </Card>
-            </LiveCard>
           </motion.div>
 
           {/* Story Section */}
@@ -87,8 +79,7 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="space-y-8 mb-16"
           >
-            <LiveCard variant="main">
-            <Card className="feature-card-live feature-card-live-main bg-slate-950/75 border-slate-800 backdrop-blur-sm">
+            <Card className="bg-slate-950/75 border-slate-800 backdrop-blur-sm">
               <CardContent className="p-8 space-y-6 text-slate-200 leading-relaxed">
                 <div className="flex items-center gap-3 mb-4">
                   <Code className="w-8 h-8 text-emerald-400" />
@@ -166,7 +157,6 @@ export default function About() {
                 </p>
               </CardContent>
             </Card>
-            </LiveCard>
           </motion.div>
 
           {/* Features Grid */}
@@ -186,22 +176,19 @@ export default function About() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, delay: 0.72 + index * 0.06 }}
-                  whileHover={{ translateY: -6, scale: 1.02 }}
-                  className="h-full"
+                  whileHover={{ y: -3 }}
                 >
-                <LiveCard variant="main" className="h-full">
-                <Card className="feature-card-live feature-card-live-main bg-slate-950/70 border-slate-800 hover:border-emerald-500/40 transition-all duration-200 h-full">
+                <Card className="bg-slate-950/70 border-slate-800 hover:border-emerald-500/40 transition-all duration-200">
                   <CardContent className="p-6">
-                    <AnimatedFeatureIcon
-                      icon={feature.icon}
-                      variant="main"
-                      className="mb-4"
-                    />
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center mb-4">
+                      <div className="text-emerald-400">
+                        {feature.icon}
+                      </div>
+                    </div>
                     <h3 className="text-xl font-semibold text-slate-100 mb-2">{feature.title}</h3>
                     <p className="text-slate-300">{feature.description}</p>
                   </CardContent>
                 </Card>
-                </LiveCard>
                 </motion.div>
               ))}
             </div>
@@ -219,8 +206,7 @@ export default function About() {
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               {/* Screenshot placeholders */}
-              <LiveCard variant="main">
-              <Card className="feature-card-live feature-card-live-main bg-slate-950/70 border-slate-800 overflow-hidden">
+              <Card className="bg-slate-950/70 border-slate-800 overflow-hidden">
                 <CardContent className="p-0">
                   <div className="aspect-video bg-gradient-to-br from-slate-900/80 to-slate-950/80 flex items-center justify-center">
                     <div className="text-center">
@@ -230,20 +216,17 @@ export default function About() {
                   </div>
                 </CardContent>
               </Card>
-              </LiveCard>
 
-              <LiveCard variant="main">
-              <Card className="feature-card-live feature-card-live-main bg-slate-950/70 border-slate-800 overflow-hidden">
+              <Card className="bg-slate-950/70 border-slate-800 overflow-hidden">
                 <CardContent className="p-0">
                   <div className="aspect-video bg-gradient-to-br from-slate-900/80 to-slate-950/80 flex items-center justify-center">
                     <div className="text-center">
-                      <BookOpen className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                      <Target className="w-16 h-16 text-blue-400 mx-auto mb-4" />
                       <p className="text-slate-300">Dziennik transakcji</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-              </LiveCard>
             </div>
           </motion.div>
 
@@ -254,8 +237,7 @@ export default function About() {
             transition={{ duration: 0.6, delay: 1 }}
             className="text-center"
           >
-            <LiveCard variant="main">
-            <Card className="feature-card-live feature-card-live-main bg-slate-950/80 border-emerald-500/40">
+            <Card className="bg-slate-950/80 border-emerald-500/40">
               <CardContent className="p-12">
                 <Rocket className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
                 <h2 className="text-3xl font-bold text-slate-100 mb-4">
@@ -278,7 +260,6 @@ export default function About() {
                 </div>
               </CardContent>
             </Card>
-            </LiveCard>
           </motion.div>
         </div>
       </div>

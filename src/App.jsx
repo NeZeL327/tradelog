@@ -7,7 +7,6 @@ import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -20,7 +19,6 @@ import Cookies from './pages/Cookies';
 import Contact from './pages/Contact';
 import About from './pages/About';
 import Pricing from './pages/Pricing';
-import Features from './pages/Features';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -71,7 +69,6 @@ const AuthenticatedApp = () => {
         <Route path="/cookies" element={<PageShell><Cookies /></PageShell>} />
         <Route path="/contact" element={<PageShell><Contact /></PageShell>} />
         <Route path="/about" element={<PageShell><About /></PageShell>} />
-        <Route path="/features" element={<PageShell><Features /></PageShell>} />
         <Route path="/pricing" element={<PageShell><Pricing /></PageShell>} />
         <Route path="*" element={<PageShell><Home /></PageShell>} />
       </Routes>
@@ -89,7 +86,6 @@ const AuthenticatedApp = () => {
       <Route path="/terms" element={<PageShell><Terms /></PageShell>} />
       <Route path="/privacy" element={<PageShell><Privacy /></PageShell>} />
       <Route path="/cookies" element={<PageShell><Cookies /></PageShell>} />
-      <Route path="/features" element={<PageShell><Features /></PageShell>} />
       <Route path="/pricing" element={<PageShell><Pricing /></PageShell>} />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
@@ -111,25 +107,23 @@ const AuthenticatedApp = () => {
 function App() {
 
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <QueryClientProvider client={queryClientInstance}>
-          <LanguageProvider>
-            <Router
-              future={{
-                v7_startTransition: true,
-                v7_relativeSplatPath: true
-              }}
-            >
-              <NavigationTracker />
-              <AuthenticatedApp />
-            </Router>
-          </LanguageProvider>
-          <Toaster />
-          <VisualEditAgent />
-        </QueryClientProvider>
-      </AuthProvider>
-    </ErrorBoundary>
+    <AuthProvider>
+      <QueryClientProvider client={queryClientInstance}>
+        <LanguageProvider>
+          <Router
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true
+            }}
+          >
+            <NavigationTracker />
+            <AuthenticatedApp />
+          </Router>
+        </LanguageProvider>
+        <Toaster />
+        <VisualEditAgent />
+      </QueryClientProvider>
+    </AuthProvider>
   )
 }
 

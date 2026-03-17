@@ -2,14 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Zap, TrendingUp, Shield, Activity, BookOpen, Layers } from 'lucide-react';
+import { Check, Zap, TrendingUp, Shield, BarChart3, Brain, Target } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import PublicNavbar from '@/components/PublicNavbar';
 import Footer from '@/components/Footer';
-import AnimatedPublicBackground from '@/components/AnimatedPublicBackground';
-import TradingWallpaper from '@/components/TradingWallpaper';
-import LiveCard from '@/components/LiveCard';
-import AnimatedFeatureIcon from '@/components/AnimatedFeatureIcon';
 import { motion } from 'framer-motion';
 
 export default function Pricing() {
@@ -17,9 +13,9 @@ export default function Pricing() {
   const { t } = useLanguage();
 
   const features = [
-    { icon: Activity, title: t('pricingFeature1Title'), desc: t('pricingFeature1Desc') },
-    { icon: BookOpen, title: t('pricingFeature2Title'), desc: t('pricingFeature2Desc') },
-    { icon: Layers, title: t('pricingFeature3Title'), desc: t('pricingFeature3Desc') },
+    { icon: BarChart3, title: t('pricingFeature1Title'), desc: t('pricingFeature1Desc') },
+    { icon: Brain, title: t('pricingFeature2Title'), desc: t('pricingFeature2Desc') },
+    { icon: Target, title: t('pricingFeature3Title'), desc: t('pricingFeature3Desc') },
     { icon: TrendingUp, title: t('pricingFeature4Title'), desc: t('pricingFeature4Desc') },
     { icon: Shield, title: t('pricingFeature5Title'), desc: t('pricingFeature5Desc') },
     { icon: Zap, title: t('pricingFeature6Title'), desc: t('pricingFeature6Desc') },
@@ -28,11 +24,9 @@ export default function Pricing() {
   return (
     <>
       <PublicNavbar variant="hero" />
-      <div className="public-trading-bg use-trading-wallpaper min-h-screen pt-24 pb-16 relative">
-        <TradingWallpaper variant="candlestickChart" />
-        <AnimatedPublicBackground />
+      <div className="public-trading-bg min-h-screen pt-24 pb-16">
         {/* Hero Section */}
-        <div className="container mx-auto px-6 py-12 text-center relative z-10">
+        <div className="container mx-auto px-6 py-12 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -56,8 +50,7 @@ export default function Pricing() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="max-w-lg mx-auto mb-16"
           >
-            <LiveCard variant="main">
-            <Card className="feature-card-live feature-card-live-main border-2 border-blue-500/50 bg-slate-900/80 backdrop-blur-sm shadow-2xl">
+            <Card className="border-2 border-blue-500/50 bg-slate-900/80 backdrop-blur-sm shadow-2xl">
               <CardHeader className="text-center pb-8">
                 <div className="inline-block mx-auto mb-4">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center">
@@ -120,7 +113,6 @@ export default function Pricing() {
                 </p>
               </CardContent>
             </Card>
-            </LiveCard>
           </motion.div>
 
           {/* Why Choose Section */}
@@ -142,21 +134,16 @@ export default function Pricing() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-                    className="h-full"
                   >
-                    <LiveCard variant="more" className="h-full">
-                    <Card className="feature-card-live feature-card-live-more bg-slate-900/60 backdrop-blur-sm border-slate-700/50 h-full hover:border-blue-500/50 transition-all">
+                    <Card className="bg-slate-900/60 backdrop-blur-sm border-slate-700/50 h-full hover:border-blue-500/50 transition-all">
                       <CardContent className="p-6">
-                        <AnimatedFeatureIcon
-                          icon={Icon}
-                          variant="more"
-                          className="mb-4"
-                        />
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500/20 to-blue-600/20 flex items-center justify-center mb-4">
+                          <Icon className="w-6 h-6 text-blue-400" />
+                        </div>
                         <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
                         <p className="text-slate-400 text-sm">{feature.desc}</p>
                       </CardContent>
                     </Card>
-                    </LiveCard>
                   </motion.div>
                 );
               })}
