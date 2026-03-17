@@ -5,6 +5,7 @@
 nul
 NUL
 .env.*
+!.env.example
 
 # Logs
 logs
