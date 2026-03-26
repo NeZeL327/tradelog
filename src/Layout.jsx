@@ -23,9 +23,6 @@ import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
-import PinnedChecklistPanels from "@/components/PinnedChecklistPanels";
-import PinnedNotesSidebar from "@/components/PinnedNotesSidebar";
-import QuickAddTradeSidebar from "@/components/QuickAddTradeSidebar";
 
 function LayoutContent({ children }) {
   const { t } = useLanguage();
@@ -235,13 +232,6 @@ function LayoutContent({ children }) {
             <Footer variant="app" />
           </div>
         </main>
-        {user && <QuickAddTradeSidebar />}
-        {user && (
-          <div className="fixed right-3 top-48 z-40 flex w-[320px] flex-col items-end gap-5 pointer-events-none">
-            <PinnedNotesSidebar />
-            <PinnedChecklistPanels />
-          </div>
-        )}
       </div>
     </SidebarProvider>
   );

@@ -18,9 +18,12 @@ import {
   ArrowUpDown,
   Eye,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  CalendarRange
 } from "lucide-react";
-import { parseISO, isSameDay, isSameWeek, isSameMonth } from "date-fns";
+import { parseISO, isSameDay, isSameWeek, isSameMonth, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -34,10 +37,88 @@ import {
 } from "@/components/ui/alert-dialog";
 import TradeFormNew from "../components/TradeFormNew";
 import TradeCard from "../components/TradeCard";
-import { ExportButton } from "../components/ExportButton";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionBadgeClass, directionLabel, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
+
+const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
+const DAYS_PL = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
+
+function MiniCalendar({ from, to, onSelect }) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [view, setView] = useState(() => {
+    const base = from ? new Date(from + "T00:00:00") : new Date();
+    return { year: base.getFullYear(), month: base.getMonth() };
+  });
+
+  const prevMonth = () => setView(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 });
+  const nextMonth = () => setView(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 });
+
+  const toStr = (d) => `${view.year}-${String(view.month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+  const firstDow = (() => { const d = new Date(view.year, view.month, 1).getDay(); return d === 0 ? 6 : d - 1; })();
+  const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
+  const cells = [...Array(firstDow).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+
+  const handleDay = (d) => {
+    if (!d) return;
+    const s = toStr(d);
+    if (!from || (from && to)) {
+      onSelect(s, "");
+    } else if (s < from) {
+      onSelect(s, from);
+    } else {
+      onSelect(from, s);
+    }
+  };
+
+  return (
+    <div className="w-[224px] select-none">
+      <div className="flex items-center justify-between mb-2">
+        <button type="button" onClick={prevMonth} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+          {MONTHS_PL[view.month]} {view.year}
+        </span>
+        <button type="button" onClick={nextMonth} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500">
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 mb-1">
+        {DAYS_PL.map(d => (
+          <div key={d} className="text-center text-[10px] font-medium text-slate-400 py-0.5">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-y-0.5">
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />;
+          const s = toStr(d);
+          const isFrom = s === from;
+          const isTo = s === to;
+          const inRange = from && to && s > from && s < to;
+          const isNow = s === todayStr;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => handleDay(d)}
+              className={[
+                "text-xs h-7 w-full rounded transition-colors",
+                isFrom || isTo ? "bg-blue-600 text-white font-semibold" : "",
+                inRange ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-none" : "",
+                isNow && !isFrom && !isTo ? "font-bold text-blue-500 dark:text-blue-400" : "",
+                !isFrom && !isTo && !inRange ? "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" : "",
+              ].join(" ").trim()}
+            >
+              {d}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function JournalSimple({ mode = "all" }) {
   const { t } = useLanguage();
@@ -64,6 +145,9 @@ export default function JournalSimple({ mode = "all" }) {
   const [plannedOpen, setPlannedOpen] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState(new Set());
   const [deleteDialog, setDeleteDialog] = useState({ open: false, mode: null, tradeId: null, count: 0 });
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const datePickerRef = useRef(null);
   const [visibleColumns, setVisibleColumns] = useState({
     status: true,
     date: true,
@@ -314,6 +398,17 @@ export default function JournalSimple({ mode = "all" }) {
   }, [accountFilterOpen]);
 
   useEffect(() => {
+    if (!datePickerOpen) return;
+    const handleClickOutside = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setDatePickerOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [datePickerOpen]);
+
+  useEffect(() => {
     const validIds = new Set(activeAccounts.map((account) => String(account.id)));
     setAccountFilters((prev) => {
       if (prev.includes("all")) return prev;
@@ -326,7 +421,12 @@ export default function JournalSimple({ mode = "all" }) {
   const baseFilteredTrades = tradesFromActiveAccounts.filter(t => {
     if (searchTerm && !t.symbol.toLowerCase().includes(searchTerm.toLowerCase())) return false;
 
-    if (!timeFilters.includes("all")) {
+    if (dateRange.from) {
+      if (!t.date) return false;
+      const tradeDate = t.date;
+      if (tradeDate < dateRange.from) return false;
+      if (dateRange.to && tradeDate > dateRange.to) return false;
+    } else if (!timeFilters.includes("all")) {
       if (!t.date) return false;
       const tradeDate = parseISO(t.date);
       const now = new Date();
@@ -409,6 +509,14 @@ export default function JournalSimple({ mode = "all" }) {
   const activeTimeFilterLabel = timeFilters.includes("all")
     ? timeFilterLabels.all
     : timeFilters.map((filterKey) => timeFilterLabels[filterKey]).join(", ");
+
+  const dateRangeActive = !!dateRange.from;
+
+  const dateRangeLabel = dateRange.from
+    ? dateRange.to && dateRange.to !== dateRange.from
+      ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
+      : dateRange.from.split("-").reverse().join(".")
+    : "Zakres dat";
 
   const accountNameById = useMemo(() => {
     const map = {};
@@ -498,28 +606,13 @@ export default function JournalSimple({ mode = "all" }) {
             <p className="text-slate-600 dark:text-slate-400">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : 'Track and analyze your trading performance'}</p>
           </div>
           <div className="flex gap-3">
-            <ExportButton
-              trades={displayTrades}
-              accounts={accounts}
-              strategies={strategies}
-              analytics={{
-                totalTrades: statsSource.length,
-                totalPL: statsSource.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0),
-                winRate: statsSource.length
-                  ? (statsSource.filter(t => t.outcome === "Win").length / statsSource.length) * 100
-                  : 0,
-                profitFactor: 0,
-                avgWin: 0,
-                avgLoss: 0
-              }}
-              type="journal"
-            />
-            <Button 
+            <Button
+              size="icon"
               onClick={() => setShowAddForm(true)}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              className="h-10 w-10 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-md"
+              title="Dodaj transakcję"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Trade
+              <Plus className="w-5 h-5" />
             </Button>
           </div>
         </div>
@@ -749,7 +842,7 @@ export default function JournalSimple({ mode = "all" }) {
                 <button
                   type="button"
                   onClick={() => setTimeFilterOpen((prev) => !prev)}
-                  className="relative min-w-[220px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200 flex items-center justify-center"
+                  className="relative min-w-[160px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200 flex items-center justify-center"
                 >
                   <span className="truncate text-center w-full pr-4">{activeTimeFilterLabel}</span>
                   {timeFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
@@ -767,7 +860,10 @@ export default function JournalSimple({ mode = "all" }) {
                         <button
                           key={option.value}
                           type="button"
-                          onClick={() => toggleTimeFilter(option.value)}
+                          onClick={() => {
+                            toggleTimeFilter(option.value);
+                            setDateRange({ from: undefined, to: undefined });
+                          }}
                           className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
                         >
                           <span className="text-sm text-slate-700 dark:text-slate-200">{option.label}</span>
@@ -787,6 +883,54 @@ export default function JournalSimple({ mode = "all" }) {
                         </button>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+
+              {/* Date range picker */}
+              <div className="relative" ref={datePickerRef}>
+                <button
+                  type="button"
+                  onClick={() => setDatePickerOpen((prev) => !prev)}
+                  className={`relative flex items-center gap-2 px-3 py-2 h-10 border rounded-md text-sm transition-colors ${
+                    dateRangeActive
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
+                      : "border-gray-300 dark:border-gray-600 dark:bg-[#1a1a2e] dark:text-slate-200"
+                  }`}
+                >
+                  <CalendarRange className="w-4 h-4 shrink-0" />
+                  <span className="truncate max-w-[150px]">{dateRangeLabel}</span>
+                  {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+                {datePickerOpen && (
+                  <div className="absolute right-0 mt-2 z-30 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1a2e] shadow-xl p-3">
+                    <MiniCalendar
+                      from={dateRange.from}
+                      to={dateRange.to}
+                      onSelect={(f, t) => {
+                        setDateRange({ from: f, to: t });
+                        setTimeFilters(["all"]);
+                      }}
+                    />
+                    {(dateRange.from || dateRange.to) && (
+                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400">
+                          {dateRange.from && dateRange.to
+                            ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
+                            : dateRange.from
+                              ? `Od ${dateRange.from.split("-").reverse().join(".")}`
+                              : ""}
+                        </span>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => { setDateRange({ from: "", to: "" }); }} className="text-[11px] text-slate-400 hover:text-red-500 px-2 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                            Wyczyść
+                          </button>
+                          <button type="button" onClick={() => setDatePickerOpen(false)} className="text-[11px] text-white bg-blue-600 hover:bg-blue-700 px-3 py-0.5 rounded">
+                            Zamknij
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

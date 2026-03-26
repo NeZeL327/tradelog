@@ -1,14 +1,29 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { useLanguage } from "@/components/LanguageProvider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { ChevronDown, Download, FileText, Pencil, Pin, Plus, Search, Trash2, Upload } from "lucide-react";
+import {
+  Bold, Italic, Underline, Strikethrough,
+  Heading1, Heading2, List, ListOrdered, Quote, Minus,
+  Pin, PinOff, Trash2, Plus, Search, FolderOpen, FileText,
+  ChevronRight, MoreHorizontal, Check, X, Download, Upload,
+  Clock, BookOpen, Copy, Clipboard, Hash
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+} from "@/components/ui/dropdown-menu";
 import {
   addDoc,
   collection,
@@ -24,91 +39,126 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-const userCollection = (userId, name) => collection(db, "users", String(userId), name);
-const NAME_MAX_LENGTH = 20;
+const userCol = (userId, name) => collection(db, "users", String(userId), name);
 
-const clampName = (value) => String(value || "").slice(0, NAME_MAX_LENGTH);
+const TITLE_MAX = 100;
 
-const createId = () => {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+const clamp = (v, max = TITLE_MAX) => String(v || "").slice(0, max);
+
+const toIso = (v) => {
+  if (!v) return "";
+  if (typeof v.toDate === "function") return v.toDate().toISOString();
+  return String(v);
 };
 
-const toIsoString = (value) => {
-  if (!value) return "";
-  if (typeof value.toDate === "function") {
-    return value.toDate().toISOString();
-  }
-  return String(value);
-};
-
-const stripHtml = (value) =>
-  String(value || "")
+const stripHtml = (v) =>
+  String(v || "")
     .replace(/<[^>]*>/g, " ")
     .replace(/&nbsp;/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
+const fmtDate = (iso) => {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = now - d;
+    if (diff < 60000) return "przed chwilą";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)} min temu`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)} godz. temu`;
+    return d.toLocaleDateString("pl-PL", { day: "2-digit", month: "short" });
+  } catch {
+    return "";
+  }
+};
+
+const wordCount = (html) => {
+  const text = stripHtml(html);
+  if (!text) return 0;
+  return text.split(/\s+/).filter(Boolean).length;
+};
+
+const TEMPLATES = [
+  {
+    id: "premarket",
+    label: "Plan Pre-Market",
+    icon: "📋",
+    body: `<h2>Plan Pre-Market – ${new Date().toLocaleDateString("pl-PL")}</h2>
+<h3>Nastawienie rynku</h3>
+<p>Trend ogólny: <strong>Bycze / Niedźwiedzie / Neutralne</strong></p>
+<p>Kluczowe poziomy: </p>
+<h3>Instrumenty na obserwacji</h3>
+<ul><li></li><li></li><li></li></ul>
+<h3>Zasady na dziś</h3>
+<ul><li>Max strata dzienna: </li><li>Max liczba transakcji: </li><li>Nie tradować gdy: </li></ul>
+<h3>Cel na dziś</h3>
+<p></p>`
+  },
+  {
+    id: "trade-recap",
+    label: "Podsumowanie transakcji",
+    icon: "📊",
+    body: `<h2>Podsumowanie transakcji</h2>
+<p><strong>Instrument:</strong> &nbsp;&nbsp;<strong>Data:</strong> ${new Date().toLocaleDateString("pl-PL")}</p>
+<p><strong>Wejście:</strong> &nbsp;&nbsp;<strong>Wyjście:</strong> &nbsp;&nbsp;<strong>Wynik:</strong> </p>
+<h3>Co zrobiłem dobrze</h3>
+<ul><li></li></ul>
+<h3>Co poszło nie tak</h3>
+<ul><li></li></ul>
+<h3>Lekcja na przyszłość</h3>
+<p></p>
+<h3>Emocje podczas transakcji</h3>
+<p>Przed: &nbsp;&nbsp; W trakcie: &nbsp;&nbsp; Po: </p>`
+  },
+  {
+    id: "daily-review",
+    label: "Dzienny przegląd",
+    icon: "🌙",
+    body: `<h2>Dzienny przegląd – ${new Date().toLocaleDateString("pl-PL")}</h2>
+<p><strong>Wynik dnia:</strong> &nbsp;&nbsp;<strong>Liczba transakcji:</strong> </p>
+<h3>Najlepsza transakcja</h3>
+<p></p>
+<h3>Najgorsza transakcja</h3>
+<p></p>
+<h3>Emocje i psychologia</h3>
+<p>Nastrój: ⭐⭐⭐⭐⭐ &nbsp;&nbsp; Dyscyplina: ⭐⭐⭐⭐⭐</p>
+<p>Uwagi: </p>
+<h3>Co poprawić jutro</h3>
+<ul><li></li></ul>`
+  },
+  {
+    id: "weekly-review",
+    label: "Tygodniowy przegląd",
+    icon: "📅",
+    body: `<h2>Tygodniowy przegląd</h2>
+<p><strong>Tydzień:</strong> &nbsp;&nbsp;<strong>Wynik tygodnia:</strong> </p>
+<h3>Statystyki</h3>
+<p>Win rate: &nbsp;&nbsp; Średni zysk: &nbsp;&nbsp; Średnia strata: </p>
+<h3>Powtarzające się błędy</h3>
+<ul><li></li></ul>
+<h3>Co działało dobrze</h3>
+<ul><li></li></ul>
+<h3>Cele na przyszły tydzień</h3>
+<ul><li></li><li></li></ul>`
+  },
+];
+
 const buildEmptyNote = (sectionId, notebookId) => ({
   title: "",
   body: "",
-  checklist: [],
   type: "note",
   notebookId,
   sectionId,
-  parentId: null,
   order: Date.now(),
   pinned: false,
   tags: [],
-  links: [],
-  status: "active",
-  priority: "medium",
-  dueDate: "",
-  reminderAt: "",
-  reminderSentAt: "",
   pinnedToSidebar: false,
   visibilityScope: "all",
   visibleOnPages: [],
   createdAt: serverTimestamp(),
   updatedAt: serverTimestamp()
 });
-
-const normalizeNotesData = (raw, defaults) => {
-  const base = Array.isArray(raw)
-    ? { notes: raw, notebooks: defaults.notebooks, sections: defaults.sections }
-    : {
-        notes: Array.isArray(raw?.notes) ? raw.notes : [],
-        notebooks: Array.isArray(raw?.notebooks) && raw.notebooks.length ? raw.notebooks : defaults.notebooks,
-        sections: Array.isArray(raw?.sections) && raw.sections.length ? raw.sections : defaults.sections
-      };
-
-  const notebookId = base.notebooks[0]?.id || defaults.notebooks[0].id;
-  const sectionId =
-    base.sections.find((section) => section.notebookId === notebookId)?.id || defaults.sections[0].id;
-
-  return {
-    notes: base.notes.map((note) => ({
-      ...note,
-      id: note.id ?? createId(),
-      title: clampName(note.title || ""),
-      notebookId: note.notebookId || notebookId,
-      sectionId: note.sectionId || sectionId,
-      checklist: Array.isArray(note.checklist) ? note.checklist : [],
-      tags: Array.isArray(note.tags) ? note.tags : [],
-      links: Array.isArray(note.links) ? note.links : [],
-      visibleOnPages: Array.isArray(note.visibleOnPages) ? note.visibleOnPages : [],
-      pinnedToSidebar: Boolean(note.pinnedToSidebar),
-      visibilityScope: note.visibilityScope === "selected" ? "selected" : "all"
-    })),
-    notebooks: base.notebooks,
-    sections: base.sections.map((section) => ({
-      ...section,
-      name: clampName(section.name || "")
-    }))
-  };
-};
 
 export default function Notes() {
   const { user } = useAuth();
@@ -117,717 +167,816 @@ export default function Notes() {
 
   const editorRef = useRef(null);
   const titleInputRef = useRef(null);
-  const lastHtmlRef = useRef("");
   const fileInputRef = useRef(null);
-  const pendingNoteUpdates = useRef(new Map());
+  const pendingUpdates = useRef(new Map());
 
-  const defaultNotebook = useMemo(() => ({ id: "default", name: t("notesDefaultNotebook") }), [t]);
-  const defaultSection = useMemo(
-    () => ({ id: "general", notebookId: "default", name: t("notesDefaultSection") }),
-    [t]
-  );
+  const defaultNotebook = useMemo(() => ({ id: "default", name: "Notatki" }), []);
+  const defaultSection = useMemo(() => ({ id: "general", notebookId: "default", name: "Ogólne" }), []);
 
   const [notes, setNotes] = useState([]);
-  const [notebooks, setNotebooks] = useState([]);
-  const [sections, setSections] = useState([]);
-  const [selectedNotebookId, setSelectedNotebookId] = useState("default");
-  const [activeSectionId, setActiveSectionId] = useState(null);
+  const [notebooks, setNotebooks] = useState([defaultNotebook]);
+  const [sections, setSections] = useState([defaultSection]);
+  const [selectedNotebookId] = useState("default");
+  const [activeFolderId, setActiveFolderId] = useState(null);
   const [selectedNoteId, setSelectedNoteId] = useState(null);
   const [titleDraft, setTitleDraft] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sectionInput, setSectionInput] = useState("");
-  const [expandedSections, setExpandedSections] = useState({});
+  const [expandedFolders, setExpandedFolders] = useState({});
+  const [savedAt, setSavedAt] = useState(null);
 
+  // Inline folder rename
+  const [editingFolderId, setEditingFolderId] = useState(null);
+  const [editingFolderName, setEditingFolderName] = useState("");
+  const folderInputRef = useRef(null);
+
+  // New folder input
+  const [newFolderInput, setNewFolderInput] = useState("");
+  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+
+  // Tag input for active note
+  const [tagInput, setTagInput] = useState("");
+  const [showTagInput, setShowTagInput] = useState(false);
+
+  // Word count
+  const [words, setWords] = useState(0);
+
+  // Tag filter
+  const [activeTagFilter, setActiveTagFilter] = useState(null);
+
+  // Firebase listeners
   useEffect(() => {
-    if (!user?.id) {
-      setNotes([]);
-      setNotebooks([defaultNotebook]);
-      setSections([defaultSection]);
-      setSelectedNotebookId(defaultNotebook.id);
-      setActiveSectionId(defaultSection.id);
-      setSelectedNoteId(null);
-      return undefined;
-    }
+    if (!user?.id) return;
 
-    const notebooksRef = userCollection(user.id, "notebooks");
-    const sectionsRef = userCollection(user.id, "sections");
-    const notesRef = userCollection(user.id, "notes");
-
-    const unsubscribeNotebooks = onSnapshot(query(notebooksRef, orderBy("createdAt", "asc")), (snapshot) => {
-      const items = snapshot.docs.map((item) => ({
-        id: item.id,
-        ...item.data(),
-        createdAt: toIsoString(item.data().createdAt)
-      }));
-
+    const unsub1 = onSnapshot(query(userCol(user.id, "notebooks"), orderBy("createdAt", "asc")), (snap) => {
+      const items = snap.docs.map((d) => ({ id: d.id, ...d.data(), createdAt: toIso(d.data().createdAt) }));
       if (items.length === 0) {
-        void setDoc(
-          doc(db, "users", String(user.id), "notebooks", "default"),
-          { name: defaultNotebook.name, createdAt: serverTimestamp() },
-          { merge: true }
-        );
+        void setDoc(doc(db, "users", String(user.id), "notebooks", "default"), { name: "Notatki", createdAt: serverTimestamp() }, { merge: true });
         return;
       }
-
       setNotebooks(items);
-      if (!items.some((item) => item.id === selectedNotebookId)) {
-        setSelectedNotebookId(items[0].id);
+    });
+
+    const unsub2 = onSnapshot(query(userCol(user.id, "sections"), orderBy("createdAt", "asc")), (snap) => {
+      const items = snap.docs.map((d) => ({ id: d.id, ...d.data(), createdAt: toIso(d.data().createdAt) }));
+      setSections(items.length ? items : []);
+      if (items.length && !activeFolderId) {
+        const first = items.find((s) => s.notebookId === selectedNotebookId) || items[0];
+        setActiveFolderId(first.id);
+        setExpandedFolders({ [first.id]: true });
       }
     });
 
-    const unsubscribeSections = onSnapshot(query(sectionsRef, orderBy("createdAt", "asc")), (snapshot) => {
-      const items = snapshot.docs.map((item) => ({
-        id: item.id,
-        ...item.data(),
-        createdAt: toIsoString(item.data().createdAt)
-      }));
-
-      if (items.length === 0) {
-        setSections([]);
-        setActiveSectionId(null);
-        return;
-      }
-
-      setSections(items);
-      if (!items.some((item) => item.id === activeSectionId)) {
-        const firstInNotebook = items.find((item) => item.notebookId === selectedNotebookId);
-        setActiveSectionId(firstInNotebook?.id || items[0].id);
-      }
-    });
-
-    const unsubscribeNotes = onSnapshot(query(notesRef, orderBy("order", "asc")), (snapshot) => {
-      const items = snapshot.docs.map((item) => {
-        const data = item.data();
-        return {
-          id: item.id,
-          ...data,
-          createdAt: toIsoString(data.createdAt),
-          updatedAt: toIsoString(data.updatedAt)
-        };
+    const unsub3 = onSnapshot(query(userCol(user.id, "notes"), orderBy("order", "asc")), (snap) => {
+      const items = snap.docs.map((d) => {
+        const data = d.data();
+        return { id: d.id, ...data, createdAt: toIso(data.createdAt), updatedAt: toIso(data.updatedAt) };
       });
       setNotes(items);
-
-      if (!selectedNoteId && items.length) {
-        setSelectedNoteId(items[0].id);
-      }
+      if (!selectedNoteId && items.length) setSelectedNoteId(items[0].id);
     });
 
-    return () => {
-      unsubscribeNotebooks();
-      unsubscribeSections();
-      unsubscribeNotes();
-    };
-  }, [
-    user?.id,
-    defaultNotebook.name,
-    defaultSection.name,
-    selectedNotebookId,
-    activeSectionId,
-    selectedNoteId
-  ]);
+    return () => { unsub1(); unsub2(); unsub3(); };
+  }, [user?.id]);
 
-  useEffect(() => {
-    return () => {
-      pendingNoteUpdates.current.forEach((timeoutId) => clearTimeout(timeoutId));
-      pendingNoteUpdates.current.clear();
-    };
+  useEffect(() => () => {
+    pendingUpdates.current.forEach(clearTimeout);
+    pendingUpdates.current.clear();
   }, []);
 
-  const notebookSections = useMemo(
-    () => sections.filter((section) => section.notebookId === selectedNotebookId),
-    [sections, selectedNotebookId]
-  );
-
+  // URL param: open specific note
   useEffect(() => {
-    if (!selectedNotebookId) return;
-    if (notebookSections.length === 0) return;
-
-    if (!notebookSections.some((section) => section.id === activeSectionId)) {
-      setActiveSectionId(notebookSections[0].id);
-    }
-  }, [selectedNotebookId, notebookSections, activeSectionId]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search || "");
-    const requestedId = params.get("noteId");
-    if (!requestedId) return;
-    const found = notes.find((note) => String(note.id) === String(requestedId));
+    const id = new URLSearchParams(location.search).get("noteId");
+    if (!id) return;
+    const found = notes.find((n) => n.id === id);
     if (!found) return;
-
     setSelectedNoteId(found.id);
     if (found.sectionId) {
-      setActiveSectionId(found.sectionId);
-      setExpandedSections((prev) => ({ ...prev, [found.sectionId]: true }));
+      setActiveFolderId(found.sectionId);
+      setExpandedFolders((p) => ({ ...p, [found.sectionId]: true }));
     }
   }, [location.search, notes]);
+
+  const folders = useMemo(
+    () => sections.filter((s) => s.notebookId === selectedNotebookId || !s.notebookId),
+    [sections, selectedNotebookId]
+  );
 
   const filteredNotes = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return notes
-      .filter((note) => note.notebookId === selectedNotebookId)
-      .filter((note) => {
-        if (!q) return true;
-        const body = stripHtml(note.body).toLowerCase();
-        return (
-          String(note.title || "").toLowerCase().includes(q) ||
-          body.includes(q) ||
-          (note.checklist || []).some((item) => String(item.text || "").toLowerCase().includes(q))
-        );
-      })
-      .sort((a, b) => {
-        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-        return (a.order || 0) - (b.order || 0);
-      });
-  }, [notes, selectedNotebookId, searchQuery]);
+      .filter((n) => !q || String(n.title || "").toLowerCase().includes(q) || stripHtml(n.body).toLowerCase().includes(q))
+      .filter((n) => !activeTagFilter || (n.tags || []).includes(activeTagFilter))
+      .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (a.order || 0) - (b.order || 0));
+  }, [notes, searchQuery, activeTagFilter]);
 
-  const notesBySection = useMemo(() => {
+  // All unique tags across notes
+  const allTags = useMemo(() => {
+    const set = new Set();
+    notes.forEach((n) => (n.tags || []).forEach((t) => set.add(t)));
+    return [...set].sort();
+  }, [notes]);
+
+  const notesByFolder = useMemo(() => {
     const map = new Map();
-    notebookSections.forEach((section) => map.set(section.id, []));
-    filteredNotes.forEach((note) => {
-      if (!map.has(note.sectionId)) {
-        map.set(note.sectionId, []);
-      }
-      map.get(note.sectionId).push(note);
+    folders.forEach((f) => map.set(f.id, []));
+    filteredNotes.forEach((n) => {
+      if (!map.has(n.sectionId)) map.set(n.sectionId, []);
+      map.get(n.sectionId).push(n);
     });
     return map;
-  }, [filteredNotes, notebookSections]);
+  }, [filteredNotes, folders]);
 
-  const selectedNote = notes.find((note) => note.id === selectedNoteId) || null;
+  const selectedNote = notes.find((n) => n.id === selectedNoteId) || null;
 
+  // Word count sync — must be after selectedNote is defined
   useEffect(() => {
-    if (!selectedNote) {
-      setTitleDraft("");
-      return;
-    }
-    const nextTitle = String(selectedNote.title || "");
-    if (document.activeElement !== titleInputRef.current) {
-      setTitleDraft(nextTitle);
-    }
+    setWords(wordCount(selectedNote?.body || ""));
+  }, [selectedNoteId, selectedNote?.body]);
+
+  // Sync title draft
+  useEffect(() => {
+    if (!selectedNote) { setTitleDraft(""); return; }
+    if (document.activeElement !== titleInputRef.current) setTitleDraft(String(selectedNote.title || ""));
   }, [selectedNoteId, selectedNote?.title]);
 
-  useEffect(() => {
-    if (!activeSectionId) return;
-    const sectionNotes = notesBySection.get(activeSectionId) || [];
-    if (selectedNote && selectedNote.sectionId === activeSectionId) return;
-    setSelectedNoteId(sectionNotes[0]?.id || null);
-  }, [activeSectionId, notesBySection, selectedNote]);
-
+  // Sync editor content
   useEffect(() => {
     if (!editorRef.current) return;
-    const nextHtml = selectedNote?.body || "";
-    editorRef.current.innerHTML = nextHtml;
-    lastHtmlRef.current = nextHtml;
+    const html = selectedNote?.body || "";
+    editorRef.current.innerHTML = html;
   }, [selectedNoteId]);
 
-  const queueNoteUpdate = (id, patch) => {
+  const queueUpdate = useCallback((id, patch) => {
     if (!user?.id) return;
     const key = String(id);
-    const existing = pendingNoteUpdates.current.get(key);
-    if (existing) clearTimeout(existing);
-
-    const timeoutId = setTimeout(async () => {
+    clearTimeout(pendingUpdates.current.get(key));
+    pendingUpdates.current.set(key, setTimeout(async () => {
       try {
-        await updateDoc(doc(db, "users", String(user.id), "notes", key), {
-          ...patch,
-          updatedAt: serverTimestamp()
-        });
-      } catch (error) {
-        console.error("Note update error:", error);
+        await updateDoc(doc(db, "users", String(user.id), "notes", key), { ...patch, updatedAt: serverTimestamp() });
+        setSavedAt(new Date());
+      } catch (e) {
+        console.error("Note update error:", e);
       }
-    }, 300);
+    }, 600));
+  }, [user?.id]);
 
-    pendingNoteUpdates.current.set(key, timeoutId);
-  };
+  const updateNote = useCallback((id, patch) => {
+    setNotes((prev) => prev.map((n) => n.id === id ? { ...n, ...patch } : n));
+    queueUpdate(id, patch);
+  }, [queueUpdate]);
 
-  const updateNote = (id, patch) => {
-    setNotes((prev) =>
-      prev.map((note) => (note.id === id ? { ...note, ...patch, updatedAt: new Date().toISOString() } : note))
-    );
-    queueNoteUpdate(id, patch);
-  };
-
-  const handleCreateSection = async () => {
-    if (!user?.id) return;
-    const name = clampName(sectionInput).trim();
-    if (!name) {
-      toast.info(t("notesNeedSectionName"));
-      return;
-    }
-
+  // Folder actions
+  const handleCreateFolder = async () => {
+    const name = clamp(newFolderInput.trim(), 60);
+    if (!name || !user?.id) return;
     try {
-      const refDoc = await addDoc(userCollection(user.id, "sections"), {
+      const ref = await addDoc(userCol(user.id, "sections"), {
         notebookId: selectedNotebookId,
         name,
-        pinnedToSidebar: false,
         createdAt: serverTimestamp()
       });
-      setSectionInput("");
-      setActiveSectionId(refDoc.id);
-      setExpandedSections((prev) => ({ ...prev, [refDoc.id]: true }));
-    } catch (error) {
-      console.error("Create section error:", error);
-      toast.info(t("notesSaveError"));
+      setNewFolderInput("");
+      setShowNewFolderInput(false);
+      setActiveFolderId(ref.id);
+      setExpandedFolders((p) => ({ ...p, [ref.id]: true }));
+    } catch (e) {
+      console.error(e);
+      toast.error("Nie udało się utworzyć folderu");
     }
   };
 
-  const handleDeleteSection = async (targetSectionId = activeSectionId) => {
-    if (!user?.id || !targetSectionId) return;
-
+  const handleRenameFolder = async (folder) => {
+    if (!user?.id || !folder?.id) return;
+    const name = clamp(editingFolderName.trim(), 60);
+    if (!name) { setEditingFolderId(null); return; }
     try {
-      const nextSectionId = notebookSections.find((section) => section.id !== targetSectionId)?.id || null;
+      await updateDoc(doc(db, "users", String(user.id), "sections", String(folder.id)), { name });
+      setEditingFolderId(null);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteFolder = async (folder) => {
+    if (!user?.id || !folder?.id) return;
+    try {
+      const next = folders.find((f) => f.id !== folder.id);
       const batch = writeBatch(db);
-      batch.delete(doc(db, "users", String(user.id), "sections", String(targetSectionId)));
-
-      notes
-        .filter((note) => note.sectionId === targetSectionId)
-        .forEach((note) => {
-          const noteRef = doc(db, "users", String(user.id), "notes", String(note.id));
-          if (nextSectionId) {
-            batch.update(noteRef, {
-              sectionId: nextSectionId,
-              updatedAt: serverTimestamp()
-            });
-          } else {
-            batch.delete(noteRef);
-          }
-        });
-
-      await batch.commit();
-      setActiveSectionId(nextSectionId);
-    } catch (error) {
-      console.error("Delete section error:", error);
-      toast.info(t("notesSaveError"));
-    }
-  };
-
-  const handleDeleteSectionItem = async (section) => {
-    if (!section?.id) return;
-    const sectionLabel = String(section.name || "").trim() || "te sekcje";
-    const confirmed = window.confirm(`Czy na pewno chcesz usunac sekcje \"${sectionLabel}\"?`);
-    if (!confirmed) return;
-    await handleDeleteSection(section.id);
-  };
-
-  const handleCreatePage = async (sectionId) => {
-    if (!user?.id || !sectionId) return;
-    try {
-      const refDoc = await addDoc(userCollection(user.id, "notes"), buildEmptyNote(sectionId, selectedNotebookId));
-      setActiveSectionId(sectionId);
-      setSelectedNoteId(refDoc.id);
-      setExpandedSections((prev) => ({ ...prev, [sectionId]: true }));
-    } catch (error) {
-      console.error("Create page error:", error);
-      toast.info(t("notesSaveError"));
-    }
-  };
-
-  const handleRenameSection = async (section) => {
-    if (!user?.id || !section?.id) return;
-    const currentName = String(section.name || "").trim();
-    const nextName = window.prompt("Podaj nowa nazwe sekcji", currentName || "Sekcja bez nazwy");
-    if (!nextName || !nextName.trim()) return;
-    try {
-      await updateDoc(doc(db, "users", String(user.id), "sections", String(section.id)), {
-        name: clampName(nextName).trim(),
-        updatedAt: serverTimestamp()
+      batch.delete(doc(db, "users", String(user.id), "sections", String(folder.id)));
+      notes.filter((n) => n.sectionId === folder.id).forEach((n) => {
+        const ref = doc(db, "users", String(user.id), "notes", String(n.id));
+        next ? batch.update(ref, { sectionId: next.id }) : batch.delete(ref);
       });
-    } catch (error) {
-      console.error("Rename section error:", error);
-      toast.info(t("notesSaveError"));
+      await batch.commit();
+      if (activeFolderId === folder.id) setActiveFolderId(next?.id || null);
+      toast.success("Folder usunięty");
+    } catch (e) {
+      console.error(e);
+      toast.error("Nie udało się usunąć folderu");
     }
   };
 
-  const handleRenamePage = async (note) => {
-    if (!note?.id) return;
-    const currentTitle = String(note.title || "").trim();
-    const nextTitle = window.prompt("Podaj nowa nazwe strony", currentTitle || t("notesUntitled"));
-    if (!nextTitle || !nextTitle.trim()) return;
-    updateNote(note.id, { title: clampName(nextTitle).trim() });
+  // Note actions
+  const handleCreateNote = async (folderId) => {
+    if (!user?.id || !folderId) return;
+    try {
+      const ref = await addDoc(userCol(user.id, "notes"), buildEmptyNote(folderId, selectedNotebookId));
+      setActiveFolderId(folderId);
+      setSelectedNoteId(ref.id);
+      setExpandedFolders((p) => ({ ...p, [folderId]: true }));
+      setTimeout(() => titleInputRef.current?.focus(), 50);
+    } catch (e) {
+      console.error(e);
+      toast.error("Nie udało się utworzyć notatki");
+    }
   };
 
-  const handleDeletePage = async (noteId) => {
+  const handleDeleteNote = async (noteId) => {
     if (!user?.id || !noteId) return;
+    const note = notes.find((n) => n.id === noteId);
     try {
       await deleteDoc(doc(db, "users", String(user.id), "notes", String(noteId)));
       if (selectedNoteId === noteId) {
-        const currentNotes = notesBySection.get(activeSectionId) || [];
-        const next = currentNotes.find((note) => note.id !== noteId);
-        setSelectedNoteId(next?.id || null);
+        const folderNotes = notesByFolder.get(note?.sectionId || activeFolderId) || [];
+        setSelectedNoteId(folderNotes.find((n) => n.id !== noteId)?.id || null);
       }
-    } catch (error) {
-      console.error("Delete page error:", error);
-      toast.info(t("notesSaveError"));
+      toast.success("Notatka usunięta", {
+        action: { label: "Cofnij", onClick: async () => {
+          if (!note) return;
+          const { id, ...data } = note;
+          await setDoc(doc(db, "users", String(user.id), "notes", String(id)), { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        }}
+      });
+    } catch (e) {
+      console.error(e);
+      toast.error("Nie udało się usunąć notatki");
     }
   };
 
-  const handleDeletePageWithConfirm = async (note) => {
-    if (!note?.id) return;
-    const noteLabel = String(note.title || "").trim() || t("notesUntitled");
-    const confirmed = window.confirm(`Czy na pewno chcesz usunac strone \"${noteLabel}\"?`);
-    if (!confirmed) return;
-    await handleDeletePage(note.id);
+  const handleDuplicateNote = async (note) => {
+    if (!user?.id || !note) return;
+    try {
+      const { id, createdAt, updatedAt, ...data } = note;
+      const ref = await addDoc(userCol(user.id, "notes"), {
+        ...data,
+        title: `${data.title || "Bez tytułu"} (kopia)`,
+        order: Date.now(),
+        pinned: false,
+        pinnedToSidebar: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      setSelectedNoteId(ref.id);
+      toast.success("Notatka zduplikowana");
+    } catch (e) {
+      console.error(e);
+      toast.error("Nie udało się zduplikować");
+    }
+  };
+
+  const handleMoveNote = async (noteId, targetFolderId) => {
+    if (!user?.id || !noteId || !targetFolderId) return;
+    try {
+      await updateDoc(doc(db, "users", String(user.id), "notes", String(noteId)), {
+        sectionId: targetFolderId,
+        updatedAt: serverTimestamp(),
+      });
+      setExpandedFolders((p) => ({ ...p, [targetFolderId]: true }));
+      toast.success("Przeniesiono do folderu");
+    } catch (e) {
+      console.error(e);
+      toast.error("Nie udało się przenieść");
+    }
+  };
+
+  const handleInsertTemplate = (template) => {
+    if (!selectedNote || !editorRef.current) return;
+    const current = editorRef.current.innerHTML;
+    const newBody = current ? current + "<br>" + template.body : template.body;
+    editorRef.current.innerHTML = newBody;
+    updateNote(selectedNote.id, { body: newBody });
+    setWords(wordCount(newBody));
+    toast.success(`Wstawiono szablon: ${template.label}`);
+  };
+
+  const handleAddTag = () => {
+    if (!selectedNote || !tagInput.trim()) return;
+    const tag = tagInput.trim().toLowerCase();
+    if (selectedNote.tags?.includes(tag)) { setTagInput(""); setShowTagInput(false); return; }
+    updateNote(selectedNote.id, { tags: [...(selectedNote.tags || []), tag] });
+    setTagInput("");
+    setShowTagInput(false);
+  };
+
+  const handleRemoveTag = (tag) => {
+    if (!selectedNote) return;
+    updateNote(selectedNote.id, { tags: (selectedNote.tags || []).filter((t) => t !== tag) });
   };
 
   const handleExport = () => {
-    const payload = { notes, notebooks, sections };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `notes-export-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    const blob = new Blob([JSON.stringify({ notes, notebooks, sections }, null, 2)], { type: "application/json" });
+    const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `notes-${new Date().toISOString().slice(0, 10)}.json` });
+    a.click();
+    URL.revokeObjectURL(a.href);
   };
 
-  const handleImport = (event) => {
-    const file = event.target.files?.[0];
-    if (!file || !user?.id) return;
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const raw = JSON.parse(String(reader.result || ""));
-        const normalized = normalizeNotesData(raw, {
-          notebooks: [defaultNotebook],
-          sections: [defaultSection]
-        });
-
-        const batch = writeBatch(db);
-        notes.forEach((note) => batch.delete(doc(db, "users", String(user.id), "notes", String(note.id))));
-        notebooks.forEach((notebook) => batch.delete(doc(db, "users", String(user.id), "notebooks", String(notebook.id))));
-        sections.forEach((section) => batch.delete(doc(db, "users", String(user.id), "sections", String(section.id))));
-
-        normalized.notebooks.forEach((notebook) => {
-          const { id, ...payload } = notebook;
-          batch.set(doc(db, "users", String(user.id), "notebooks", String(id)), {
-            ...payload,
-            createdAt: payload.createdAt || serverTimestamp()
-          });
-        });
-
-        normalized.sections.forEach((section) => {
-          const { id, ...payload } = section;
-          batch.set(doc(db, "users", String(user.id), "sections", String(id)), {
-            ...payload,
-            createdAt: payload.createdAt || serverTimestamp()
-          });
-        });
-
-        normalized.notes.forEach((note) => {
-          const { id, ...payload } = note;
-          batch.set(doc(db, "users", String(user.id), "notes", String(id)), {
-            ...payload,
-            createdAt: payload.createdAt || serverTimestamp(),
-            updatedAt: payload.updatedAt || serverTimestamp()
-          });
-        });
-
-        await batch.commit();
-        setSelectedNotebookId(normalized.notebooks[0]?.id || defaultNotebook.id);
-        const firstSectionId = normalized.sections[0]?.id || defaultSection.id;
-        setActiveSectionId(firstSectionId);
-        setExpandedSections({ [firstSectionId]: true });
-        setSelectedNoteId(normalized.notes[0]?.id || null);
-      } catch {
-        toast.info(t("notesImportInvalid"));
-      }
-    };
-
-    reader.readAsText(file);
-    event.target.value = "";
+  const exec = (cmd, val) => {
+    editorRef.current?.focus();
+    document.execCommand(cmd, false, val);
   };
 
-  const runEditorCommand = (command, value) => {
-    if (!editorRef.current) return;
-    editorRef.current.focus();
-    document.execCommand(command, false, value);
-  };
-
-  const toolbar = [
-    { label: "B", command: "bold" },
-    { label: "I", command: "italic" },
-    { label: "U", command: "underline" },
-    { label: "H1", command: "formatBlock", value: "h1" },
-    { label: "H2", command: "formatBlock", value: "h2" },
-    { label: "UL", command: "insertUnorderedList" },
-    { label: "OL", command: "insertOrderedList" }
+  const toolbarItems = [
+    { icon: Bold, cmd: "bold", title: "Pogrubienie (Ctrl+B)" },
+    { icon: Italic, cmd: "italic", title: "Kursywa (Ctrl+I)" },
+    { icon: Underline, cmd: "underline", title: "Podkreślenie (Ctrl+U)" },
+    { icon: Strikethrough, cmd: "strikeThrough", title: "Przekreślenie" },
+    null,
+    { icon: Heading1, cmd: "formatBlock", val: "h1", title: "Nagłówek 1" },
+    { icon: Heading2, cmd: "formatBlock", val: "h2", title: "Nagłówek 2" },
+    null,
+    { icon: List, cmd: "insertUnorderedList", title: "Lista punktowana" },
+    { icon: ListOrdered, cmd: "insertOrderedList", title: "Lista numerowana" },
+    { icon: Quote, cmd: "formatBlock", val: "blockquote", title: "Cytat" },
+    { icon: Minus, cmd: "insertHorizontalRule", title: "Linia pozioma" },
   ];
 
-  const toggleSection = (sectionId) => {
-    setActiveSectionId(sectionId);
-    setExpandedSections((prev) => ({ ...prev, [sectionId]: !prev[sectionId] }));
+  const TAG_COLORS = ["blue", "emerald", "violet", "amber", "rose", "sky", "indigo"];
+  const tagColor = (tag) => TAG_COLORS[Math.abs(tag.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % TAG_COLORS.length];
+  const tagClass = {
+    blue: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+    emerald: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    violet: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+    amber: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    rose: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+    sky: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+    indigo: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-3 sm:p-4">
-      <div className="mx-auto max-w-[1500px] space-y-4">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">{t("notesTitle")}</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Sekcje po lewej jak menu. Strony sekcji rozwijaja sie pod spodem.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={() => handleCreatePage(activeSectionId)} disabled={!activeSectionId} className="gap-2">
-              <Plus className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              {t("notesNew")}
-            </Button>
-            <Button variant="outline" onClick={handleExport} className="gap-2">
-              <Download className="h-4 w-4" />
-              {t("notesExport")}
-            </Button>
-            <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2">
-              <Upload className="h-4 w-4" />
-              {t("notesImport")}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/json"
-              className="hidden"
-              onChange={handleImport}
-            />
-          </div>
-        </header>
+    <div className="h-[calc(100vh-4rem)] bg-slate-50 dark:bg-[#0f0f16] flex flex-col overflow-hidden">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#14141f] shrink-0">
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-5 w-5 text-violet-500" />
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Notatki</h1>
+          <Badge variant="secondary" className="text-xs">{notes.length}</Badge>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={handleExport} className="gap-1.5 h-8 text-xs">
+            <Download className="h-3.5 w-3.5" />
+            Eksport
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-1.5 h-8 text-xs">
+            <Upload className="h-3.5 w-3.5" />
+            Import
+          </Button>
+          <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file || !user?.id) return;
+            const reader = new FileReader();
+            reader.onload = async () => {
+              try {
+                const raw = JSON.parse(String(reader.result || ""));
+                const importNotes = Array.isArray(raw?.notes) ? raw.notes : Array.isArray(raw) ? raw : [];
+                const importSections = Array.isArray(raw?.sections) ? raw.sections : [];
+                const importNotebooks = Array.isArray(raw?.notebooks) ? raw.notebooks : [];
 
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
-          <Card className="h-fit border-slate-200 dark:border-slate-800">
-            <CardHeader className="space-y-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Sekcje</CardTitle>
-                <Badge variant="secondary">{notebookSections.length}</Badge>
-              </div>
+                if (!importNotes.length && !importSections.length) {
+                  toast.error("Plik nie zawiera notatek"); return;
+                }
 
-              <div className="flex gap-2">
-                <Input
-                  value={sectionInput}
-                  maxLength={NAME_MAX_LENGTH}
-                  onChange={(event) => setSectionInput(clampName(event.target.value))}
-                  placeholder={t("notesNewSection")}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      handleCreateSection();
-                    }
-                  }}
-                />
-                <Button size="icon" variant="outline" onClick={handleCreateSection}>
-                  <Plus className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                </Button>
-              </div>
+                const batch = writeBatch(db);
 
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                <Input
-                  className="pl-9"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder={t("notesSearch")}
-                />
-              </div>
-            </CardHeader>
+                importNotebooks.forEach(({ id, ...data }) => {
+                  if (!id) return;
+                  batch.set(doc(db, "users", String(user.id), "notebooks", String(id)), { ...data, createdAt: serverTimestamp() }, { merge: true });
+                });
+                importSections.forEach(({ id, ...data }) => {
+                  if (!id) return;
+                  batch.set(doc(db, "users", String(user.id), "sections", String(id)), { ...data, createdAt: serverTimestamp() }, { merge: true });
+                });
+                importNotes.forEach(({ id, createdAt: _c, updatedAt: _u, ...data }) => {
+                  const ref = id ? doc(db, "users", String(user.id), "notes", String(id)) : doc(userCol(user.id, "notes"));
+                  batch.set(ref, { ...data, order: data.order || Date.now(), createdAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true });
+                });
 
-            <CardContent className="space-y-3 max-h-[70vh] overflow-auto">
-              {notebookSections.length === 0 && (
-                <div className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-                  {t("notesEmpty")}
-                </div>
-              )}
-
-              {notebookSections.map((section) => {
-                const isExpanded = expandedSections[section.id] ?? section.id === activeSectionId;
-                const isActive = section.id === activeSectionId;
-                const sectionNotes = notesBySection.get(section.id) || [];
-                const sectionLabel = String(section.name || "").trim() || "Sekcja bez nazwy";
-
-                return (
-                  <div key={section.id} className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        className={cn(
-                          "flex min-w-0 flex-1 items-center gap-1 rounded-md border px-2 py-1.5 text-left text-sm transition-colors",
-                          isActive
-                            ? "border-blue-500 bg-white text-slate-900 dark:border-blue-400 dark:bg-slate-900 dark:text-slate-100"
-                            : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-                        )}
-                        onClick={() => toggleSection(section.id)}
-                      >
-                        <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 transition-transform", !isExpanded && "-rotate-90")} />
-                        <span className="min-w-0 flex-1 whitespace-normal break-words font-medium leading-tight">{sectionLabel}</span>
-                      </button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-5 w-5 p-0"
-                        onClick={() => void handleRenameSection(section)}
-                        title="Zmien nazwe sekcji"
-                      >
-                        <Pencil className="h-2.5 w-2.5 text-violet-600 dark:text-violet-400" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-5 w-5 p-0"
-                        onClick={() => void handleDeleteSectionItem(section)}
-                        title="Usun sekcje"
-                      >
-                        <Trash2 className="h-2.5 w-2.5 text-red-600 dark:text-red-400" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-5 w-5 p-0"
-                        onClick={() => handleCreatePage(section.id)}
-                        title={t("notesAddPage")}
-                      >
-                        <Plus className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" />
-                      </Button>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="space-y-1 pl-4">
-                        {sectionNotes.length === 0 ? (
-                          <button
-                            type="button"
-                            className="w-full rounded-md border border-dashed border-slate-300 px-2 py-1.5 text-left text-xs text-slate-500 dark:border-slate-600"
-                            onClick={() => handleCreatePage(section.id)}
-                          >
-                            {t("notesAddPage")}
-                          </button>
-                        ) : (
-                          sectionNotes.map((note) => (
-                            <div key={note.id} className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveSectionId(section.id);
-                                  setSelectedNoteId(note.id);
-                                }}
-                                className={cn(
-                                  "flex-1 rounded-md border px-2 py-1.5 text-left text-sm transition-colors",
-                                  selectedNoteId === note.id
-                                    ? "border-blue-500 bg-white text-slate-900 dark:border-blue-400 dark:bg-slate-900 dark:text-slate-100"
-                                    : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
-                                )}
-                              >
-                                <div className="truncate">{note.title || t("notesUntitled")}</div>
-                              </button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6"
-                                onClick={() => void handleRenamePage(note)}
-                                title="Zmien nazwe strony"
-                              >
-                                <Pencil className="h-3 w-3 text-violet-600 dark:text-violet-400" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6"
-                                onClick={() => void handleDeletePageWithConfirm(note)}
-                                title="Usun strone"
-                              >
-                                <Trash2 className="h-3 w-3 text-red-600 dark:text-red-400" />
-                              </Button>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-
-          <Card className="border-slate-200 dark:border-slate-800 min-h-[calc(100vh-230px)] flex flex-col">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Notatka
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 flex-1 flex flex-col">
-              {!selectedNote && (
-                <div className="rounded-md border border-dashed border-slate-300 p-8 text-center text-slate-500 flex-1">
-                  {t("notesSelect")}
-                </div>
-              )}
-
-              {selectedNote && (
-                <>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                    <Input
-                      ref={titleInputRef}
-                      value={titleDraft}
-                      maxLength={NAME_MAX_LENGTH}
-                      onChange={(event) => {
-                        const nextTitle = clampName(event.target.value);
-                        setTitleDraft(nextTitle);
-                        updateNote(selectedNote.id, { title: nextTitle });
-                      }}
-                      placeholder={t("notesTitlePlaceholder")}
-                      className="text-lg font-semibold"
-                    />
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="icon"
-                        variant={selectedNote.pinnedToSidebar ? "default" : "outline"}
-                        onClick={() => {
-                          const nextPinned = !selectedNote.pinnedToSidebar;
-                          updateNote(selectedNote.id, {
-                            pinned: nextPinned,
-                            pinnedToSidebar: nextPinned,
-                            visibilityScope: "all",
-                            visibleOnPages: []
-                          });
-                        }}
-                        title={selectedNote.pinnedToSidebar ? "Odepnij z panelu" : "Przypnij do panelu"}
-                      >
-                        <Pin className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="outline" onClick={() => handleDeletePage(selectedNote.id)}>
-                        <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 rounded-md border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-900">
-                    {toolbar.map((item) => (
-                      <Button
-                        key={item.label}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => runEditorCommand(item.command, item.value)}
-                      >
-                        {item.label}
-                      </Button>
-                    ))}
-                  </div>
-
-                  <div className="rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950 flex-1 min-h-[calc(100vh-430px)]">
-                    <div
-                      ref={editorRef}
-                      contentEditable
-                      suppressContentEditableWarning
-                      className="h-full min-h-[calc(100vh-430px)] px-4 py-4 text-[15px] leading-7 focus:outline-none"
-                      onInput={(event) => {
-                        const html = event.currentTarget.innerHTML;
-                        lastHtmlRef.current = html;
-                        updateNote(selectedNote.id, { body: html });
-                      }}
-                    />
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                await batch.commit();
+                toast.success(`Zaimportowano ${importNotes.length} notatek`);
+              } catch (err) {
+                console.error(err);
+                toast.error("Nieprawidłowy plik JSON");
+              }
+            };
+            reader.readAsText(file);
+            e.target.value = "";
+          }} />
         </div>
       </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* ── LEFT SIDEBAR ── */}
+        <aside className="w-[260px] shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#14141f] flex flex-col overflow-hidden">
+          {/* Search */}
+          <div className="p-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Input
+                className="pl-8 h-8 text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                placeholder="Szukaj notatek..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Tag filter */}
+          {allTags.length > 0 && (
+            <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 flex flex-wrap gap-1">
+              <button
+                className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors", !activeTagFilter ? "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300")}
+                onClick={() => setActiveTagFilter(null)}
+              >
+                Wszystkie
+              </button>
+              {allTags.map((tag) => (
+                <button
+                  key={tag}
+                  className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors", activeTagFilter === tag ? cn(tagClass[tagColor(tag)]) : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800")}
+                  onClick={() => setActiveTagFilter(activeTagFilter === tag ? null : tag)}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Folder list */}
+          <div className="flex-1 overflow-y-auto py-2">
+            {folders.map((folder) => {
+              const isActive = folder.id === activeFolderId;
+              const isExpanded = expandedFolders[folder.id] ?? isActive;
+              const folderNotes = notesByFolder.get(folder.id) || [];
+              const isEditing = editingFolderId === folder.id;
+
+              return (
+                <div key={folder.id}>
+                  {/* Folder header */}
+                  <div
+                    className={cn(
+                      "group flex items-center gap-1 px-2 py-1.5 mx-1 rounded-md cursor-pointer select-none",
+                      isActive ? "bg-violet-50 dark:bg-violet-950/30" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                    )}
+                    onClick={() => {
+                      setActiveFolderId(folder.id);
+                      setExpandedFolders((p) => ({ ...p, [folder.id]: !p[folder.id] }));
+                    }}
+                  >
+                    <ChevronRight className={cn("h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform", isExpanded && "rotate-90")} />
+                    <FolderOpen className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-violet-500" : "text-slate-400")} />
+
+                    {isEditing ? (
+                      <input
+                        ref={folderInputRef}
+                        autoFocus
+                        className="flex-1 bg-transparent text-xs font-medium outline-none text-slate-900 dark:text-slate-100 min-w-0"
+                        value={editingFolderName}
+                        onChange={(e) => setEditingFolderName(clamp(e.target.value, 60))}
+                        onBlur={() => handleRenameFolder(folder)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleRenameFolder(folder);
+                          if (e.key === "Escape") setEditingFolderId(null);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <span className={cn("flex-1 text-xs font-medium truncate", isActive ? "text-violet-700 dark:text-violet-300" : "text-slate-700 dark:text-slate-300")}>
+                        {folder.name || "Folder"}
+                      </span>
+                    )}
+
+                    <span className="text-[10px] text-slate-400 mr-1">{folderNotes.length}</span>
+
+                    {/* Folder actions */}
+                    <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+                        title="Nowa notatka"
+                        onClick={() => handleCreateNote(folder.id)}
+                      >
+                        <Plus className="h-3 w-3 text-slate-500" />
+                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700">
+                            <MoreHorizontal className="h-3 w-3 text-slate-500" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-36 text-xs">
+                          <DropdownMenuItem onClick={() => { setEditingFolderId(folder.id); setEditingFolderName(folder.name || ""); }}>
+                            Zmień nazwę
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={() => handleDeleteFolder(folder)}>
+                            Usuń folder
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+
+                  {/* Notes under folder */}
+                  {isExpanded && (
+                    <div className="ml-5 mr-1 mt-0.5 space-y-0.5 mb-1">
+                      {folderNotes.length === 0 ? (
+                        <button
+                          className="w-full text-left px-2 py-1.5 text-xs text-slate-400 dark:text-slate-500 rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700"
+                          onClick={() => handleCreateNote(folder.id)}
+                        >
+                          + Dodaj notatkę
+                        </button>
+                      ) : (
+                        folderNotes.map((note) => {
+                          const isSelected = note.id === selectedNoteId;
+                          return (
+                            <div
+                              key={note.id}
+                              className={cn(
+                                "group flex items-start gap-1.5 px-2 py-1.5 rounded-md cursor-pointer",
+                                isSelected
+                                  ? "bg-violet-100 dark:bg-violet-950/50"
+                                  : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                              )}
+                              onClick={() => { setActiveFolderId(folder.id); setSelectedNoteId(note.id); }}
+                            >
+                              <FileText className={cn("h-3.5 w-3.5 shrink-0 mt-0.5", isSelected ? "text-violet-500" : "text-slate-400")} />
+                              <div className="flex-1 min-w-0">
+                                <div className={cn("text-xs font-medium truncate leading-tight", isSelected ? "text-violet-700 dark:text-violet-300" : "text-slate-700 dark:text-slate-300")}>
+                                  {note.pinned && <Pin className="inline h-2.5 w-2.5 text-amber-500 mr-1" />}
+                                  {note.title || "Bez tytułu"}
+                                </div>
+                                <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                                  {stripHtml(note.body).slice(0, 35) || "Pusta notatka"}
+                                </div>
+                                <div className="text-[10px] text-slate-300 dark:text-slate-600 mt-0.5">
+                                  {fmtDate(note.updatedAt || note.createdAt)}
+                                </div>
+                              </div>
+                              <div className="opacity-0 group-hover:opacity-100 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700">
+                                      <MoreHorizontal className="h-3 w-3 text-slate-400" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="w-44 text-xs">
+                                    <DropdownMenuItem onClick={() => handleDuplicateNote(note)}>
+                                      <Copy className="h-3.5 w-3.5 mr-2" />Duplikuj
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSub>
+                                      <DropdownMenuSubTrigger>
+                                        <FolderOpen className="h-3.5 w-3.5 mr-2" />Przenieś do
+                                      </DropdownMenuSubTrigger>
+                                      <DropdownMenuSubContent className="w-40 text-xs">
+                                        {folders.filter((f) => f.id !== note.sectionId).map((f) => (
+                                          <DropdownMenuItem key={f.id} onClick={() => handleMoveNote(note.id, f.id)}>
+                                            <FolderOpen className="h-3.5 w-3.5 mr-2 text-violet-400" />  
+                                            {f.name}
+                                          </DropdownMenuItem>
+                                        ))}
+                                        {folders.filter((f) => f.id !== note.sectionId).length === 0 && (
+                                          <DropdownMenuItem disabled>Brak innych folderów</DropdownMenuItem>
+                                        )}
+                                      </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={() => handleDeleteNote(note.id)}>
+                                      <Trash2 className="h-3.5 w-3.5 mr-2" />Usuń
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {/* New folder */}
+            <div className="px-2 mt-2">
+              {showNewFolderInput ? (
+                <div className="flex gap-1">
+                  <Input
+                    autoFocus
+                    className="h-7 text-xs"
+                    placeholder="Nazwa folderu..."
+                    value={newFolderInput}
+                    maxLength={60}
+                    onChange={(e) => setNewFolderInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleCreateFolder();
+                      if (e.key === "Escape") { setShowNewFolderInput(false); setNewFolderInput(""); }
+                    }}
+                  />
+                  <Button size="icon" className="h-7 w-7 shrink-0" onClick={handleCreateFolder}>
+                    <Check className="h-3 w-3" />
+                  </Button>
+                  <Button size="icon" variant="outline" className="h-7 w-7 shrink-0" onClick={() => { setShowNewFolderInput(false); setNewFolderInput(""); }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  className="w-full flex items-center gap-1.5 px-2 py-1.5 text-xs text-slate-500 dark:text-slate-400 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
+                  onClick={() => setShowNewFolderInput(true)}
+                >
+                  <Plus className="h-3 w-3" />
+                  Nowy folder
+                </button>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        {/* ── EDITOR PANEL ── */}
+        <main className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#111118]">
+          {!selectedNote ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+              <div className="w-16 h-16 rounded-2xl bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center mb-4">
+                <FileText className="h-8 w-8 text-violet-400" />
+              </div>
+              <h3 className="text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Wybierz notatkę</h3>
+              <p className="text-sm text-slate-400 max-w-xs">
+                Kliknij notatkę z listy po lewej lub utwórz nową w wybranym folderze.
+              </p>
+              {activeFolderId && (
+                <Button className="mt-4 gap-2" size="sm" onClick={() => handleCreateNote(activeFolderId)}>
+                  <Plus className="h-4 w-4" />
+                  Nowa notatka
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Note header */}
+              <div className="px-6 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                {/* Title */}
+                <input
+                  ref={titleInputRef}
+                  className="w-full bg-transparent text-2xl font-bold text-slate-900 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-600 outline-none mb-3"
+                  placeholder="Tytuł notatki..."
+                  value={titleDraft}
+                  maxLength={TITLE_MAX}
+                  onChange={(e) => {
+                    const v = clamp(e.target.value);
+                    setTitleDraft(v);
+                    updateNote(selectedNote.id, { title: v });
+                  }}
+                />
+
+                {/* Tags row */}
+                <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                  {(selectedNote.tags || []).map((tag) => (
+                    <span
+                      key={tag}
+                      className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer", tagClass[tagColor(tag)])}
+                      onClick={() => handleRemoveTag(tag)}
+                      title="Kliknij aby usunąć"
+                    >
+                      {tag}
+                      <X className="h-2.5 w-2.5" />
+                    </span>
+                  ))}
+                  {showTagInput ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        autoFocus
+                        className="h-6 w-24 text-xs px-2"
+                        placeholder="tag..."
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value.toLowerCase().replace(/\s/g, ""))}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAddTag();
+                          if (e.key === "Escape") { setShowTagInput(false); setTagInput(""); }
+                        }}
+                        onBlur={handleAddTag}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-slate-400 border border-dashed border-slate-300 dark:border-slate-700 hover:border-violet-400 hover:text-violet-500 transition-colors"
+                      onClick={() => setShowTagInput(true)}
+                    >
+                      <Plus className="h-2.5 w-2.5" />
+                      Dodaj tag
+                    </button>
+                  )}
+                  <div className="ml-auto flex items-center gap-3">
+                    <span className="text-xs text-slate-400">{words} {words === 1 ? "słowo" : words < 5 ? "słowa" : "słów"}</span>
+                    {savedAt && (
+                      <span className="flex items-center gap-1 text-xs text-slate-400">
+                        <Clock className="h-3 w-3" />
+                        Zapisano {savedAt.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    )}
+                    <button
+                      className={cn("p-1.5 rounded-md transition-colors", selectedNote.pinnedToSidebar ? "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" : "text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20")}
+                      title={selectedNote.pinnedToSidebar ? "Odepnij z panelu bocznego" : "Przypnij do panelu bocznego"}
+                      onClick={() => updateNote(selectedNote.id, { pinned: !selectedNote.pinnedToSidebar, pinnedToSidebar: !selectedNote.pinnedToSidebar, visibilityScope: "all", visibleOnPages: [] })}
+                    >
+                      {selectedNote.pinnedToSidebar ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                    </button>
+                    <button
+                      className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      title="Usuń notatkę"
+                      onClick={() => handleDeleteNote(selectedNote.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Toolbar */}
+                <div className="flex flex-wrap items-center gap-0.5 bg-slate-50 dark:bg-slate-900/60 rounded-lg p-1 border border-slate-200 dark:border-slate-800">
+                  {toolbarItems.map((item, i) =>
+                    item === null ? (
+                      <div key={i} className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                    ) : (
+                      <button
+                        key={item.cmd + (item.val || "")}
+                        type="button"
+                        title={item.title}
+                        className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => exec(item.cmd, item.val)}
+                      >
+                        <item.icon className="h-3.5 w-3.5" />
+                      </button>
+                    )
+                  )}
+                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                  {/* Templates dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        title="Wstaw szablon"
+                        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors text-[11px] font-medium"
+                      >
+                        <Clipboard className="h-3.5 w-3.5" />
+                        Szablon
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-52">
+                      {TEMPLATES.map((tpl) => (
+                        <DropdownMenuItem key={tpl.id} onClick={() => handleInsertTemplate(tpl)} className="gap-2">
+                          <span>{tpl.icon}</span>
+                          <span className="text-xs">{tpl.label}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              {/* Editor body */}
+              <div className="flex-1 overflow-y-auto">
+                <div
+                  ref={editorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className={cn(
+                    "min-h-full px-6 py-5 text-[15px] leading-7 text-slate-800 dark:text-slate-200 focus:outline-none",
+                    "prose prose-slate dark:prose-invert max-w-none",
+                    "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2",
+                    "[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-2",
+                    "[&_blockquote]:border-l-4 [&_blockquote]:border-violet-400 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-500",
+                    "[&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5",
+                    "[&_hr]:border-slate-200 [&_hr]:dark:border-slate-700"
+                  )}
+                  data-placeholder="Zacznij pisać..."
+                  onInput={(e) => {
+                    const html = e.currentTarget.innerHTML;
+                    updateNote(selectedNote.id, { body: html });
+                    setWords(wordCount(html));
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+
+      <style>{`
+        [contenteditable]:empty:before {
+          content: attr(data-placeholder);
+          color: #9ca3af;
+          pointer-events: none;
+        }
+      `}</style>
     </div>
   );
 }

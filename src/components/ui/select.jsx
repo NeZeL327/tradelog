@@ -56,7 +56,7 @@ const SelectContent = React.forwardRef(({
   side = "bottom",
   align = "start",
   sideOffset = 6,
-  avoidCollisions = true,
+  avoidCollisions = false,
   portalled = true,
   ...props
 }, ref) => {
