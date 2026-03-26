@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,7 +58,7 @@ export default function TradeCard({ trade, onEdit = null }) {
   const outcomeDisplay = outcomeRaw && /[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż]/.test(outcomeRaw) ? outcomeRaw : "-";
 
   return (
-    <Card className={`hover:shadow-xl transition-all duration-300 ${bgColor} dark:bg-[#23233a] dark:border-slate-700 border`}>
+    <Card className={`hover:shadow-xl transition-all duration-300 ${bgColor} dark:bg-card dark:border-slate-700 border`}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">

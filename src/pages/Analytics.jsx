@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { directionChartColor, isClosedTrade } from '@/lib/utils';
@@ -408,7 +408,7 @@ export default function Analytics() {
     : null;
 
   return (
-    <div className="analytics-page min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e] p-2 sm:p-3">
+    <div className="analytics-page min-h-screen bg-background p-2 sm:p-3">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -469,7 +469,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('allAccounts')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -489,7 +489,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{acc.name}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -525,7 +525,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -545,7 +545,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{sym}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -578,7 +578,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes('all') ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {filterStrategies.includes('all') && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -593,7 +593,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes(String(strategy.id)) ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{strategy.name}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes(String(strategy.id)) ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes(String(strategy.id)) ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {filterStrategies.includes(String(strategy.id)) && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -627,7 +627,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -647,7 +647,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{dir}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -683,7 +683,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -703,7 +703,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{out}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -739,7 +739,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -759,7 +759,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{tf}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -795,7 +795,7 @@ export default function Analytics() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-white dark:bg-[#1a1a2e] shadow-lg">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-white dark:bg-card shadow-lg">
             <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
             <TabsTrigger value="symbols">{t('symbols')}</TabsTrigger>
             <TabsTrigger value="strategies">{t('strategiesAnalytics')}</TabsTrigger>
@@ -807,7 +807,7 @@ export default function Analytics() {
           <TabsContent value="overview" className="space-y-6">
             {/* Outcome + Direction Analysis */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-gradient-to-br from-white via-white to-slate-50 dark:from-[#151527] dark:via-[#14141f] dark:to-[#0f172a] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-gradient-to-br from-white via-white to-slate-50 dark:from-card dark:via-card dark:to-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('outcomeDistribution')}</CardTitle>
                 </CardHeader>
@@ -851,7 +851,7 @@ export default function Analytics() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-slate-900/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
+                  <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-card/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
                     {outcomeTop
                       ? `${t('insightOutcomeMost')} ${outcomeTop.name}`
                       : t('insightOutcomeEmpty')}
@@ -859,7 +859,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-white via-white to-slate-50 dark:from-[#151527] dark:via-[#14141f] dark:to-[#0f172a] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-gradient-to-br from-white via-white to-slate-50 dark:from-card dark:via-card dark:to-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('directionDistribution')}</CardTitle>
                 </CardHeader>
@@ -902,7 +902,7 @@ export default function Analytics() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-slate-900/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
+                  <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-card/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
                     {directionTop
                       ? `${t('insightDirectionBest')} ${directionTop.direction} · ${directionTop.winRate}% ${t('winRate')}`
                       : t('insightDirectionEmpty')}
@@ -912,7 +912,7 @@ export default function Analytics() {
             </div>
 
             {/* Equity Curve */}
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40] overflow-hidden">
+            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-white">
                   <Activity className="w-5 h-5" />
@@ -945,7 +945,7 @@ export default function Analytics() {
             </Card>
 
             {/* Period Performance */}
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40] overflow-hidden">
+            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border overflow-hidden">
               <CardHeader>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <CardTitle className="dark:text-white">
@@ -1009,7 +1009,7 @@ export default function Analytics() {
 
             {/* Direction & Timeframe */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('longVsShort')}</CardTitle>
                 </CardHeader>
@@ -1038,7 +1038,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('timeframeAnalysis')}</CardTitle>
                 </CardHeader>
@@ -1066,7 +1066,7 @@ export default function Analytics() {
 
             {/* Session Analysis */}
             {sessionData.length > 0 && (
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('sessionsAnalysis')}</CardTitle>
                 </CardHeader>
@@ -1096,7 +1096,7 @@ export default function Analytics() {
 
           {/* Symbols Tab */}
           <TabsContent value="symbols" className="space-y-6">
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('top10Symbols')}</CardTitle>
               </CardHeader>
@@ -1126,8 +1126,8 @@ export default function Analytics() {
               {symbolData.map((symbol) => (
                 <Card 
                   key={symbol.symbol} 
-                  className={`bg-white dark:bg-[#1a1a2e] shadow-lg border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
-                    selectedSymbol === symbol.symbol ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-[#2d2d40]'
+                  className={`bg-white dark:bg-card shadow-lg border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
+                    selectedSymbol === symbol.symbol ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-border'
                   }`}
                   onClick={() => setSelectedSymbol(symbol.symbol)}
                 >
@@ -1301,7 +1301,7 @@ export default function Analytics() {
                           </Card>
 
                           {/* Strategy Breakdown */}
-                          <Card className="bg-white dark:bg-slate-900">
+                          <Card className="bg-white dark:bg-card">
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2 dark:text-white">
                                 <Brain className="w-4 h-4" />
@@ -1311,7 +1311,7 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2">
                                 {strategyBreakdownData.map(item => (
-                                  <div key={item.name} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                  <div key={item.name} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-muted rounded-lg">
                                     <div>
                                       <p className="font-semibold text-sm text-slate-900 dark:text-white">{item.name}</p>
                                       <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} transakcji</p>
@@ -1461,7 +1461,7 @@ export default function Analytics() {
 
           {/* Strategies Tab */}
           <TabsContent value="strategies" className="space-y-6">
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('strategiesComparison')}</CardTitle>
               </CardHeader>
@@ -1492,8 +1492,8 @@ export default function Analytics() {
               {strategyData.map((strategy) => (
                 <Card 
                   key={strategy.name} 
-                  className={`bg-white dark:bg-[#1a1a2e] shadow-lg border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
-                    selectedStrategy === strategy.name ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-[#2d2d40]'
+                  className={`bg-white dark:bg-card shadow-lg border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
+                    selectedStrategy === strategy.name ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-border'
                   }`}
                   onClick={() => setSelectedStrategy(strategy.name)}
                 >
@@ -1513,13 +1513,13 @@ export default function Analytics() {
                         <p className="text-xs text-slate-600 dark:text-slate-400">{t('avgPLLabel')}</p>
                         </div>
                         </div>
-                        <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                        <div className="flex justify-between p-3 bg-slate-50 dark:bg-card rounded-lg">
                         <span className="text-sm text-slate-600 dark:text-slate-400">{t('totalPLLabel')}:</span>
                       <span className={`font-bold ${strategy.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {strategy.totalPL > 0 ? '+' : ''}{strategy.totalPL.toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                    <div className="flex justify-between p-3 bg-slate-50 dark:bg-card rounded-lg">
                       <span className="text-sm text-slate-600 dark:text-slate-400">{t('trades')}:</span>
                       <span className="font-bold text-slate-900 dark:text-white">{strategy.trades}</span>
                     </div>
@@ -1670,7 +1670,7 @@ export default function Analytics() {
                           </Card>
 
                           {/* Symbol Breakdown */}
-                          <Card className="bg-white dark:bg-slate-900">
+                          <Card className="bg-white dark:bg-card">
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2 dark:text-white">
                                 <TrendingUp className="w-4 h-4" />
@@ -1680,7 +1680,7 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2 max-h-64 overflow-y-auto">
                               {symbolBreakdownData.map(item => (
-                               <div key={item.symbol} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                               <div key={item.symbol} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-muted rounded-lg">
                                  <div>
                                    <p className="font-semibold text-sm text-slate-900 dark:text-white">{item.symbol}</p>
                                    <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} {t('trades')}</p>
@@ -1832,7 +1832,7 @@ export default function Analytics() {
           <TabsContent value="accounts" className="space-y-6">
             {/* Account Type Distribution */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle className="dark:text-white">Rozkład typów kont</CardTitle>
                 </CardHeader>
@@ -1874,7 +1874,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle className="dark:text-white">Status kont</CardTitle>
                 </CardHeader>
@@ -1903,7 +1903,7 @@ export default function Analytics() {
               </Card>
             </div>
 
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('accountsComparison')}</CardTitle>
               </CardHeader>
@@ -1932,7 +1932,7 @@ export default function Analytics() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {accountData.map((account) => (
-                <Card key={account.name} className="bg-gradient-to-br from-white to-slate-50 dark:from-[#1a1a2e] dark:to-[#14141f] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+                <Card key={account.name} className="bg-gradient-to-br from-white to-slate-50 dark:from-card dark:to-background shadow-xl border border-slate-200 dark:border-border">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 dark:text-white">
                       <Wallet className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -1952,7 +1952,7 @@ export default function Analytics() {
                         <p className="text-xs text-slate-600 dark:text-slate-400">{t('roi')}</p>
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-100 dark:bg-slate-900 rounded-lg">
+                    <div className="p-3 bg-slate-100 dark:bg-card rounded-lg">
                       <div className="flex justify-between mb-1">
                         <span className="text-sm text-slate-600 dark:text-slate-400">{t('totalPLLabel')}:</span>
                         <span className={`font-bold ${account.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -1973,7 +1973,7 @@ export default function Analytics() {
           {/* Psychology Tab */}
           <TabsContent value="psychology" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('setupQuality')}</CardTitle>
                 </CardHeader>
@@ -2005,7 +2005,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('emotionalState')}</CardTitle>
                 </CardHeader>
@@ -2050,7 +2050,7 @@ export default function Analytics() {
                     </div>
                   )}
                   {setupData.map((item) => (
-                    <div key={item.quality} className="flex justify-between items-center p-3 bg-white/70 dark:bg-slate-800/70 rounded-lg">
+                    <div key={item.quality} className="flex justify-between items-center p-3 bg-white/70 dark:bg-muted/70 rounded-lg">
                       <div>
                         <span className="font-semibold text-slate-900 dark:text-white">{item.quality}</span>
                         <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} {t('trades')}</p>
@@ -2077,7 +2077,7 @@ export default function Analytics() {
                     </div>
                   )}
                   {emotionalData.map((item) => (
-                    <div key={item.state} className="flex justify-between items-center p-3 bg-white/70 dark:bg-slate-800/70 rounded-lg">
+                    <div key={item.state} className="flex justify-between items-center p-3 bg-white/70 dark:bg-muted/70 rounded-lg">
                       <div>
                         <span className="font-semibold text-slate-900 dark:text-white">{item.state}</span>
                         <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} {t('trades')}</p>

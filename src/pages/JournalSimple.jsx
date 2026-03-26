@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, deleteTrade, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -565,11 +565,11 @@ export default function JournalSimple({ mode = "all" }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e]">
+    <div className="min-h-screen bg-background">
       <div className="w-full mx-auto space-y-4">
         {/* Bulk Actions Bar */}
         {selectedTrades.size > 0 && (
-          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-white dark:bg-slate-800 shadow-2xl rounded-xl border border-slate-200 dark:border-slate-700 px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4 animate-in slide-in-from-top-5">
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-white dark:bg-muted shadow-2xl rounded-xl border border-slate-200 dark:border-slate-700 px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4 animate-in slide-in-from-top-5">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
                 <span className="text-xs md:text-sm font-bold text-blue-600 dark:text-blue-300">{selectedTrades.size}</span>
@@ -621,7 +621,7 @@ export default function JournalSimple({ mode = "all" }) {
         {!isPlannedMode && (
         <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
           <Card
-            className={`bg-white dark:bg-[#1a1a2e] shadow-lg cursor-pointer ${statusFilters.includes("all") && outcomeFilters.includes("all") ? "ring-2 ring-blue-500" : ""}`}
+            className={`bg-white dark:bg-card shadow-lg cursor-pointer ${statusFilters.includes("all") && outcomeFilters.includes("all") ? "ring-2 ring-blue-500" : ""}`}
             onClick={() => { setStatusFilters(["all"]); setOutcomeFilters(["all"]); }}
           >
             <CardContent className="p-4">
@@ -686,7 +686,7 @@ export default function JournalSimple({ mode = "all" }) {
         )}
 
         {/* Filters */}
-        <Card className="bg-white dark:bg-slate-800 shadow-lg">
+        <Card className="bg-white dark:bg-muted shadow-lg">
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
@@ -707,7 +707,7 @@ export default function JournalSimple({ mode = "all" }) {
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("all")
                         ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
                     onClick={() => { toggleStatusFilter("all"); setOutcomeFilters(["all"]); }}
                   >
@@ -724,7 +724,7 @@ export default function JournalSimple({ mode = "all" }) {
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("Open")
                         ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
                     onClick={() => { toggleStatusFilter("Open"); setOutcomeFilters(["all"]); }}
                   >
@@ -741,7 +741,7 @@ export default function JournalSimple({ mode = "all" }) {
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("Closed")
                         ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
                     onClick={() => { toggleStatusFilter("Closed"); setOutcomeFilters(["all"]); }}
                   >
@@ -758,7 +758,7 @@ export default function JournalSimple({ mode = "all" }) {
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("Planned")
                         ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
                     onClick={() => { toggleStatusFilter("Planned"); setOutcomeFilters(["all"]); }}
                   >
@@ -776,7 +776,7 @@ export default function JournalSimple({ mode = "all" }) {
                 <button
                   type="button"
                   onClick={() => setAccountFilterOpen((prev) => !prev)}
-                  className="relative w-[220px] h-10 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200 flex items-center justify-center"
+                  className="relative w-[220px] h-10 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-card dark:text-slate-200 flex items-center justify-center"
                 >
                   <span className="truncate text-center w-full pr-4">
                     {activeAccountFilterLabel || (t('allAccounts') || 'All Accounts')}
@@ -784,7 +784,7 @@ export default function JournalSimple({ mode = "all" }) {
                   {accountFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
                 </button>
                 {accountFilterOpen && (
-                  <div className="absolute left-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1a2e] shadow-lg p-2 max-h-64 overflow-y-auto">
+                  <div className="absolute left-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-lg p-2 max-h-64 overflow-y-auto">
                     <button
                       type="button"
                       onClick={() => {
@@ -797,7 +797,7 @@ export default function JournalSimple({ mode = "all" }) {
                         className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
                           accountFilters.includes("all")
                             ? 'bg-blue-600 border-blue-600'
-                            : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500'
+                            : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500'
                         }`}
                       >
                         {accountFilters.includes("all") && (
@@ -823,7 +823,7 @@ export default function JournalSimple({ mode = "all" }) {
                             className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
                               isSelected
                                 ? 'bg-blue-600 border-blue-600'
-                                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500'
+                                : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500'
                             }`}
                           >
                             {isSelected && (
@@ -842,13 +842,13 @@ export default function JournalSimple({ mode = "all" }) {
                 <button
                   type="button"
                   onClick={() => setTimeFilterOpen((prev) => !prev)}
-                  className="relative min-w-[160px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200 flex items-center justify-center"
+                  className="relative min-w-[160px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-card dark:text-slate-200 flex items-center justify-center"
                 >
                   <span className="truncate text-center w-full pr-4">{activeTimeFilterLabel}</span>
                   {timeFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
                 </button>
                 {timeFilterOpen && (
-                  <div className="absolute right-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1a2e] shadow-lg p-2">
+                  <div className="absolute right-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-lg p-2">
                     {[
                       { value: "all", label: timeFilterLabels.all },
                       { value: "day", label: timeFilterLabels.day },
@@ -871,7 +871,7 @@ export default function JournalSimple({ mode = "all" }) {
                             className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
                               isChecked
                                 ? 'bg-blue-600 border-blue-600'
-                                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500'
+                                : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500'
                             }`}
                           >
                             {isChecked && (
@@ -895,7 +895,7 @@ export default function JournalSimple({ mode = "all" }) {
                   className={`relative flex items-center gap-2 px-3 py-2 h-10 border rounded-md text-sm transition-colors ${
                     dateRangeActive
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
-                      : "border-gray-300 dark:border-gray-600 dark:bg-[#1a1a2e] dark:text-slate-200"
+                      : "border-gray-300 dark:border-gray-600 dark:bg-card dark:text-slate-200"
                   }`}
                 >
                   <CalendarRange className="w-4 h-4 shrink-0" />
@@ -903,7 +903,7 @@ export default function JournalSimple({ mode = "all" }) {
                   {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
                 {datePickerOpen && (
-                  <div className="absolute right-0 mt-2 z-30 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1a2e] shadow-xl p-3">
+                  <div className="absolute right-0 mt-2 z-30 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-xl p-3">
                     <MiniCalendar
                       from={dateRange.from}
                       to={dateRange.to}
@@ -939,11 +939,11 @@ export default function JournalSimple({ mode = "all" }) {
         </Card>
 
         {(isPlannedMode || statusFilters.includes("all") || statusFilters.some(s => s !== "Planned")) && (
-          <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl">
+          <Card className="bg-white dark:bg-card shadow-xl">
             <CardContent className="p-0">
               <div className="overflow-x-auto w-full">
                 <table className="w-full table-fixed text-xs border-collapse [&_th]:px-1 [&_td]:px-1 [&_th]:py-1 [&_td]:py-1 [&_th]:leading-tight [&_td]:leading-tight [&_th]:overflow-hidden [&_th]:text-ellipsis [&_td]:overflow-hidden [&_td]:text-ellipsis [&_button]:min-h-0 [&_button]:min-w-0">
-                <thead className="bg-slate-50 dark:bg-[#14141f] border-b border-slate-200 dark:border-[#2d2d40]">
+                <thead className="bg-slate-50 dark:bg-card border-b border-slate-200 dark:border-border">
                   <tr>
                     {visibleColumns.status && (
                       <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('statusLabel')}</th>
@@ -994,7 +994,7 @@ export default function JournalSimple({ mode = "all" }) {
                         className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
                           displayTrades.length > 0 && selectedTrades.size === displayTrades.length
                             ? 'bg-blue-600 border-blue-600'
-                            : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                            : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                         }`}
                       >
                         {displayTrades.length > 0 && selectedTrades.size === displayTrades.length && (
@@ -1083,7 +1083,7 @@ export default function JournalSimple({ mode = "all" }) {
                               <button
                                 key={`${trade.id}-shot-${index}`}
                                 type="button"
-                                className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 shrink-0"
+                                className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-muted shrink-0"
                                 onClick={() => openQuickImage(imageUrl)}
                                 title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
                               >
@@ -1116,7 +1116,7 @@ export default function JournalSimple({ mode = "all" }) {
                           className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
                             selectedTrades.has(trade.id)
                               ? 'bg-blue-600 border-blue-600'
-                              : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                              : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                           }`}
                         >
                           {selectedTrades.has(trade.id) && (
@@ -1142,7 +1142,7 @@ export default function JournalSimple({ mode = "all" }) {
         )}
 
         {!isPlannedMode && (statusFilters.includes("all") || statusFilters.includes("Planned")) && (
-          <Card className="bg-yellow-50 dark:bg-[#2e2e1a] shadow-xl">
+          <Card className="bg-yellow-50 dark:bg-yellow-950/40 shadow-xl">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-yellow-700">{t('plannedTrades')}</CardTitle>
               <Button
@@ -1219,7 +1219,7 @@ export default function JournalSimple({ mode = "all" }) {
                                   <button
                                     key={`${trade.id}-planned-shot-${index}`}
                                     type="button"
-                                    className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 shrink-0"
+                                    className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-muted shrink-0"
                                     onClick={() => openQuickImage(imageUrl)}
                                     title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
                                   >
@@ -1318,11 +1318,11 @@ export default function JournalSimple({ mode = "all" }) {
 
         {/* View Trade Dialog */}
         <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-[#1a1a2e] border-slate-200 dark:border-slate-700">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-card border-slate-200 dark:border-slate-700">
             <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 text-white px-6 py-4 border-b border-slate-200 dark:border-slate-700">
               <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
             </DialogHeader>
-            <div className="p-6 bg-white dark:bg-[#1a1a2e]">
+            <div className="p-6 bg-white dark:bg-card">
               {viewingTrade && (
                 <TradeCard
                   trade={viewingTrade}
@@ -1346,7 +1346,7 @@ export default function JournalSimple({ mode = "all" }) {
             }
           }}
         >
-          <AlertDialogContent className="bg-white dark:bg-[#1a1a2e] border-slate-200 dark:border-slate-700">
+          <AlertDialogContent className="bg-white dark:bg-card border-slate-200 dark:border-slate-700">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-slate-900 dark:text-white">
                 {deleteDialog.mode === "bulk" ? "Usunąć zaznaczone transakcje?" : "Usunąć transakcję?"}
@@ -1358,7 +1358,7 @@ export default function JournalSimple({ mode = "all" }) {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700">
+              <AlertDialogCancel className="dark:bg-card dark:text-slate-200 dark:border-slate-700">
                 Anuluj
               </AlertDialogCancel>
               <AlertDialogAction

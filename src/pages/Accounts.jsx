@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
 import { getTradingAccounts, createTradingAccount, deleteTradingAccount, updateTradingAccount, getTrades } from "@/lib/localStorage";
@@ -156,7 +156,7 @@ export default function Accounts() {
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Select value={accountVisibilityFilter} onValueChange={setAccountVisibilityFilter}>
-              <SelectTrigger className="w-[190px] bg-white dark:bg-slate-800">
+              <SelectTrigger className="w-[190px] bg-white dark:bg-muted">
                 <SelectValue placeholder="Filtr kont" />
               </SelectTrigger>
               <SelectContent>
@@ -328,11 +328,11 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
   };
 
   const getAccountTypeColor = () => {
-    return "border-l-4 bg-white/80 dark:bg-[#14141f]/80 backdrop-blur border border-slate-200/60 dark:border-[#2d2d40] shadow-lg hover:shadow-xl";
+    return "border-l-4 bg-white/80 dark:bg-card/80 backdrop-blur border border-slate-200/60 dark:border-border shadow-lg hover:shadow-xl";
   };
 
   const getAccountDividerColor = () => {
-    return 'border-slate-200/60 dark:border-[#2d2d40]';
+    return 'border-slate-200/60 dark:border-border';
   };
 
   const getAccountTypeBadge = () => {
@@ -371,7 +371,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             </div>
           </div>
           <div className="flex gap-1 flex-shrink-0">
-            <div className="flex items-center gap-1 px-1.5 border rounded-md bg-white/70 dark:bg-slate-900/50">
+            <div className="flex items-center gap-1 px-1.5 border rounded-md bg-white/70 dark:bg-card/50">
               <Power className={`w-3 h-3 shrink-0 ${isAccountActive ? 'text-green-600' : 'text-slate-400'}`} />
               <button
                 type="button"
@@ -575,7 +575,7 @@ function AccountForm({ account, onSubmit, onCancel, isLoading }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+      <Card className="bg-white dark:bg-muted shadow-xl border border-slate-200 dark:border-slate-700">
         <CardHeader>
           <CardTitle className="dark:text-white">{account ? "Edytuj konto" : "Nowe konto"}</CardTitle>
         </CardHeader>

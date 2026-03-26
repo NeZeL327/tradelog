@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+﻿import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/AuthContext";
@@ -93,7 +93,7 @@ export default function Billing() {
   const statusKey = subscription.status || "free";
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 bg-slate-50 dark:bg-[#0f0f16]">
+    <div className="min-h-screen p-4 sm:p-6 bg-slate-50 dark:bg-background">
       <div className="max-w-3xl mx-auto space-y-6">
 
         {/* Header */}
@@ -175,7 +175,7 @@ export default function Billing() {
             {/* Features */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {FEATURES.map(({ icon: Icon, label }) => (
-                <div key={label} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                <div key={label} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-50 dark:bg-muted/50">
                   <Icon className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
                   <span className="text-xs text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
                 </div>

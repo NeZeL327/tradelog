@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage } from '@/components/LanguageProvider';
 
@@ -16,7 +16,7 @@ export default function Footer({ variant = 'default' }) {
   const footerClassName = isHero
     ? 'mt-auto w-full border-t border-slate-800/70 bg-gradient-to-r from-slate-950/95 via-blue-950/70 to-slate-950/95 backdrop-blur supports-[backdrop-filter]:bg-slate-950/85'
     : isApp
-      ? 'mt-auto w-full border-t border-slate-200/70 dark:border-white/10 bg-gradient-to-r from-slate-50/95 via-blue-50/85 to-slate-50/95 dark:from-[#0f0f16]/95 dark:via-[#121827]/85 dark:to-[#14141f]/95 backdrop-blur supports-[backdrop-filter]:dark:bg-[#121827]/80'
+      ? 'mt-auto w-full border-t border-slate-200/70 dark:border-white/10 bg-gradient-to-r from-slate-50/95 via-blue-50/85 to-slate-50/95 dark:from-background/95 dark:via-background/90 dark:to-background/95 backdrop-blur supports-[backdrop-filter]:dark:bg-background/80'
       : 'mt-auto w-full border-t border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80';
   
   return (

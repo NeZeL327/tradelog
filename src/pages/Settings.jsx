@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTradingAccounts, updateUser, getDeletedTrades, restoreTrade, permanentlyDeleteTrade } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -30,21 +30,6 @@ export default function Settings() {
     return 'light';
   };
 
-  const resolveInitialSkin = () => {
-    const allowedSkins = new Set(['default', 'ocean', 'blackblu']);
-    const savedSkin = localStorage.getItem('appSkin');
-
-    if (savedSkin && allowedSkins.has(savedSkin)) {
-      return savedSkin;
-    }
-
-    const currentSkin = document.documentElement.getAttribute('data-skin');
-    if (currentSkin && allowedSkins.has(currentSkin)) {
-      return currentSkin;
-    }
-
-    return 'ocean';
-  };
 
   const [user, setUser] = useState(null);
   const [activeSection, setActiveSection] = useState('profile');
@@ -57,7 +42,6 @@ export default function Settings() {
     default_max_daily_loss: 5,
     date_format: "YYYY-MM-DD",
     theme: resolveInitialTheme(),
-    skin: resolveInitialSkin(),
     notifications_enabled: true,
     show_weekends: false
   });
@@ -76,11 +60,7 @@ export default function Settings() {
 
   useEffect(() => {
     if (authUser) {
-      const allowedSkins = new Set(['default', 'ocean', 'blackblu']);
-      const nextSkin = allowedSkins.has(authUser.skin) ? authUser.skin : 'ocean';
       setUser(authUser);
-      
-      // Merge user settings with defaults
       setSettings(prev => ({
         ...prev,
         ...authUser,
@@ -91,7 +71,6 @@ export default function Settings() {
         default_max_daily_loss: authUser.default_max_daily_loss || 5,
         date_format: authUser.date_format || "YYYY-MM-DD",
         theme: prev.theme || authUser.theme || "light",
-        skin: prev.skin || nextSkin || "ocean",
         notifications_enabled: authUser.notifications_enabled !== undefined ? authUser.notifications_enabled : true,
         show_weekends: authUser.show_weekends || false
       }));
@@ -103,42 +82,20 @@ export default function Settings() {
     const shouldBeDark = theme === 'dark' || (
       theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches
     );
-    const isDark = root.classList.contains('dark');
+    root.classList.toggle('dark', shouldBeDark);
+    root.removeAttribute('data-skin');
 
-    if (isDark !== shouldBeDark) {
-      root.classList.toggle('dark', shouldBeDark);
-    }
-
-    if (theme === 'dark') {
-      root.setAttribute('data-skin', 'blackblu');
-      localStorage.setItem('appTheme', 'dark');
-      localStorage.setItem('appSkin', 'blackblu');
-    } else if (theme === 'light') {
-      root.setAttribute('data-skin', 'default');
-      localStorage.setItem('appTheme', 'light');
-      localStorage.setItem('appSkin', 'default');
-    } else if (theme === 'auto') {
+    if (theme === 'auto') {
       localStorage.removeItem('appTheme');
-      localStorage.removeItem('appSkin');
+    } else {
+      localStorage.setItem('appTheme', theme);
     }
+    localStorage.removeItem('appSkin');
   };
 
   useEffect(() => {
     applyTheme(settings.theme || 'light');
   }, [settings.theme]);
-
-  const applySkin = (skin) => {
-    const allowedSkins = new Set(['default', 'ocean', 'blackblu']);
-    const nextSkin = allowedSkins.has(skin) ? skin : 'ocean';
-    const root = document.documentElement;
-    if (root.getAttribute('data-skin') !== nextSkin) {
-      root.setAttribute('data-skin', nextSkin || 'ocean');
-    }
-  };
-
-  useEffect(() => {
-    applySkin(settings.skin || 'ocean');
-  }, [settings.skin]);
 
   const updateSettingsMutation = useMutation({
     mutationFn: (data) => updateUser(authUser.id, data),
@@ -153,7 +110,6 @@ export default function Settings() {
       }));
 
       applyTheme(updatedUser.theme || settings.theme || 'light');
-      applySkin(updatedUser.skin || settings.skin || 'ocean');
 
       if (checkSession) {
         checkSession();
@@ -308,7 +264,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -320,7 +276,7 @@ export default function Settings() {
         <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-6">
           <div className="space-y-6 xl:order-2">
             {activeSection === 'profile' && (
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle>{t.profile}</CardTitle>
                   <CardDescription>Podstawowe informacje o Twoim koncie</CardDescription>
@@ -341,7 +297,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'preferences' && (
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle>{t.preferences}</CardTitle>
                   <CardDescription>Personalizuj wygląd i język aplikacji</CardDescription>
@@ -410,7 +366,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'trading' && (
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle>{t.trading}</CardTitle>
                   <CardDescription>Ustawienia domyślne dla nowych transakcji</CardDescription>
@@ -458,7 +414,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'notifications' && (
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle>{t.notifications}</CardTitle>
                   <CardDescription>Kontroluj powiadomienia i alerty</CardDescription>
@@ -489,7 +445,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'trash' && (
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle>{t.trash}</CardTitle>
                   <CardDescription>
@@ -561,7 +517,7 @@ export default function Settings() {
             )}
           </div>
 
-          <Card className="h-fit bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40] xl:sticky xl:top-6 xl:order-1">
+          <Card className="h-fit bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border xl:sticky xl:top-6 xl:order-1">
             <CardHeader>
               <CardTitle className="text-base">Sekcje</CardTitle>
               <CardDescription>Wybierz, co chcesz edytować</CardDescription>

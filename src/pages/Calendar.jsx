@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { useQuery } from "@tanstack/react-query";
@@ -139,7 +139,7 @@ export default function Calendar() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar */}
-          <Card className="lg:col-span-2 bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+          <Card className="lg:col-span-2 bg-white dark:bg-muted shadow-xl border border-slate-200 dark:border-slate-700">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <Button variant="outline" size="icon" onClick={handlePrevMonth}>
@@ -222,7 +222,7 @@ export default function Calendar() {
           </Card>
 
           {/* Selected Day Details */}
-          <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+          <Card className="bg-white dark:bg-muted shadow-xl border border-slate-200 dark:border-slate-700">
             <CardHeader>
               <CardTitle className="dark:text-white">
                 {selectedDate 
@@ -262,7 +262,7 @@ export default function Calendar() {
                       const strategy = strategies.find(s => s.id === trade.strategy_id);
                       
                       return (
-                        <div key={trade.id} className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+                        <div key={trade.id} className="p-4 bg-slate-50 dark:bg-card rounded-lg border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
                           <div className="flex items-start justify-between mb-2">
                             <div>
                               <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">{trade.symbol}</h3>
@@ -355,7 +355,7 @@ export default function Calendar() {
         </div>
 
         {/* Month Summary */}
-        <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+        <Card className="bg-white dark:bg-muted shadow-xl border border-slate-200 dark:border-slate-700">
           <CardHeader>
             <CardTitle className="dark:text-white">{t('monthSummary')} - {format(currentDate, 'LLLL yyyy', { locale })}</CardTitle>
           </CardHeader>
@@ -373,7 +373,7 @@ export default function Calendar() {
 
                 return (
                   <>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl text-center">
+                    <div className="p-4 bg-slate-50 dark:bg-card rounded-xl text-center">
                       <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{t('trades')}</p>
                       <p className="text-3xl font-bold text-slate-900 dark:text-white">{monthTrades.length}</p>
                     </div>
@@ -399,14 +399,14 @@ export default function Calendar() {
         </Card>
 
         {/* Executed Trades List */}
-        <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+        <Card className="bg-white dark:bg-muted shadow-xl border border-slate-200 dark:border-slate-700">
           <CardHeader>
             <CardTitle className="dark:text-white">{t('completedTrades')} - {format(currentDate, 'LLLL yyyy', { locale })}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+                <thead className="bg-slate-50 dark:bg-card border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{language === 'pl' ? 'Data' : 'Date'}</th>
                     <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('symbol')}</th>
@@ -559,11 +559,11 @@ export default function Calendar() {
 
       {/* Trade Details Dialog */}
       <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-[#1a1a2e] border-slate-200 dark:border-slate-700">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-card border-slate-200 dark:border-slate-700">
           <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 text-white px-6 py-4 border-b border-slate-200 dark:border-slate-700">
             <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
           </DialogHeader>
-          <div className="p-6 bg-white dark:bg-[#1a1a2e]">
+          <div className="p-6 bg-white dark:bg-card">
             {viewingTrade && (
               <TradeCard
                 trade={viewingTrade}

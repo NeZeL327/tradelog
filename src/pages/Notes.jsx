@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+﻿import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -513,9 +513,9 @@ export default function Notes() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] bg-slate-50 dark:bg-[#0f0f16] flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-4rem)] bg-slate-50 dark:bg-background flex flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#14141f] shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-border bg-white dark:bg-card shrink-0">
         <div className="flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-violet-500" />
           <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Notatki</h1>
@@ -575,13 +575,13 @@ export default function Notes() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* ── LEFT SIDEBAR ── */}
-        <aside className="w-[260px] shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#14141f] flex flex-col overflow-hidden">
+        <aside className="w-[260px] shrink-0 border-r border-slate-200 dark:border-border bg-white dark:bg-card flex flex-col overflow-hidden">
           {/* Search */}
-          <div className="p-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="p-3 border-b border-slate-100 dark:border-border">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <Input
-                className="pl-8 h-8 text-xs bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                className="pl-8 h-8 text-xs bg-slate-50 dark:bg-card border-slate-200 dark:border-slate-700"
                 placeholder="Szukaj notatek..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -591,7 +591,7 @@ export default function Notes() {
 
           {/* Tag filter */}
           {allTags.length > 0 && (
-            <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 flex flex-wrap gap-1">
+            <div className="px-3 py-2 border-b border-slate-100 dark:border-border flex flex-wrap gap-1">
               <button
                 className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors", !activeTagFilter ? "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300")}
                 onClick={() => setActiveTagFilter(null)}
@@ -601,7 +601,7 @@ export default function Notes() {
               {allTags.map((tag) => (
                 <button
                   key={tag}
-                  className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors", activeTagFilter === tag ? cn(tagClass[tagColor(tag)]) : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800")}
+                  className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors", activeTagFilter === tag ? cn(tagClass[tagColor(tag)]) : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-100 dark:bg-muted")}
                   onClick={() => setActiveTagFilter(activeTagFilter === tag ? null : tag)}
                 >
                   {tag}
@@ -802,7 +802,7 @@ export default function Notes() {
         </aside>
 
         {/* ── EDITOR PANEL ── */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#111118]">
+        <main className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-background">
           {!selectedNote ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
               <div className="w-16 h-16 rounded-2xl bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center mb-4">
@@ -822,7 +822,7 @@ export default function Notes() {
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Note header */}
-              <div className="px-6 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <div className="px-6 pt-5 pb-3 border-b border-slate-100 dark:border-border shrink-0">
                 {/* Title */}
                 <input
                   ref={titleInputRef}
@@ -900,7 +900,7 @@ export default function Notes() {
                 </div>
 
                 {/* Toolbar */}
-                <div className="flex flex-wrap items-center gap-0.5 bg-slate-50 dark:bg-slate-900/60 rounded-lg p-1 border border-slate-200 dark:border-slate-800">
+                <div className="flex flex-wrap items-center gap-0.5 bg-slate-50 dark:bg-card/60 rounded-lg p-1 border border-slate-200 dark:border-border">
                   {toolbarItems.map((item, i) =>
                     item === null ? (
                       <div key={i} className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
