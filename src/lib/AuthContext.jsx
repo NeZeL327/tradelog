@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { logger } from '@/lib/logger';
+import { applyRuntimeSettings, getEffectiveUserSettings, loadLocalUserSettings } from '@/lib/userSettings';
 
 const AuthContext = createContext(undefined);
 
@@ -76,6 +77,12 @@ export const AuthProvider = ({ children }) => {
             ...profile
           };
 
+          const effective = getEffectiveUserSettings({
+            cloudSettings: profile,
+            localSettings: loadLocalUserSettings(),
+          });
+          applyRuntimeSettings(effective);
+
           setUser(mergedUser);
           setIsAuthenticated(true);
         } catch (error) {
@@ -101,11 +108,17 @@ export const AuthProvider = ({ children }) => {
                 fullName: profile?.fullName || result.user.displayName || result.user.email?.split('@')[0] || '',
                 ...profile,
               };
+              const effective = getEffectiveUserSettings({
+                cloudSettings: profile,
+                localSettings: loadLocalUserSettings(),
+              });
+              applyRuntimeSettings(effective);
+
               setFirebaseUser(result.user);
               setUser(mergedUser);
               setIsAuthenticated(true);
               setIsLoadingAuth(false);
-              window.location.href = '/Dashboard';
+              window.location.href = effective?.start_page || '/Dashboard';
             })
             .catch((err) => {
               logger.error('Redirect ensureProfile error', err);

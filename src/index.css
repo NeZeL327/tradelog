@@ -18,6 +18,14 @@ html {
   }
 }
 
+/* ===== PRIVACY MODE ===== */
+.privacy-mode [data-private] {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+  transition: filter 0.2s ease;
+}
+
 /* ===== ANALYTICS: prevent recharts overflow ===== */
 .analytics-page .recharts-wrapper {
   overflow: hidden !important;

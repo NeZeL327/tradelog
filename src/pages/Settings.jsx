@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTradingAccounts, updateUser, getDeletedTrades, restoreTrade, permanentlyDeleteTrade } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,42 +8,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { User, Globe, Shield, Bell, Trash2, RotateCcw } from "lucide-react";
+import { User, Globe, Shield, Bell, Trash2, RotateCcw, Lock } from "lucide-react";
 import { toast } from "sonner";
+import {
+  applyRuntimeSettings,
+  getEffectiveUserSettings,
+  getMissingCloudSettings,
+  loadLocalUserSettings,
+  pickUserSettings,
+  saveLocalUserSettings,
+} from "@/lib/userSettings";
 
 export default function Settings() {
   const { user: authUser, checkSession } = useAuth();
   const queryClient = useQueryClient();
 
-  const resolveInitialTheme = () => {
-    const allowedThemes = new Set(['light', 'dark', 'auto']);
-    const savedTheme = localStorage.getItem('appTheme');
-
-    if (savedTheme && allowedThemes.has(savedTheme)) {
-      return savedTheme;
-    }
-
-    if (document.documentElement.classList.contains('dark')) {
-      return 'dark';
-    }
-
-    return 'light';
-  };
-
-
   const [user, setUser] = useState(null);
   const [activeSection, setActiveSection] = useState('profile');
-  const [settings, setSettings] = useState({
-    language: "pl",
-    default_currency: "USD",
-    timezone: "Europe/Warsaw",
-    default_account_id: "",
-    default_risk_per_trade: 1,
-    default_max_daily_loss: 5,
-    date_format: "YYYY-MM-DD",
-    theme: resolveInitialTheme(),
-    notifications_enabled: true,
-    show_weekends: false
+  const [settings, setSettings] = useState(() => {
+    const local = loadLocalUserSettings();
+    const base = getEffectiveUserSettings({ localSettings: local });
+    return {
+      ...base,
+      default_account_id: "",
+      default_risk_per_trade: 1,
+      default_max_daily_loss: 5,
+    };
   });
 
   const { data: accounts = [] } = useQuery({
@@ -59,67 +49,43 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    if (authUser) {
-      setUser(authUser);
-      setSettings(prev => ({
-        ...prev,
-        ...authUser,
-        language: authUser.language || "pl",
-        default_currency: authUser.default_currency || "USD",
-        timezone: authUser.timezone || "Europe/Warsaw",
-        default_risk_per_trade: authUser.default_risk_per_trade || 1,
-        default_max_daily_loss: authUser.default_max_daily_loss || 5,
-        date_format: authUser.date_format || "YYYY-MM-DD",
-        theme: prev.theme || authUser.theme || "light",
-        notifications_enabled: authUser.notifications_enabled !== undefined ? authUser.notifications_enabled : true,
-        show_weekends: authUser.show_weekends || false
-      }));
-    };
+    if (!authUser) return;
+    setUser(authUser);
+    const local = loadLocalUserSettings();
+    const effective = getEffectiveUserSettings({ cloudSettings: authUser, localSettings: local });
+    setSettings(prev => ({
+      ...prev,
+      ...effective,
+      default_account_id: authUser.default_account_id || prev.default_account_id || "",
+      default_risk_per_trade: authUser.default_risk_per_trade ?? prev.default_risk_per_trade ?? 1,
+      default_max_daily_loss: authUser.default_max_daily_loss ?? prev.default_max_daily_loss ?? 5,
+    }));
+
+    const missing = getMissingCloudSettings({ cloudSettings: authUser, localSettings: local });
+    if (Object.keys(missing).length > 0) {
+      updateUser(authUser.id, missing).catch(() => null);
+    }
   }, [authUser]);
 
-  const applyTheme = (theme) => {
-    const root = document.documentElement;
-    const shouldBeDark = theme === 'dark' || (
-      theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches
-    );
-    root.classList.toggle('dark', shouldBeDark);
-    root.removeAttribute('data-skin');
-
-    if (theme === 'auto') {
-      localStorage.removeItem('appTheme');
-    } else {
-      localStorage.setItem('appTheme', theme);
-    }
-    localStorage.removeItem('appSkin');
-  };
-
   useEffect(() => {
-    applyTheme(settings.theme || 'light');
-  }, [settings.theme]);
+    applyRuntimeSettings(settings);
+  }, [settings.theme, settings.privacy_mode, settings.pnl_view]);
 
   const updateSettingsMutation = useMutation({
-    mutationFn: (data) => updateUser(authUser.id, data),
+    mutationFn: (data) => {
+      const picked = pickUserSettings(data);
+      saveLocalUserSettings({ ...data, ...picked });
+      return updateUser(authUser.id, { ...data, ...picked });
+    },
     onSuccess: (updatedUser, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
-
       setUser(updatedUser);
-
-      setSettings(prev => ({
-        ...prev,
-        ...updatedUser
-      }));
-
-      applyTheme(updatedUser.theme || settings.theme || 'light');
-
-      if (checkSession) {
-        checkSession();
-      }
+      setSettings(prev => ({ ...prev, ...updatedUser }));
+      applyRuntimeSettings(updatedUser);
+      if (checkSession) checkSession();
 
       const language = variables?.language || updatedUser?.language || settings.language;
-      toast({
-        title: language === 'pl' ? "Zapisano" : "Saved",
-        description: language === 'pl' ? "Ustawienia zostały zaktualizowane" : "Settings have been updated",
-      });
+      toast(language === 'pl' ? "Ustawienia zapisane" : "Settings saved");
     },
   });
 
@@ -181,7 +147,14 @@ export default function Settings() {
       daysLeft: "dni do usunięcia",
       restore: "Przywróć",
       deleteNow: "Usuń teraz",
-      emptyTrash: "Kosz jest pusty"
+      emptyTrash: "Kosz jest pusty",
+      privacy: "Prywatność",
+      privacyMode: "Tryb prywatny",
+      privacyModeDesc: "Ukryj wartości P&L i saldo (przydatne przy udostępnianiu ekranu)",
+      startPage: "Domyślna strona startowa",
+      pnlView: "Widok P&L",
+      pnlMoney: "Kwota (zł / $)",
+      pnlPercent: "Procent (%)",
     },
     en: {
       title: "Settings",
@@ -216,7 +189,14 @@ export default function Settings() {
       daysLeft: "days left",
       restore: "Restore",
       deleteNow: "Delete now",
-      emptyTrash: "Trash is empty"
+      emptyTrash: "Trash is empty",
+      privacy: "Privacy",
+      privacyMode: "Privacy mode",
+      privacyModeDesc: "Blur P&L values and balance (useful when sharing screen)",
+      startPage: "Default start page",
+      pnlView: "P&L view",
+      pnlMoney: "Amount ($ / zł)",
+      pnlPercent: "Percentage (%)",
     }
   };
 
@@ -227,6 +207,7 @@ export default function Settings() {
     { id: 'preferences', label: t.preferences, icon: Globe },
     { id: 'trading', label: t.trading, icon: Shield },
     { id: 'notifications', label: t.notifications, icon: Bell },
+    { id: 'privacy', label: t.privacy, icon: Lock },
     { id: 'trash', label: t.trash, icon: Trash2 },
   ];
 
@@ -439,6 +420,68 @@ export default function Settings() {
                       checked={settings.show_weekends !== undefined ? settings.show_weekends : false}
                       onCheckedChange={(checked) => setSettings({ ...settings, show_weekends: checked })}
                     />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {activeSection === 'privacy' && (
+              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+                <CardHeader>
+                  <CardTitle>{t.privacy}</CardTitle>
+                  <CardDescription>
+                    {settings.language === 'pl'
+                      ? "Kontroluj widoczność danych finansowych"
+                      : "Control visibility of financial data"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.privacyMode}</Label>
+                      <p className="text-sm text-slate-500">{t.privacyModeDesc}</p>
+                    </div>
+                    <Switch
+                      checked={!!settings.privacy_mode}
+                      onCheckedChange={(checked) => setSettings({ ...settings, privacy_mode: checked })}
+                    />
+                  </div>
+                  <div>
+                    <Label>{t.startPage}</Label>
+                    <Select
+                      value={settings.start_page || "/Dashboard"}
+                      onValueChange={(value) => setSettings({ ...settings, start_page: value })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="/Dashboard">Dashboard</SelectItem>
+                        <SelectItem value="/journal">
+                          {settings.language === 'pl' ? "Dziennik" : "Journal"}
+                        </SelectItem>
+                        <SelectItem value="/analytics">Analytics</SelectItem>
+                        <SelectItem value="/calendar">
+                          {settings.language === 'pl' ? "Kalendarz" : "Calendar"}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {settings.language === 'pl'
+                        ? "Strona otwierana po zalogowaniu"
+                        : "Page opened after login"}
+                    </p>
+                  </div>
+                  <div>
+                    <Label>{t.pnlView}</Label>
+                    <Select
+                      value={settings.pnl_view || "money"}
+                      onValueChange={(value) => setSettings({ ...settings, pnl_view: value })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="money">{t.pnlMoney}</SelectItem>
+                        <SelectItem value="percent">{t.pnlPercent}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </CardContent>
               </Card>

@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
@@ -911,7 +911,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-2 md:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-slate-500 truncate">{t('totalPL')}</p>
-                  <div className={`mt-1.5 text-xl md:text-2xl font-bold ${totalPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  <div data-private className={`mt-1.5 text-xl md:text-2xl font-bold ${totalPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     {totalPL >= 0 ? '+' : ''}{totalPL.toFixed(2)}
                   </div>
                   <p className="text-xs text-slate-500 mt-1 truncate">{t('from')} {totalTrades} {t('trades')}</p>

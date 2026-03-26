@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, deleteTrade, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -677,7 +677,7 @@ export default function JournalSimple({ mode = "all" }) {
           <Card className={`shadow-lg ${stats.totalPL >= 0 ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800'}`}>
             <CardContent className="p-4">
               <p className={`text-sm mb-1 ${stats.totalPL >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{t('totalPL')}</p>
-              <p className={`text-2xl font-bold ${stats.totalPL >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+              <p data-private className={`text-2xl font-bold ${stats.totalPL >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
                 {stats.totalPL >= 0 ? '+' : ''}{stats.totalPL.toFixed(2)}
               </p>
             </CardContent>
@@ -1050,7 +1050,7 @@ export default function JournalSimple({ mode = "all" }) {
                       {visibleColumns.pl && (
                         <td className="px-1.5 py-1">
                           {trade.profit_loss != null ? (
-                            <div className="flex items-center gap-0.5">
+                            <div data-private className="flex items-center gap-0.5">
                               {parseFloat(trade.profit_loss || 0) > 0 ? (
                                 <TrendingUp className="w-3 h-3 text-green-600" />
                               ) : parseFloat(trade.profit_loss || 0) < 0 ? (
