@@ -126,9 +126,9 @@ function LayoutContent({ children }) {
           </SidebarHeader>
 
           {/* Navigation Groups */}
-          <SidebarContent className="flex-1 overflow-y-auto px-2 py-3 gap-0">
+          <SidebarContent className="flex-1 overflow-y-auto px-2 py-3 !flex !flex-col !justify-between">
             {navGroups.map((group, idx) => (
-              <SidebarGroup key={group.label} className={`p-0 flex-1 ${idx > 0 ? 'pt-4' : ''}`}>
+              <SidebarGroup key={group.label} className="p-0">
                 <SidebarGroupLabel className="h-5 text-[9px] font-bold text-muted-foreground/55 uppercase tracking-widest px-2.5 mb-1 group-data-[collapsible=icon]:hidden">
                   {group.label}
                 </SidebarGroupLabel>
