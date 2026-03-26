@@ -126,14 +126,14 @@ function LayoutContent({ children }) {
           </SidebarHeader>
 
           {/* Navigation Groups */}
-          <SidebarContent className="flex-1 overflow-y-auto px-2 py-1.5">
+          <SidebarContent className="flex-1 overflow-y-auto px-2 py-1 gap-0">
             {navGroups.map((group) => (
-              <SidebarGroup key={group.label} className="mb-0">
-                <SidebarGroupLabel className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-widest px-2 pt-2 pb-0.5 group-data-[collapsible=icon]:hidden">
+              <SidebarGroup key={group.label} className="p-0">
+                <SidebarGroupLabel className="h-5 text-[9px] font-bold text-muted-foreground/55 uppercase tracking-widest px-2.5 group-data-[collapsible=icon]:hidden mt-2 first:mt-1">
                   {group.label}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu>
+                  <SidebarMenu className="gap-0">
                     {group.items.map((item) => {
                       const isActive = location.pathname === item.url;
                       return (
@@ -142,7 +142,7 @@ function LayoutContent({ children }) {
                             asChild
                             tooltip={item.title}
                             className={`
-                              relative rounded-md transition-all duration-150
+                              relative rounded-md transition-all duration-150 !py-0
                               ${isActive
                                 ? 'sidebar-active font-medium'
                                 : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
@@ -151,9 +151,9 @@ function LayoutContent({ children }) {
                           >
                             <Link
                               to={item.url}
-                              className="flex items-center gap-2.5 px-2.5 py-1.5 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:justify-center"
+                              className="flex items-center gap-2.5 px-2.5 py-[7px] group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:justify-center"
                             >
-                              <item.icon className="w-4 h-4 flex-shrink-0" />
+                              <item.icon className="w-[15px] h-[15px] flex-shrink-0" />
                               <span className="text-[13px] group-data-[collapsible=icon]:hidden">{item.title}</span>
                             </Link>
                           </SidebarMenuButton>
