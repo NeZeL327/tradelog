@@ -348,7 +348,7 @@ export default function Notes() {
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'tiptap-link' } }),
       Image.configure({ HTMLAttributes: { class: 'tiptap-image' } }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      Table.configure({ resizable: false }),
+      Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
       TableCell,
@@ -1228,6 +1228,7 @@ export default function Notes() {
           width: 100%;
           margin: 0.75rem 0;
           font-size: 0.875rem;
+          overflow: hidden;
         }
         .tiptap-notes-editor .ProseMirror table td,
         .tiptap-notes-editor .ProseMirror table th {
@@ -1235,6 +1236,23 @@ export default function Notes() {
           padding: 0.4rem 0.75rem;
           min-width: 60px;
           vertical-align: top;
+          word-break: break-word;
+          overflow-wrap: break-word;
+          white-space: normal;
+          position: relative;
+        }
+        .tiptap-notes-editor .ProseMirror .column-resize-handle {
+          position: absolute;
+          right: -2px;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          background-color: #6366f1;
+          cursor: col-resize;
+          pointer-events: none;
+        }
+        .tiptap-notes-editor .ProseMirror.resize-cursor {
+          cursor: col-resize;
         }
         .dark .tiptap-notes-editor .ProseMirror table td,
         .dark .tiptap-notes-editor .ProseMirror table th { border-color: #334155; }

@@ -54,13 +54,12 @@ const SelectContent = React.forwardRef(({
   children,
   position = "popper",
   side = "bottom",
-  align = "start",
-  sideOffset = 6,
+  align = "center",
+  sideOffset = 4,
   avoidCollisions = false,
-  portalled = true,
   ...props
-}, ref) => {
-  const content = (
+}, ref) => (
+  <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
@@ -85,14 +84,8 @@ const SelectContent = React.forwardRef(({
       </SelectPrimitive.Viewport>
       <SelectScrollDownButton />
     </SelectPrimitive.Content>
-  )
-
-  if (portalled) {
-    return <SelectPrimitive.Portal>{content}</SelectPrimitive.Portal>
-  }
-
-  return content
-})
+  </SelectPrimitive.Portal>
+))
 SelectContent.displayName = SelectPrimitive.Content.displayName
 
 const SelectLabel = React.forwardRef(({ className, children, ...props }, ref) => (

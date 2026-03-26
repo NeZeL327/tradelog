@@ -4,19 +4,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Scale entire app to ~80% of natural size */
-html {
+/* Scale entire app to ~80%.
+   Zoom is on #root (NOT html) so Radix portals (rendered at body level,
+   outside #root) are unaffected and position themselves correctly. */
+html, body {
+  overflow: hidden;
+  height: 100%;
+}
+
+#root {
   zoom: 0.82;
+  /* Compensate: after zoom the visual width = CSS width * 0.82.
+     To fill the full viewport we need CSS width = 100vw / 0.82. */
+  width: calc(100vw / 0.82);
+  min-height: calc(100dvh / 0.82);
+  overflow: auto;
 }
 
 @supports not (zoom: 1) {
+  /* Firefox fallback: transform on #root, same principle */
+  html, body { overflow: hidden; height: 100%; }
   #root {
+    zoom: unset;
+    width: calc(100vw / 0.82);
+    min-height: calc(100dvh / 0.82);
     transform: scale(0.82);
     transform-origin: top left;
-    width: 121.95%;
-    min-height: 121.95vh;
   }
 }
+
 
 /* ===== PRIVACY MODE ===== */
 .privacy-mode [data-private] {
