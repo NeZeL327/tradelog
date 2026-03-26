@@ -23,6 +23,18 @@ export default function Dashboard() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Dark mode observer for recharts colors
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+  useEffect(() => {
+    const obs = new MutationObserver(() =>
+      setIsDark(document.documentElement.classList.contains('dark'))
+    );
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+  const gridColor = isDark ? '#334155' : '#e2e8f0';
+  const axisColor = isDark ? '#94a3b8' : '#64748b';
   const dashboardFiltersStorageKey = `dashboard_filters_${user?.id || 'guest'}`;
   const dateLocale = language === "pl" ? pl : enUS;
   const dayLocale = language === "pl" ? "pl-PL" : "en-US";
@@ -479,27 +491,28 @@ export default function Dashboard() {
     })
   ];
 
-  // Daily cumulative P&L (grouped by date, sorted chronologically)
+  // Daily cumulative P&L — use all trades that have a profit_loss value
   const dailyCumulativeByDate = {};
-  [...getFilteredTradesForChart()]
+  [...filteredTrades]
+    .filter(t => t.date && t.profit_loss != null)
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .forEach(t => {
-      if (t.date) {
-        const dateKey = t.date.substring(0, 10);
-        if (!dailyCumulativeByDate[dateKey]) dailyCumulativeByDate[dateKey] = 0;
-        dailyCumulativeByDate[dateKey] += parseFloat(t.profit_loss) || 0;
-      }
+      const dateKey = t.date.substring(0, 10);
+      if (!dailyCumulativeByDate[dateKey]) dailyCumulativeByDate[dateKey] = 0;
+      dailyCumulativeByDate[dateKey] += parseFloat(t.profit_loss) || 0;
     });
   let dailyCum = 0;
-  const dailyCumulativeData = [
-    { date: '', pl: 0 },
-    ...Object.entries(dailyCumulativeByDate)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, dayPl]) => {
-        dailyCum += dayPl;
-        return { date: date.substring(5), pl: Math.round(dailyCum * 100) / 100 };
-      })
-  ];
+  const sortedDailyCumEntries = Object.entries(dailyCumulativeByDate)
+    .sort(([a], [b]) => a.localeCompare(b));
+  const dailyCumulativeData = sortedDailyCumEntries.length === 0
+    ? []
+    : [
+        { date: sortedDailyCumEntries[0][0].substring(5), pl: 0 },
+        ...sortedDailyCumEntries.map(([date, dayPl]) => {
+          dailyCum += dayPl;
+          return { date: date.substring(5), pl: Math.round(dailyCum * 100) / 100 };
+        })
+      ];
 
   let running = 0;
   let peak = 0;
@@ -1069,12 +1082,17 @@ export default function Dashboard() {
 
 
 
-          <Card className="bg-white dark:bg-muted shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
+          <Card className="bg-white dark:bg-card shadow-xl border border-slate-200/60 dark:border-slate-700 rounded-lg">
             <CardHeader className="pb-3">
               <CardTitle className="text-slate-900 dark:text-white text-sm md:text-base">{t('dailyNetCumulativePL')}</CardTitle>
             </CardHeader>
             <CardContent className="overflow-hidden p-3">
               <div className="w-full overflow-hidden">
+                {dailyCumulativeData.length === 0 ? (
+                  <div className="h-[220px] flex items-center justify-center text-sm text-muted-foreground">
+                    {t('noData') || 'Brak danych'}
+                  </div>
+                ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={dailyCumulativeData} margin={{ top: 10, right: 20, left: 5, bottom: 5 }}>
                     <defs>
@@ -1083,17 +1101,18 @@ export default function Dashboard() {
                         <stop offset="95%" stopColor="#6d4dff" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} />
-                    <YAxis stroke="#64748b" width={55} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                    <XAxis dataKey="date" stroke={axisColor} tick={{ fontSize: 10, fill: axisColor }} />
+                    <YAxis stroke={axisColor} tick={{ fill: axisColor }} width={55} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                      itemStyle={{ color: '#e2e8f0' }}
-                      labelStyle={{ color: '#f1f5f9' }}
+                      contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '8px', color: isDark ? '#e2e8f0' : '#1e293b' }}
+                      itemStyle={{ color: isDark ? '#e2e8f0' : '#1e293b' }}
+                      labelStyle={{ color: isDark ? '#f1f5f9' : '#0f172a' }}
                     />
                     <Area type="monotone" dataKey="pl" stroke="#6d4dff" fill="url(#plCumFill)" strokeWidth={2} dot={false} />
                   </AreaChart>
                 </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1176,13 +1195,13 @@ export default function Dashboard() {
               <div className="w-full overflow-hidden">
                 <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={dailyPLData} barSize={20} margin={{ top: 10, right: 25, left: 10, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="date" stroke="#64748b" tickFormatter={(v) => v.slice(5)} />
-                    <YAxis stroke="#64748b" width={55} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                    <XAxis dataKey="date" stroke={axisColor} tick={{ fill: axisColor }} tickFormatter={(v) => v.slice(5)} />
+                    <YAxis stroke={axisColor} tick={{ fill: axisColor }} width={55} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                      itemStyle={{ color: '#e2e8f0' }}
-                      labelStyle={{ color: '#f1f5f9' }}
+                      contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '8px', color: isDark ? '#e2e8f0' : '#1e293b' }}
+                      itemStyle={{ color: isDark ? '#e2e8f0' : '#1e293b' }}
+                      labelStyle={{ color: isDark ? '#f1f5f9' : '#0f172a' }}
                     />
                     <Bar dataKey="pl" radius={[8, 8, 0, 0]}>
                       {dailyPLData.map((entry, index) => (
@@ -1363,13 +1382,13 @@ export default function Dashboard() {
               <div className="w-full overflow-hidden">
                 <ResponsiveContainer width="100%" height={260}>
                   <LineChart data={accountBalanceOverTime} margin={{ top: 10, right: 25, left: 10, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="trade" stroke="#64748b" />
-                    <YAxis stroke="#64748b" width={55} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                    <XAxis dataKey="trade" stroke={axisColor} tick={{ fill: axisColor }} />
+                    <YAxis stroke={axisColor} tick={{ fill: axisColor }} width={55} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                      itemStyle={{ color: '#e2e8f0' }}
-                      labelStyle={{ color: '#f1f5f9' }}
+                      contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '8px', color: isDark ? '#e2e8f0' : '#1e293b' }}
+                      itemStyle={{ color: isDark ? '#e2e8f0' : '#1e293b' }}
+                      labelStyle={{ color: isDark ? '#f1f5f9' : '#0f172a' }}
                     />
                     <Line type="monotone" dataKey="pl" stroke="#6d4dff" strokeWidth={2} dot={false} />
                   </LineChart>
@@ -1582,9 +1601,9 @@ export default function Dashboard() {
           </Card>
 
           <div className="space-y-6">
-            <Card className="bg-white shadow-xl border border-slate-200/60">
+            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200/60 dark:border-slate-700">
               <CardHeader>
-                <CardTitle className="text-slate-900">{t('drawdown')}</CardTitle>
+                <CardTitle className="text-slate-900 dark:text-white">{t('drawdown')}</CardTitle>
               </CardHeader>
               <CardContent className="overflow-hidden p-3">
                 <div className="w-full overflow-hidden">
@@ -1599,13 +1618,13 @@ export default function Dashboard() {
                           <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="trade" stroke="#64748b" />
-                      <YAxis stroke="#64748b" width={55} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                      <XAxis dataKey="trade" stroke={axisColor} tick={{ fill: axisColor }} />
+                      <YAxis stroke={axisColor} tick={{ fill: axisColor }} width={55} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                        itemStyle={{ color: '#e2e8f0' }}
-                        labelStyle={{ color: '#f1f5f9' }}
+                        contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '8px', color: isDark ? '#e2e8f0' : '#1e293b' }}
+                        itemStyle={{ color: isDark ? '#e2e8f0' : '#1e293b' }}
+                        labelStyle={{ color: isDark ? '#f1f5f9' : '#0f172a' }}
                       />
                       <Area type="monotone" dataKey="drawdown" stroke="#f43f5e" fill="url(#ddFill)" strokeWidth={2} dot={false} clipPath="url(#drawdown-clip)" />
                     </AreaChart>
@@ -1614,9 +1633,9 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white shadow-xl border border-slate-200/60">
+            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200/60 dark:border-slate-700">
               <CardHeader>
-                <CardTitle className="text-slate-900">{t('tradeTimePerformance')}</CardTitle>
+                <CardTitle className="text-slate-900 dark:text-white">{t('tradeTimePerformance')}</CardTitle>
               </CardHeader>
               <CardContent className="overflow-hidden p-3">
                 <div className="w-full overflow-hidden">
@@ -1627,13 +1646,13 @@ export default function Dashboard() {
                           <rect x="0" y="0" width="100%" height="100%" />
                         </clipPath>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="hour" stroke="#64748b" domain={[0, 23]} ticks={[0,4,8,12,16,20,23]} />
-                      <YAxis dataKey="pl" stroke="#64748b" width={55} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                      <XAxis dataKey="hour" stroke={axisColor} tick={{ fill: axisColor }} domain={[0, 23]} ticks={[0,4,8,12,16,20,23]} />
+                      <YAxis dataKey="pl" stroke={axisColor} tick={{ fill: axisColor }} width={55} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                        itemStyle={{ color: '#e2e8f0' }}
-                        labelStyle={{ color: '#f1f5f9' }}
+                        contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '8px', color: isDark ? '#e2e8f0' : '#1e293b' }}
+                        itemStyle={{ color: isDark ? '#e2e8f0' : '#1e293b' }}
+                        labelStyle={{ color: isDark ? '#f1f5f9' : '#0f172a' }}
                       />
                       <Scatter data={tradeTimeData} fill="#6d4dff" clipPath="url(#scatter-clip)">
                         {tradeTimeData.map((entry, index) => (
@@ -1836,9 +1855,9 @@ export default function Dashboard() {
                               <rect x="0" y="0" width="100%" height="100%" />
                             </clipPath>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="name" stroke="#64748b" />
-                          <YAxis stroke="#64748b" width={50} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                          <XAxis dataKey="name" stroke={axisColor} tick={{ fill: axisColor }} />
+                          <YAxis stroke={axisColor} tick={{ fill: axisColor }} width={50} />
                           <Tooltip />
                           <Bar dataKey="value" radius={[8, 8, 0, 0]} clipPath="url(#trade-efficiency-clip)" />
                         </BarChart>
@@ -2023,13 +2042,13 @@ export default function Dashboard() {
               <div className="w-full overflow-hidden">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={plOverTime} margin={{ top: 10, right: 25, left: 10, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="trade" stroke="#64748b" />
-                    <YAxis stroke="#64748b" width={55} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                    <XAxis dataKey="trade" stroke={axisColor} tick={{ fill: axisColor }} />
+                    <YAxis stroke={axisColor} tick={{ fill: axisColor }} width={55} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                      itemStyle={{ color: '#e2e8f0' }}
-                      labelStyle={{ color: '#f1f5f9' }}
+                      contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '8px', color: isDark ? '#e2e8f0' : '#1e293b' }}
+                      itemStyle={{ color: isDark ? '#e2e8f0' : '#1e293b' }}
+                      labelStyle={{ color: isDark ? '#f1f5f9' : '#0f172a' }}
                     />
                     <Line type="monotone" dataKey="pl" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} />
                   </LineChart>
@@ -2054,11 +2073,11 @@ export default function Dashboard() {
                         <rect x="0" y="0" width="100%" height="100%" />
                       </clipPath>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="name" stroke="#64748b" angle={-45} textAnchor="end" height={80} />
-                    <YAxis stroke="#64748b" width={55} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                    <XAxis dataKey="name" stroke={axisColor} tick={{ fill: axisColor }} angle={-45} textAnchor="end" height={80} />
+                    <YAxis stroke={axisColor} tick={{ fill: axisColor }} width={55} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                      contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '8px', color: isDark ? '#e2e8f0' : '#1e293b' }}
                     />
                     <Legend />
                     <Bar dataKey="winRate" fill="#3b82f6" name={t('winRatePercent')} radius={[8, 8, 0, 0]} clipPath="url(#dashboard-strategy-clip)" />
