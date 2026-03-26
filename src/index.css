@@ -4,6 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Scale entire app to ~80% of natural size */
+html {
+  zoom: 0.82;
+}
+
+@supports not (zoom: 1) {
+  #root {
+    transform: scale(0.82);
+    transform-origin: top left;
+    width: 121.95%;
+    min-height: 121.95vh;
+  }
+}
+
 /* ===== ANALYTICS: prevent recharts overflow ===== */
 .analytics-page .recharts-wrapper {
   overflow: hidden !important;
