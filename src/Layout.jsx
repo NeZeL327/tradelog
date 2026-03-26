@@ -126,9 +126,9 @@ function LayoutContent({ children }) {
           </SidebarHeader>
 
           {/* Navigation Groups */}
-          <SidebarContent className="flex-1 px-2 py-3 !flex !flex-col !justify-between !overflow-hidden">
+          <SidebarContent className="flex-1 px-2 py-3 !flex !flex-col !overflow-hidden">
             {navGroups.map((group, idx) => (
-              <SidebarGroup key={group.label} className="p-0">
+              <SidebarGroup key={group.label} className={`p-0 ${idx > 0 ? 'mt-5' : ''}`}>
                 <SidebarGroupLabel className="h-5 text-[9px] font-bold text-muted-foreground/55 uppercase tracking-widest px-2.5 mb-1 group-data-[collapsible=icon]:hidden">
                   {group.label}
                 </SidebarGroupLabel>
@@ -164,6 +164,8 @@ function LayoutContent({ children }) {
                 </SidebarGroupContent>
               </SidebarGroup>
             ))}
+            {/* Spacer — pushes footer to the very bottom regardless of resolution */}
+            <div className="flex-1" />
           </SidebarContent>
 
           {/* User footer */}
