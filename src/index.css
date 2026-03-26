@@ -160,13 +160,6 @@ table td,
   font-variant-numeric: tabular-nums;
 }
 
-/* ===== PRIVACY MODE (hide sensitive numbers) ===== */
-.privacy-mode [data-private] {
-  filter: blur(7px);
-  user-select: none;
-  pointer-events: none;
-}
-
 /* ===== APP LAYOUT ===== */
 body[data-is-home="false"] {
   -webkit-font-smoothing: antialiased;

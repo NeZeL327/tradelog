@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTradingAccounts, updateUser, getDeletedTrades, restoreTrade, permanentlyDeleteTrade } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,23 +10,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { User, Globe, Shield, Bell, Trash2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import {
-  applyRuntimeSettings,
-  getEffectiveUserSettings,
-  getMissingCloudSettings,
-  loadLocalUserSettings,
-  pickUserSettings,
-  saveLocalUserSettings,
-} from "@/lib/userSettings";
 
 export default function Settings() {
   const { user: authUser, checkSession } = useAuth();
   const queryClient = useQueryClient();
+
+  const resolveInitialTheme = () => {
+    const allowedThemes = new Set(['light', 'dark', 'auto']);
+    const savedTheme = localStorage.getItem('appTheme');
+
+    if (savedTheme && allowedThemes.has(savedTheme)) {
+      return savedTheme;
+    }
+
+    if (document.documentElement.classList.contains('dark')) {
+      return 'dark';
+    }
+
+    return 'light';
+  };
+
+
   const [user, setUser] = useState(null);
   const [activeSection, setActiveSection] = useState('profile');
-  const [settings, setSettings] = useState(() => {
-    const local = loadLocalUserSettings();
-    return getEffectiveUserSettings({ localSettings: local });
+  const [settings, setSettings] = useState({
+    language: "pl",
+    default_currency: "USD",
+    timezone: "Europe/Warsaw",
+    default_account_id: "",
+    default_risk_per_trade: 1,
+    default_max_daily_loss: 5,
+    date_format: "YYYY-MM-DD",
+    theme: resolveInitialTheme(),
+    notifications_enabled: true,
+    show_weekends: false
   });
 
   const { data: accounts = [] } = useQuery({
@@ -44,24 +61,44 @@ export default function Settings() {
   useEffect(() => {
     if (authUser) {
       setUser(authUser);
-      const local = loadLocalUserSettings();
-      const effective = getEffectiveUserSettings({ cloudSettings: authUser, localSettings: local });
-      setSettings((prev) => ({ ...prev, ...effective }));
-
-      const missing = getMissingCloudSettings({ cloudSettings: authUser, localSettings: local });
-      if (Object.keys(missing).length) {
-        updateUser(authUser.id, missing).catch(() => {});
-      }
+      setSettings(prev => ({
+        ...prev,
+        ...authUser,
+        language: authUser.language || "pl",
+        default_currency: authUser.default_currency || "USD",
+        timezone: authUser.timezone || "Europe/Warsaw",
+        default_risk_per_trade: authUser.default_risk_per_trade || 1,
+        default_max_daily_loss: authUser.default_max_daily_loss || 5,
+        date_format: authUser.date_format || "YYYY-MM-DD",
+        theme: prev.theme || authUser.theme || "light",
+        notifications_enabled: authUser.notifications_enabled !== undefined ? authUser.notifications_enabled : true,
+        show_weekends: authUser.show_weekends || false
+      }));
     };
   }, [authUser]);
 
+  const applyTheme = (theme) => {
+    const root = document.documentElement;
+    const shouldBeDark = theme === 'dark' || (
+      theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches
+    );
+    root.classList.toggle('dark', shouldBeDark);
+    root.removeAttribute('data-skin');
+
+    if (theme === 'auto') {
+      localStorage.removeItem('appTheme');
+    } else {
+      localStorage.setItem('appTheme', theme);
+    }
+    localStorage.removeItem('appSkin');
+  };
+
   useEffect(() => {
-    applyRuntimeSettings(settings);
-    saveLocalUserSettings(settings);
-  }, [settings]);
+    applyTheme(settings.theme || 'light');
+  }, [settings.theme]);
 
   const updateSettingsMutation = useMutation({
-    mutationFn: (data) => updateUser(authUser.id, pickUserSettings(data)),
+    mutationFn: (data) => updateUser(authUser.id, data),
     onSuccess: (updatedUser, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
 
@@ -72,12 +109,7 @@ export default function Settings() {
         ...updatedUser
       }));
 
-      const effective = getEffectiveUserSettings({
-        cloudSettings: updatedUser,
-        localSettings: loadLocalUserSettings(),
-      });
-      applyRuntimeSettings(effective);
-      saveLocalUserSettings(effective);
+      applyTheme(updatedUser.theme || settings.theme || 'light');
 
       if (checkSession) {
         checkSession();
@@ -123,7 +155,6 @@ export default function Settings() {
       preferences: "Preferencje",
       trading: "Trading",
       notifications: "Powiadomienia",
-      privacy: "Prywatność",
       trash: "Kosz trade'ów",
       name: "Imię i nazwisko",
       email: "Email",
@@ -132,11 +163,6 @@ export default function Settings() {
       timezone: "Strefa czasowa",
       dateFormat: "Format daty",
       theme: "Motyw",
-      privacyMode: "Tryb prywatności (ukryj P&L i saldo)",
-      startPage: "Strona startowa po zalogowaniu",
-      pnlView: "Widok P&L",
-      pnlViewMoney: "Kwota",
-      pnlViewPercent: "Procent",
       skin: "Skórka",
       defaultAccount: "Domyślne konto",
       riskPerTrade: "Domyślne ryzyko na transakcję (%)",
@@ -164,7 +190,6 @@ export default function Settings() {
       preferences: "Preferences",
       trading: "Trading",
       notifications: "Notifications",
-      privacy: "Privacy",
       trash: "Trade Trash",
       name: "Full Name",
       email: "Email",
@@ -173,11 +198,6 @@ export default function Settings() {
       timezone: "Timezone",
       dateFormat: "Date Format",
       theme: "Theme",
-      privacyMode: "Privacy mode (hide P&L and balances)",
-      startPage: "Start page after login",
-      pnlView: "P&L view",
-      pnlViewMoney: "Money",
-      pnlViewPercent: "Percent",
       skin: "Skin",
       defaultAccount: "Default Account",
       riskPerTrade: "Default Risk Per Trade (%)",
@@ -207,7 +227,6 @@ export default function Settings() {
     { id: 'preferences', label: t.preferences, icon: Globe },
     { id: 'trading', label: t.trading, icon: Shield },
     { id: 'notifications', label: t.notifications, icon: Bell },
-    { id: 'privacy', label: t.privacy, icon: Shield },
     { id: 'trash', label: t.trash, icon: Trash2 },
   ];
 
@@ -342,34 +361,6 @@ export default function Settings() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label>{t.startPage}</Label>
-                    <Select
-                      value={settings.start_page || "/Dashboard"}
-                      onValueChange={(value) => setSettings({ ...settings, start_page: value })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="/Dashboard">Dashboard</SelectItem>
-                        <SelectItem value="/Journal">Dziennik</SelectItem>
-                        <SelectItem value="/Calendar">Kalendarz</SelectItem>
-                        <SelectItem value="/Analytics">Analityka</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>{t.pnlView}</Label>
-                    <Select
-                      value={settings.pnl_view || "money"}
-                      onValueChange={(value) => setSettings({ ...settings, pnl_view: value })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="money">{t.pnlViewMoney}</SelectItem>
-                        <SelectItem value="percent">{t.pnlViewPercent}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </CardContent>
               </Card>
             )}
@@ -447,27 +438,6 @@ export default function Settings() {
                     <Switch
                       checked={settings.show_weekends !== undefined ? settings.show_weekends : false}
                       onCheckedChange={(checked) => setSettings({ ...settings, show_weekends: checked })}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {activeSection === 'privacy' && (
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
-                <CardHeader>
-                  <CardTitle>{t.privacy}</CardTitle>
-                  <CardDescription>Ukrywanie wrażliwych danych w interfejsie</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>{t.privacyMode}</Label>
-                      <p className="text-sm text-slate-500">Przydatne do analizy bez emocji i przy screenach.</p>
-                    </div>
-                    <Switch
-                      checked={!!settings.privacy_mode}
-                      onCheckedChange={(checked) => setSettings({ ...settings, privacy_mode: checked })}
                     />
                   </div>
                 </CardContent>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
@@ -18,18 +18,10 @@ import TradeFormNew from "../components/TradeFormNew";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionLabel, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor, tradeStatusBadgeClass } from "@/lib/utils";
-import { getEffectiveUserSettings, loadLocalUserSettings } from "@/lib/userSettings";
 
 export default function Dashboard() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
-  const effectiveSettings = useMemo(() => {
-    return getEffectiveUserSettings({
-      cloudSettings: user || {},
-      localSettings: loadLocalUserSettings(),
-    });
-  }, [user]);
-  const privacyMode = !!effectiveSettings?.privacy_mode;
   const navigate = useNavigate();
   const dashboardFiltersStorageKey = `dashboard_filters_${user?.id || 'guest'}`;
   const dateLocale = language === "pl" ? pl : enUS;
@@ -920,7 +912,7 @@ export default function Dashboard() {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-slate-500 truncate">{t('totalPL')}</p>
                   <div className={`mt-1.5 text-xl md:text-2xl font-bold ${totalPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    <span data-private="pnl">{totalPL >= 0 ? '+' : ''}{totalPL.toFixed(2)}</span>
+                    {totalPL >= 0 ? '+' : ''}{totalPL.toFixed(2)}
                   </div>
                   <p className="text-xs text-slate-500 mt-1 truncate">{t('from')} {totalTrades} {t('trades')}</p>
                 </div>
