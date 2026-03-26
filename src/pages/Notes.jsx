@@ -9,7 +9,9 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Bold, Italic, Underline, Strikethrough,
-  Heading1, Heading2, Heading3, List, ListOrdered, Quote, Minus,
+  Heading1, Heading2, Heading3, List, ListOrdered, Quote,
+  AlignLeft, AlignCenter, AlignRight,
+  Link2, ImagePlus, Table2, Highlighter,
   Pin, PinOff, Trash2, Plus, Search, FolderOpen, FileText,
   ChevronRight, MoreHorizontal, Check, X, Download, Upload,
   Clock, BookOpen, Copy, Clipboard, Hash, Undo2, Redo2
@@ -18,6 +20,16 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TiptapUnderline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { Highlight } from '@tiptap/extension-highlight';
+import { Link } from '@tiptap/extension-link';
+import { Image } from '@tiptap/extension-image';
+import { TextAlign } from '@tiptap/extension-text-align';
+import { storage } from '@/lib/firebase';
+import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -171,7 +183,12 @@ export default function Notes() {
 
   const titleInputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
   const pendingUpdates = useRef(new Map());
+
+  const [linkUrl, setLinkUrl] = useState('');
+  const [showLinkInput, setShowLinkInput] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const defaultNotebook = useMemo(() => ({ id: "default", name: "Notatki" }), []);
   const defaultSection = useMemo(() => ({ id: "general", notebookId: "default", name: "Ogólne" }), []);
@@ -327,6 +344,14 @@ export default function Notes() {
       StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
       TiptapUnderline,
       Placeholder.configure({ placeholder: 'Zacznij pisać...' }),
+      Highlight.configure({ multicolor: true }),
+      Link.configure({ openOnClick: false, HTMLAttributes: { class: 'tiptap-link' } }),
+      Image.configure({ HTMLAttributes: { class: 'tiptap-image' } }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: '',
     editable: false,
@@ -507,6 +532,39 @@ export default function Notes() {
     const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: `notes-${new Date().toISOString().slice(0, 10)}.json` });
     a.click();
     URL.revokeObjectURL(a.href);
+  };
+
+  const handleImageUpload = async (file) => {
+    if (!file || !user?.id) return;
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowed.includes(file.type)) { toast.error('Dozwolone formaty: JPG, PNG, GIF, WEBP'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Plik jest za duży (max 5 MB)'); return; }
+    setIsUploadingImage(true);
+    try {
+      const path = `notes-images/${user.id}/${Date.now()}-${file.name}`;
+      const sRef = storageRef(storage, path);
+      await uploadBytes(sRef, file);
+      const url = await getDownloadURL(sRef);
+      editor?.chain().focus().setImage({ src: url, alt: file.name }).run();
+    } catch (e) {
+      console.error(e);
+      toast.error('Nie udało się wgrać obrazka');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleSetLink = () => {
+    if (!editor) return;
+    const url = linkUrl.trim();
+    if (!url) {
+      editor.chain().focus().unsetLink().run();
+    } else {
+      const href = url.startsWith('http') ? url : `https://${url}`;
+      editor.chain().focus().setLink({ href }).run();
+    }
+    setLinkUrl('');
+    setShowLinkInput(false);
   };
 
 
@@ -911,51 +969,181 @@ export default function Notes() {
 
                 {/* Toolbar */}
                 <div className="flex flex-wrap items-center gap-0.5 bg-slate-50 dark:bg-card/60 rounded-lg p-1 border border-slate-200 dark:border-border">
+                  {/* Format text */}
                   {[
                     { icon: Bold, title: "Pogrubienie (Ctrl+B)", action: () => editor?.chain().focus().toggleBold().run(), isActive: editor?.isActive('bold') },
                     { icon: Italic, title: "Kursywa (Ctrl+I)", action: () => editor?.chain().focus().toggleItalic().run(), isActive: editor?.isActive('italic') },
                     { icon: Underline, title: "Podkreślenie (Ctrl+U)", action: () => editor?.chain().focus().toggleUnderline().run(), isActive: editor?.isActive('underline') },
-                    null,
+                    { icon: Strikethrough, title: "Przekreślenie", action: () => editor?.chain().focus().toggleStrike().run(), isActive: editor?.isActive('strike') },
+                  ].map((item) => (
+                    <button key={item.title} type="button" title={item.title}
+                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                      onMouseDown={(e) => e.preventDefault()} onClick={item.action}>
+                      <item.icon className="h-3.5 w-3.5" />
+                    </button>
+                  ))}
+
+                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+                  {/* Headings */}
+                  {[
                     { icon: Heading1, title: "Nagłówek 1", action: () => editor?.chain().focus().toggleHeading({ level: 1 }).run(), isActive: editor?.isActive('heading', { level: 1 }) },
                     { icon: Heading2, title: "Nagłówek 2", action: () => editor?.chain().focus().toggleHeading({ level: 2 }).run(), isActive: editor?.isActive('heading', { level: 2 }) },
                     { icon: Heading3, title: "Nagłówek 3", action: () => editor?.chain().focus().toggleHeading({ level: 3 }).run(), isActive: editor?.isActive('heading', { level: 3 }) },
-                    null,
+                  ].map((item) => (
+                    <button key={item.title} type="button" title={item.title}
+                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                      onMouseDown={(e) => e.preventDefault()} onClick={item.action}>
+                      <item.icon className="h-3.5 w-3.5" />
+                    </button>
+                  ))}
+
+                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+                  {/* Lists + Quote */}
+                  {[
                     { icon: List, title: "Lista punktowana", action: () => editor?.chain().focus().toggleBulletList().run(), isActive: editor?.isActive('bulletList') },
                     { icon: ListOrdered, title: "Lista numerowana", action: () => editor?.chain().focus().toggleOrderedList().run(), isActive: editor?.isActive('orderedList') },
                     { icon: Quote, title: "Cytat", action: () => editor?.chain().focus().toggleBlockquote().run(), isActive: editor?.isActive('blockquote') },
-                    null,
-                    { icon: Undo2, title: "Cofnij (Ctrl+Z)", action: () => editor?.chain().focus().undo().run(), isActive: false },
-                    { icon: Redo2, title: "Ponów (Ctrl+Y)", action: () => editor?.chain().focus().redo().run(), isActive: false },
-                  ].map((item, i) =>
-                    item === null ? (
-                      <div key={i} className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
-                    ) : (
-                      <button
-                        key={item.title}
-                        type="button"
-                        title={item.title}
-                        className={cn(
-                          "p-1.5 rounded transition-colors",
-                          item.isActive
-                            ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100"
-                            : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-                        )}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={item.action}
-                      >
-                        <item.icon className="h-3.5 w-3.5" />
-                      </button>
-                    )
-                  )}
+                  ].map((item) => (
+                    <button key={item.title} type="button" title={item.title}
+                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                      onMouseDown={(e) => e.preventDefault()} onClick={item.action}>
+                      <item.icon className="h-3.5 w-3.5" />
+                    </button>
+                  ))}
+
                   <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+                  {/* Text align */}
+                  {[
+                    { icon: AlignLeft, title: "Wyrównaj do lewej", action: () => editor?.chain().focus().setTextAlign('left').run(), isActive: editor?.isActive({ textAlign: 'left' }) },
+                    { icon: AlignCenter, title: "Wyśrodkuj", action: () => editor?.chain().focus().setTextAlign('center').run(), isActive: editor?.isActive({ textAlign: 'center' }) },
+                    { icon: AlignRight, title: "Wyrównaj do prawej", action: () => editor?.chain().focus().setTextAlign('right').run(), isActive: editor?.isActive({ textAlign: 'right' }) },
+                  ].map((item) => (
+                    <button key={item.title} type="button" title={item.title}
+                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                      onMouseDown={(e) => e.preventDefault()} onClick={item.action}>
+                      <item.icon className="h-3.5 w-3.5" />
+                    </button>
+                  ))}
+
+                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+                  {/* Highlight color picker */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button type="button" title="Zaznacz kolorem"
+                        className={cn("p-1.5 rounded transition-colors", editor?.isActive('highlight') ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                        onMouseDown={(e) => e.preventDefault()}>
+                        <Highlighter className="h-3.5 w-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="p-2 flex gap-1.5" style={{ minWidth: 0 }}>
+                      {[
+                        { color: '#fef08a', label: 'Żółty' },
+                        { color: '#bbf7d0', label: 'Zielony' },
+                        { color: '#fecaca', label: 'Czerwony' },
+                        { color: '#bfdbfe', label: 'Niebieski' },
+                      ].map(({ color, label }) => (
+                        <button key={color} title={label} onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => editor?.chain().focus().toggleHighlight({ color }).run()}
+                          className="w-6 h-6 rounded border border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform"
+                          style={{ backgroundColor: color }} />
+                      ))}
+                      <button title="Usuń highlight" onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor?.chain().focus().unsetHighlight().run()}
+                        className="w-6 h-6 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:scale-110 transition-transform flex items-center justify-center">
+                        <X className="h-3 w-3 text-slate-500" />
+                      </button>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Link */}
+                  <div className="relative flex items-center">
+                    <button type="button" title="Wstaw link"
+                      className={cn("p-1.5 rounded transition-colors", editor?.isActive('link') ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setLinkUrl(editor?.getAttributes('link').href || '');
+                        setShowLinkInput((v) => !v);
+                      }}>
+                      <Link2 className="h-3.5 w-3.5" />
+                    </button>
+                    {showLinkInput && (
+                      <div className="absolute top-8 left-0 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-2 flex gap-1 min-w-[220px]">
+                        <input
+                          autoFocus
+                          className="flex-1 text-xs px-2 py-1 rounded border border-slate-200 dark:border-slate-700 bg-transparent outline-none text-slate-900 dark:text-slate-100"
+                          placeholder="https://..."
+                          value={linkUrl}
+                          onChange={(e) => setLinkUrl(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleSetLink(); if (e.key === 'Escape') setShowLinkInput(false); }}
+                        />
+                        <button className="px-2 py-1 text-xs bg-violet-600 text-white rounded hover:bg-violet-700" onClick={handleSetLink}>OK</button>
+                        <button className="px-2 py-1 text-xs rounded hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => setShowLinkInput(false)}><X className="h-3 w-3" /></button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Image upload */}
+                  <button type="button" title={isUploadingImage ? "Wgrywanie..." : "Wstaw obrazek"}
+                    disabled={isUploadingImage}
+                    className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors disabled:opacity-50"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => imageInputRef.current?.click()}>
+                    <ImagePlus className="h-3.5 w-3.5" />
+                  </button>
+                  <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ''; }} />
+
+                  {/* Table */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button type="button" title="Tabela"
+                        className={cn("p-1.5 rounded transition-colors", editor?.isActive('table') ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                        onMouseDown={(e) => e.preventDefault()}>
+                        <Table2 className="h-3.5 w-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-44 text-xs">
+                      <DropdownMenuItem onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+                        Wstaw tabelę (3×3)
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => editor?.chain().focus().addRowBefore().run()}>Dodaj wiersz przed</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => editor?.chain().focus().addRowAfter().run()}>Dodaj wiersz po</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => editor?.chain().focus().deleteRow().run()}>Usuń wiersz</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => editor?.chain().focus().addColumnBefore().run()}>Dodaj kolumnę przed</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => editor?.chain().focus().addColumnAfter().run()}>Dodaj kolumnę po</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => editor?.chain().focus().deleteColumn().run()}>Usuń kolumnę</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={() => editor?.chain().focus().deleteTable().run()}>Usuń tabelę</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+                  {/* Undo / Redo */}
+                  {[
+                    { icon: Undo2, title: "Cofnij (Ctrl+Z)", action: () => editor?.chain().focus().undo().run() },
+                    { icon: Redo2, title: "Ponów (Ctrl+Y)", action: () => editor?.chain().focus().redo().run() },
+                  ].map((item) => (
+                    <button key={item.title} type="button" title={item.title}
+                      className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                      onMouseDown={(e) => e.preventDefault()} onClick={item.action}>
+                      <item.icon className="h-3.5 w-3.5" />
+                    </button>
+                  ))}
+
+                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
                   {/* Templates dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        title="Wstaw szablon"
-                        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors text-[11px] font-medium"
-                      >
+                      <button type="button" title="Wstaw szablon"
+                        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors text-[11px] font-medium">
                         <Clipboard className="h-3.5 w-3.5" />
                         Szablon
                       </button>
@@ -985,7 +1173,7 @@ export default function Notes() {
         .tiptap-notes-editor { display: flex; flex: 1; flex-direction: column; }
         .tiptap-notes-editor .ProseMirror {
           flex: 1;
-          min-height: calc(100vh - 18rem);
+          min-height: calc(100vh - 20rem);
           padding: 1.25rem 1.5rem;
           font-size: 15px;
           line-height: 1.75;
@@ -1008,6 +1196,7 @@ export default function Notes() {
         .tiptap-notes-editor .ProseMirror strong { font-weight: 700; }
         .tiptap-notes-editor .ProseMirror em { font-style: italic; }
         .tiptap-notes-editor .ProseMirror u { text-decoration: underline; }
+        .tiptap-notes-editor .ProseMirror s { text-decoration: line-through; }
         .tiptap-notes-editor .ProseMirror p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
           float: left;
@@ -1015,6 +1204,48 @@ export default function Notes() {
           pointer-events: none;
           height: 0;
         }
+        /* Links */
+        .tiptap-notes-editor .ProseMirror .tiptap-link {
+          color: #7c3aed;
+          text-decoration: underline;
+          cursor: pointer;
+        }
+        .dark .tiptap-notes-editor .ProseMirror .tiptap-link { color: #a78bfa; }
+        /* Images */
+        .tiptap-notes-editor .ProseMirror .tiptap-image {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.5rem;
+          margin: 0.75rem 0;
+          display: block;
+        }
+        .tiptap-notes-editor .ProseMirror img.tiptap-image.ProseMirror-selectednode {
+          outline: 2px solid #8b5cf6;
+        }
+        /* Tables */
+        .tiptap-notes-editor .ProseMirror table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 0.75rem 0;
+          font-size: 0.875rem;
+        }
+        .tiptap-notes-editor .ProseMirror table td,
+        .tiptap-notes-editor .ProseMirror table th {
+          border: 1px solid #e2e8f0;
+          padding: 0.4rem 0.75rem;
+          min-width: 60px;
+          vertical-align: top;
+        }
+        .dark .tiptap-notes-editor .ProseMirror table td,
+        .dark .tiptap-notes-editor .ProseMirror table th { border-color: #334155; }
+        .tiptap-notes-editor .ProseMirror table th {
+          background: #f8fafc;
+          font-weight: 600;
+          text-align: left;
+        }
+        .dark .tiptap-notes-editor .ProseMirror table th { background: #1e293b; }
+        .tiptap-notes-editor .ProseMirror table .selectedCell { background: #ede9fe; }
+        .dark .tiptap-notes-editor .ProseMirror table .selectedCell { background: #3b0764; }
       `}</style>
     </div>
   );
