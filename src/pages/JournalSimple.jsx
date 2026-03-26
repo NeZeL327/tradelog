@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, deleteTrade, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -40,6 +40,7 @@ import TradeCard from "../components/TradeCard";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionBadgeClass, directionLabel, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
+import { getEffectiveUserSettings, loadLocalUserSettings } from "@/lib/userSettings";
 
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
 const DAYS_PL = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
@@ -123,6 +124,13 @@ function MiniCalendar({ from, to, onSelect }) {
 export default function JournalSimple({ mode = "all" }) {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const effectiveSettings = useMemo(() => {
+    return getEffectiveUserSettings({
+      cloudSettings: user || {},
+      localSettings: loadLocalUserSettings(),
+    });
+  }, [user]);
+  const pnlView = effectiveSettings?.pnl_view === "percent" ? "percent" : "money";
   const isPlannedMode = mode === "planned";
   const journalFiltersStorageKey = `journal_filters_${user?.id || 'guest'}_${mode}`;
   const hasLoadedJournalFilters = useRef(false);
@@ -545,6 +553,13 @@ export default function JournalSimple({ mode = "all" }) {
     losses: statsSource.filter(t => t.outcome === "Loss").length,
     totalPL: statsSource.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0)
   };
+  const totalPLPercent = useMemo(() => {
+    const list = statsSource;
+    if (!list.length) return 0;
+    const values = list.map((t) => parseFloat(t.profit_loss_percentage)).filter((n) => Number.isFinite(n));
+    if (!values.length) return 0;
+    return values.reduce((a, b) => a + b, 0);
+  }, [statsSource]);
 
   if (isLoading) {
     return (
@@ -678,7 +693,9 @@ export default function JournalSimple({ mode = "all" }) {
             <CardContent className="p-4">
               <p className={`text-sm mb-1 ${stats.totalPL >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{t('totalPL')}</p>
               <p className={`text-2xl font-bold ${stats.totalPL >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                {stats.totalPL >= 0 ? '+' : ''}{stats.totalPL.toFixed(2)}
+                {pnlView === "percent"
+                  ? `${totalPLPercent >= 0 ? "+" : ""}${totalPLPercent.toFixed(2)}%`
+                  : `${stats.totalPL >= 0 ? "+" : ""}${stats.totalPL.toFixed(2)}`}
               </p>
             </CardContent>
           </Card>
@@ -1061,7 +1078,11 @@ export default function JournalSimple({ mode = "all" }) {
                                 parseFloat(trade.profit_loss || 0) < 0 ? 'text-red-600' :
                                 'text-slate-600'
                               }`}>
-                                {parseFloat(trade.profit_loss || 0) > 0 ? '+' : ''}{parseFloat(trade.profit_loss || 0).toFixed(2)}
+                                <span data-private="pnl">
+                                  {pnlView === "percent" && Number.isFinite(parseFloat(trade.profit_loss_percentage))
+                                    ? `${parseFloat(trade.profit_loss_percentage) > 0 ? "+" : ""}${parseFloat(trade.profit_loss_percentage).toFixed(2)}%`
+                                    : `${parseFloat(trade.profit_loss || 0) > 0 ? "+" : ""}${parseFloat(trade.profit_loss || 0).toFixed(2)}`}
+                                </span>
                               </span>
                             </div>
                           ) : <span className="text-sm text-slate-400">-</span>}

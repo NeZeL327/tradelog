@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { logger } from '@/lib/logger';
+import { applyRuntimeSettings, getEffectiveUserSettings, loadLocalUserSettings } from '@/lib/userSettings';
 
 const AuthContext = createContext(undefined);
 
@@ -77,6 +78,15 @@ export const AuthProvider = ({ children }) => {
           };
 
           setUser(mergedUser);
+          try {
+            const effective = getEffectiveUserSettings({
+              cloudSettings: mergedUser,
+              localSettings: loadLocalUserSettings(),
+            });
+            applyRuntimeSettings(effective);
+          } catch (e) {
+            logger.error('applyRuntimeSettings error', e);
+          }
           setIsAuthenticated(true);
         } catch (error) {
           logger.error('Error initializing auth state', error);
@@ -105,7 +115,17 @@ export const AuthProvider = ({ children }) => {
               setUser(mergedUser);
               setIsAuthenticated(true);
               setIsLoadingAuth(false);
-              window.location.href = '/Dashboard';
+              try {
+                const effective = getEffectiveUserSettings({
+                  cloudSettings: mergedUser,
+                  localSettings: loadLocalUserSettings(),
+                });
+                applyRuntimeSettings(effective);
+                window.location.href = effective?.start_page || '/Dashboard';
+              } catch (e) {
+                logger.error('applyRuntimeSettings error', e);
+                window.location.href = '/Dashboard';
+              }
             })
             .catch((err) => {
               logger.error('Redirect ensureProfile error', err);
