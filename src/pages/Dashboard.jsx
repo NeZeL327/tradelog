@@ -928,57 +928,6 @@ export default function Dashboard() {
                 </PopoverContent>
               </Popover>
 
-              {/* Date range picker */}
-              <div className="relative" ref={datePickerRef}>
-                <button
-                  type="button"
-                  onClick={() => setDatePickerOpen(prev => !prev)}
-                  className={`relative flex items-center gap-2 px-3 py-2 h-9 md:h-10 border rounded-md text-sm transition-colors shrink-0 ${
-                    dateRange.from
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
-                      : "border-input bg-transparent hover:bg-accent"
-                  }`}
-                >
-                  <CalendarRange className="w-4 h-4 shrink-0" />
-                  <span className="truncate max-w-[140px]">
-                    {dateRange.from
-                      ? dateRange.to && dateRange.to !== dateRange.from
-                        ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
-                        : dateRange.from.split("-").reverse().join(".")
-                      : "Zakres dat"}
-                  </span>
-                  {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </button>
-                {datePickerOpen && (
-                  <div className="absolute left-0 mt-2 z-50 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-xl p-3">
-                    <MiniCalendar
-                      from={dateRange.from}
-                      to={dateRange.to}
-                      onSelect={(f, t) => setDateRange({ from: f, to: t })}
-                    />
-                    {(dateRange.from || dateRange.to) && (
-                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                        <span className="text-[11px] text-slate-400">
-                          {dateRange.from && dateRange.to
-                            ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
-                            : dateRange.from ? `Od ${dateRange.from.split("-").reverse().join(".")}` : ""}
-                        </span>
-                        <div className="flex gap-2">
-                          <button type="button" onClick={() => setDateRange({ from: "", to: "" })}
-                            className="text-[11px] text-slate-400 hover:text-red-500 px-2 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
-                            Wyczyść
-                          </button>
-                          <button type="button" onClick={() => setDatePickerOpen(false)}
-                            className="text-[11px] text-white bg-blue-600 hover:bg-blue-700 px-3 py-0.5 rounded">
-                            Zamknij
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
               <div className="relative" ref={rangeFilterMainRef}>
                 <button
                   type="button"
@@ -1033,6 +982,57 @@ export default function Dashboard() {
                         )}
                       </span>
                     </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Date range picker — rightmost */}
+              <div className="relative" ref={datePickerRef}>
+                <button
+                  type="button"
+                  onClick={() => setDatePickerOpen(prev => !prev)}
+                  className={`relative flex items-center gap-2 px-3 py-2 h-9 md:h-10 border rounded-md text-sm transition-colors shrink-0 ${
+                    dateRange.from
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
+                      : "border-input bg-transparent hover:bg-accent"
+                  }`}
+                >
+                  <CalendarRange className="w-4 h-4 shrink-0" />
+                  <span className="truncate max-w-[140px]">
+                    {dateRange.from
+                      ? dateRange.to && dateRange.to !== dateRange.from
+                        ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
+                        : dateRange.from.split("-").reverse().join(".")
+                      : "Zakres dat"}
+                  </span>
+                  {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+                {datePickerOpen && (
+                  <div className="absolute right-0 mt-2 z-50 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-xl p-3">
+                    <MiniCalendar
+                      from={dateRange.from}
+                      to={dateRange.to}
+                      onSelect={(f, t) => setDateRange({ from: f, to: t })}
+                    />
+                    {(dateRange.from || dateRange.to) && (
+                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400">
+                          {dateRange.from && dateRange.to
+                            ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
+                            : dateRange.from ? `Od ${dateRange.from.split("-").reverse().join(".")}` : ""}
+                        </span>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => setDateRange({ from: "", to: "" })}
+                            className="text-[11px] text-slate-400 hover:text-red-500 px-2 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                            Wyczyść
+                          </button>
+                          <button type="button" onClick={() => setDatePickerOpen(false)}
+                            className="text-[11px] text-white bg-blue-600 hover:bg-blue-700 px-3 py-0.5 rounded">
+                            Zamknij
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
