@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar,
-  Settings, LogOut, NotebookPen, CreditCard, ListTodo, CheckSquare,
+  Settings, LogOut, NotebookPen, CreditCard, ListTodo,
   ChevronRight, User,
 } from "lucide-react";
 import {
@@ -50,7 +50,6 @@ const NAV_GROUPS = (t) => [
     label: "WORKSPACE",
     items: [
       { title: t('notes'), url: createPageUrl("Notes"), icon: NotebookPen },
-      { title: t('notesChecklists') || 'Checklisty', url: createPageUrl("Checklist"), icon: CheckSquare },
       { title: t('accounts'), url: createPageUrl("Accounts"), icon: Wallet },
     ],
   },
