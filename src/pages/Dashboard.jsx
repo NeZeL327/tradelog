@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TrendingUp, TrendingDown, Calendar, Eye, ChevronDown, ChevronUp, Filter, CalendarDays, Wallet } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, CalendarDays, CalendarRange, Wallet } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, ScatterChart, Scatter } from "recharts";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, subDays } from "date-fns";
 import { enUS, pl } from "date-fns/locale";
@@ -18,6 +18,61 @@ import TradeFormNew from "../components/TradeFormNew";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionLabel, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor, tradeStatusBadgeClass } from "@/lib/utils";
+
+// ─── Mini date-range calendar (same as Journal) ──────────────────────────────
+const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
+const DAYS_PL = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
+
+function MiniCalendar({ from, to, onSelect }) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [view, setView] = useState(() => {
+    const base = from ? new Date(from + "T00:00:00") : new Date();
+    return { year: base.getFullYear(), month: base.getMonth() };
+  });
+  const prevMonth = () => setView(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 });
+  const nextMonth = () => setView(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 });
+  const toStr = (d) => `${view.year}-${String(view.month + 1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  const firstDow = (() => { const d = new Date(view.year, view.month, 1).getDay(); return d === 0 ? 6 : d - 1; })();
+  const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
+  const cells = [...Array(firstDow).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+  const handleDay = (d) => {
+    if (!d) return;
+    const s = toStr(d);
+    if (!from || (from && to)) { onSelect(s, ""); }
+    else if (s < from) { onSelect(s, from); }
+    else { onSelect(from, s); }
+  };
+  return (
+    <div className="w-[224px] select-none">
+      <div className="flex items-center justify-between mb-2">
+        <button type="button" onClick={prevMonth} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"><ChevronLeft className="w-4 h-4" /></button>
+        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{MONTHS_PL[view.month]} {view.year}</span>
+        <button type="button" onClick={nextMonth} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"><ChevronRight className="w-4 h-4" /></button>
+      </div>
+      <div className="grid grid-cols-7 mb-1">
+        {DAYS_PL.map(d => <div key={d} className="text-center text-[10px] font-medium text-slate-400 py-0.5">{d}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-y-0.5">
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />;
+          const s = toStr(d);
+          const isFrom = s === from, isTo = s === to;
+          const inRange = from && to && s > from && s < to;
+          const isNow = s === todayStr;
+          return (
+            <button key={i} type="button" onClick={() => handleDay(d)}
+              className={["text-xs h-7 w-full rounded transition-colors",
+                isFrom || isTo ? "bg-blue-600 text-white font-semibold" : "",
+                inRange ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-none" : "",
+                isNow && !isFrom && !isTo ? "font-bold text-blue-500 dark:text-blue-400" : "",
+                !isFrom && !isTo && !inRange ? "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" : "",
+              ].join(" ").trim()}>{d}</button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { t, language } = useLanguage();
@@ -66,6 +121,9 @@ export default function Dashboard() {
   const yearSelectorRef = useRef(null);
   const [calendarAccountOpen, setCalendarAccountOpen] = useState(false);
   const calendarAccountRef = useRef(null);
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const datePickerRef = useRef(null);
 
   useEffect(() => {
     hasLoadedDashboardFilters.current = false;
@@ -218,6 +276,8 @@ export default function Dashboard() {
   };
 
   const rangeStartDate = (() => {
+    // If a custom date range is set, use it instead of the quick range buttons
+    if (dateRange.from) return new Date(dateRange.from + "T00:00:00");
     const selectedRange = dashboardRanges[0] || "30d";
     const maxDays = selectedRange === "7d" ? 7 : selectedRange === "90d" ? 90 : 30;
     const d = new Date();
@@ -225,15 +285,18 @@ export default function Dashboard() {
     return d;
   })();
 
+  const rangeEndDate = dateRange.to ? new Date(dateRange.to + "T23:59:59") : null;
+
   const filteredTrades = tradesFromActiveAccounts.filter(t => {
     const tradeDate = t.date ? new Date(t.date) : null;
-    const inRange = tradeDate ? tradeDate >= rangeStartDate : true;
+    const afterStart = tradeDate ? tradeDate >= rangeStartDate : true;
+    const beforeEnd = rangeEndDate && tradeDate ? tradeDate <= rangeEndDate : true;
     return (
       (dashboardAccounts.includes("all") || dashboardAccounts.includes(String(t.account_id))) &&
       (filterSymbols.includes("all") || filterSymbols.includes(String(t.symbol))) &&
       (filterDirections.includes("all") || filterDirections.includes(String(normalizeDirection(t.direction)))) &&
       (filterOutcomes.includes("all") || filterOutcomes.includes(String(t.outcome))) &&
-      inRange
+      afterStart && beforeEnd
     );
   });
 
@@ -427,6 +490,17 @@ export default function Dashboard() {
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [rangeFilterOpen]);
+
+  useEffect(() => {
+    if (!datePickerOpen) return;
+    const handleOutsideClick = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setDatePickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [datePickerOpen]);
 
   useEffect(() => {
     if (!accountDropdownOpen) return;
@@ -853,6 +927,58 @@ export default function Dashboard() {
                   </div>
                 </PopoverContent>
               </Popover>
+
+              {/* Date range picker */}
+              <div className="relative" ref={datePickerRef}>
+                <button
+                  type="button"
+                  onClick={() => setDatePickerOpen(prev => !prev)}
+                  className={`relative flex items-center gap-2 px-3 py-2 h-9 md:h-10 border rounded-md text-sm transition-colors shrink-0 ${
+                    dateRange.from
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
+                      : "border-input bg-transparent hover:bg-accent"
+                  }`}
+                >
+                  <CalendarRange className="w-4 h-4 shrink-0" />
+                  <span className="truncate max-w-[140px]">
+                    {dateRange.from
+                      ? dateRange.to && dateRange.to !== dateRange.from
+                        ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
+                        : dateRange.from.split("-").reverse().join(".")
+                      : "Zakres dat"}
+                  </span>
+                  {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+                {datePickerOpen && (
+                  <div className="absolute left-0 mt-2 z-50 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-xl p-3">
+                    <MiniCalendar
+                      from={dateRange.from}
+                      to={dateRange.to}
+                      onSelect={(f, t) => setDateRange({ from: f, to: t })}
+                    />
+                    {(dateRange.from || dateRange.to) && (
+                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400">
+                          {dateRange.from && dateRange.to
+                            ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
+                            : dateRange.from ? `Od ${dateRange.from.split("-").reverse().join(".")}` : ""}
+                        </span>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => setDateRange({ from: "", to: "" })}
+                            className="text-[11px] text-slate-400 hover:text-red-500 px-2 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                            Wyczyść
+                          </button>
+                          <button type="button" onClick={() => setDatePickerOpen(false)}
+                            className="text-[11px] text-white bg-blue-600 hover:bg-blue-700 px-3 py-0.5 rounded">
+                            Zamknij
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div className="relative" ref={rangeFilterMainRef}>
                 <button
                   type="button"
