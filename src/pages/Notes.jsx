@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -9,11 +9,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   Bold, Italic, Underline, Strikethrough,
-  Heading1, Heading2, List, ListOrdered, Quote, Minus,
+  Heading1, Heading2, Heading3, List, ListOrdered, Quote, Minus,
   Pin, PinOff, Trash2, Plus, Search, FolderOpen, FileText,
   ChevronRight, MoreHorizontal, Check, X, Download, Upload,
-  Clock, BookOpen, Copy, Clipboard, Hash
+  Clock, BookOpen, Copy, Clipboard, Hash, Undo2, Redo2
 } from "lucide-react";
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import TiptapUnderline from '@tiptap/extension-underline';
+import Placeholder from '@tiptap/extension-placeholder';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -165,7 +169,6 @@ export default function Notes() {
   const location = useLocation();
   const { t } = useLanguage();
 
-  const editorRef = useRef(null);
   const titleInputRef = useRef(null);
   const fileInputRef = useRef(null);
   const pendingUpdates = useRef(new Map());
@@ -299,12 +302,6 @@ export default function Notes() {
     if (document.activeElement !== titleInputRef.current) setTitleDraft(String(selectedNote.title || ""));
   }, [selectedNoteId, selectedNote?.title]);
 
-  // Sync editor content
-  useEffect(() => {
-    if (!editorRef.current) return;
-    const html = selectedNote?.body || "";
-    editorRef.current.innerHTML = html;
-  }, [selectedNoteId]);
 
   const queueUpdate = useCallback((id, patch) => {
     if (!user?.id) return;
@@ -317,13 +314,44 @@ export default function Notes() {
       } catch (e) {
         console.error("Note update error:", e);
       }
-    }, 600));
+    }, 3000));
   }, [user?.id]);
 
   const updateNote = useCallback((id, patch) => {
     setNotes((prev) => prev.map((n) => n.id === id ? { ...n, ...patch } : n));
     queueUpdate(id, patch);
   }, [queueUpdate]);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      TiptapUnderline,
+      Placeholder.configure({ placeholder: 'Zacznij pisać...' }),
+    ],
+    content: '',
+    editable: false,
+  });
+
+  // Sync Tiptap content when note changes
+  useEffect(() => {
+    if (!editor) return;
+    editor.commands.setContent(selectedNote?.body || '', false);
+    editor.setEditable(!!selectedNote);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedNoteId, editor]);
+
+  // Attach update handler (fresh closure on every note/updateNote change)
+  useEffect(() => {
+    if (!editor) return;
+    const onUpdate = ({ editor: ed }) => {
+      if (!selectedNote) return;
+      const html = ed.getHTML();
+      updateNote(selectedNote.id, { body: html });
+      setWords(wordCount(html));
+    };
+    editor.on('update', onUpdate);
+    return () => editor.off('update', onUpdate);
+  }, [editor, selectedNote, updateNote]);
 
   // Folder actions
   const handleCreateFolder = async () => {
@@ -450,10 +478,11 @@ export default function Notes() {
   };
 
   const handleInsertTemplate = (template) => {
-    if (!selectedNote || !editorRef.current) return;
-    const current = editorRef.current.innerHTML;
-    const newBody = current ? current + "<br>" + template.body : template.body;
-    editorRef.current.innerHTML = newBody;
+    if (!selectedNote || !editor) return;
+    const current = editor.getHTML();
+    const isEmpty = current === '<p></p>' || !current.trim();
+    const newBody = isEmpty ? template.body : current + '<br>' + template.body;
+    editor.commands.setContent(newBody, false);
     updateNote(selectedNote.id, { body: newBody });
     setWords(wordCount(newBody));
     toast.success(`Wstawiono szablon: ${template.label}`);
@@ -480,25 +509,6 @@ export default function Notes() {
     URL.revokeObjectURL(a.href);
   };
 
-  const exec = (cmd, val) => {
-    editorRef.current?.focus();
-    document.execCommand(cmd, false, val);
-  };
-
-  const toolbarItems = [
-    { icon: Bold, cmd: "bold", title: "Pogrubienie (Ctrl+B)" },
-    { icon: Italic, cmd: "italic", title: "Kursywa (Ctrl+I)" },
-    { icon: Underline, cmd: "underline", title: "Podkreślenie (Ctrl+U)" },
-    { icon: Strikethrough, cmd: "strikeThrough", title: "Przekreślenie" },
-    null,
-    { icon: Heading1, cmd: "formatBlock", val: "h1", title: "Nagłówek 1" },
-    { icon: Heading2, cmd: "formatBlock", val: "h2", title: "Nagłówek 2" },
-    null,
-    { icon: List, cmd: "insertUnorderedList", title: "Lista punktowana" },
-    { icon: ListOrdered, cmd: "insertOrderedList", title: "Lista numerowana" },
-    { icon: Quote, cmd: "formatBlock", val: "blockquote", title: "Cytat" },
-    { icon: Minus, cmd: "insertHorizontalRule", title: "Linia pozioma" },
-  ];
 
   const TAG_COLORS = ["blue", "emerald", "violet", "amber", "rose", "sky", "indigo"];
   const tagColor = (tag) => TAG_COLORS[Math.abs(tag.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % TAG_COLORS.length];
@@ -901,17 +911,37 @@ export default function Notes() {
 
                 {/* Toolbar */}
                 <div className="flex flex-wrap items-center gap-0.5 bg-slate-50 dark:bg-card/60 rounded-lg p-1 border border-slate-200 dark:border-border">
-                  {toolbarItems.map((item, i) =>
+                  {[
+                    { icon: Bold, title: "Pogrubienie (Ctrl+B)", action: () => editor?.chain().focus().toggleBold().run(), isActive: editor?.isActive('bold') },
+                    { icon: Italic, title: "Kursywa (Ctrl+I)", action: () => editor?.chain().focus().toggleItalic().run(), isActive: editor?.isActive('italic') },
+                    { icon: Underline, title: "Podkreślenie (Ctrl+U)", action: () => editor?.chain().focus().toggleUnderline().run(), isActive: editor?.isActive('underline') },
+                    null,
+                    { icon: Heading1, title: "Nagłówek 1", action: () => editor?.chain().focus().toggleHeading({ level: 1 }).run(), isActive: editor?.isActive('heading', { level: 1 }) },
+                    { icon: Heading2, title: "Nagłówek 2", action: () => editor?.chain().focus().toggleHeading({ level: 2 }).run(), isActive: editor?.isActive('heading', { level: 2 }) },
+                    { icon: Heading3, title: "Nagłówek 3", action: () => editor?.chain().focus().toggleHeading({ level: 3 }).run(), isActive: editor?.isActive('heading', { level: 3 }) },
+                    null,
+                    { icon: List, title: "Lista punktowana", action: () => editor?.chain().focus().toggleBulletList().run(), isActive: editor?.isActive('bulletList') },
+                    { icon: ListOrdered, title: "Lista numerowana", action: () => editor?.chain().focus().toggleOrderedList().run(), isActive: editor?.isActive('orderedList') },
+                    { icon: Quote, title: "Cytat", action: () => editor?.chain().focus().toggleBlockquote().run(), isActive: editor?.isActive('blockquote') },
+                    null,
+                    { icon: Undo2, title: "Cofnij (Ctrl+Z)", action: () => editor?.chain().focus().undo().run(), isActive: false },
+                    { icon: Redo2, title: "Ponów (Ctrl+Y)", action: () => editor?.chain().focus().redo().run(), isActive: false },
+                  ].map((item, i) =>
                     item === null ? (
                       <div key={i} className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
                     ) : (
                       <button
-                        key={item.cmd + (item.val || "")}
+                        key={item.title}
                         type="button"
                         title={item.title}
-                        className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                        className={cn(
+                          "p-1.5 rounded transition-colors",
+                          item.isActive
+                            ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                            : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                        )}
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => exec(item.cmd, item.val)}
+                        onClick={item.action}
                       >
                         <item.icon className="h-3.5 w-3.5" />
                       </button>
@@ -944,26 +974,7 @@ export default function Notes() {
 
               {/* Editor body */}
               <div className="flex-1 overflow-y-auto">
-                <div
-                  ref={editorRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  className={cn(
-                    "min-h-full px-6 py-5 text-[15px] leading-7 text-slate-800 dark:text-slate-200 focus:outline-none",
-                    "prose prose-slate dark:prose-invert max-w-none",
-                    "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2",
-                    "[&_h2]:text-xl [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-2",
-                    "[&_blockquote]:border-l-4 [&_blockquote]:border-violet-400 [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:text-slate-500",
-                    "[&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5",
-                    "[&_hr]:border-slate-200 [&_hr]:dark:border-slate-700"
-                  )}
-                  data-placeholder="Zacznij pisać..."
-                  onInput={(e) => {
-                    const html = e.currentTarget.innerHTML;
-                    updateNote(selectedNote.id, { body: html });
-                    setWords(wordCount(html));
-                  }}
-                />
+                <EditorContent editor={editor} className="tiptap-notes-editor" />
               </div>
             </div>
           )}
@@ -971,10 +982,38 @@ export default function Notes() {
       </div>
 
       <style>{`
-        [contenteditable]:empty:before {
+        .tiptap-notes-editor { display: flex; flex: 1; flex-direction: column; }
+        .tiptap-notes-editor .ProseMirror {
+          flex: 1;
+          min-height: calc(100vh - 18rem);
+          padding: 1.25rem 1.5rem;
+          font-size: 15px;
+          line-height: 1.75;
+          outline: none;
+        }
+        .tiptap-notes-editor .ProseMirror h1 { font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem; }
+        .tiptap-notes-editor .ProseMirror h2 { font-size: 1.25rem; font-weight: 600; margin: 0.75rem 0 0.5rem; }
+        .tiptap-notes-editor .ProseMirror h3 { font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0 0.25rem; }
+        .tiptap-notes-editor .ProseMirror p { margin: 0.25rem 0; }
+        .tiptap-notes-editor .ProseMirror ul { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
+        .tiptap-notes-editor .ProseMirror ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5rem 0; }
+        .tiptap-notes-editor .ProseMirror blockquote {
+          border-left: 4px solid #8b5cf6;
+          padding-left: 1rem;
+          font-style: italic;
+          color: #64748b;
+          margin: 0.5rem 0;
+        }
+        .dark .tiptap-notes-editor .ProseMirror blockquote { color: #94a3b8; }
+        .tiptap-notes-editor .ProseMirror strong { font-weight: 700; }
+        .tiptap-notes-editor .ProseMirror em { font-style: italic; }
+        .tiptap-notes-editor .ProseMirror u { text-decoration: underline; }
+        .tiptap-notes-editor .ProseMirror p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
+          float: left;
           color: #9ca3af;
           pointer-events: none;
+          height: 0;
         }
       `}</style>
     </div>
