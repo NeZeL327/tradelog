@@ -6,30 +6,45 @@
 
 /* Scale entire app to ~80%.
    Zoom is on #root (NOT html) so Radix portals (rendered at body level,
-   outside #root) are unaffected and position themselves correctly. */
-html, body {
-  overflow: hidden;
+   outside #root) are unaffected and position themselves correctly.
+   Body must not scroll: #root is height:100% and overflow-y:auto so one
+   scroll container exists (min-height-only on #root broke scrolling). */
+html,
+body {
   height: 100%;
+  margin: 0;
+  overflow: hidden;
 }
 
 #root {
   zoom: 0.82;
-  /* Compensate: after zoom the visual width = CSS width * 0.82.
-     To fill the full viewport we need CSS width = 100vw / 0.82. */
+  /* Compensate: after zoom the visual width = CSS width * 0.82. */
   width: calc(100vw / 0.82);
-  min-height: calc(100dvh / 0.82);
-  overflow: auto;
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @supports not (zoom: 1) {
-  /* Firefox fallback: transform on #root, same principle */
-  html, body { overflow: hidden; height: 100%; }
+  html,
+  body {
+    overflow: hidden;
+    height: 100%;
+    margin: 0;
+  }
   #root {
     zoom: unset;
     width: calc(100vw / 0.82);
-    min-height: calc(100dvh / 0.82);
+    height: 100%;
+    max-height: 100%;
     transform: scale(0.82);
     transform-origin: top left;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
