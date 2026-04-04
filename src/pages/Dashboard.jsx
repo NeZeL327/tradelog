@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TrendingUp, TrendingDown, Calendar, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, CalendarDays, CalendarRange, Wallet } from "lucide-react";
+import { TrendingUp, TrendingDown, Calendar, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, CalendarDays, CalendarRange, Wallet, Plus } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, ScatterChart, Scatter } from "recharts";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, subDays } from "date-fns";
 import { enUS, pl } from "date-fns/locale";
@@ -95,6 +95,7 @@ export default function Dashboard() {
   const dayLocale = language === "pl" ? "pl-PL" : "en-US";
   const hasLoadedDashboardFilters = useRef(false);
   const [selectedTrade, setSelectedTrade] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [editingTrade, setEditingTrade] = useState(null);
   const [expandedMetric, setExpandedMetric] = useState(null);
   const [plChartFilter, setPlChartFilter] = useState("all");
@@ -724,6 +725,15 @@ export default function Dashboard() {
               <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 bordo:text-[#d4a5b8]">{t('overviewOfYourTradingPerformance')}</p>
             </div>
             <div className="flex items-center gap-3 md:gap-4 flex-wrap justify-end">
+              <Button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="h-9 md:h-10 px-3 md:px-4 gap-2 text-sm shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
+                title={t('addTrade')}
+              >
+                <Plus className="w-4 h-4 shrink-0" />
+                <span className="font-semibold">{t('addTrade')}</span>
+              </Button>
               <div className="relative" ref={accountDropdownRef}>
                 <button
                   onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
@@ -2278,10 +2288,32 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Add Trade Dialog */}
+        <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
+          <DialogContent
+            className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
+            onPointerDownOutside={(event) => event.preventDefault()}
+            onEscapeKeyDown={(event) => event.preventDefault()}
+          >
+            <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
+              <DialogTitle>{t('addTrade')}</DialogTitle>
+            </div>
+            <div className="p-6">
+              <TradeFormNew
+                onSuccess={() => {
+                  refetch();
+                  setShowAddForm(false);
+                }}
+                onClose={() => setShowAddForm(false)}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Edit Trade Dialog */}
         <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0">
-            <div className="sticky top-0 bg-white p-6 border-b">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0">
+            <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
               <DialogTitle>Edit Trade</DialogTitle>
             </div>
             <div className="p-6">

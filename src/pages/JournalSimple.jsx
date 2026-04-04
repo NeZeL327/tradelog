@@ -607,12 +607,12 @@ export default function JournalSimple({ mode = "all" }) {
           </div>
           <div className="flex gap-3">
             <Button
-              size="icon"
               onClick={() => setShowAddForm(true)}
-              className="h-10 w-10 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-md"
-              title="Dodaj transakcję"
+              className="h-10 px-4 gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-md text-white"
+              title={t('addTrade')}
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-5 h-5 shrink-0" />
+              <span className="font-semibold">{t('addTrade')}</span>
             </Button>
           </div>
         </div>
@@ -1276,12 +1276,12 @@ export default function JournalSimple({ mode = "all" }) {
         {/* Add Trade Dialog */}
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
           <DialogContent
-            className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0"
+            className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
             onPointerDownOutside={(event) => event.preventDefault()}
             onEscapeKeyDown={(event) => event.preventDefault()}
           >
-            <div className="sticky top-0 bg-white p-6 border-b">
-              <DialogTitle>Add New Trade</DialogTitle>
+            <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
+              <DialogTitle>{t('addTrade')}</DialogTitle>
             </div>
             <div className="p-6">
               <TradeFormNew
@@ -1297,8 +1297,8 @@ export default function JournalSimple({ mode = "all" }) {
 
         {/* Edit Trade Dialog */}
         <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0">
-            <div className="sticky top-0 bg-white p-6 border-b">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0">
+            <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
               <DialogTitle>Edit Trade</DialogTitle>
             </div>
             <div className="p-6">

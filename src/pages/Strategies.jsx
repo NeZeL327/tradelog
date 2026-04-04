@@ -14,7 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "@/components/LanguageProvider";
-import { isClosedTrade } from "@/lib/utils";
+import { cn, isClosedTrade } from "@/lib/utils";
 
 export default function Strategies() {
   const { t } = useLanguage();
@@ -160,18 +160,24 @@ export default function Strategies() {
 
         {/* Strategy Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {strategies.map((strategy) => {
+          {strategies.map((strategy, index) => {
             const stats = strategyStats.find(s => s.id === strategy.id);
             return (
-              <StrategyCard
+              <motion.div
                 key={strategy.id}
-                strategy={strategy}
-                stats={stats}
-                onEdit={() => {
-                  setEditingStrategy(strategy);
-                  setShowForm(true);
-                }}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, delay: index * 0.05 }}
+              >
+                <StrategyCard
+                  strategy={strategy}
+                  stats={stats}
+                  onEdit={() => {
+                    setEditingStrategy(strategy);
+                    setShowForm(true);
+                  }}
+                />
+              </motion.div>
             );
           })}
         </div>
@@ -530,114 +536,167 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
 }
 
 function StrategyCard({ strategy, stats, onEdit }) {
-  const statusColors = {
-    Aktywna: "bg-green-100 text-green-700",
-    Testowa: "bg-amber-100 text-amber-700",
-    Archiwalna: "bg-slate-100 text-slate-700"
+  const accent = strategy.color || "#6366f1";
+  const statusStyles = {
+    Aktywna: "bg-emerald-500/12 text-emerald-800 dark:text-emerald-200 border-emerald-500/25",
+    Testowa: "bg-amber-500/12 text-amber-900 dark:text-amber-200 border-amber-500/25",
+    Archiwalna: "bg-slate-500/12 text-slate-700 dark:text-slate-300 border-slate-500/25",
   };
 
   return (
-    <Card className="bg-white dark:bg-slate-800 shadow-xl border-l-4" style={{ borderLeftColor: strategy.color || "#3b82f6" }}>
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <CardTitle className="text-xl dark:text-white">{strategy.name}</CardTitle>
-              <Badge className={statusColors[strategy.status]}>{strategy.status}</Badge>
+    <Card
+      className={cn(
+        "relative h-full overflow-hidden rounded-2xl border border-slate-200/90 dark:border-border",
+        "bg-gradient-to-b from-white to-slate-50/90 dark:from-card dark:to-card/90",
+        "shadow-xl shadow-slate-900/[0.06] dark:shadow-black/40",
+        "transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-primary/35",
+        "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.06]"
+      )}
+    >
+      {/* Top accent bar + soft glow */}
+      <div
+        className="absolute inset-x-0 top-0 z-[1] h-[4px]"
+        style={{
+          background: `linear-gradient(90deg, ${accent}, ${accent}cc, transparent)`,
+        }}
+      />
+      <div
+        className="pointer-events-none absolute -top-8 left-1/2 h-24 w-[70%] -translate-x-1/2 rounded-full opacity-[0.12] blur-2xl"
+        style={{ backgroundColor: accent }}
+      />
+
+      <CardHeader className="relative z-[2] border-b border-border/60 bg-muted/25 pb-4 pt-5">
+        <div className="flex justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <CardTitle className="text-xl font-bold tracking-tight text-foreground">
+                {strategy.name}
+              </CardTitle>
+              <Badge
+                variant="outline"
+                className={cn("shrink-0 border font-medium", statusStyles[strategy.status] || statusStyles.Archiwalna)}
+              >
+                {strategy.status}
+              </Badge>
             </div>
-            <div className="flex items-center gap-2 mb-2">
-              <p className="text-sm text-slate-600 dark:text-slate-400">{strategy.category}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                {strategy.category}
+              </span>
               {strategy.performance_rating > 0 && (
                 <div className="flex gap-0.5">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className="w-3 h-3"
-                      fill={i < strategy.performance_rating ? '#fbbf24' : 'none'}
-                      color={i < strategy.performance_rating ? '#f59e0b' : '#d1d5db'}
+                      className="h-3.5 w-3.5"
+                      fill={i < strategy.performance_rating ? "#fbbf24" : "none"}
+                      color={i < strategy.performance_rating ? "#f59e0b" : "#94a3b8"}
                     />
                   ))}
                 </div>
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex shrink-0 gap-1">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => window.location.href = `${createPageUrl('StrategyDetails')}?id=${strategy.id}`}
+              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
+              onClick={() => { window.location.href = `${createPageUrl("StrategyDetails")}?id=${strategy.id}`; }}
               title="Szczegóły strategii"
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={onEdit}>
-              <Edit className="w-4 h-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
+              onClick={onEdit}
+            >
+              <Edit className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Stats */}
+      <CardContent className="relative z-[2] space-y-4 pt-5">
         {stats && stats.trades > 0 && (
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-              <Target className="w-5 h-5 mx-auto text-blue-600 dark:text-blue-400 mb-1" />
-              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{stats.winRate}%</p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Win Rate</p>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="rounded-xl border border-blue-200/70 bg-gradient-to-b from-blue-50/90 to-blue-50/40 p-3 text-center shadow-sm dark:border-blue-500/20 dark:from-blue-950/50 dark:to-blue-950/20">
+              <Target className="mx-auto mb-1 h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <p className="text-lg font-bold tabular-nums text-blue-600 dark:text-blue-300">{stats.winRate}%</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Win Rate</p>
             </div>
-            
-            <div className="text-center p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-              <TrendingUp className="w-5 h-5 mx-auto text-green-600 dark:text-green-400 mb-1" />
-              <p className={`text-lg font-bold ${parseFloat(stats.avgPL) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {parseFloat(stats.avgPL) > 0 ? '+' : ''}{stats.avgPL}
+            <div className="rounded-xl border border-emerald-200/70 bg-gradient-to-b from-emerald-50/90 to-emerald-50/40 p-3 text-center shadow-sm dark:border-emerald-500/20 dark:from-emerald-950/50 dark:to-emerald-950/20">
+              <TrendingUp className="mx-auto mb-1 h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <p
+                className={cn(
+                  "text-lg font-bold tabular-nums",
+                  parseFloat(stats.avgPL) >= 0
+                    ? "text-emerald-600 dark:text-emerald-300"
+                    : "text-rose-600 dark:text-rose-300"
+                )}
+              >
+                {parseFloat(stats.avgPL) > 0 ? "+" : ""}
+                {stats.avgPL}
               </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Średni P&L</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Średni P&amp;L</p>
             </div>
-
-            <div className="text-center p-3 bg-purple-50 dark:bg-purple-950 rounded-lg">
-              <Award className="w-5 h-5 mx-auto text-purple-600 dark:text-purple-400 mb-1" />
-              <p className="text-lg font-bold text-purple-600 dark:text-purple-400">{stats.trades}</p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Transakcje</p>
+            <div className="rounded-xl border border-violet-200/70 bg-gradient-to-b from-violet-50/90 to-violet-50/40 p-3 text-center shadow-sm dark:border-violet-500/20 dark:from-violet-950/50 dark:to-violet-950/20">
+              <Award className="mx-auto mb-1 h-5 w-5 text-violet-600 dark:text-violet-400" />
+              <p className="text-lg font-bold tabular-nums text-violet-600 dark:text-violet-300">{stats.trades}</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Transakcje</p>
             </div>
           </div>
         )}
 
         {stats && stats.trades > 0 && (
-          <div className={`p-4 rounded-xl ${parseFloat(stats.totalPL) >= 0 ? 'bg-green-50 dark:bg-green-950' : 'bg-red-50 dark:bg-red-950'}`}>
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Łączny P&L:</span>
-              <span className={`text-2xl font-bold ${parseFloat(stats.totalPL) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                {parseFloat(stats.totalPL) > 0 ? '+' : ''}{stats.totalPL}
-              </span>
-            </div>
+          <div
+            className={cn(
+              "flex items-center justify-between rounded-xl border px-4 py-3 shadow-inner",
+              parseFloat(stats.totalPL) >= 0
+                ? "border-emerald-200/80 bg-gradient-to-r from-emerald-50 to-emerald-50/30 dark:border-emerald-500/25 dark:from-emerald-950/40 dark:to-emerald-950/10"
+                : "border-rose-200/80 bg-gradient-to-r from-rose-50 to-rose-50/30 dark:border-rose-500/25 dark:from-rose-950/40 dark:to-rose-950/10"
+            )}
+          >
+            <span className="text-sm font-semibold text-foreground/90">Łączny P&amp;L</span>
+            <span
+              className={cn(
+                "text-2xl font-bold tabular-nums tracking-tight",
+                parseFloat(stats.totalPL) >= 0
+                  ? "text-emerald-600 dark:text-emerald-300"
+                  : "text-rose-600 dark:text-rose-300"
+              )}
+            >
+              {parseFloat(stats.totalPL) > 0 ? "+" : ""}
+              {stats.totalPL}
+            </span>
           </div>
         )}
 
-        {/* Description */}
         {strategy.description && (
-          <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Opis</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400">{strategy.description}</p>
+          <div className="rounded-xl border border-border/80 bg-muted/30 p-3">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Opis</p>
+            <p className="text-sm leading-relaxed text-foreground/85">{strategy.description}</p>
           </div>
         )}
 
-        {/* Rules */}
         {strategy.rules && (
-          <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-            <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">Zasady</p>
-            <p className="text-sm text-blue-900 dark:text-blue-300 whitespace-pre-wrap">{strategy.rules}</p>
+          <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 dark:bg-primary/10">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">Zasady</p>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{strategy.rules}</p>
           </div>
         )}
 
-        {/* Timeframes & Instruments */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           {strategy.timeframes && strategy.timeframes.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Timeframe'y</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Timeframe&apos;y</p>
+              <div className="flex flex-wrap gap-1.5">
                 {strategy.timeframes.map((tf, idx) => (
-                  <Badge key={idx} variant="outline">{tf}</Badge>
+                  <Badge key={idx} variant="secondary" className="rounded-md font-normal">
+                    {tf}
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -645,28 +704,29 @@ function StrategyCard({ strategy, stats, onEdit }) {
 
           {strategy.instruments && strategy.instruments.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Instrumenty</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Instrumenty</p>
+              <div className="flex flex-wrap gap-1.5">
                 {strategy.instruments.map((inst, idx) => (
-                  <Badge key={idx} className="bg-purple-100 text-purple-700">{inst}</Badge>
+                  <Badge key={idx} className="rounded-md border-0 bg-violet-500/15 font-normal text-violet-800 dark:text-violet-200">
+                    {inst}
+                  </Badge>
                 ))}
               </div>
             </div>
           )}
         </div>
 
-        {/* Target R:R */}
         {strategy.target_rr && (
-          <div className="flex justify-between items-center p-3 bg-amber-50 dark:bg-amber-950 rounded-lg">
-            <span className="text-sm font-medium text-amber-900 dark:text-amber-300">Docelowy R:R:</span>
-            <span className="text-lg font-bold text-amber-700 dark:text-amber-400">1:{strategy.target_rr}</span>
+          <div className="flex items-center justify-between rounded-xl border border-amber-200/80 bg-gradient-to-r from-amber-50/90 to-amber-50/30 px-4 py-3 dark:border-amber-500/20 dark:from-amber-950/35 dark:to-amber-950/10">
+            <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">Docelowy R:R</span>
+            <span className="text-xl font-bold tabular-nums text-amber-700 dark:text-amber-300">1:{strategy.target_rr}</span>
           </div>
         )}
 
         {strategy.notes && (
-          <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Notatki</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400">{strategy.notes}</p>
+          <div className="rounded-xl border border-border/80 bg-muted/30 p-3">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notatki</p>
+            <p className="text-sm leading-relaxed text-foreground/85">{strategy.notes}</p>
           </div>
         )}
       </CardContent>

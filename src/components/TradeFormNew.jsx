@@ -487,7 +487,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <Card className="border border-slate-200/80 shadow-xl shadow-slate-900/5 overflow-hidden">
+      <Card className="border border-slate-200/80 dark:border-slate-700 shadow-xl shadow-slate-900/5 overflow-hidden bg-white dark:bg-card">
         <CardHeader className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-slate-100 border-b border-slate-700/80 rounded-none">
           <div className="flex justify-between items-center">
             <CardTitle>{trade?.id ? t('editTrade') : t('addTrade')}</CardTitle>
@@ -508,14 +508,14 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Account and Strategy Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
               <div>
                 <Label className="block text-sm font-semibold mb-2">{t('tradingAccount')}</Label>
                 <select
                   name="account_id"
                   value={formData.account_id}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-md bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">{t('selectAccountPlaceholder')}</option>
                   {availableAccounts.length === 0 ? (
@@ -536,7 +536,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                   name="strategy_id"
                   value={formData.strategy_id}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-md bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">{t('selectStrategyPlaceholder')}</option>
                   {strategies.length === 0 ? (
@@ -553,7 +553,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
             </div>
 
             {/* Basic Trade Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-green-50 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
               <div>
                 <Label className="block text-sm font-semibold mb-2">{t('symbol')} *</Label>
                 <Input
@@ -583,12 +583,12 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                   name="direction"
                   value={formData.direction}
                   onChange={handleChange}
-                  className={`w-full px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                  className={`w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
                     formData.direction === 'Long'
-                      ? 'bg-emerald-50 text-emerald-700'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
                       : formData.direction === 'Short'
-                        ? 'bg-rose-50 text-rose-700'
-                        : 'bg-white text-slate-900'
+                        ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300'
+                        : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100'
                   }`}
                 >
                   <option value="Long">{t('longLabel')}</option>
@@ -602,7 +602,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-md bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="Open">{t('openStatus')}</option>
                   <option value="Closed">{t('closedStatus')}</option>
@@ -616,7 +616,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                   name="timeframe"
                   value={formData.timeframe}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-md bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Wybierz interwał</option>
                   <option value="1m">1m</option>
@@ -635,7 +635,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                   name="session"
                   value={formData.session}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-md bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Wybierz sesję</option>
                   <option value="Asia">Asia</option>
@@ -646,7 +646,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
             </div>
 
             {/* Time Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-lg">
               <div>
                 <Label className="block text-sm font-semibold mb-2">{t('entryTime')}</Label>
                 <Input
@@ -669,7 +669,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
 
             {/* Price Info */}
             {formData.status !== 'Planned' && (
-              <div className="p-4 bg-purple-50 rounded-lg space-y-4">
+              <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div>
                     <Label className="block text-sm font-semibold mb-2">{t('entryPrice')} *</Label>
@@ -785,7 +785,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-slate-200 bg-white p-3">
+                <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 p-3">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-sm font-semibold text-slate-800">Częściowe zamknięcia pozycji</p>
@@ -848,16 +848,16 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                   </div>
 
                   <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="rounded-md border border-slate-200 p-2 text-sm">
-                      <div className="text-xs text-slate-500">Suma zamkniec</div>
-                      <div className="font-semibold text-slate-800">{totalScaleOutSize.toFixed(2)}</div>
+                    <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-2 text-sm">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">Suma zamkniec</div>
+                      <div className="font-semibold text-slate-800 dark:text-slate-200">{totalScaleOutSize.toFixed(2)}</div>
                     </div>
-                    <div className="rounded-md border border-slate-200 p-2 text-sm">
-                      <div className="text-xs text-slate-500">Pozostala pozycja</div>
-                      <div className="font-semibold text-slate-800">{remainingSize.toFixed(2)}</div>
+                    <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-2 text-sm">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">Pozostala pozycja</div>
+                      <div className="font-semibold text-slate-800 dark:text-slate-200">{remainingSize.toFixed(2)}</div>
                     </div>
-                    <div className="rounded-md border border-slate-200 p-2 text-sm">
-                      <div className="text-xs text-slate-500">Suma P&L zamkniec</div>
+                    <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-2 text-sm">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">Suma P&L zamkniec</div>
                       <div className={`font-semibold ${scaleOutSummary.totalPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {scaleOutSummary.totalPnl >= 0 ? '+' : ''}{scaleOutSummary.totalPnl.toFixed(2)}
                       </div>
@@ -870,8 +870,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                     </div>
                   )}
 
-                  <div className="mt-3 rounded-md border border-slate-200 p-2 text-sm">
-                      <div className="text-xs text-slate-500">BE / ochrona</div>
+                  <div className="mt-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-2 text-sm">
+                      <div className="text-xs text-slate-500 dark:text-slate-400">BE / ochrona</div>
                       <label className="flex items-center gap-2 text-xs">
                         <input
                           type="checkbox"
@@ -895,7 +895,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
             )}
 
             {/* Manual P&L */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-700">
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label className="block text-sm font-semibold">{t('profitLoss')}</Label>
@@ -950,7 +950,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
             </div>
 
             {/* Notes & Tags */}
-            <div className="p-4 bg-white rounded-lg border">
+            <div className="p-4 bg-white dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-700">
               <div>
                 <Label className="block text-sm font-semibold mb-2">{t('notes')}</Label>
                 <Textarea
@@ -964,7 +964,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
             </div>
 
             {/* Screenshots */}
-            <div className="p-4 bg-slate-50 rounded-lg space-y-4">
+            <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-lg space-y-4">
               <div className="flex flex-wrap items-center gap-3">
                 <Button
                   type="button"
@@ -997,7 +997,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                 />
                 <label
                   htmlFor="screenshot_1"
-                  className="relative flex items-center justify-center h-28 border-2 border-dashed border-slate-300 rounded-lg bg-white hover:border-blue-400 hover:bg-blue-50 transition cursor-pointer overflow-hidden"
+                  className="relative flex items-center justify-center h-28 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition cursor-pointer overflow-hidden"
                 >
                   {formData.screenshot_1 ? (
                     <img
@@ -1056,7 +1056,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                 />
                 <label
                   htmlFor="screenshot_2"
-                  className="relative flex items-center justify-center h-28 border-2 border-dashed border-slate-300 rounded-lg bg-white hover:border-blue-400 hover:bg-blue-50 transition cursor-pointer overflow-hidden"
+                  className="relative flex items-center justify-center h-28 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition cursor-pointer overflow-hidden"
                 >
                   {formData.screenshot_2 ? (
                     <img
@@ -1115,7 +1115,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                 />
                 <label
                   htmlFor="screenshot_3"
-                  className="relative flex items-center justify-center h-28 border-2 border-dashed border-slate-300 rounded-lg bg-white hover:border-blue-400 hover:bg-blue-50 transition cursor-pointer overflow-hidden"
+                  className="relative flex items-center justify-center h-28 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition cursor-pointer overflow-hidden"
                 >
                   {formData.screenshot_3 ? (
                     <img

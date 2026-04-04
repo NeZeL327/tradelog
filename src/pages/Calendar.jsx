@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { useQuery } from "@tanstack/react-query";
@@ -538,8 +538,8 @@ export default function Calendar() {
 
       {/* Edit Trade Dialog */}
       <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0">
-          <div className="sticky top-0 bg-white p-6 border-b">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0">
+          <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
             <DialogTitle>Edit Trade</DialogTitle>
           </div>
           <div className="p-6">
