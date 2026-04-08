@@ -68,7 +68,7 @@ export function getMissingCloudSettings({ cloudSettings, localSettings } = {}) {
 
 export function applyTheme(theme) {
   const root = document.documentElement;
-  const nextTheme = theme || "light";
+  const nextTheme = theme === "dark" || theme === "light" || theme === "auto" ? theme : "auto";
   const shouldBeDark =
     nextTheme === "dark" ||
     (nextTheme === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);

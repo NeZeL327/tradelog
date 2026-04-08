@@ -359,6 +359,7 @@ export default function Billing() {
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Download className="h-4 w-4 text-slate-400" />
               Eksport danych
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 animate-pulse">⚠ W budowie</span>
             </CardTitle>
             <CardDescription className="text-xs">
               Pobierz swoje transakcje lub pełną kopię zapasową wszystkich danych
@@ -415,6 +416,7 @@ export default function Billing() {
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Upload className="h-4 w-4 text-slate-400" />
               Import transakcji
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 animate-pulse">⚠ W budowie</span>
             </CardTitle>
             <CardDescription className="text-xs">
               Wczytaj transakcje z CSV — obsługujemy własny format, MT4/MT5 i TradingView

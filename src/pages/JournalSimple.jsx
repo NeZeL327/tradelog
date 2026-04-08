@@ -248,7 +248,13 @@ export default function JournalSimple({ mode = "all" }) {
 
   const activeAccounts = accounts.filter((account) => account.is_active !== false && account.status !== 'Inactive');
   const activeAccountIds = new Set(activeAccounts.map((account) => String(account.id)));
-  const tradesFromActiveAccounts = trades.filter((trade) => activeAccountIds.has(String(trade.account_id)));
+  const inactiveAccountIds = new Set(
+    accounts.filter(a => a.is_active === false || a.status === 'Inactive').map(a => String(a.id))
+  );
+  const tradesFromActiveAccounts = trades.filter((trade) => {
+    if (!trade.account_id) return true;
+    return !inactiveAccountIds.has(String(trade.account_id));
+  });
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies', user?.id],
@@ -439,7 +445,7 @@ export default function JournalSimple({ mode = "all" }) {
       if (!matchesSelectedTime) return false;
     }
 
-    if (!accountFilters.includes("all")) {
+    if (!accountFilters.includes("all") && t.account_id) {
       const tradeAccountId = String(t.account_id);
       const matchesAccount = accountFilters.some((selectedAccountId) => String(selectedAccountId) === tradeAccountId);
       if (!matchesAccount) return false;

@@ -199,7 +199,13 @@ export default function Dashboard() {
 
   const activeAccounts = accounts.filter((account) => account.is_active !== false && account.status !== 'Inactive');
   const activeAccountIds = new Set(activeAccounts.map((account) => String(account.id)));
-  const tradesFromActiveAccounts = trades.filter((trade) => activeAccountIds.has(String(trade.account_id)));
+  const inactiveAccountIds = new Set(
+    accounts.filter(a => a.is_active === false || a.status === 'Inactive').map(a => String(a.id))
+  );
+  const tradesFromActiveAccounts = trades.filter((trade) => {
+    if (!trade.account_id) return true;
+    return !inactiveAccountIds.has(String(trade.account_id));
+  });
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies'],
@@ -293,7 +299,7 @@ export default function Dashboard() {
     const afterStart = tradeDate ? tradeDate >= rangeStartDate : true;
     const beforeEnd = rangeEndDate && tradeDate ? tradeDate <= rangeEndDate : true;
     return (
-      (dashboardAccounts.includes("all") || dashboardAccounts.includes(String(t.account_id))) &&
+      (dashboardAccounts.includes("all") || !t.account_id || dashboardAccounts.includes(String(t.account_id))) &&
       (filterSymbols.includes("all") || filterSymbols.includes(String(t.symbol))) &&
       (filterDirections.includes("all") || filterDirections.includes(String(normalizeDirection(t.direction)))) &&
       (filterOutcomes.includes("all") || filterOutcomes.includes(String(t.outcome))) &&

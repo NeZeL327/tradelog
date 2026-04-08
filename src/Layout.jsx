@@ -28,6 +28,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
+import { applyTheme } from "@/lib/userSettings";
 
 const NAV_GROUPS = (t) => [
   {
@@ -82,18 +83,10 @@ function LayoutContent({ children }) {
     const savedTheme = localStorage.getItem('appTheme');
     const effectiveTheme = savedTheme === 'dark' || savedTheme === 'light'
       ? savedTheme
-      : (user.theme || 'light');
+      : (user.theme || 'auto');
 
-    document.documentElement.classList.remove('dark');
-    if (effectiveTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else if (effectiveTheme !== 'light') {
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.add('dark');
-      }
-    }
-    // Remove legacy skin attribute
-    document.documentElement.removeAttribute('data-skin');
+    // Avoid "flash" by not removing 'dark' first; applyTheme toggles in one pass.
+    applyTheme(effectiveTheme);
   }, [user]);
 
   const navGroups = NAV_GROUPS(t);

@@ -780,7 +780,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                       type="text"
                       readOnly
                       value={calculateRR() ? `1:${calculateRR()}` : "-"}
-                      className="bg-slate-100"
+                      className="bg-slate-100 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600"
                     />
                   </div>
                 </div>

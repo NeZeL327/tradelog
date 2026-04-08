@@ -28,8 +28,10 @@ export default function Settings() {
   const [settings, setSettings] = useState(() => {
     const local = loadLocalUserSettings();
     const base = getEffectiveUserSettings({ localSettings: local });
+    const activeTheme = localStorage.getItem("appTheme");
     return {
       ...base,
+      theme: activeTheme === "dark" || activeTheme === "light" ? activeTheme : base.theme,
       default_account_id: "",
       default_risk_per_trade: 1,
       default_max_daily_loss: 5,
@@ -68,8 +70,14 @@ export default function Settings() {
   }, [authUser]);
 
   useEffect(() => {
-    applyRuntimeSettings(settings);
-  }, [settings.theme, settings.privacy_mode, settings.pnl_view]);
+    // Theme is managed by ThemeToggle — only apply non-theme runtime settings here
+    // to avoid overriding the header toggle on every Settings mount.
+    document.documentElement.classList.toggle("privacy-mode", !!settings.privacy_mode);
+    document.documentElement.setAttribute(
+      "data-pnl-view",
+      settings.pnl_view === "percent" ? "percent" : "money"
+    );
+  }, [settings.privacy_mode, settings.pnl_view]);
 
   const updateSettingsMutation = useMutation({
     mutationFn: (data) => {
@@ -265,12 +273,12 @@ export default function Settings() {
                 <CardContent className="space-y-4">
                   <div>
                     <Label>{t.name}</Label>
-                    <Input value={user?.fullName || ""} disabled className="bg-slate-50" />
+                    <Input value={user?.fullName || ""} disabled className="bg-slate-50 dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-100" />
                     <p className="text-xs text-slate-500 mt-1">Możesz zmienić imię w ustawieniach konta</p>
                   </div>
                   <div>
                     <Label>{t.email}</Label>
-                    <Input value={user?.email || ""} disabled className="bg-slate-50" />
+                    <Input value={user?.email || ""} disabled className="bg-slate-50 dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-100" />
                     <p className="text-xs text-slate-500 mt-1">Email nie może być zmieniony</p>
                   </div>
                 </CardContent>
@@ -333,7 +341,7 @@ export default function Settings() {
                   </div>
                   <div>
                     <Label>{t.theme}</Label>
-                    <Select value={settings.theme || "light"} onValueChange={(value) => setSettings({ ...settings, theme: value })}>
+                    <Select value={settings.theme || "auto"} onValueChange={(value) => setSettings({ ...settings, theme: value })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="light">{t.light}</SelectItem>
