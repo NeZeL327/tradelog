@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,13 @@ import { TrendingUp, TrendingDown, Edit, Calendar, Clock, Target } from "lucide-
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeStatusBadgeClass } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
+import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
 export default function TradeCard({ trade, onEdit = null }) {
   const { t } = useLanguage();
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerImage, setViewerImage] = useState("");
+  const dateFormat = getDateFormat();
   const isWin = trade.outcome === "Win";
   const isLoss = trade.outcome === "Loss";
   const plColor = isWin ? "text-emerald-600 dark:text-emerald-300" : isLoss ? "text-rose-600 dark:text-rose-300" : "text-amber-600 dark:text-amber-300";
@@ -77,7 +79,7 @@ export default function TradeCard({ trade, onEdit = null }) {
             <div className="flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-400">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                {trade.date}
+                {formatTradeDate(trade.date, dateFormat)}
               </span>
               {trade.time && (
                 <span className="flex items-center gap-1">

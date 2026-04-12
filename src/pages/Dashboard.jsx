@@ -18,6 +18,7 @@ import TradeFormNew from "../components/TradeFormNew";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionLabel, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor, tradeStatusBadgeClass } from "@/lib/utils";
+import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
 // ─── Mini date-range calendar (same as Journal) ──────────────────────────────
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
@@ -78,6 +79,8 @@ export default function Dashboard() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const dateFormat = getDateFormat();
+  const fmtDate = (d) => formatTradeDate(d, dateFormat);
 
   // Dark mode observer for recharts colors
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
@@ -1427,7 +1430,7 @@ export default function Dashboard() {
                   <tbody>
                     {recentTradesTable.map(trade => (
                       <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
-                        <td className="px-3 py-2 text-xs text-slate-700 dark:text-slate-400">{trade.date || '-'}</td>
+                        <td className="px-3 py-2 text-xs text-slate-700 dark:text-slate-400">{fmtDate(trade.date) || '-'}</td>
                         <td className="px-3 py-2 text-xs font-medium text-slate-900 dark:text-white">{trade.symbol || '-'}</td>
                         <td className="px-3 py-2 text-xs text-slate-700 dark:text-slate-400">
                           <Badge className={`${tradeStatusBadgeClass(trade.status)} text-xs font-semibold px-1.5 py-0.5 border`}>

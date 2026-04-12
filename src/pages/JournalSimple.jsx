@@ -40,6 +40,7 @@ import TradeCard from "../components/TradeCard";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionBadgeClass, directionLabel, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
+import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
 const DAYS_PL = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
@@ -124,6 +125,8 @@ export default function JournalSimple({ mode = "all" }) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const isPlannedMode = mode === "planned";
+  const dateFormat = useMemo(() => getDateFormat(), []);
+  const fmtDate = (d) => formatTradeDate(d, dateFormat);
   const journalFiltersStorageKey = `journal_filters_${user?.id || 'guest'}_${mode}`;
   const hasLoadedJournalFilters = useRef(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -1027,7 +1030,7 @@ export default function JournalSimple({ mode = "all" }) {
                         {accountNameById[String(trade.account_id)] || '-'}
                       </td>
                       {visibleColumns.date && (
-                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.date}</td>
+                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{fmtDate(trade.date)}</td>
                       )}
                       {visibleColumns.symbol && (
                         <td className="px-1.5 py-1 text-sm font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.symbol}</td>
@@ -1194,7 +1197,7 @@ export default function JournalSimple({ mode = "all" }) {
                       {plannedTrades.map((trade) => (
                         <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors">
                           {visibleColumns.date && (
-                            <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.date}</td>
+                            <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{fmtDate(trade.date)}</td>
                           )}
                           <td className="px-1 py-1 text-xs text-slate-900 dark:text-slate-100 max-w-[92px] truncate" title={accountNameById[String(trade.account_id)] || '-'}>
                             {accountNameById[String(trade.account_id)] || '-'}

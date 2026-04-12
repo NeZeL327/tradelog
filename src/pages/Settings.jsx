@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { User, Globe, Shield, Bell, Trash2, RotateCcw, Lock } from "lucide-react";
 import { toast } from "sonner";
 import {
-  applyRuntimeSettings,
+  applyTheme,
   getEffectiveUserSettings,
   getMissingCloudSettings,
   loadLocalUserSettings,
@@ -55,9 +55,15 @@ export default function Settings() {
     setUser(authUser);
     const local = loadLocalUserSettings();
     const effective = getEffectiveUserSettings({ cloudSettings: authUser, localSettings: local });
+    const headerTheme = localStorage.getItem("appTheme");
     setSettings(prev => ({
       ...prev,
       ...effective,
+      // Keep explicit dark/light from header toggle; cloud "auto" must not wipe it in the form or on save
+      theme:
+        headerTheme === "dark" || headerTheme === "light"
+          ? headerTheme
+          : effective.theme ?? prev.theme,
       default_account_id: authUser.default_account_id || prev.default_account_id || "",
       default_risk_per_trade: authUser.default_risk_per_trade ?? prev.default_risk_per_trade ?? 1,
       default_max_daily_loss: authUser.default_max_daily_loss ?? prev.default_max_daily_loss ?? 5,
@@ -88,8 +94,20 @@ export default function Settings() {
     onSuccess: (updatedUser, variables) => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
       setUser(updatedUser);
-      setSettings(prev => ({ ...prev, ...updatedUser }));
-      applyRuntimeSettings(updatedUser);
+      setSettings(prev => ({
+        ...prev,
+        ...updatedUser,
+        theme: variables.theme ?? prev.theme ?? updatedUser?.theme,
+      }));
+      // Do not use applyRuntimeSettings(updatedUser): Firestore snapshot can omit or differ on theme and forces light/auto.
+      if (variables.theme === "dark" || variables.theme === "light" || variables.theme === "auto") {
+        applyTheme(variables.theme);
+      }
+      document.documentElement.classList.toggle("privacy-mode", !!variables.privacy_mode);
+      document.documentElement.setAttribute(
+        "data-pnl-view",
+        variables.pnl_view === "percent" ? "percent" : "money"
+      );
       if (checkSession) checkSession();
 
       const language = variables?.language || updatedUser?.language || settings.language;
@@ -336,6 +354,7 @@ export default function Settings() {
                         <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (2026-02-03)</SelectItem>
                         <SelectItem value="DD/MM/YYYY">DD/MM/YYYY (03/02/2026)</SelectItem>
                         <SelectItem value="MM/DD/YYYY">MM/DD/YYYY (02/03/2026)</SelectItem>
+                        <SelectItem value="DD.MM.YYYY">DD.MM.YYYY (03.02.2026)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

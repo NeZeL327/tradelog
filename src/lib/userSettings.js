@@ -84,6 +84,30 @@ export function applyTheme(theme) {
   localStorage.removeItem("appSkin");
 }
 
+export function formatTradeDate(dateStr, format) {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  const [y, m, d] = parts;
+  switch (format) {
+    case "DD/MM/YYYY": return `${d}/${m}/${y}`;
+    case "MM/DD/YYYY": return `${m}/${d}/${y}`;
+    case "DD.MM.YYYY": return `${d}.${m}.${y}`;
+    default: return dateStr;
+  }
+}
+
+export function getDateFormat() {
+  try {
+    const raw = localStorage.getItem(LOCAL_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.date_format) return s.date_format;
+    }
+  } catch {}
+  return DEFAULT_USER_SETTINGS.date_format;
+}
+
 export function applyRuntimeSettings(settings) {
   applyTheme(settings?.theme);
   document.documentElement.classList.toggle("privacy-mode", !!settings?.privacy_mode);

@@ -13,11 +13,14 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass } from "@/lib/utils";
 import TradeCard from "../components/TradeCard";
 import TradeFormNew from "../components/TradeFormNew";
+import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
 export default function Calendar() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const locale = language === 'pl' ? pl : enUS;
+  const dateFormat = getDateFormat();
+  const fmtDate = (d) => formatTradeDate(d, dateFormat);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [viewingTrade, setViewingTrade] = useState(null);
@@ -446,7 +449,7 @@ export default function Calendar() {
                       return (
                         <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                           <td className="p-4 text-sm text-slate-900 dark:text-slate-100">
-                            {trade.date}
+                            {fmtDate(trade.date)}
                             {trade.open_time && <div className="text-xs text-slate-500 dark:text-slate-400">{t('open')}: {trade.open_time}</div>}
                             {trade.close_time && <div className="text-xs text-slate-500 dark:text-slate-400">{t('close')}: {trade.close_time}</div>}
                           </td>
