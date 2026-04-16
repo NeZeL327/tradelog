@@ -259,11 +259,11 @@ export default function Settings() {
 
   if (!authUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
+      <div className="w-full min-h-[40vh] dashboard-surface">
         <div className="max-w-none mx-0 space-y-6">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">Wymagane logowanie</h1>
-            <p className="text-slate-600 dark:text-slate-400">Musisz się zalogować, aby zarządzać ustawieniami.</p>
+            <h1 className="cyber-page-title mb-4">Wymagane logowanie</h1>
+            <p className="cyber-page-sub">Musisz się zalogować, aby zarządzać ustawieniami.</p>
           </div>
         </div>
       </div>
@@ -271,19 +271,19 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="w-full min-h-0 space-y-6 dashboard-surface">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{t.title}</h1>
-            <p className="text-slate-600 dark:text-slate-400">{t.subtitle}</p>
+            <h1 className="cyber-page-title">{t.title}</h1>
+            <p className="cyber-page-sub">{t.subtitle}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-6">
           <div className="space-y-6 xl:order-2">
             {activeSection === 'profile' && (
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle>{t.profile}</CardTitle>
                   <CardDescription>Podstawowe informacje o Twoim koncie</CardDescription>
@@ -304,7 +304,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'preferences' && (
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle>{t.preferences}</CardTitle>
                   <CardDescription>Personalizuj wygląd i język aplikacji</CardDescription>
@@ -374,7 +374,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'trading' && (
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle>{t.trading}</CardTitle>
                   <CardDescription>Ustawienia domyślne dla nowych transakcji</CardDescription>
@@ -422,7 +422,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'notifications' && (
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle>{t.notifications}</CardTitle>
                   <CardDescription>Kontroluj powiadomienia i alerty</CardDescription>
@@ -453,7 +453,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'privacy' && (
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle>{t.privacy}</CardTitle>
                   <CardDescription>
@@ -515,7 +515,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'trash' && (
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle>{t.trash}</CardTitle>
                   <CardDescription>
@@ -578,7 +578,7 @@ export default function Settings() {
               <div className="flex justify-end">
                 <Button
                   onClick={handleSave}
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-8"
+                  className="cyber-primary-btn px-8"
                   disabled={updateSettingsMutation.isPending}
                 >
                   {updateSettingsMutation.isPending ? "Zapisywanie..." : t.save}
@@ -587,7 +587,7 @@ export default function Settings() {
             )}
           </div>
 
-          <Card className="h-fit bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border xl:sticky xl:top-6 xl:order-1">
+          <Card className="h-fit shadow-md xl:sticky xl:top-6 xl:order-1">
             <CardHeader>
               <CardTitle className="text-base">Sekcje</CardTitle>
               <CardDescription>Wybierz, co chcesz edytować</CardDescription>

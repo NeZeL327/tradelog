@@ -408,12 +408,12 @@ export default function Analytics() {
     : null;
 
   return (
-    <div className="analytics-page min-h-screen bg-background p-2 sm:p-3">
+    <div className="analytics-page w-full min-h-0 space-y-6 dashboard-surface">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{t('advancedAnalytics')}</h1>
-            <p className="text-slate-600 dark:text-slate-400">{t('detailedAnalysisOfAllAspects')}</p>
+            <h1 className="cyber-page-title">{t('advancedAnalytics')}</h1>
+            <p className="cyber-page-sub">{t('detailedAnalysisOfAllAspects')}</p>
           </div>
           
           <div className="flex gap-3 items-center">
@@ -912,7 +912,7 @@ export default function Analytics() {
             </div>
 
             {/* Equity Curve */}
-            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border overflow-hidden">
+            <Card className="shadow-md overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-white">
                   <Activity className="w-5 h-5" />
@@ -945,7 +945,7 @@ export default function Analytics() {
             </Card>
 
             {/* Period Performance */}
-            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border overflow-hidden">
+            <Card className="shadow-md overflow-hidden">
               <CardHeader>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <CardTitle className="dark:text-white">
@@ -1009,7 +1009,7 @@ export default function Analytics() {
 
             {/* Direction & Timeframe */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('longVsShort')}</CardTitle>
                 </CardHeader>
@@ -1038,7 +1038,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('timeframeAnalysis')}</CardTitle>
                 </CardHeader>
@@ -1066,7 +1066,7 @@ export default function Analytics() {
 
             {/* Session Analysis */}
             {sessionData.length > 0 && (
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('sessionsAnalysis')}</CardTitle>
                 </CardHeader>
@@ -1096,7 +1096,7 @@ export default function Analytics() {
 
           {/* Symbols Tab */}
           <TabsContent value="symbols" className="space-y-6">
-            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('top10Symbols')}</CardTitle>
               </CardHeader>
@@ -1126,7 +1126,7 @@ export default function Analytics() {
               {symbolData.map((symbol) => (
                 <Card 
                   key={symbol.symbol} 
-                  className={`bg-white dark:bg-card shadow-lg border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
+                  className={`shadow-md border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
                     selectedSymbol === symbol.symbol ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-border'
                   }`}
                   onClick={() => setSelectedSymbol(symbol.symbol)}
@@ -1301,7 +1301,7 @@ export default function Analytics() {
                           </Card>
 
                           {/* Strategy Breakdown */}
-                          <Card className="bg-white dark:bg-card">
+                          <Card>
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2 dark:text-white">
                                 <Brain className="w-4 h-4" />
@@ -1461,7 +1461,7 @@ export default function Analytics() {
 
           {/* Strategies Tab */}
           <TabsContent value="strategies" className="space-y-6">
-            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('strategiesComparison')}</CardTitle>
               </CardHeader>
@@ -1492,7 +1492,7 @@ export default function Analytics() {
               {strategyData.map((strategy) => (
                 <Card 
                   key={strategy.name} 
-                  className={`bg-white dark:bg-card shadow-lg border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
+                  className={`shadow-md border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
                     selectedStrategy === strategy.name ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-border'
                   }`}
                   onClick={() => setSelectedStrategy(strategy.name)}
@@ -1670,7 +1670,7 @@ export default function Analytics() {
                           </Card>
 
                           {/* Symbol Breakdown */}
-                          <Card className="bg-white dark:bg-card">
+                          <Card>
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2 dark:text-white">
                                 <TrendingUp className="w-4 h-4" />
@@ -1832,7 +1832,7 @@ export default function Analytics() {
           <TabsContent value="accounts" className="space-y-6">
             {/* Account Type Distribution */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">Rozkład typów kont</CardTitle>
                 </CardHeader>
@@ -1874,7 +1874,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">Status kont</CardTitle>
                 </CardHeader>
@@ -1903,7 +1903,7 @@ export default function Analytics() {
               </Card>
             </div>
 
-            <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('accountsComparison')}</CardTitle>
               </CardHeader>
@@ -1973,7 +1973,7 @@ export default function Analytics() {
           {/* Psychology Tab */}
           <TabsContent value="psychology" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('setupQuality')}</CardTitle>
                 </CardHeader>
@@ -2005,7 +2005,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-card shadow-xl border border-slate-200 dark:border-border">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('emotionalState')}</CardTitle>
                 </CardHeader>

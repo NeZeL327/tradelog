@@ -432,5 +432,130 @@ export const uploadTradeScreenshot = async (userId, file) => {
   });
 };
 
+// --- Backtesting: strategies only for this module (not global "Strategies" page) ---
+
+export const getBacktestStrategies = async (userId) => {
+  return runSafe('getBacktestStrategies', async () => {
+    if (!userId) return [];
+    const baseRef = userCollection(userId, 'backtest_strategies');
+    const q = query(baseRef, orderBy('name'));
+    const snapshot = await getDocs(q);
+    return mapDocs(snapshot);
+  });
+};
+
+export const createBacktestStrategy = async (userId, data) => {
+  return runSafe('createBacktestStrategy', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const name = String(data?.name || '').trim();
+    if (!name) throw new Error('Podaj nazwę strategii');
+    const payload = {
+      name,
+      description: String(data?.description || '').trim(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    const refDoc = await addDoc(userCollection(userId, 'backtest_strategies'), payload);
+    return { id: refDoc.id, ...payload };
+  });
+};
+
+export const updateBacktestStrategy = async (userId, strategyId, data) => {
+  return runSafe('updateBacktestStrategy', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const name = String(data?.name || '').trim();
+    if (!name) throw new Error('Podaj nazwę strategii');
+    const refDoc = doc(db, 'users', String(userId), 'backtest_strategies', String(strategyId));
+    await updateDoc(refDoc, {
+      name,
+      description: String(data?.description || '').trim(),
+      updatedAt: serverTimestamp()
+    });
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
+export const deleteBacktestStrategy = async (userId, strategyId) => {
+  return runSafe('deleteBacktestStrategy', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const sid = String(strategyId);
+    await deleteDoc(doc(db, 'users', String(userId), 'backtest_strategies', sid));
+    try {
+      await deleteDoc(doc(db, 'users', String(userId), 'backtest_strategy_pages', sid));
+    } catch {
+      /* optional page doc */
+    }
+    return true;
+  });
+};
+
+// --- Backtesting journal (strategy tests — separate from live trades) ---
+
+export const getBacktestEntries = async (userId) => {
+  return runSafe('getBacktestEntries', async () => {
+    if (!userId) return [];
+    const baseRef = userCollection(userId, 'backtest_entries');
+    const q = query(baseRef, orderBy('date', 'desc'));
+    const snapshot = await getDocs(q);
+    return mapDocs(snapshot);
+  });
+};
+
+export const createBacktestEntry = async (userId, data) => {
+  return runSafe('createBacktestEntry', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const payload = {
+      ...data,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    const refDoc = await addDoc(userCollection(userId, 'backtest_entries'), payload);
+    return { id: refDoc.id, ...payload };
+  });
+};
+
+export const updateBacktestEntry = async (userId, entryId, data) => {
+  return runSafe('updateBacktestEntry', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const refDoc = doc(db, 'users', String(userId), 'backtest_entries', String(entryId));
+    await updateDoc(refDoc, { ...data, updatedAt: serverTimestamp() });
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
+export const deleteBacktestEntry = async (userId, entryId) => {
+  return runSafe('deleteBacktestEntry', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    await deleteDoc(doc(db, 'users', String(userId), 'backtest_entries', String(entryId)));
+    return true;
+  });
+};
+
+/** Per-strategy notepad for backtesting (browser-tab workspace — one saved page per strategy). */
+export const getBacktestStrategyPage = async (userId, strategyId) => {
+  return runSafe('getBacktestStrategyPage', async () => {
+    if (!userId || !strategyId) return null;
+    const refDoc = doc(db, 'users', String(userId), 'backtest_strategy_pages', String(strategyId));
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
+export const saveBacktestStrategyPage = async (userId, strategyId, { content = '' } = {}) => {
+  return runSafe('saveBacktestStrategyPage', async () => {
+    if (!userId || !strategyId) throw new Error('Użytkownik nie jest zalogowany');
+    const refDoc = doc(db, 'users', String(userId), 'backtest_strategy_pages', String(strategyId));
+    await setDoc(
+      refDoc,
+      { content: String(content), updatedAt: serverTimestamp() },
+      { merge: true }
+    );
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
 export const seedTradingData = () => Promise.resolve();
 export const initDemoData = () => Promise.resolve();

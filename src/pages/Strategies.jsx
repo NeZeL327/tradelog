@@ -83,19 +83,19 @@ export default function Strategies() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
+    <div className="w-full min-h-0 space-y-6 dashboard-surface">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{t('tradingStrategies')}</h1>
-            <p className="text-slate-600 dark:text-slate-400">{t('manageAnalyzeStrategies')}</p>
+            <h1 className="cyber-page-title">{t('tradingStrategies')}</h1>
+            <p className="cyber-page-sub">{t('manageAnalyzeStrategies')}</p>
           </div>
           <Button
             onClick={() => {
               setEditingStrategy(null);
               setShowForm(!showForm);
             }}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            className="cyber-primary-btn"
           >
             <Plus className="w-5 h-5 mr-2" />
             {t('addStrategy')}
@@ -131,22 +131,20 @@ export default function Strategies() {
           const yMin = Math.floor(rawMin - pad);
           const yMax = Math.ceil(rawMax + pad);
           return (
-            <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+            <Card className="shadow-md">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 dark:text-white">
-                  <TrendingUp className="w-5 h-5" />
+                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-cyan-100">
+                  <TrendingUp className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                   {t('strategiesComparison')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={350}>
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="name" stroke="#64748b" />
-                    <YAxis stroke="#64748b" domain={[yMin, yMax]} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                    />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <YAxis domain={[yMin, yMax]} stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <Tooltip contentStyle={{ borderRadius: '8px' }} />
                     <Legend />
                     <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" />
                     <Bar dataKey="avgPL" fill="#10b981" name="Średni P&L" />
@@ -183,7 +181,7 @@ export default function Strategies() {
         </div>
 
         {strategies.length === 0 && !showForm && (
-          <Card className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <Card className="shadow-md">
             <CardContent className="text-center py-12">
               <Brain className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
               <p className="text-slate-600 dark:text-slate-400">{t('noStrategiesYet')}</p>
@@ -243,7 +241,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+      <Card className="shadow-md">
         <CardHeader>
           <CardTitle className="dark:text-white">{strategy ? "Edytuj strategię" : "Nowa strategia"}</CardTitle>
         </CardHeader>
@@ -524,7 +522,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
               <Button type="button" variant="outline" onClick={onCancel}>
                 Anuluj
               </Button>
-              <Button type="submit" className="bg-gradient-to-r from-blue-600 to-indigo-600">
+              <Button type="submit" className="cyber-primary-btn">
                 {strategy ? "Zapisz" : "Dodaj strategię"}
               </Button>
             </div>

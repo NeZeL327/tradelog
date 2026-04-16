@@ -118,7 +118,7 @@ export default function StrategyDetails() {
   }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
+    <div className="w-full min-h-0 space-y-6 dashboard-surface">
       <div className="max-w-none mx-0 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
@@ -126,18 +126,19 @@ export default function StrategyDetails() {
             variant="ghost"
             size="icon"
             onClick={() => navigate(createPageUrl('Strategies'))}
+            className="cyber-btn-outline"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white">{strategy.name}</h1>
-            <p className="text-slate-600 dark:text-slate-400">{strategy.category}</p>
+            <h1 className="cyber-page-title">{strategy.name}</h1>
+            <p className="cyber-page-sub">{strategy.category}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Statystyki */}
-          <Card className="bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+          <Card className="shadow-md">
             <CardContent className="pt-6">
               <div className="text-center">
                 <TrendingUp className="w-8 h-8 mx-auto text-blue-600 dark:text-blue-400 mb-2" />
@@ -147,7 +148,7 @@ export default function StrategyDetails() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+          <Card className="shadow-md">
             <CardContent className="pt-6">
               <div className="text-center">
                 <Award className="w-8 h-8 mx-auto text-purple-600 dark:text-purple-400 mb-2" />
@@ -157,7 +158,7 @@ export default function StrategyDetails() {
             </CardContent>
           </Card>
 
-          <Card className={`bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700`}>
+          <Card className={`shadow-md`}>
             <CardContent className="pt-6">
               <div className="text-center">
                 <Target className="w-8 h-8 mx-auto mb-2" style={{ color: totalPL >= 0 ? '#10b981' : '#ef4444' }} />
@@ -169,7 +170,7 @@ export default function StrategyDetails() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+          <Card className="shadow-md">
             <CardContent className="pt-6">
               <div className="text-center">
                 <Star className="w-8 h-8 mx-auto text-amber-500 mb-2" />
@@ -190,15 +191,15 @@ export default function StrategyDetails() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card className="text-center p-6 bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+          <Card className="text-center p-6 shadow-md">
             <div className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Wygrane</div>
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">{wins}</p>
           </Card>
-          <Card className="text-center p-6 bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+          <Card className="text-center p-6 shadow-md">
             <div className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Przegrane</div>
             <p className="text-2xl font-bold text-red-600 dark:text-red-400">{losses}</p>
           </Card>
-          <Card className="text-center p-6 bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+          <Card className="text-center p-6 shadow-md">
             <div className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Średni P&L</div>
             <p className={`text-2xl font-bold ${avgPL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {parseFloat(avgPL) > 0 ? '+' : ''}{avgPL}
@@ -209,7 +210,7 @@ export default function StrategyDetails() {
         {/* Setup i wskaźniki */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {strategy.setup_description && (
-            <Card className="bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="dark:text-white">Setup handlowy</CardTitle>
               </CardHeader>
@@ -220,7 +221,7 @@ export default function StrategyDetails() {
           )}
 
           {strategy.entry_indicators && (
-            <Card className="bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="dark:text-white">Wskaźniki wejścia</CardTitle>
               </CardHeader>
@@ -231,7 +232,7 @@ export default function StrategyDetails() {
           )}
 
           {strategy.exit_indicators && (
-            <Card className="bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="dark:text-white">Wskaźniki wyjścia</CardTitle>
               </CardHeader>
@@ -242,7 +243,7 @@ export default function StrategyDetails() {
           )}
 
           {strategy.risk_management && (
-            <Card className="bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="dark:text-white">Zarządzanie ryzykiem</CardTitle>
               </CardHeader>
@@ -279,48 +280,46 @@ export default function StrategyDetails() {
         {/* Wykresy wydajności */}
         {strategyTrades.length > 0 && (
           <>
-            <Card className="bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+            <Card className="shadow-md">
               <CardHeader>
-                <CardTitle className="dark:text-white">Kumulacyjny P&L</CardTitle>
+                <CardTitle className="text-slate-900 dark:text-cyan-100">Kumulacyjny P&L</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={cumulativePL}>
                     <defs>
                       <linearGradient id="colorCum" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.35} />
+                        <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="date" stroke="#64748b" />
-                    <YAxis stroke="#64748b" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                      contentStyle={{ borderRadius: '8px' }}
                       formatter={(value) => value.toFixed(2)}
                     />
-                    <Area type="monotone" dataKey="cumulative" stroke="#3b82f6" fillOpacity={1} fill="url(#colorCum)" />
+                    <Area type="monotone" dataKey="cumulative" stroke="#22d3ee" fillOpacity={1} fill="url(#colorCum)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            <Card className="bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700">
+            <Card className="shadow-md">
               <CardHeader>
-                <CardTitle className="dark:text-white">Wydajność miesięczna</CardTitle>
+                <CardTitle className="text-slate-900 dark:text-cyan-100">Wydajność miesięczna</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="month" stroke="#64748b" />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                    />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <Tooltip contentStyle={{ borderRadius: '8px' }} />
                     <Legend />
-                    <Bar dataKey="pl" fill="#3b82f6" name="P&L" />
-                    <Bar dataKey="trades" fill="#8b5cf6" name="Transakcje" />
+                    <Bar dataKey="pl" fill="#22d3ee" name="P&L" />
+                    <Bar dataKey="trades" fill="#a855f7" name="Transakcje" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -330,9 +329,9 @@ export default function StrategyDetails() {
 
         {/* Komentarz */}
         {strategy.comments && (
-          <Card className="bg-blue-50 dark:bg-blue-950 border-l-4 border-blue-500 shadow-lg">
+          <Card className="border-l-4 border-cyan-500 dark:border-cyan-400 bg-cyan-50/80 dark:bg-cyan-950/25 shadow-md">
             <CardHeader>
-              <CardTitle className="dark:text-white text-lg">Opinia o strategii</CardTitle>
+              <CardTitle className="text-slate-900 dark:text-cyan-100 text-lg">Opinia o strategii</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{strategy.comments}</p>

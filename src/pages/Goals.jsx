@@ -73,19 +73,19 @@ export default function Goals() {
   const failedGoals = goals.filter(g => g.status === "failed");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-2 sm:p-3">
+    <div className="w-full min-h-0 space-y-6 dashboard-surface">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{t('financialGoals')}</h1>
-            <p className="text-slate-600 dark:text-slate-400">{t('defineTrackGoals')}</p>
+            <h1 className="cyber-page-title">{t('financialGoals')}</h1>
+            <p className="cyber-page-sub">{t('defineTrackGoals')}</p>
           </div>
           <Button
             onClick={() => {
               setEditingGoal(null);
               setShowForm(!showForm);
             }}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            className="cyber-primary-btn"
           >
             <Plus className="w-5 h-5 mr-2" />
             {t('newGoal')}
@@ -333,7 +333,7 @@ function GoalForm({ goal, onSubmit, onCancel }) {
               <Button type="button" variant="outline" onClick={onCancel}>
                 {t('cancel')}
               </Button>
-              <Button type="submit" className="bg-gradient-to-r from-blue-600 to-indigo-600">
+              <Button type="submit" className="cyber-primary-btn">
                 {goal ? t('save') : t('createGoal')}
               </Button>
             </div>

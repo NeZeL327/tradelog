@@ -205,22 +205,29 @@ body[data-is-home="false"] {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ===== SIDEBAR ACTIVE STATE ===== */
+/* ===== SIDEBAR ACTIVE STATE (TradeZella-style rail + pill) ===== */
 .sidebar-active {
   position: relative;
-  background-color: hsl(var(--primary) / 0.1) !important;
+  border-radius: 0.65rem;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--primary) / 0.14) 0%,
+    hsl(var(--primary) / 0.06) 100%
+  ) !important;
   color: hsl(var(--primary)) !important;
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.12);
 }
 
 .sidebar-active::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 4px;
-  bottom: 4px;
+  top: 6px;
+  bottom: 6px;
   width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: hsl(var(--primary));
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.75) 100%);
+  box-shadow: 0 0 12px hsl(var(--primary) / 0.35);
 }
 
 /* ===== STAT CARD ===== */
@@ -387,6 +394,575 @@ body[data-is-home="false"] {
 .dashboard-surface .recharts-cartesian-grid line,
 .dashboard-surface .recharts-cartesian-grid path {
   stroke-opacity: 0.35;
+}
+
+/* ===== CYBER DASHBOARD (supervision-style; calendar center) ===== */
+.cyber-dashboard {
+  --cyber-accent: #0891b2;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+html.dark .cyber-dashboard {
+  --cyber-accent: #22d3ee;
+  background: radial-gradient(ellipse 100% 60% at 50% -10%, rgba(34, 211, 238, 0.07), transparent 55%),
+    hsl(var(--background));
+}
+
+/* App shell (Layout main): light mode subtle surface */
+html:not(.dark) main.cyber-dashboard.dashboard-surface {
+  background: linear-gradient(180deg, hsl(var(--muted) / 0.35) 0%, hsl(var(--background)) 28%);
+}
+
+/* Top bar — spójnie z cyber panelami */
+.cyber-app-header {
+  border-bottom-color: hsl(var(--border));
+  background: hsl(var(--card) / 0.85);
+}
+
+html.dark .cyber-app-header {
+  border-bottom-color: rgba(34, 211, 238, 0.2);
+  background: hsl(222 40% 8% / 0.88);
+  backdrop-filter: blur(12px);
+}
+
+/* Sidebar — obramowanie cyan w dark */
+html.dark .cyber-app-sidebar {
+  border-right-color: rgba(34, 211, 238, 0.18) !important;
+  box-shadow: inset -1px 0 0 rgba(34, 211, 238, 0.08);
+}
+
+html.dark .cyber-app-sidebar .sidebar-active {
+  background: linear-gradient(
+    90deg,
+    rgba(34, 211, 238, 0.12) 0%,
+    rgba(34, 211, 238, 0.04) 100%
+  ) !important;
+  color: #67e8f9 !important;
+  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.2);
+}
+
+html.dark .cyber-app-sidebar .sidebar-active::before {
+  background: linear-gradient(180deg, #22d3ee 0%, rgba(34, 211, 238, 0.55) 100%);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+}
+
+/* Shadcn Card w treści — jak .cyber-panel (bez duplikatu na specjalnych kartach) */
+main.cyber-dashboard .border.bg-card.text-card-foreground:not(.ocean-stat-card):not(.cyber-panel):not(
+    .cyber-stat-tile
+  ):not(.cyber-trade-card):not(.no-cyber-card) {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+html.dark
+  main.cyber-dashboard
+  .border.bg-card.text-card-foreground:not(.ocean-stat-card):not(.cyber-panel):not(.cyber-stat-tile):not(
+    .cyber-trade-card
+  ):not(.no-cyber-card) {
+  border-color: rgba(34, 211, 238, 0.22);
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+html.dark main.cyber-dashboard table thead th {
+  background: hsl(222 35% 14%);
+  border-color: rgba(34, 211, 238, 0.12);
+  color: rgba(165, 243, 252, 0.88);
+}
+
+html.dark main.cyber-dashboard table tbody tr {
+  border-color: rgba(34, 211, 238, 0.1);
+}
+
+html.dark main.cyber-dashboard input[type="text"],
+html.dark main.cyber-dashboard input[type="number"],
+html.dark main.cyber-dashboard input[type="search"],
+html.dark main.cyber-dashboard input[type="email"],
+html.dark main.cyber-dashboard input[type="password"],
+html.dark main.cyber-dashboard textarea,
+html.dark main.cyber-dashboard select {
+  border-color: rgba(34, 211, 238, 0.22);
+  background: hsl(222 40% 9% / 0.85);
+}
+
+html.dark main.cyber-dashboard input:focus,
+html.dark main.cyber-dashboard textarea:focus,
+html.dark main.cyber-dashboard select:focus {
+  border-color: rgba(34, 211, 238, 0.45);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25);
+}
+
+/* ===== CYBER PAGE SHELL (tytuły, CTA, wykresy — spójnie z Dashboardem) ===== */
+.cyber-page-title {
+  font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+}
+
+html.dark .cyber-page-title {
+  color: #67e8f9;
+  text-shadow: 0 0 22px rgba(34, 211, 238, 0.35);
+}
+
+.cyber-page-sub {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.95rem;
+}
+
+/* Primary CTA — jasny: niebieski jak wcześniej; dark: cyan jak panele cyber */
+main.cyber-dashboard .cyber-primary-btn {
+  color: #fff !important;
+  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 100%) !important;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.28);
+  border: none !important;
+}
+
+main.cyber-dashboard .cyber-primary-btn:hover {
+  filter: brightness(1.06);
+}
+
+html.dark main.cyber-dashboard .cyber-primary-btn {
+  background: linear-gradient(90deg, #0e7490 0%, #22d3ee 55%, #0891b2 100%) !important;
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.22);
+}
+
+/* Recharts w obszarze aplikacji */
+main.cyber-dashboard .recharts-cartesian-grid line,
+main.cyber-dashboard .recharts-cartesian-grid path {
+  stroke: hsl(var(--border));
+  stroke-opacity: 0.45;
+}
+
+html.dark main.cyber-dashboard .recharts-cartesian-grid line,
+html.dark main.cyber-dashboard .recharts-cartesian-grid path {
+  stroke: rgba(34, 211, 238, 0.14);
+  stroke-opacity: 1;
+}
+
+html.dark main.cyber-dashboard .recharts-text,
+html.dark main.cyber-dashboard .recharts-legend-item-text {
+  fill: rgba(165, 243, 252, 0.82) !important;
+}
+
+html.dark main.cyber-dashboard .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: hsl(222 42% 9%) !important;
+  border: 1px solid rgba(34, 211, 238, 0.28) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 16px rgba(34, 211, 238, 0.08) !important;
+}
+
+html.dark main.cyber-dashboard .recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-label {
+  color: rgba(165, 243, 252, 0.95) !important;
+}
+
+/* Zakładki — aktywny stan w tonacji cyan (dark) */
+html.dark main.cyber-dashboard [role="tablist"] {
+  background: hsl(222 40% 9% / 0.75);
+  border: 1px solid rgba(34, 211, 238, 0.18);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+html.dark main.cyber-dashboard [role="tab"][data-state="active"] {
+  color: #67e8f9 !important;
+  background: hsl(222 35% 14%) !important;
+  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.25);
+}
+
+/* Dialog trade — nagłówek w stylu cyber */
+.cyber-dialog-header {
+  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 100%);
+  color: #fff !important;
+  border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html.dark .cyber-dialog-header {
+  background: linear-gradient(120deg, hsl(222 47% 11%) 0%, hsl(192 75% 28%) 45%, hsl(195 85% 32%) 100%);
+  box-shadow: inset 0 -1px 0 rgba(34, 211, 238, 0.2);
+}
+
+/* Kalendarz — zaznaczenie dnia w dark */
+html.dark main.cyber-dashboard .calendar-day-selected {
+  background: rgba(34, 211, 238, 0.12) !important;
+  border-color: rgba(34, 211, 238, 0.45) !important;
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.12);
+}
+
+html.dark main.cyber-dashboard .calendar-day-today:not(.calendar-day-selected) {
+  border-color: rgba(34, 211, 238, 0.55) !important;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25);
+}
+
+.cyber-columns-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "center"
+    "left"
+    "right";
+}
+
+@media (min-width: 1280px) {
+  .cyber-columns-grid {
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(240px, 300px);
+    grid-template-areas: "left center right";
+    align-items: start;
+  }
+}
+
+.cyber-col-left {
+  grid-area: left;
+}
+.cyber-col-center {
+  grid-area: center;
+}
+.cyber-col-right {
+  grid-area: right;
+}
+
+.cyber-panel {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  border-radius: calc(var(--radius) + 2px);
+  position: relative;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+html.dark .cyber-panel {
+  border-color: rgba(34, 211, 238, 0.28);
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.cyber-panel-hero {
+  border-width: 1px;
+}
+
+html.dark .cyber-panel-hero {
+  box-shadow: 0 0 28px rgba(34, 211, 238, 0.09);
+}
+
+.cyber-panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(71 85 105);
+}
+
+html.dark .cyber-panel-title {
+  color: rgba(165, 243, 252, 0.92);
+}
+
+.cyber-hero {
+  text-align: center;
+  padding: 0.65rem 1rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) + 4px);
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--muted) / 0.45) 100%);
+}
+
+html.dark .cyber-hero {
+  border-color: rgba(34, 211, 238, 0.35);
+  background: linear-gradient(135deg, hsl(222 47% 9%) 0%, hsl(222 40% 12%) 100%);
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.1);
+}
+
+.cyber-hero-heading {
+  font-size: clamp(0.8rem, 1.8vw, 1.05rem);
+  font-weight: 700;
+  color: #0e7490;
+}
+
+html.dark .cyber-hero-heading {
+  color: #67e8f9;
+  text-shadow: 0 0 20px rgba(34, 211, 238, 0.4);
+}
+
+.cyber-hero-sub {
+  color: hsl(var(--muted-foreground));
+}
+
+.cyber-btn-outline {
+  border-color: hsl(var(--border)) !important;
+}
+
+html.dark .cyber-btn-outline {
+  border-color: rgba(34, 211, 238, 0.35) !important;
+  background: hsl(var(--card) / 0.55);
+}
+
+.cyber-day-panel {
+  background: hsl(var(--muted) / 0.35);
+  border: 1px solid hsl(var(--border));
+}
+
+html.dark .cyber-day-panel {
+  background: hsl(217 33% 12% / 0.88);
+  border-color: rgba(34, 211, 238, 0.22);
+}
+
+.cyber-day-trade {
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+}
+
+html.dark .cyber-day-trade {
+  background: hsl(222 40% 10%);
+  border-color: rgba(34, 211, 238, 0.18);
+}
+
+.cyber-gauge {
+  position: relative;
+  aspect-ratio: 1;
+  min-height: 86px;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+html.dark .cyber-gauge {
+  border-color: rgba(34, 211, 238, 0.28);
+  background: hsl(222 40% 8%);
+}
+
+.cyber-gauge-ring {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+}
+
+.cyber-gauge-ring::after {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  background: hsl(var(--card));
+}
+
+html.dark .cyber-gauge-ring::after {
+  background: hsl(222 47% 9%);
+}
+
+.cyber-gauge-label {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.cyber-gauge-value {
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: hsl(var(--foreground));
+}
+
+.cyber-gauge-cap {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: hsl(var(--muted-foreground));
+  margin-top: 2px;
+  text-align: center;
+}
+
+.cyber-table-head {
+  background: hsl(var(--muted) / 0.55);
+}
+
+html.dark .cyber-table-head {
+  background: hsl(222 35% 14%);
+}
+
+.cyber-table-row:hover {
+  background: hsl(var(--accent) / 0.35);
+}
+
+/* Najlepszy / najgorszy trade — ten sam rytm co cyber-panel */
+.cyber-trade-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+html.dark .cyber-trade-card {
+  border-color: rgba(34, 211, 238, 0.22);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.06);
+}
+
+.cyber-trade-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: 2px 2px 0 0;
+  opacity: 0.95;
+}
+
+.cyber-trade-card--best::before {
+  background: linear-gradient(90deg, #84cc16, #22d3ee);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.35);
+}
+
+html.dark .cyber-trade-card--best {
+  background: linear-gradient(165deg, hsl(222 40% 11%) 0%, hsl(222 45% 8%) 100%);
+}
+
+.cyber-trade-card--worst::before {
+  background: linear-gradient(90deg, #fb923c, #ea580c);
+  box-shadow: 0 0 12px rgba(251, 146, 60, 0.35);
+}
+
+html.dark .cyber-trade-card--worst {
+  background: linear-gradient(165deg, hsl(222 40% 11%) 0%, hsl(222 45% 8%) 100%);
+}
+
+.cyber-trade-card .cyber-trade-pl-best {
+  color: #15803d;
+  font-variant-numeric: tabular-nums;
+}
+
+html.dark .cyber-trade-card .cyber-trade-pl-best {
+  color: #bef264;
+  text-shadow: 0 0 14px rgba(190, 242, 100, 0.25);
+}
+
+.cyber-trade-card .cyber-trade-pl-worst {
+  color: #c2410c;
+  font-variant-numeric: tabular-nums;
+}
+
+html.dark .cyber-trade-card .cyber-trade-pl-worst {
+  color: #fdba74;
+  text-shadow: 0 0 12px rgba(251, 146, 60, 0.25);
+}
+
+/* Strip: średnia wygrana / przegrana / transakcje / rozkład (kolory jak dashboard „supervision”) */
+.cyber-stat-strip {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .cyber-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .cyber-stat-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.cyber-stat-tile {
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+html.dark .cyber-stat-tile {
+  border-color: rgba(34, 211, 238, 0.22);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.06);
+}
+
+.cyber-stat-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: 2px 2px 0 0;
+  opacity: 0.95;
+}
+
+.cyber-stat-win::before {
+  background: linear-gradient(90deg, #84cc16, #22c55e);
+  box-shadow: 0 0 12px rgba(132, 204, 22, 0.45);
+}
+
+html.dark .cyber-stat-win {
+  background: linear-gradient(165deg, hsl(222 40% 11%) 0%, hsl(222 45% 8%) 100%);
+}
+
+.cyber-stat-loss::before {
+  background: linear-gradient(90deg, #fb923c, #ea580c);
+  box-shadow: 0 0 12px rgba(251, 146, 60, 0.4);
+}
+
+html.dark .cyber-stat-loss {
+  background: linear-gradient(165deg, hsl(222 40% 11%) 0%, hsl(222 45% 8%) 100%);
+}
+
+.cyber-stat-count::before {
+  background: linear-gradient(90deg, #22d3ee, #06b6d4);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+}
+
+html.dark .cyber-stat-count {
+  background: linear-gradient(165deg, hsl(222 42% 12%) 0%, hsl(222 48% 9%) 100%);
+}
+
+.cyber-stat-outcome::before {
+  background: linear-gradient(90deg, #a3e635, #22d3ee, #38bdf8);
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.35);
+}
+
+html.dark .cyber-stat-outcome {
+  background: linear-gradient(165deg, hsl(222 44% 11%) 0%, hsl(222 48% 8%) 100%);
+}
+
+.cyber-stat-tile .cyber-stat-value-win {
+  color: #15803d;
+  text-shadow: none;
+}
+
+html.dark .cyber-stat-tile .cyber-stat-value-win {
+  color: #bef264;
+  text-shadow: 0 0 18px rgba(190, 242, 100, 0.35);
+}
+
+.cyber-stat-tile .cyber-stat-value-loss {
+  color: #c2410c;
+}
+
+html.dark .cyber-stat-tile .cyber-stat-value-loss {
+  color: #fdba74;
+  text-shadow: 0 0 16px rgba(251, 146, 60, 0.35);
+}
+
+.cyber-stat-tile .cyber-stat-value-cyan {
+  color: #0e7490;
+}
+
+html.dark .cyber-stat-tile .cyber-stat-value-cyan {
+  color: #67e8f9;
+  text-shadow: 0 0 20px rgba(34, 211, 238, 0.4);
+}
+
+.cyber-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(71 85 105);
+}
+
+html.dark .cyber-stat-label {
+  color: rgba(165, 243, 252, 0.85);
 }
 
 /* ===== TABS ===== */

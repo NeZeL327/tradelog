@@ -131,36 +131,36 @@ export default function Calendar() {
     : [t('monday'), t('tuesday'), t('wednesday'), t('thursday'), t('friday'), t('saturday'), t('sunday')];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
+    <div className="w-full min-h-0 space-y-6 dashboard-surface">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{t('tradingCalendar')}</h1>
-            <p className="text-slate-600 dark:text-slate-400">{t('browseTradesInCalendar')}</p>
+            <h1 className="cyber-page-title">{t('tradingCalendar')}</h1>
+            <p className="cyber-page-sub">{t('browseTradesInCalendar')}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar */}
-          <Card className="lg:col-span-2 bg-white dark:bg-muted shadow-xl border border-slate-200 dark:border-slate-700">
+          <Card className="lg:col-span-2 shadow-md">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+                <Button variant="outline" size="icon" onClick={handlePrevMonth} className="cyber-btn-outline">
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
                 
                 <div className="text-center">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-cyan-100">
                     {format(currentDate, 'LLLL yyyy', { locale })}
                   </h2>
                 </div>
 
-                <Button variant="outline" size="icon" onClick={handleNextMonth}>
+                <Button variant="outline" size="icon" onClick={handleNextMonth} className="cyber-btn-outline">
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
               
-              <Button onClick={handleToday} variant="outline" className="w-full mt-4">
+              <Button onClick={handleToday} variant="outline" className="w-full mt-4 cyber-btn-outline">
                 <CalendarIcon className="w-4 h-4 mr-2" />
                 {t('today')}
               </Button>
@@ -190,8 +190,8 @@ export default function Calendar() {
                       className={`
                         calendar-day relative p-3 rounded-lg transition-all duration-200 min-h-[80px]
                         ${!isCurrentMonth ? 'opacity-30 calendar-day-outside' : ''}
-                        ${isSelected ? 'ring-2 ring-blue-600 bg-blue-50 dark:bg-blue-950 calendar-day-selected' : 'hover:bg-slate-50 dark:hover:bg-slate-700'}
-                        ${isTodayDay && !isSelected ? 'ring-2 ring-purple-400 calendar-day-today' : ''}
+                        ${isSelected ? 'ring-2 ring-cyan-500/70 bg-cyan-400/10 dark:bg-cyan-950/50 calendar-day-selected' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'}
+                        ${isTodayDay && !isSelected ? 'ring-2 ring-cyan-400/60 calendar-day-today' : ''}
                         ${hasTrades ? 'cursor-pointer' : 'cursor-default'}
                       `}
                     >
@@ -225,7 +225,7 @@ export default function Calendar() {
           </Card>
 
           {/* Selected Day Details */}
-          <Card className="bg-white dark:bg-muted shadow-xl border border-slate-200 dark:border-slate-700">
+          <Card className="shadow-md">
             <CardHeader>
               <CardTitle className="dark:text-white">
                 {selectedDate 
@@ -358,7 +358,7 @@ export default function Calendar() {
         </div>
 
         {/* Month Summary */}
-        <Card className="bg-white dark:bg-muted shadow-xl border border-slate-200 dark:border-slate-700">
+        <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="dark:text-white">{t('monthSummary')} - {format(currentDate, 'LLLL yyyy', { locale })}</CardTitle>
           </CardHeader>
@@ -402,7 +402,7 @@ export default function Calendar() {
         </Card>
 
         {/* Executed Trades List */}
-        <Card className="bg-white dark:bg-muted shadow-xl border border-slate-200 dark:border-slate-700">
+        <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="dark:text-white">{t('completedTrades')} - {format(currentDate, 'LLLL yyyy', { locale })}</CardTitle>
           </CardHeader>
@@ -563,7 +563,7 @@ export default function Calendar() {
       {/* Trade Details Dialog */}
       <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-card border-slate-200 dark:border-slate-700">
-          <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 text-white px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+          <DialogHeader className="cyber-dialog-header sticky top-0 z-10 text-white px-6 py-4 border-b">
             <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
           </DialogHeader>
           <div className="p-6 bg-white dark:bg-card">

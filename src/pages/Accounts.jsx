@@ -115,7 +115,7 @@ export default function Accounts() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-6">
+      <div className="w-full min-h-[40vh] dashboard-surface p-6">
         <div className="max-w-none mx-0 space-y-6">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">Wymagane logowanie</h1>
@@ -128,7 +128,7 @@ export default function Accounts() {
 
   if (isLoading || isTradesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-6">
+      <div className="w-full min-h-[40vh] dashboard-surface p-6">
         <div className="max-w-none mx-0 space-y-6">
           <div className="text-center">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin mx-auto"></div>
@@ -147,12 +147,12 @@ export default function Accounts() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-4 sm:p-6">
+    <div className="w-full min-h-0 dashboard-surface space-y-6">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1">
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-2">Konta tradingowe</h1>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">Zarządzaj swoimi kontami handlowymi</p>
+            <h1 className="cyber-page-title">Konta tradingowe</h1>
+            <p className="cyber-page-sub text-sm">Zarządzaj swoimi kontami handlowymi</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Select value={accountVisibilityFilter} onValueChange={setAccountVisibilityFilter}>
@@ -171,7 +171,7 @@ export default function Accounts() {
               if (!open) setEditingAccount(null);
             }}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 gap-2 whitespace-nowrap">
+                <Button className="cyber-primary-btn gap-2 whitespace-nowrap">
                   <Plus className="w-4 h-4" />
                   Dodaj konto
                 </Button>
@@ -210,7 +210,7 @@ export default function Accounts() {
               if (!open) setEditingAccount(null);
             }}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
+                <Button className="cyber-primary-btn gap-2">
                   <Plus className="w-4 h-4" />
                   Dodaj pierwsze konto
                 </Button>

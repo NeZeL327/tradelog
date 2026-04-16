@@ -581,12 +581,12 @@ export default function Notes() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] bg-slate-50 dark:bg-background flex flex-col overflow-hidden">
+    <div className="h-[min(720px,calc(100vh-8rem))] flex flex-col overflow-hidden rounded-xl border border-cyan-500/15 dark:border-cyan-500/25 bg-transparent dashboard-surface">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-border bg-white dark:bg-card shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-cyan-500/15 dark:border-cyan-500/25 bg-card/95 dark:bg-[hsl(222_40%_8%_/_0.92)] backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-violet-500" />
-          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Notatki</h1>
+          <BookOpen className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-cyan-100">Notatki</h1>
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 animate-pulse">⚠ W budowie — możliwe błędy</span>
           <Badge variant="secondary" className="text-xs">{notes.length}</Badge>
         </div>
@@ -644,7 +644,7 @@ export default function Notes() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* ── LEFT SIDEBAR ── */}
-        <aside className="w-[260px] shrink-0 border-r border-slate-200 dark:border-border bg-white dark:bg-card flex flex-col overflow-hidden">
+        <aside className="w-[260px] shrink-0 border-r border-cyan-500/15 dark:border-cyan-500/20 bg-card/90 dark:bg-[hsl(222_42%_9%_/_0.85)] flex flex-col overflow-hidden">
           {/* Search */}
           <div className="p-3 border-b border-slate-100 dark:border-border">
             <div className="relative">

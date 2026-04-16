@@ -14,26 +14,26 @@ export default function Upload() {
   const [activeTab, setActiveTab] = useState("single");
 
   return (
-    <div className="min-h-screen p-2 sm:p-3">
+    <div className="w-full min-h-0 space-y-6 dashboard-surface">
       <div className="max-w-none mx-0">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Button
             variant="outline"
             size="icon"
             onClick={() => navigate(createPageUrl("Dashboard"))}
-            className="rounded-xl border-slate-300 flex-shrink-0 h-10 w-10"
+            className="rounded-xl cyber-btn-outline flex-shrink-0 h-10 w-10"
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+            <h1 className="cyber-page-title text-2xl sm:text-3xl md:text-4xl">
               Upload Receipts
             </h1>
-            <p className="text-sm sm:text-base text-slate-600 mt-1">AI-powered receipt scanning and data extraction</p>
+            <p className="cyber-page-sub text-sm sm:text-base mt-1">AI-powered receipt scanning and data extraction</p>
           </div>
         </div>
 
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+        <Card className="shadow-md backdrop-blur-sm bg-card/90">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="border-b border-slate-200 px-4 sm:px-6 pt-4 sm:pt-6">
               <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-100">

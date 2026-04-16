@@ -206,13 +206,13 @@ export default function Billing() {
   };
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 bg-slate-50 dark:bg-background">
+    <div className="w-full min-h-0 dashboard-surface">
       <div className="max-w-3xl mx-auto space-y-6">
 
         {/* Header */}
         <div className="text-center pt-2 pb-2">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">{t("billingTitle")}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{t("billingSubtitle")}</p>
+          <h1 className="cyber-page-title text-2xl">{t("billingTitle")}</h1>
+          <p className="cyber-page-sub text-sm">{t("billingSubtitle")}</p>
         </div>
 
         {/* Status banner */}

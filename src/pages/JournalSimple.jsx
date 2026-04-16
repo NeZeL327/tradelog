@@ -76,13 +76,13 @@ function MiniCalendar({ from, to, onSelect }) {
   return (
     <div className="w-[224px] select-none">
       <div className="flex items-center justify-between mb-2">
-        <button type="button" onClick={prevMonth} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500">
+        <button type="button" onClick={prevMonth} className="p-1 rounded hover:bg-cyan-500/10 dark:hover:bg-cyan-500/15 text-slate-500 dark:text-cyan-300/80">
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+        <span className="text-sm font-semibold text-slate-800 dark:text-cyan-100">
           {MONTHS_PL[view.month]} {view.year}
         </span>
-        <button type="button" onClick={nextMonth} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500">
+        <button type="button" onClick={nextMonth} className="p-1 rounded hover:bg-cyan-500/10 dark:hover:bg-cyan-500/15 text-slate-500 dark:text-cyan-300/80">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -106,9 +106,9 @@ function MiniCalendar({ from, to, onSelect }) {
               onClick={() => handleDay(d)}
               className={[
                 "text-xs h-7 w-full rounded transition-colors",
-                isFrom || isTo ? "bg-blue-600 text-white font-semibold" : "",
-                inRange ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-none" : "",
-                isNow && !isFrom && !isTo ? "font-bold text-blue-500 dark:text-blue-400" : "",
+                isFrom || isTo ? "bg-cyan-600 dark:bg-cyan-500 text-white font-semibold" : "",
+                inRange ? "bg-cyan-100 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-200 rounded-none" : "",
+                isNow && !isFrom && !isTo ? "font-bold text-cyan-600 dark:text-cyan-400" : "",
                 !isFrom && !isTo && !inRange ? "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" : "",
               ].join(" ").trim()}
             >
@@ -557,8 +557,8 @@ export default function JournalSimple({ mode = "all" }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+      <div className="flex items-center justify-center min-h-[40vh]">
+        <div className="animate-spin w-12 h-12 border-4 border-cyan-600 dark:border-cyan-400 border-t-transparent rounded-full"></div>
       </div>
     );
   }
@@ -574,14 +574,14 @@ export default function JournalSimple({ mode = "all" }) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="w-full min-h-0 space-y-4 dashboard-surface">
       <div className="w-full mx-auto space-y-4">
         {/* Bulk Actions Bar */}
         {selectedTrades.size > 0 && (
-          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-white dark:bg-muted shadow-2xl rounded-xl border border-slate-200 dark:border-slate-700 px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4 animate-in slide-in-from-top-5">
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-card shadow-2xl rounded-xl border border-cyan-500/25 dark:border-cyan-500/30 px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4 animate-in slide-in-from-top-5 backdrop-blur-md">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                <span className="text-xs md:text-sm font-bold text-blue-600 dark:text-blue-300">{selectedTrades.size}</span>
+              <div className="w-8 h-8 rounded-full bg-cyan-500/15 dark:bg-cyan-500/20 flex items-center justify-center ring-1 ring-cyan-500/30">
+                <span className="text-xs md:text-sm font-bold text-cyan-700 dark:text-cyan-200">{selectedTrades.size}</span>
               </div>
               <span className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
                 {selectedTrades.size} {selectedTrades.size === 1 ? 'trade' : 'trades'} selected
@@ -611,13 +611,13 @@ export default function JournalSimple({ mode = "all" }) {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : 'Trade Journal'}</h1>
-            <p className="text-slate-600 dark:text-slate-400">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : 'Track and analyze your trading performance'}</p>
+            <h1 className="cyber-page-title">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : 'Trade Journal'}</h1>
+            <p className="cyber-page-sub">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : 'Track and analyze your trading performance'}</p>
           </div>
           <div className="flex gap-3">
             <Button
               onClick={() => setShowAddForm(true)}
-              className="h-10 px-4 gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-md text-white"
+              className="h-10 px-4 gap-2 rounded-xl shadow-md cyber-primary-btn"
               title={t('addTrade')}
             >
               <Plus className="w-5 h-5 shrink-0" />
@@ -695,7 +695,7 @@ export default function JournalSimple({ mode = "all" }) {
         )}
 
         {/* Filters */}
-        <Card className="bg-white dark:bg-muted shadow-lg">
+        <Card className="shadow-md">
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
@@ -1328,7 +1328,7 @@ export default function JournalSimple({ mode = "all" }) {
         {/* View Trade Dialog */}
         <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-card border-slate-200 dark:border-slate-700">
-            <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 text-white px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <DialogHeader className="cyber-dialog-header sticky top-0 z-10 text-white px-6 py-4 border-b">
               <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
             </DialogHeader>
             <div className="p-6 bg-white dark:bg-card">
