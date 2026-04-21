@@ -245,7 +245,7 @@ function LayoutContent({ children }) {
         </Sidebar>
 
         {/* Main content — cyber-dashboard: tło, karty i typografia jak na Dashboardzie */}
-        <main className="flex-1 flex flex-col min-w-0 overflow-hidden cyber-dashboard dashboard-surface">
+        <main className="flex-1 flex flex-col min-w-0 min-h-screen overflow-auto cyber-dashboard dashboard-surface">
 
           {/* Top header bar */}
           <header className="cyber-app-header border-b px-4 md:px-6 py-3 sticky top-0 z-10 flex items-center justify-between gap-4 backdrop-blur-md">
@@ -281,12 +281,10 @@ function LayoutContent({ children }) {
           </header>
 
           {/* Page content */}
-          <div className="flex-1 overflow-auto flex flex-col">
-            <div className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 py-6">
-              {children}
-            </div>
-            <Footer variant="app" />
+          <div className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 py-6">
+            {children}
           </div>
+          <Footer variant="app" />
         </main>
       </div>
     </SidebarProvider>
