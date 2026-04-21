@@ -57,6 +57,7 @@ import Dashboard from './pages/Dashboard';
 import Goals from './pages/Goals';
 import Home from './pages/Home';
 import Journal from './pages/Journal';
+import Missed from './pages/Missed';
 import Notes from './pages/Notes';
 import Planned from './pages/Planned';
 import Settings from './pages/Settings';
@@ -78,6 +79,7 @@ export const PAGES = {
     "Home": Home,
     "Journal": Journal,
     "Planned": Planned,
+    "Missed": Missed,
     "Notes": Notes,
     "Settings": Settings,
     "Strategies": Strategies,

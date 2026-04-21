@@ -38,6 +38,7 @@ const normalizeTradeStatus = (status) => {
   if (["open", "otwarta", "aktywna"].includes(normalized)) return "open";
   if (["closed", "wykonana", "zamknięta", "zamknieta", "executed"].includes(normalized)) return "closed";
   if (["planned", "planowana"].includes(normalized)) return "planned";
+  if (["missed", "spozniona", "spóźniona", "spozniony", "spóźniony"].includes(normalized)) return "missed";
   return "default";
 };
 
@@ -56,6 +57,7 @@ export const tradeStatusBadgeClass = (status) => {
   if (normalized === "open") return "bg-amber-500 text-white border border-amber-300/80 shadow-sm shadow-amber-500/30 text-xs font-semibold px-1.5 py-0.5";
   if (normalized === "closed") return "bg-emerald-500 text-white border border-emerald-300/80 shadow-sm shadow-emerald-500/30 text-xs font-semibold px-1.5 py-0.5";
   if (normalized === "planned") return "bg-slate-500 text-white border border-slate-300/80 shadow-sm shadow-slate-500/30 text-xs font-semibold px-1.5 py-0.5";
+  if (normalized === "missed") return "bg-orange-500 text-white border border-orange-300/80 shadow-sm shadow-orange-500/30 text-xs font-semibold px-1.5 py-0.5";
   return "bg-slate-500 text-white border border-slate-300/80 text-xs font-semibold px-1.5 py-0.5";
 };
 

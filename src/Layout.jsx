@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar,
-  LogOut, NotebookPen, ListTodo,
+  LogOut, NotebookPen, ListTodo, AlarmClockOff,
   ChevronRight, User, FlaskConical,
 } from "lucide-react";
 import {
@@ -39,6 +39,7 @@ const NAV_GROUPS = (t) => [
       { title: t("dashboard"), url: createPageUrl("Dashboard"), icon: LayoutDashboard },
       { title: t("journal"), url: createPageUrl("Journal"), icon: BookOpen },
       { title: t("plannedTrades") || "Planned", url: createPageUrl("Planned"), icon: ListTodo },
+      { title: t("missedTrades") || "Missed", url: createPageUrl("Missed"), icon: AlarmClockOff },
       { title: t("calendar"), url: createPageUrl("Calendar"), icon: Calendar },
     ],
   },

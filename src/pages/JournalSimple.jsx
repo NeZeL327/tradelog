@@ -125,12 +125,15 @@ export default function JournalSimple({ mode = "all" }) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const isPlannedMode = mode === "planned";
+  const isMissedMode = mode === "missed";
+  const isSingleStatusMode = isPlannedMode || isMissedMode;
+  const fixedStatus = isPlannedMode ? "Planned" : isMissedMode ? "Missed" : null;
   const dateFormat = useMemo(() => getDateFormat(), []);
   const fmtDate = (d) => formatTradeDate(d, dateFormat);
   const journalFiltersStorageKey = `journal_filters_${user?.id || 'guest'}_${mode}`;
   const hasLoadedJournalFilters = useRef(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilters, setStatusFilters] = useState(isPlannedMode ? ["Planned"] : ["all"]);
+  const [statusFilters, setStatusFilters] = useState(isSingleStatusMode ? [fixedStatus] : ["all"]);
   const [timeFilters, setTimeFilters] = useState(["all"]);
   const [timeFilterOpen, setTimeFilterOpen] = useState(false);
   const timeFilterRef = useRef(null);
@@ -170,7 +173,7 @@ export default function JournalSimple({ mode = "all" }) {
   useEffect(() => {
     hasLoadedJournalFilters.current = false;
 
-    const defaultStatusFilters = isPlannedMode ? ["Planned"] : ["all"];
+    const defaultStatusFilters = isSingleStatusMode ? [fixedStatus] : ["all"];
     setSearchTerm("");
     setStatusFilters(defaultStatusFilters);
     setTimeFilters(["all"]);
@@ -198,7 +201,7 @@ export default function JournalSimple({ mode = "all" }) {
           setOutcomeFilters(parsed.outcomeFilters.map((value) => String(value)));
         }
 
-        if (!isPlannedMode && Array.isArray(parsed.statusFilters) && parsed.statusFilters.length > 0) {
+        if (!isSingleStatusMode && Array.isArray(parsed.statusFilters) && parsed.statusFilters.length > 0) {
           setStatusFilters(parsed.statusFilters.map((value) => String(value)));
         }
       }
@@ -207,7 +210,7 @@ export default function JournalSimple({ mode = "all" }) {
     } finally {
       hasLoadedJournalFilters.current = true;
     }
-  }, [journalFiltersStorageKey, isPlannedMode]);
+  }, [journalFiltersStorageKey, isSingleStatusMode, fixedStatus]);
 
   useEffect(() => {
     if (!hasLoadedJournalFilters.current) return;
@@ -217,7 +220,7 @@ export default function JournalSimple({ mode = "all" }) {
         journalFiltersStorageKey,
         JSON.stringify({
           searchTerm,
-          statusFilters: isPlannedMode ? ["Planned"] : statusFilters,
+          statusFilters: isSingleStatusMode ? [fixedStatus] : statusFilters,
           timeFilters,
           accountFilters,
           outcomeFilters
@@ -228,7 +231,8 @@ export default function JournalSimple({ mode = "all" }) {
     }
   }, [
     journalFiltersStorageKey,
-    isPlannedMode,
+    isSingleStatusMode,
+    fixedStatus,
     searchTerm,
     statusFilters,
     timeFilters,
@@ -467,8 +471,13 @@ export default function JournalSimple({ mode = "all" }) {
 
   const filteredTrades = sortTrades(outcomeFilteredTrades);
   const plannedTrades = sortTrades(baseFilteredTrades.filter(t => t.status === "Planned"));
-  const executedTrades = filteredTrades.filter(t => t.status !== "Planned");
-  const displayTrades = isPlannedMode ? plannedTrades : executedTrades;
+  const missedTrades = sortTrades(baseFilteredTrades.filter(t => t.status === "Missed"));
+  const executedTrades = filteredTrades.filter(t => t.status !== "Planned" && t.status !== "Missed");
+  const displayTrades = isPlannedMode
+    ? plannedTrades
+    : isMissedMode
+      ? missedTrades
+      : executedTrades;
   const toggleStatusFilter = (value) => {
     setStatusFilters(prev => {
       if (value === "all") return ["all"];
@@ -544,12 +553,17 @@ export default function JournalSimple({ mode = "all" }) {
   }, [strategies]);
 
 
-  const statsSource = isPlannedMode ? plannedTrades : baseFilteredTrades.filter(isClosedTrade);
+  const statsSource = isPlannedMode
+    ? plannedTrades
+    : isMissedMode
+      ? missedTrades
+      : baseFilteredTrades.filter(isClosedTrade);
   const stats = {
     total: statsSource.length,
     open: baseFilteredTrades.filter(t => t.status === "Open").length,
     closed: baseFilteredTrades.filter(isClosedTrade).length,
     planned: baseFilteredTrades.filter(t => t.status === "Planned").length,
+    missed: baseFilteredTrades.filter(t => t.status === "Missed").length,
     wins: statsSource.filter(t => t.outcome === "Win").length,
     losses: statsSource.filter(t => t.outcome === "Loss").length,
     totalPL: statsSource.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0)
@@ -611,8 +625,8 @@ export default function JournalSimple({ mode = "all" }) {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="cyber-page-title">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : 'Trade Journal'}</h1>
-            <p className="cyber-page-sub">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : 'Track and analyze your trading performance'}</p>
+            <h1 className="cyber-page-title">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : isMissedMode ? (t('missedTrades') || 'Missed Trades') : 'Trade Journal'}</h1>
+            <p className="cyber-page-sub">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : isMissedMode ? (t('missedTrades') || 'Missed Trades') : 'Track and analyze your trading performance'}</p>
           </div>
           <div className="flex gap-3">
             <Button
@@ -627,7 +641,7 @@ export default function JournalSimple({ mode = "all" }) {
         </div>
 
         {/* Stats — browser-style tabs */}
-        {!isPlannedMode && (() => {
+        {!isSingleStatusMode && (() => {
           const isAll = statusFilters.includes("all") && outcomeFilters.includes("all");
           const tabs = [
             { key: "all",    label: t('totalTradesLabel'), count: stats.total,   active: isAll,                              accent: "slate",   onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["all"]); } },
@@ -712,7 +726,7 @@ export default function JournalSimple({ mode = "all" }) {
                   />
                 </div>
               </div>
-              {!isPlannedMode && (
+              {!isSingleStatusMode && (
               <div className="flex flex-wrap gap-3 items-center">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div 
@@ -950,7 +964,7 @@ export default function JournalSimple({ mode = "all" }) {
           </CardContent>
         </Card>
 
-        {(isPlannedMode || statusFilters.includes("all") || statusFilters.some(s => s !== "Planned")) && (
+        {(isSingleStatusMode || statusFilters.includes("all") || statusFilters.some(s => s !== "Planned" && s !== "Missed")) && (
           <Card className="bg-white dark:bg-card shadow-xl">
             <CardContent className="p-0">
               <div className="overflow-x-auto w-full">
@@ -1153,7 +1167,7 @@ export default function JournalSimple({ mode = "all" }) {
           </Card>
         )}
 
-        {!isPlannedMode && (statusFilters.includes("all") || statusFilters.includes("Planned")) && (
+        {!isSingleStatusMode && (statusFilters.includes("all") || statusFilters.includes("Planned")) && (
           <Card className="bg-yellow-50 dark:bg-yellow-950/40 shadow-xl">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-yellow-700">{t('plannedTrades')}</CardTitle>
@@ -1297,6 +1311,7 @@ export default function JournalSimple({ mode = "all" }) {
             </div>
             <div className="p-6">
               <TradeFormNew
+                defaultStatus={isPlannedMode ? "Planned" : isMissedMode ? "Missed" : "Open"}
                 onSuccess={() => {
                   refetch();
                   setShowAddForm(false);

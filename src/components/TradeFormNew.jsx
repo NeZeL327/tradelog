@@ -11,7 +11,7 @@ import { X, Plus } from "lucide-react";
 import ImageViewer from "@/components/common/ImageViewer";
 import { normalizeDirection } from "@/lib/utils";
 
-export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
+export default function TradeFormNew({ trade = null, onSuccess, onClose, defaultStatus = "Open" }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   
@@ -31,7 +31,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
     date: new Date().toISOString().split('T')[0],
     account_id: "",
     strategy_id: "",
-    status: "Open",
+    status: defaultStatus,
     outcome: "",
     notes: "",
     entry_time: "",
@@ -294,7 +294,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
   };
 
   const calculatePL = () => {
-    if (formData.status === "Planned") {
+    if (formData.status === "Planned" || formData.status === "Missed") {
       return null;
     }
 
@@ -373,7 +373,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
         throw new Error(t('requiredFieldsSymbolDate'));
       }
 
-      if (formData.status !== "Planned" && (!formData.entry_price || !formData.position_size)) {
+      const isUnexecuted = formData.status === "Planned" || formData.status === "Missed";
+      if (!isUnexecuted && (!formData.entry_price || !formData.position_size)) {
         throw new Error(t('requiredFieldsSymbolEntrySize'));
       }
 
@@ -433,7 +434,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
           date: new Date().toISOString().split('T')[0],
           account_id: "",
           strategy_id: "",
-          status: "Open",
+          status: defaultStatus,
           outcome: "",
           notes: "",
           entry_time: "",
@@ -607,6 +608,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
                   <option value="Open">{t('openStatus')}</option>
                   <option value="Closed">{t('closedStatus')}</option>
                   <option value="Planned">{t('plannedStatus')}</option>
+                  <option value="Missed">{t('missedStatus')}</option>
                 </select>
               </div>
 
@@ -668,7 +670,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose }) {
             </div>
 
             {/* Price Info */}
-            {formData.status !== 'Planned' && (
+            {formData.status !== 'Planned' && formData.status !== 'Missed' && (
               <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <div>
