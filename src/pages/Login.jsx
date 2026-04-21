@@ -67,10 +67,10 @@ export default function Login() {
   };
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicNavbar variant="hero" />
       <div
-        className="parallax-root public-trading-bg min-h-screen flex items-center justify-center p-6 overflow-hidden relative pt-24"
+        className="parallax-root public-trading-bg flex-1 flex items-center justify-center p-6 overflow-hidden relative pt-24"
         style={/** @type {any} */ ({ '--px': parallax.x, '--py': parallax.y })}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -311,6 +311,6 @@ export default function Login() {
       </div>
       </div>
       <Footer variant="hero" />
-    </>
+    </div>
   );
 }

@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar,
-  Settings, LogOut, NotebookPen, CreditCard, ListTodo,
+  LogOut, NotebookPen, ListTodo,
   ChevronRight, User, FlaskConical,
 } from "lucide-react";
 import {
@@ -18,7 +18,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
-  SidebarFooter,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
@@ -29,6 +28,8 @@ import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
 import { applyTheme } from "@/lib/userSettings";
+import { AVATAR_PRESETS, getAvatarPreset, getUserDisplayName, getUserInitials } from "@/lib/avatars";
+import { updateUser } from "@/lib/localStorage";
 
 /** Sidebar IA: core daily tools first (TradesViz / Tradervue), then insights, workspace, account (TradeZella-style bottom account). */
 const NAV_GROUPS = (t) => [
@@ -56,13 +57,6 @@ const NAV_GROUPS = (t) => [
       { title: t("accounts"), url: createPageUrl("Accounts"), icon: Wallet },
     ],
   },
-  {
-    label: t("navGroupAccount"),
-    items: [
-      { title: t("settings"), url: createPageUrl("Settings"), icon: Settings },
-      { title: t("billing"), url: createPageUrl("Billing"), icon: CreditCard },
-    ],
-  },
 ];
 
 function normalizePath(p) {
@@ -73,18 +67,24 @@ function normalizePath(p) {
 
 function LayoutContent({ children }) {
   const { t } = useLanguage();
-  const { user, logout } = useAuth();
+  const { user, logout, checkSession } = useAuth();
   const isMobile = useIsMobile();
   const location = useLocation();
 
-  const displayName = user?.fullName?.trim() || user?.email || t('profile');
-  const initials = displayName
-    .split(' ')
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+  const displayName = getUserDisplayName(user, t('profile'));
+  const initials = getUserInitials(user);
+  const avatarPreset = getAvatarPreset(user?.avatar);
+  const quickAvatars = AVATAR_PRESETS.slice(0, 6);
+
+  const handleQuickAvatar = async (presetId) => {
+    if (!user?.id || user.avatar === presetId) return;
+    try {
+      await updateUser(user.id, { avatar: presetId });
+      if (checkSession) await checkSession();
+    } catch {
+      // noop — tłumimy, żeby klik nigdy nie crashował UI
+    }
+  };
 
   React.useEffect(() => {
     if (!user) return;
@@ -109,7 +109,7 @@ function LayoutContent({ children }) {
           collapsible="icon"
         >
           {/* Logo — compact brand rail (Notion / Linear density) */}
-          <SidebarHeader className="border-b border-sidebar-border/70 px-3 py-3.5 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3 bg-gradient-to-b from-sidebar-accent/25 to-transparent">
+          <SidebarHeader className="border-b border-sidebar-border/70 px-3 py-3 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3 bg-gradient-to-b from-sidebar-accent/25 to-transparent space-y-3">
             <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center rounded-xl px-1 py-0.5">
               <div className="logo-arrow logo-arrow-square w-[38px] h-[38px] flex-shrink-0 rounded-xl ring-1 ring-sidebar-border/60 shadow-sm">
                 <span className="logo-arrow-path" />
@@ -124,10 +124,79 @@ function LayoutContent({ children }) {
                 <p className="text-[11px] text-muted-foreground/90 mt-0.5 font-medium">{t("navTagline")}</p>
               </div>
             </div>
+
+            {/* User avatar card — avatar on top (centered), name below, quick-pick presets */}
+            {user && (
+              <div className="relative rounded-xl border border-sidebar-border/50 bg-sidebar/80 px-3 py-3 group-data-[collapsible=icon]:px-1.5 group-data-[collapsible=icon]:py-2 group-data-[collapsible=icon]:border-transparent">
+                {/* Logout (top-right) — hidden in icon mode */}
+                <button
+                  type="button"
+                  onClick={() => logout()}
+                  className="group-data-[collapsible=icon]:hidden absolute top-2 right-2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/60 transition-colors"
+                  title={t("logout")}
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+
+                <Link
+                  to={createPageUrl("Settings")}
+                  title={t("settings")}
+                  className="flex flex-col items-center gap-2 group-data-[collapsible=icon]:gap-0"
+                >
+                  <Avatar className="h-14 w-14 ring-2 ring-sidebar-border/60 shadow-md group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:ring-1">
+                    <AvatarFallback
+                      className={`text-white font-semibold bg-gradient-to-br ${avatarPreset.gradient}`}
+                    >
+                      {avatarPreset.emoji ? (
+                        <span className="text-2xl leading-none group-data-[collapsible=icon]:text-base">{avatarPreset.emoji}</span>
+                      ) : (
+                        <span className="text-base group-data-[collapsible=icon]:text-[11px]">{initials || <User className="w-4 h-4" />}</span>
+                      )}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="min-w-0 text-center group-data-[collapsible=icon]:hidden">
+                    <p className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">
+                      {displayName}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                      {user?.email || ""}
+                    </p>
+                  </div>
+                </Link>
+
+                {/* Quick-pick avatars */}
+                <div className="mt-3 flex items-center justify-center gap-1.5 group-data-[collapsible=icon]:hidden">
+                  {quickAvatars.map((preset) => {
+                    const active = (user?.avatar || 'initials') === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => handleQuickAvatar(preset.id)}
+                        title={preset.label}
+                        aria-pressed={active}
+                        className={`h-6 w-6 rounded-full flex items-center justify-center text-white text-[11px] font-semibold bg-gradient-to-br ${preset.gradient} transition-all ${
+                          active
+                            ? "ring-2 ring-blue-500 ring-offset-1 ring-offset-sidebar scale-110"
+                            : "opacity-80 hover:opacity-100 hover:scale-110 ring-1 ring-black/10 dark:ring-white/10"
+                        }`}
+                      >
+                        {preset.emoji ? (
+                          <span className="text-[13px] leading-none">{preset.emoji}</span>
+                        ) : (
+                          <span className="leading-none">{initials.slice(0, 1) || 'A'}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </SidebarHeader>
 
           {/* Navigation — grouped like TradesViz / TradeZella (workflow → insights → tools → account) */}
-          <SidebarContent className="flex-1 px-2.5 py-3 !flex !flex-col !overflow-hidden gap-0">
+          <SidebarContent className="flex-1 min-h-0 px-2.5 py-3 !flex !flex-col overflow-y-auto gap-0 sidebar-scroll">
             {navGroups.map((group, idx) => (
               <SidebarGroup key={group.label} className="p-0">
                 {idx > 0 && (
@@ -171,38 +240,7 @@ function LayoutContent({ children }) {
                 </SidebarGroupContent>
               </SidebarGroup>
             ))}
-            {/* Spacer — pushes footer to the very bottom regardless of resolution */}
-            <div className="flex-1" />
           </SidebarContent>
-
-          {/* User footer */}
-          <SidebarFooter className="border-t border-sidebar-border/80 px-2.5 py-2.5 bg-sidebar-accent/15">
-            {user && (
-              <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl border border-sidebar-border/50 bg-sidebar/80 hover:bg-sidebar-accent/40 transition-colors cursor-default group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1.5 group-data-[collapsible=icon]:border-transparent">
-                <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-sidebar-border/40">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-[11px] font-semibold">
-                    {initials || <User className="w-3.5 h-3.5" />}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                  <p className="text-[13px] font-semibold text-sidebar-foreground truncate leading-tight">
-                    {displayName}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                    {user?.email || ""}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => logout()}
-                  className="group-data-[collapsible=icon]:hidden p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/60 transition-colors flex-shrink-0"
-                  title={t("logout")}
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </SidebarFooter>
         </Sidebar>
 
         {/* Main content — cyber-dashboard: tło, karty i typografia jak na Dashboardzie */}
@@ -224,8 +262,12 @@ function LayoutContent({ children }) {
               {user && (
                 <Button variant="ghost" size="sm" className="hidden md:flex h-8 gap-2 items-center px-2.5" onClick={() => logout()}>
                   <Avatar className="h-6 w-6">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-[10px] font-semibold">
-                      {initials || <User className="w-3.5 h-3.5" />}
+                    <AvatarFallback className={`text-white text-[10px] font-semibold bg-gradient-to-br ${avatarPreset.gradient}`}>
+                      {avatarPreset.emoji ? (
+                        <span className="text-[13px] leading-none">{avatarPreset.emoji}</span>
+                      ) : (
+                        initials || <User className="w-3.5 h-3.5" />
+                      )}
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm font-medium max-w-[140px] truncate hidden lg:inline">

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { User, Globe, Shield, Bell, Trash2, RotateCcw, Lock } from "lucide-react";
+import { User, Globe, Shield, Bell, Trash2, RotateCcw, Lock, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
   applyTheme,
@@ -18,6 +18,7 @@ import {
   pickUserSettings,
   saveLocalUserSettings,
 } from "@/lib/userSettings";
+import { AVATAR_PRESETS, getAvatarPreset, getUserInitials } from "@/lib/avatars";
 
 export default function Settings() {
   const { user: authUser, checkSession } = useAuth();
@@ -64,6 +65,9 @@ export default function Settings() {
         headerTheme === "dark" || headerTheme === "light"
           ? headerTheme
           : effective.theme ?? prev.theme,
+      fullName: authUser.fullName ?? prev.fullName ?? "",
+      displayName: authUser.displayName ?? prev.displayName ?? "",
+      avatar: authUser.avatar ?? prev.avatar ?? "initials",
       default_account_id: authUser.default_account_id || prev.default_account_id || "",
       default_risk_per_trade: authUser.default_risk_per_trade ?? prev.default_risk_per_trade ?? 1,
       default_max_daily_loss: authUser.default_max_daily_loss ?? prev.default_max_daily_loss ?? 5,
@@ -286,18 +290,118 @@ export default function Settings() {
               <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle>{t.profile}</CardTitle>
-                  <CardDescription>Podstawowe informacje o Twoim koncie</CardDescription>
+                  <CardDescription>
+                    {settings.language === 'pl'
+                      ? "Podstawowe informacje, nazwa wyświetlana i awatar"
+                      : "Basic info, display name and avatar"}
+                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>{t.name}</Label>
-                    <Input value={user?.fullName || ""} disabled className="bg-slate-50 dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-100" />
-                    <p className="text-xs text-slate-500 mt-1">Możesz zmienić imię w ustawieniach konta</p>
+                <CardContent className="space-y-6">
+                  {/* Preview */}
+                  <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                    {(() => {
+                      const preset = getAvatarPreset(settings.avatar);
+                      const previewUser = { ...user, displayName: settings.displayName, fullName: settings.fullName };
+                      const initials = getUserInitials(previewUser);
+                      return (
+                        <>
+                          <div className={`h-14 w-14 rounded-full flex items-center justify-center text-white text-lg font-semibold shadow-md ring-2 ring-white/50 dark:ring-slate-700/60 bg-gradient-to-br ${preset.gradient}`}>
+                            {preset.emoji ? <span className="text-2xl leading-none">{preset.emoji}</span> : initials}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-base font-semibold text-slate-900 dark:text-slate-100 truncate">
+                              {settings.displayName?.trim() || settings.fullName?.trim() || user?.email}
+                            </p>
+                            <p className="text-sm text-slate-500 truncate">{user?.email}</p>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
+
+                  <div>
+                    <Label htmlFor="fullName">{t.name}</Label>
+                    <Input
+                      id="fullName"
+                      value={settings.fullName || ""}
+                      onChange={(e) => setSettings({ ...settings, fullName: e.target.value })}
+                      placeholder={settings.language === 'pl' ? "np. Jan Kowalski" : "e.g. John Doe"}
+                      maxLength={64}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="displayName" className="flex items-center gap-2">
+                      {settings.language === 'pl' ? "Nazwa wyświetlana" : "Display name"}
+                      <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wider">
+                        {settings.language === 'pl' ? "opcjonalnie" : "optional"}
+                      </span>
+                    </Label>
+                    <Input
+                      id="displayName"
+                      value={settings.displayName || ""}
+                      onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
+                      placeholder={settings.language === 'pl' ? "np. TraderPro, Nick" : "e.g. TraderPro, Nick"}
+                      maxLength={32}
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      {settings.language === 'pl'
+                        ? "Jeśli ustawisz, będzie używana w aplikacji zamiast imienia i nazwiska."
+                        : "If set, it will be used in the app instead of full name."}
+                    </p>
+                  </div>
+
                   <div>
                     <Label>{t.email}</Label>
                     <Input value={user?.email || ""} disabled className="bg-slate-50 dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-100" />
-                    <p className="text-xs text-slate-500 mt-1">Email nie może być zmieniony</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {settings.language === 'pl' ? "Email nie może być zmieniony" : "Email cannot be changed"}
+                    </p>
+                  </div>
+
+                  {/* Avatar gallery */}
+                  <div>
+                    <Label>
+                      {settings.language === 'pl' ? "Awatar" : "Avatar"}
+                    </Label>
+                    <p className="text-xs text-slate-500 mt-1 mb-3">
+                      {settings.language === 'pl'
+                        ? "Wybierz jeden z gotowych motywów. Pierwsza opcja pokazuje Twoje inicjały."
+                        : "Pick one of the presets. The first option shows your initials."}
+                    </p>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
+                      {AVATAR_PRESETS.map((preset) => {
+                        const active = (settings.avatar || 'initials') === preset.id;
+                        const previewUser = { ...user, displayName: settings.displayName, fullName: settings.fullName };
+                        const initials = getUserInitials(previewUser);
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => setSettings({ ...settings, avatar: preset.id })}
+                            className={`relative group aspect-square rounded-xl flex flex-col items-center justify-center gap-1 text-white font-semibold shadow-sm transition-all duration-200 bg-gradient-to-br ${preset.gradient} ${
+                              active
+                                ? "ring-4 ring-blue-500 ring-offset-2 ring-offset-background scale-[1.03]"
+                                : "hover:-translate-y-0.5 hover:shadow-md ring-1 ring-black/5 dark:ring-white/10"
+                            }`}
+                            aria-pressed={active}
+                            title={preset.label}
+                          >
+                            {preset.emoji ? (
+                              <span className="text-2xl sm:text-3xl leading-none">{preset.emoji}</span>
+                            ) : (
+                              <span className="text-lg sm:text-xl leading-none">{initials}</span>
+                            )}
+                            <span className="text-[10px] font-medium opacity-90">{preset.label}</span>
+                            {active && (
+                              <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white text-blue-600 flex items-center justify-center shadow">
+                                <Check className="w-3 h-3" />
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

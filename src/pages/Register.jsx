@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, UserPlus, Mail, Lock, User } from 'lucide-react';
+import { Loader2, UserPlus, Mail, Lock, User, AtSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import PublicNavbar from '@/components/PublicNavbar';
@@ -27,6 +27,7 @@ export default function Register() {
     password: '',
     confirmPassword: '',
     fullName: '',
+    displayName: '',
     acceptTerms: false
   });
 
@@ -93,6 +94,8 @@ export default function Register() {
       await setDoc(doc(db, 'users', firebaseUser.uid), {
         email: firebaseUser.email,
         fullName: formData.fullName || '',
+        displayName: formData.displayName || '',
+        avatar: 'initials',
         plan: 'free',
         language: 'pl',
         theme: 'dark',
@@ -100,7 +103,7 @@ export default function Register() {
         createdAt: serverTimestamp()
       }, { merge: true });
 
-      const welcomeName = formData.fullName || firebaseUser.email || '';
+      const welcomeName = formData.displayName || formData.fullName || firebaseUser.email || '';
       toast.success(`${t('registerSuccess')} ${welcomeName}!`);
       navigate('/Login');
     } catch (error) {
@@ -134,10 +137,10 @@ export default function Register() {
   };
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicNavbar variant="hero" />
       <div
-        className="parallax-root public-trading-bg min-h-screen flex items-center justify-center p-6 overflow-hidden relative pt-24"
+        className="parallax-root public-trading-bg flex-1 flex items-center justify-center p-6 overflow-hidden relative pt-24"
         style={/** @type {any} */ ({ '--px': parallax.x, '--py': parallax.y })}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
@@ -274,6 +277,28 @@ export default function Register() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="displayName" className="text-slate-200 flex items-center gap-2">
+                    Nazwa wyświetlana
+                    <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wider">opcjonalnie</span>
+                  </Label>
+                  <div className="relative">
+                    <AtSign className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <Input
+                      id="displayName"
+                      name="displayName"
+                      type="text"
+                      placeholder="np. TraderPro, Nick, pseudonim"
+                      value={formData.displayName}
+                      onChange={handleInputChange}
+                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                      disabled={isLoading}
+                      maxLength={32}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500">Jeśli podasz, będzie używana w aplikacji zamiast imienia i nazwiska.</p>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="email" className="text-slate-200">{t('registerEmailLabel')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
@@ -404,6 +429,6 @@ export default function Register() {
       </div>
       </div>
       <Footer variant="hero" />
-    </>
+    </div>
   );
 }

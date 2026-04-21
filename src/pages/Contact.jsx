@@ -27,9 +27,9 @@ export default function Contact() {
   };
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicNavbar variant="hero" />
-      <div className="public-trading-bg min-h-screen pt-24 pb-12">
+      <div className="public-trading-bg flex-1 flex flex-col pt-24 pb-12">
         <div className="container mx-auto px-4 max-w-6xl">
           {/* Header */}
           <motion.div
@@ -213,6 +213,6 @@ export default function Contact() {
         </div>
       </div>
       <Footer variant="hero" />
-    </>
+    </div>
   );
 }

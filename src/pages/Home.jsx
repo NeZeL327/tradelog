@@ -51,9 +51,9 @@ export default function Home() {
   ];
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicNavbar variant="hero" />
-      <div className="market-home public-trading-bg min-h-screen pt-24">
+      <div className="market-home public-trading-bg flex-1 flex flex-col pt-24">
         <div className="market-chart-bg" aria-hidden="true" />
 
         <main className="relative z-10">
@@ -258,6 +258,6 @@ export default function Home() {
         </main>
       </div>
       <Footer variant="hero" />
-    </>
+    </div>
   );
 }

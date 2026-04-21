@@ -22,9 +22,9 @@ export default function Pricing() {
   ];
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicNavbar variant="hero" />
-      <div className="public-trading-bg min-h-screen pt-24 pb-16">
+      <div className="public-trading-bg flex-1 flex flex-col pt-24 pb-16">
         {/* Hero Section */}
         <div className="container mx-auto px-6 py-12 text-center">
           <motion.div
@@ -174,6 +174,6 @@ export default function Pricing() {
         </div>
       </div>
       <Footer variant="hero" />
-    </>
+    </div>
   );
 }

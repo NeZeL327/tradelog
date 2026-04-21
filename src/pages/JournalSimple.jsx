@@ -626,73 +626,76 @@ export default function JournalSimple({ mode = "all" }) {
           </div>
         </div>
 
-        {/* Stats */}
-        {!isPlannedMode && (
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
-          <Card
-            className={`bg-white dark:bg-card shadow-lg cursor-pointer ${statusFilters.includes("all") && outcomeFilters.includes("all") ? "ring-2 ring-blue-500" : ""}`}
-            onClick={() => { setStatusFilters(["all"]); setOutcomeFilters(["all"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">{t('totalTradesLabel')}</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
-            </CardContent>
-          </Card>
-          <Card
-            className={`bg-blue-50 dark:bg-blue-950 shadow-lg border-blue-200 dark:border-blue-800 cursor-pointer ${statusFilters.includes("Open") ? "ring-2 ring-blue-500" : ""}`}
-            onClick={() => { setStatusFilters(["Open"]); setOutcomeFilters(["all"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-blue-700 dark:text-blue-400 mb-1">{t('openStatus')}</p>
-              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{stats.open}</p>
-            </CardContent>
-          </Card>
-          <Card
-            className={`bg-green-50 dark:bg-green-950 shadow-lg border-green-200 dark:border-green-800 cursor-pointer ${statusFilters.includes("Closed") ? "ring-2 ring-green-500" : ""}`}
-            onClick={() => { setStatusFilters(["Closed"]); setOutcomeFilters(["all"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-green-700 dark:text-green-400 mb-1">{t('closedStatus')}</p>
-              <p className="text-2xl font-bold text-green-700 dark:text-green-400">{stats.closed}</p>
-            </CardContent>
-          </Card>
-          <Card
-            className={`bg-yellow-50 dark:bg-yellow-950 shadow-lg border-yellow-200 dark:border-yellow-800 cursor-pointer ${outcomeFilters.includes("Win") ? "ring-2 ring-yellow-500" : ""}`}
-            onClick={() => { setStatusFilters(["all"]); setOutcomeFilters(["Win"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-yellow-700 dark:text-yellow-400 mb-1">{t('wins')}</p>
-              <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{stats.wins}</p>
-            </CardContent>
-          </Card>
-          <Card
-            className={`bg-red-50 dark:bg-red-950 shadow-lg border-red-200 dark:border-red-800 cursor-pointer ${outcomeFilters.includes("Loss") ? "ring-2 ring-red-500" : ""}`}
-            onClick={() => { setStatusFilters(["all"]); setOutcomeFilters(["Loss"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-red-700 dark:text-red-400 mb-1">{t('losses')}</p>
-              <p className="text-2xl font-bold text-red-700 dark:text-red-400">{stats.losses}</p>
-            </CardContent>
-          </Card>
-          <Card
-            className={`bg-amber-50 dark:bg-amber-950 shadow-lg border-amber-200 dark:border-amber-800 cursor-pointer ${statusFilters.includes("Planned") ? "ring-2 ring-amber-500" : ""}`}
-            onClick={() => { setStatusFilters(["Planned"]); setOutcomeFilters(["all"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-amber-700 dark:text-amber-400 mb-1">{t('planned')}</p>
-              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{stats.planned}</p>
-            </CardContent>
-          </Card>
-          <Card className={`shadow-lg ${stats.totalPL >= 0 ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800'}`}>
-            <CardContent className="p-4">
-              <p className={`text-sm mb-1 ${stats.totalPL >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{t('totalPL')}</p>
-              <p data-private className={`text-2xl font-bold ${stats.totalPL >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                {stats.totalPL >= 0 ? '+' : ''}{stats.totalPL.toFixed(2)}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-        )}
+        {/* Stats — browser-style tabs */}
+        {!isPlannedMode && (() => {
+          const isAll = statusFilters.includes("all") && outcomeFilters.includes("all");
+          const tabs = [
+            { key: "all",    label: t('totalTradesLabel'), count: stats.total,   active: isAll,                              accent: "slate",   onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["all"]); } },
+            { key: "open",   label: t('openStatus'),       count: stats.open,    active: statusFilters.includes("Open"),     accent: "blue",    onClick: () => { setStatusFilters(["Open"]);   setOutcomeFilters(["all"]); } },
+            { key: "closed", label: t('closedStatus'),     count: stats.closed,  active: statusFilters.includes("Closed"),   accent: "emerald", onClick: () => { setStatusFilters(["Closed"]); setOutcomeFilters(["all"]); } },
+            { key: "wins",   label: t('wins'),             count: stats.wins,    active: outcomeFilters.includes("Win"),     accent: "yellow",  onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Win"]); } },
+            { key: "losses", label: t('losses'),           count: stats.losses,  active: outcomeFilters.includes("Loss"),    accent: "red",     onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Loss"]); } },
+            { key: "planned",label: t('planned'),          count: stats.planned, active: statusFilters.includes("Planned"),  accent: "amber",   onClick: () => { setStatusFilters(["Planned"]); setOutcomeFilters(["all"]); } },
+          ];
+          const accentMap = {
+            slate:   { dot: "bg-slate-400",   text: "text-slate-700 dark:text-slate-200",   badgeActive: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100" },
+            blue:    { dot: "bg-blue-500",    text: "text-blue-700 dark:text-blue-300",     badgeActive: "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-200" },
+            emerald: { dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300", badgeActive: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200" },
+            yellow:  { dot: "bg-yellow-500",  text: "text-yellow-700 dark:text-yellow-300", badgeActive: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/60 dark:text-yellow-200" },
+            red:     { dot: "bg-red-500",     text: "text-red-700 dark:text-red-300",       badgeActive: "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-200" },
+            amber:   { dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-300",   badgeActive: "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200" },
+          };
+          return (
+            <div className="flex flex-col lg:flex-row lg:items-end gap-3">
+              <div
+                role="tablist"
+                className="flex-1 flex flex-wrap items-end gap-1 border-b border-slate-200 dark:border-slate-700/70 px-1"
+              >
+                {tabs.map((tab) => {
+                  const a = accentMap[tab.accent];
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      role="tab"
+                      aria-selected={tab.active}
+                      onClick={tab.onClick}
+                      className={`group relative inline-flex items-center gap-2 px-4 py-2.5 rounded-t-xl border border-b-0 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
+                        tab.active
+                          ? `bg-card border-slate-200 dark:border-slate-700 shadow-[0_-2px_6px_-2px_rgba(0,0,0,0.08)] -mb-px ${a.text}`
+                          : "bg-slate-100/70 dark:bg-slate-800/40 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-100 hover:-translate-y-0.5"
+                      }`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${a.dot} ${tab.active ? "opacity-100" : "opacity-60"}`} />
+                      <span className="text-sm font-semibold tracking-tight">{tab.label}</span>
+                      <span
+                        className={`ml-1 min-w-[1.5rem] text-center text-[11px] font-bold px-1.5 py-0.5 rounded-full transition-colors ${
+                          tab.active ? a.badgeActive : "bg-slate-200/80 text-slate-600 dark:bg-slate-700/60 dark:text-slate-300"
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div
+                className={`shrink-0 rounded-xl border px-4 py-2.5 shadow-sm transition-colors ${
+                  stats.totalPL >= 0
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800'
+                    : 'bg-red-50 dark:bg-red-950/60 border-red-200 dark:border-red-800'
+                }`}
+              >
+                <p className={`text-[11px] font-semibold uppercase tracking-wide ${stats.totalPL >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
+                  {t('totalPL')}
+                </p>
+                <p data-private className={`text-xl font-bold leading-tight ${stats.totalPL >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
+                  {stats.totalPL >= 0 ? '+' : ''}{stats.totalPL.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Filters */}
         <Card className="shadow-md">

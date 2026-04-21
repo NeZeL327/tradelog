@@ -51,9 +51,9 @@ export default function Features() {
   ];
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicNavbar variant="hero" />
-      <div className="public-trading-bg use-trading-wallpaper min-h-screen pt-24 pb-12 transition-colors duration-300 relative">
+      <div className="public-trading-bg use-trading-wallpaper flex-1 flex flex-col pt-24 pb-12 transition-colors duration-300 relative">
         <TradingWallpaper variant="lineChart" />
         <AnimatedPublicBackground />
         <div className="container mx-auto px-4 max-w-6xl relative z-10">
@@ -207,6 +207,6 @@ export default function Features() {
         </div>
       </div>
       <Footer variant="hero" />
-    </>
+    </div>
   );
 }

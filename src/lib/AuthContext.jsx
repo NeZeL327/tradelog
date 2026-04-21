@@ -41,6 +41,8 @@ export const AuthProvider = ({ children }) => {
         const profile = {
           email: authUser.email || '',
           fullName: authUser.displayName || authUser.email?.split('@')[0] || '',
+          displayName: '',
+          avatar: 'initials',
           language: 'pl',
           theme: 'dark',
           skin: 'blackblu',
