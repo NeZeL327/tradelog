@@ -541,7 +541,7 @@ export default function Calendar() {
 
       {/* Edit Trade Dialog */}
       <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0">
           <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
             <DialogTitle>Edit Trade</DialogTitle>
           </div>

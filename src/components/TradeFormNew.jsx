@@ -487,7 +487,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
   });
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-2xl mx-auto">
       <Card className="border border-slate-200/80 dark:border-slate-700 shadow-xl shadow-slate-900/5 overflow-hidden bg-white dark:bg-card">
         <CardHeader className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-slate-100 border-b border-slate-700/80 rounded-none">
           <div className="flex justify-between items-center">

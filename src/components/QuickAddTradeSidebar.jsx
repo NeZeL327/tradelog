@@ -63,7 +63,7 @@ export default function QuickAddTradeSidebar() {
 
       <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
         <DialogContent
-          className="max-w-4xl max-h-[90vh] overflow-y-auto"
+          className="max-w-2xl max-h-[90vh] overflow-y-auto"
           onPointerDownOutside={(event) => event.preventDefault()}
           onEscapeKeyDown={(event) => event.preventDefault()}
         >
