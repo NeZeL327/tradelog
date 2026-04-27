@@ -152,35 +152,35 @@ export default function Register() {
         <div className="hero-vignette" />
         <div className="parallax-layer parallax-layer-fast">
           <motion.div
-            className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"
+            className="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/12 rounded-full blur-3xl"
             animate={{ scale: [1, 1.25, 1], opacity: [0.2, 0.4, 0.2] }}
             transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
         <div className="parallax-layer">
           <motion.div
-            className="absolute -bottom-40 -left-40 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"
+            className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500/12 rounded-full blur-3xl"
             animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.2, 0.3] }}
             transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
         <div className="parallax-layer parallax-layer-slow">
           <motion.div
-            className="absolute top-1/3 -left-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-2xl"
+            className="absolute top-1/3 -left-10 w-40 h-40 bg-blue-500/15 rounded-full blur-2xl"
             animate={{ y: [0, -18, 0], opacity: [0.25, 0.5, 0.25] }}
             transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
         <div className="parallax-layer">
           <motion.div
-            className="absolute top-20 right-1/3 w-52 h-52 border border-blue-500/20 rounded-full"
+            className="absolute top-20 right-1/3 w-52 h-52 border border-blue-400/15 rounded-full"
             animate={{ rotate: 360 }}
             transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
           />
         </div>
         <div className="parallax-layer parallax-layer-fast">
           <motion.div
-            className="absolute bottom-16 left-1/4 w-40 h-40 border border-emerald-400/20 rounded-full"
+            className="absolute bottom-16 left-1/4 w-40 h-40 border border-blue-500/20 rounded-full"
             animate={{ rotate: -360 }}
             transition={{ duration: 36, repeat: Infinity, ease: 'linear' }}
           />
@@ -202,7 +202,7 @@ export default function Register() {
               <span className="logo-arrow-wave" />
             </div>
           </div>
-          <h1 className="hero-title premium-title text-5xl md:text-6xl font-bold bg-gradient-to-r from-emerald-300 to-blue-400 bg-clip-text text-transparent mb-3">
+          <h1 className="hero-title premium-title text-5xl md:text-6xl font-extrabold tracking-tight fx-brand-text mb-3">
             AiKeepTrade
           </h1>
           <p className="premium-subtitle text-lg text-slate-200 mb-2">{t('registerHeroSubtitle')}</p>
@@ -245,7 +245,7 @@ export default function Register() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <Card className="hero-card border border-slate-800/60 bg-slate-950/70 shadow-2xl shadow-blue-500/10 backdrop-blur-sm">
+          <Card className="hero-card fx-card-dark">
             <CardHeader className="text-center space-y-2">
               <CardTitle className="text-2xl font-bold text-white">{t('registerTitle')}</CardTitle>
               <CardDescription className="text-slate-400">{t('registerSubtitle')}</CardDescription>
@@ -270,7 +270,7 @@ export default function Register() {
                       placeholder={t('registerFullNamePlaceholder')}
                       value={formData.fullName}
                       onChange={handleInputChange}
-                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                      className="auth-input fx-input-dark pl-10"
                       disabled={isLoading}
                     />
                   </div>
@@ -290,7 +290,7 @@ export default function Register() {
                       placeholder="np. TraderPro, Nick, pseudonim"
                       value={formData.displayName}
                       onChange={handleInputChange}
-                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                      className="auth-input fx-input-dark pl-10"
                       disabled={isLoading}
                       maxLength={32}
                     />
@@ -309,7 +309,7 @@ export default function Register() {
                       placeholder={t('registerEmailPlaceholder')}
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                      className="auth-input fx-input-dark pl-10"
                       required
                       disabled={isLoading}
                     />
@@ -327,7 +327,7 @@ export default function Register() {
                       placeholder={t('loginPasswordPlaceholder')}
                       value={formData.password}
                       onChange={handleInputChange}
-                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                      className="auth-input fx-input-dark pl-10"
                       required
                       disabled={isLoading}
                     />
@@ -346,7 +346,7 @@ export default function Register() {
                       placeholder="••••••••"
                       value={formData.confirmPassword}
                       onChange={handleInputChange}
-                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500"
+                      className="auth-input fx-input-dark pl-10"
                       required
                       disabled={isLoading}
                     />
@@ -363,7 +363,7 @@ export default function Register() {
                       if (error) setError('');
                     }}
                     disabled={isLoading}
-                    className="mt-1 border-slate-700 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                    className="mt-1 border-white/15 data-[state=checked]:bg-blue-500 data-[state=checked]:border-lime-400 data-[state=checked]:text-[#0a0d13]"
                   />
                   <Label
                     htmlFor="acceptTerms"
@@ -372,7 +372,7 @@ export default function Register() {
                     {t('registerAcceptTerms') || 'I accept the'}{' '}
                     <Link
                       to="/terms"
-                      className="text-emerald-400 hover:text-emerald-300 underline"
+                      className="text-sky-300 hover:text-sky-200 underline"
                       target="_blank"
                     >
                       {t('termsOfService') || 'Terms of Service'}
@@ -380,7 +380,7 @@ export default function Register() {
                     {' '}{t('and') || 'and'}{' '}
                     <Link
                       to="/privacy"
-                      className="text-emerald-400 hover:text-emerald-300 underline"
+                      className="text-sky-300 hover:text-sky-200 underline"
                       target="_blank"
                     >
                       {t('privacyPolicy') || 'Privacy Policy'}
@@ -388,14 +388,14 @@ export default function Register() {
                   </Label>
                 </div>
 
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+                <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-sky-200">
                   <span className="font-semibold">{t('pricing14DayTrial')}</span>
-                  <span className="text-emerald-300"> • {t('pricingNoCreditCard')}</span>
+                  <span className="text-sky-300"> • {t('pricingNoCreditCard')}</span>
                 </div>
 
                 <Button
                   type="submit"
-                  className="hero-cta hero-cta-pulse w-full h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white text-base font-bold shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="hero-cta fx-cta w-full h-11 rounded-xl text-base disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isLoading || !formData.acceptTerms}
                 >
                   {isLoading ? (
@@ -417,7 +417,7 @@ export default function Register() {
                   {t('registerHaveAccount')}{' '}
                   <button
                     onClick={() => navigate('/Login')}
-                    className="text-emerald-300 hover:text-emerald-200 font-medium"
+                    className="text-sky-300 hover:text-sky-200 font-medium"
                   >
                     {t('registerLoginLink')}
                   </button>

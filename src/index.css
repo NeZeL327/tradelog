@@ -67,30 +67,30 @@ body {
   clip-path: inset(1px);
 }
 
-/* ===== DESIGN TOKENS ===== */
+/* ===== DESIGN TOKENS — FX Replay 2.0 (deep navy + royal blue) ===== */
 @layer base {
   :root {
     /* Backgrounds */
-    --background: 230 20% 97%;
-    --foreground: 228 22% 12%;
+    --background: 220 20% 98%;
+    --foreground: 222 30% 8%;
     --card: 0 0% 100%;
-    --card-foreground: 228 22% 12%;
+    --card-foreground: 222 30% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 228 22% 12%;
+    --popover-foreground: 222 30% 8%;
 
-    /* Brand: Indigo #5865F2 */
-    --primary: 238 87% 65%;
+    /* Brand: Royal blue (FX Replay signature) */
+    --primary: 217 91% 55%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary & Muted */
-    --secondary: 226 22% 93%;
-    --secondary-foreground: 228 20% 20%;
-    --muted: 226 18% 94%;
-    --muted-foreground: 225 8% 50%;
+    --secondary: 220 18% 94%;
+    --secondary-foreground: 222 25% 18%;
+    --muted: 220 16% 95%;
+    --muted-foreground: 220 10% 44%;
 
-    /* Accent (soft indigo tint) */
-    --accent: 238 90% 96%;
-    --accent-foreground: 238 87% 42%;
+    /* Accent (soft blue tint) */
+    --accent: 217 90% 96%;
+    --accent-foreground: 217 90% 38%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
@@ -99,75 +99,75 @@ body {
     /* Borders & Inputs */
     --border: 220 16% 90%;
     --input: 220 16% 90%;
-    --ring: 238 87% 65%;
+    --ring: 217 91% 55%;
     --radius: 0.75rem;
 
     /* Charts */
-    --chart-1: 238 87% 65%;
-    --chart-2: 160 60% 42%;
+    --chart-1: 217 91% 55%;
+    --chart-2: 160 65% 42%;
     --chart-3: 0 84% 58%;
     --chart-4: 38 90% 56%;
-    --chart-5: 200 80% 52%;
+    --chart-5: 280 70% 60%;
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 228 18% 32%;
-    --sidebar-primary: 238 87% 65%;
+    --sidebar-foreground: 222 22% 28%;
+    --sidebar-primary: 217 91% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 238 90% 96%;
-    --sidebar-accent-foreground: 238 87% 42%;
+    --sidebar-accent: 217 90% 96%;
+    --sidebar-accent-foreground: 217 90% 38%;
     --sidebar-border: 220 16% 90%;
-    --sidebar-ring: 238 87% 65%;
+    --sidebar-ring: 217 91% 55%;
   }
 
   .dark {
-    /* Deep navy backgrounds */
-    --background: 228 25% 7%;
-    --foreground: 220 18% 95%;
-    --card: 228 22% 12%;
-    --card-foreground: 220 18% 95%;
-    --popover: 228 22% 12%;
-    --popover-foreground: 220 18% 95%;
+    /* FX Replay deep navy/black */
+    --background: 222 32% 5%;
+    --foreground: 210 20% 96%;
+    --card: 222 28% 8%;
+    --card-foreground: 210 20% 96%;
+    --popover: 222 30% 7%;
+    --popover-foreground: 210 20% 96%;
 
-    /* Brand: Indigo slightly lighter for dark */
-    --primary: 238 88% 68%;
+    /* Brand: Royal blue (slightly brighter on dark) */
+    --primary: 217 92% 60%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary & Muted */
-    --secondary: 228 20% 18%;
-    --secondary-foreground: 220 15% 85%;
-    --muted: 228 20% 16%;
-    --muted-foreground: 220 10% 58%;
+    --secondary: 222 22% 13%;
+    --secondary-foreground: 210 15% 86%;
+    --muted: 222 22% 11%;
+    --muted-foreground: 220 8% 60%;
 
-    /* Accent (dark indigo tint) */
-    --accent: 238 45% 20%;
-    --accent-foreground: 238 88% 78%;
+    /* Accent (dark blue tint) */
+    --accent: 217 50% 18%;
+    --accent-foreground: 217 90% 78%;
 
     /* Destructive */
-    --destructive: 0 62% 40%;
+    --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 228 20% 20%;
-    --input: 228 20% 20%;
-    --ring: 238 88% 68%;
+    --border: 222 20% 14%;
+    --input: 222 20% 14%;
+    --ring: 217 92% 60%;
 
     /* Charts (brighter for dark bg) */
-    --chart-1: 238 88% 70%;
+    --chart-1: 217 92% 65%;
     --chart-2: 160 70% 52%;
     --chart-3: 0 80% 62%;
     --chart-4: 38 90% 62%;
-    --chart-5: 200 80% 62%;
+    --chart-5: 280 80% 68%;
 
-    /* Sidebar: darkest navy */
-    --sidebar-background: 228 28% 5%;
-    --sidebar-foreground: 220 14% 78%;
-    --sidebar-primary: 238 88% 68%;
+    /* Sidebar: deepest near-black navy */
+    --sidebar-background: 222 35% 4%;
+    --sidebar-foreground: 215 14% 78%;
+    --sidebar-primary: 217 92% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 228 25% 14%;
-    --sidebar-accent-foreground: 220 18% 90%;
-    --sidebar-border: 228 20% 14%;
-    --sidebar-ring: 238 88% 68%;
+    --sidebar-accent: 222 28% 10%;
+    --sidebar-accent-foreground: 217 90% 78%;
+    --sidebar-border: 222 25% 11%;
+    --sidebar-ring: 217 92% 60%;
   }
 }
 
@@ -1423,9 +1423,9 @@ table tbody tr:hover {
 
 .hero-feature-title { font-size: 0.95rem; font-weight: 600; color: #f8fafc; }
 .hero-feature-sub { font-size: 0.75rem; color: #e2e8f0; }
-.hero-feature-blue { --feature: 59, 130, 246; --feature-strong: 99, 102, 241; }
-.hero-feature-cyan { --feature: 34, 211, 238; --feature-strong: 16, 185, 129; }
-.hero-feature-indigo { --feature: 129, 140, 248; --feature-strong: 56, 189, 248; }
+.hero-feature-blue { --feature: 59, 130, 246; --feature-strong: 37, 99, 235; }
+.hero-feature-cyan { --feature: 96, 165, 250; --feature-strong: 59, 130, 246; }
+.hero-feature-indigo { --feature: 129, 140, 248; --feature-strong: 79, 70, 229; }
 
 @keyframes heroPulse {
   0%, 100% { transform: scale(1); opacity: 0.45; }
@@ -1637,3 +1637,272 @@ table th, table td {
 }
 
 .animate-blink { animation: blink 1.5s infinite; }
+
+/* ============================================================
+   ===== FX-REPLAY-INSPIRED SKIN (override layer) =============
+   Applied last so it wins specificity over earlier rules.
+   Tokens above already steer most components; the rules below
+   re-skin the public chrome (public bg, hero CTAs, navbar) and
+   tighten the dashboard chrome to FX Replay 2.0's bold black +
+   electric-lime aesthetic.
+   ============================================================ */
+
+/* --- Public/marketing pages: FX Replay deep navy canvas --- */
+.market-home,
+.public-trading-bg {
+  background-color: #070a14 !important;
+  background:
+    radial-gradient(1400px 700px at 50% -10%, rgba(37, 99, 235, 0.10), transparent 65%),
+    radial-gradient(1100px 600px at 12% 110%, rgba(37, 99, 235, 0.06), transparent 55%),
+    linear-gradient(180deg, #070a14 0%, #0a0e1a 45%, #060912 100%) !important;
+}
+
+.market-home::before,
+.public-trading-bg::before {
+  background:
+    radial-gradient(circle at 18% 60%, rgba(59, 130, 246, 0.06), transparent 40%),
+    radial-gradient(circle at 86% 40%, rgba(96, 165, 250, 0.04), transparent 42%) !important;
+  opacity: 0.6 !important;
+}
+
+.market-home::after,
+.public-trading-bg::after {
+  background:
+    linear-gradient(180deg, rgba(7, 10, 20, 0) 0%, rgba(7, 10, 20, 0.45) 70%, rgba(7, 10, 20, 0.85) 100%) !important;
+}
+
+/* --- FX-style CTA: solid royal blue pill (FX Replay signature) --- */
+.fx-cta {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 6px 18px -4px rgba(37, 99, 235, 0.55),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  font-weight: 600;
+}
+.fx-cta:hover {
+  background: #1d4ed8 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -6px rgba(37, 99, 235, 0.65),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.fx-cta-outline {
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 9999px !important;
+  transition: all 160ms ease;
+}
+.fx-cta-outline:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+}
+
+.fx-cta-ghost-dark {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #e2e8f0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 9999px !important;
+  transition: all 160ms ease;
+}
+.fx-cta-ghost-dark:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+/* --- Brand wordmark (FX-style: clean white, tight tracking) --- */
+.fx-brand-text {
+  color: #f1f5f9;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+/* Use this when rendering the small wordmark in navbars (already uppercase text) */
+.fx-brand-mark {
+  color: #f1f5f9;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.fx-accent-text { color: #60a5fa; }
+
+/* --- FX-style FLOATING PILL NAVBAR (matches fxreplay.com) --- */
+.fx-pill-nav {
+  position: fixed !important;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 1140px;
+  z-index: 50;
+  background: rgba(13, 17, 28, 0.78) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 9999px !important;
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.6),
+              0 0 0 1px rgba(255, 255, 255, 0.02);
+  padding: 6px 10px;
+}
+.fx-pill-nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 44px;
+  padding: 0 8px;
+}
+
+.fx-nav-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: #cbd5e1;
+  padding: 0 12px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  transition: color 160ms ease, background 160ms ease;
+  letter-spacing: 0.01em;
+}
+.fx-nav-link:hover { color: #ffffff; background: rgba(255, 255, 255, 0.05); }
+
+.fx-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+  transition: all 160ms ease;
+}
+.fx-nav-pill:hover { background: rgba(255, 255, 255, 0.08); }
+
+/* Public hero card */
+.fx-card-dark {
+  background: linear-gradient(180deg, rgba(15, 19, 32, 0.92) 0%, rgba(11, 14, 24, 0.92) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.7),
+              0 0 0 1px rgba(59, 130, 246, 0.03),
+              inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+  border-radius: 1rem;
+}
+
+.fx-input-dark {
+  background: rgba(7, 10, 20, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+}
+.fx-input-dark:focus,
+.fx-input-dark:focus-visible {
+  border-color: rgba(59, 130, 246, 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18) !important;
+}
+.fx-input-dark::placeholder { color: #64748b; }
+
+/* --- App sidebar (FX Replay 2.0 narrow + minimal) --- */
+html.dark .cyber-app-sidebar {
+  border-right-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+  background: hsl(222 35% 4%) !important;
+}
+
+html.dark .cyber-app-sidebar .sidebar-active {
+  background: rgba(37, 99, 235, 0.14) !important;
+  color: #93c5fd !important;
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.22);
+}
+
+html.dark .cyber-app-sidebar .sidebar-active::before {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%) !important;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.40) !important;
+}
+
+html:not(.dark) .sidebar-active::before {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* App top bar */
+html.dark .cyber-app-header {
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(7, 10, 20, 0.85) !important;
+}
+
+/* Subtle blue glow on dashboard */
+html.dark .cyber-dashboard {
+  --cyber-accent: #3b82f6;
+  background:
+    radial-gradient(ellipse 100% 60% at 50% -10%, rgba(37, 99, 235, 0.06), transparent 55%),
+    hsl(var(--background));
+}
+
+html.dark main.cyber-dashboard
+  .border.bg-card.text-card-foreground:not(.ocean-stat-card):not(.cyber-panel):not(.cyber-stat-tile):not(.cyber-trade-card):not(.no-cyber-card) {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
+html.dark main.cyber-dashboard table thead th {
+  background: hsl(222 28% 8%) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(186, 230, 253, 0.80) !important;
+}
+
+html.dark main.cyber-dashboard input[type="text"],
+html.dark main.cyber-dashboard input[type="number"],
+html.dark main.cyber-dashboard input[type="search"],
+html.dark main.cyber-dashboard input[type="email"],
+html.dark main.cyber-dashboard input[type="password"],
+html.dark main.cyber-dashboard textarea,
+html.dark main.cyber-dashboard select {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(7, 10, 20, 0.7) !important;
+}
+
+html.dark main.cyber-dashboard input:focus,
+html.dark main.cyber-dashboard textarea:focus,
+html.dark main.cyber-dashboard select:focus {
+  border-color: rgba(59, 130, 246, 0.45) !important;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25) !important;
+}
+
+html.dark main.cyber-dashboard [role="tab"][data-state="active"] {
+  color: #ffffff !important;
+  background: transparent !important;
+  box-shadow: inset 0 -2px 0 #3b82f6 !important;
+  border-radius: 0 !important;
+}
+
+html.dark main.cyber-dashboard .cyber-primary-btn,
+main.cyber-dashboard .cyber-primary-btn {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px -4px rgba(37, 99, 235, 0.45) !important;
+  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+}
+
+html.dark .cyber-page-title {
+  color: #f1f5f9 !important;
+  text-shadow: none !important;
+}
+
+/* Logo block: blue glow */
+.logo-arrow {
+  box-shadow: 0 26px 52px rgba(8, 16, 36, 0.7),
+              0 0 0 1px rgba(59, 130, 246, 0.35),
+              0 0 30px rgba(37, 99, 235, 0.22) !important;
+}
+.logo-arrow.logo-arrow-square {
+  box-shadow: 0 18px 36px rgba(6, 10, 24, 0.75),
+              0 0 0 1px rgba(59, 130, 246, 0.35),
+              inset 0 0 0 1px rgba(147, 197, 253, 0.12) !important;
+}

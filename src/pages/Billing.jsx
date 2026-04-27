@@ -20,8 +20,8 @@ import { useDataExport } from "@/hooks/use-data-export";
 const priceId = import.meta.env.VITE_STRIPE_PRICE_ID;
 
 const STATUS_CONFIG = {
-  active:     { label: "Aktywna",      color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700", dot: "bg-emerald-500", icon: CheckCircle2 },
-  trialing:   { label: "Trial",        color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700", dot: "bg-emerald-400", icon: CheckCircle2 },
+  active:     { label: "Aktywna",      color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-sky-300 border-emerald-300 dark:border-emerald-700", dot: "bg-lime-400", icon: CheckCircle2 },
+  trialing:   { label: "Trial",        color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-sky-300 border-emerald-300 dark:border-emerald-700", dot: "bg-emerald-400", icon: CheckCircle2 },
   past_due:   { label: "Zaległa",      color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-300 dark:border-amber-700",             dot: "bg-amber-500",   icon: AlertTriangle },
   canceled:   { label: "Anulowana",    color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-red-500",     icon: XCircle },
   incomplete: { label: "Niekompletna", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-red-500",     icon: XCircle },
@@ -58,7 +58,7 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white dark:bg-card rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-3xl max-h-[80vh] flex flex-col">
+      <div className="bg-white dark:bg-card rounded-xl shadow-2xl border border-slate-200 dark:border-white/8 w-full max-w-3xl max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <Eye className="h-4 w-4 text-blue-500" />
@@ -224,7 +224,7 @@ export default function Billing() {
         )}>
           <div className="flex items-center gap-3">
             {isPremium
-              ? <CheckCircle2 className="h-6 w-6 text-emerald-500 shrink-0" />
+              ? <CheckCircle2 className="h-6 w-6 text-sky-500 shrink-0" />
               : <XCircle className="h-6 w-6 text-red-500 shrink-0" />
             }
             <div>
@@ -237,7 +237,7 @@ export default function Billing() {
                 </p>
               )}
               {subscription.status === "trialing" && trialEndsAt && (
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                <p className="text-xs text-sky-600 dark:text-sky-400 mt-0.5">
                   Trial kończy się za {trialDaysLeft} dni ({trialEndsAt.toLocaleDateString("pl-PL")})
                 </p>
               )}
@@ -252,11 +252,11 @@ export default function Billing() {
         </div>
 
         {/* Plan card */}
-        <Card className={cn("border-2 shadow-md", isPremium ? "border-emerald-400/60 dark:border-emerald-600/50" : "border-slate-200 dark:border-slate-700")}>
+        <Card className={cn("border-2 shadow-md", isPremium ? "border-blue-500/50 dark:border-emerald-600/50" : "border-slate-200 dark:border-slate-700")}>
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
                   <CreditCard className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -270,7 +270,7 @@ export default function Billing() {
                   <span className="text-sm text-slate-500 dark:text-slate-400">/ {t("billingPerMonth")}</span>
                 </div>
                 {trialEligible && !isPremium && (
-                  <Badge className="mt-1 bg-emerald-500 hover:bg-emerald-600 text-white text-xs">14 dni gratis</Badge>
+                  <Badge className="mt-1 bg-blue-500 hover:bg-emerald-600 text-white text-xs">14 dni gratis</Badge>
                 )}
               </div>
             </div>
@@ -279,7 +279,7 @@ export default function Billing() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {FEATURES.map(({ icon: Icon, label }) => (
                 <div key={label} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-50 dark:bg-muted/50">
-                  <Icon className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                  <Icon className="h-4 w-4 text-sky-500 mt-0.5 shrink-0" />
                   <span className="text-xs text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
                 </div>
               ))}
@@ -288,8 +288,8 @@ export default function Billing() {
               {isPremium ? (
                 <>
                   <div className="flex items-center justify-center gap-2 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{t("billingActive")}</span>
+                    <CheckCircle2 className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                    <span className="text-sm font-medium text-emerald-700 dark:text-sky-300">{t("billingActive")}</span>
                   </div>
                   <Button variant="outline" onClick={handleManage} disabled={!user || isLoading} className="w-full gap-2">
                     <ExternalLink className="h-4 w-4" />
@@ -300,7 +300,7 @@ export default function Billing() {
                 <>
                   {trialEligible ? (
                     <>
-                      <Button onClick={() => handleSubscribe(14)} disabled={isLoading} className="w-full h-12 text-base font-semibold bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 gap-2">
+                      <Button onClick={() => handleSubscribe(14)} disabled={isLoading} className="w-full h-12 text-base font-semibold fx-cta gap-2">
                         <Sparkles className="h-4 w-4" />
                         {t("billingStartTrial")}
                       </Button>
@@ -311,7 +311,7 @@ export default function Billing() {
                       <p className="text-center text-xs text-slate-400 dark:text-slate-500">{t("billingTrialOnlyNew")}</p>
                     </>
                   ) : (
-                    <Button onClick={() => handleSubscribe(0)} disabled={isLoading} className="w-full h-12 text-base font-semibold bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 gap-2">
+                    <Button onClick={() => handleSubscribe(0)} disabled={isLoading} className="w-full h-12 text-base font-semibold fx-cta gap-2">
                       <CreditCard className="h-4 w-4" />
                       {t("billingSubscribeNow")}
                     </Button>
@@ -332,7 +332,7 @@ export default function Billing() {
           </CardHeader>
           <CardContent className="space-y-2">
             {subscription.status === "trialing" && trialEndsAt && (
-              <div className="flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2.5 text-xs text-emerald-700 dark:text-emerald-300">
+              <div className="flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2.5 text-xs text-emerald-700 dark:text-sky-300">
                 <Clock className="h-3.5 w-3.5 shrink-0" />
                 {t("billingTrialEndsOn")} {trialEndsAt.toLocaleDateString("pl-PL")}
                 {trialDaysLeft !== null && ` (${trialDaysLeft} dni)`}
@@ -371,7 +371,7 @@ export default function Billing() {
               <button
                 disabled={!user || isExportingCSV}
                 onClick={() => exportTradesCSV(user?.id)}
-                className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 dark:border-white/8 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
               >
                 <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
                   <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -388,10 +388,10 @@ export default function Billing() {
               <button
                 disabled={!user || isExporting}
                 onClick={() => exportAllData(user?.id)}
-                className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 dark:border-white/8 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
               >
                 <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
-                  <FileJson className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <FileJson className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -403,7 +403,7 @@ export default function Billing() {
             </div>
 
             {/* Auto-backup info */}
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-400">
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-sky-400">
               <RefreshCw className="h-3.5 w-3.5 shrink-0" />
               Backup automatyczny — Firestore synchronizuje dane w czasie rzeczywistym
             </div>
@@ -444,7 +444,7 @@ export default function Billing() {
                 "border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
                 dragOver
                   ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20"
-                  : "border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-slate-50 dark:hover:bg-muted/50"
+                  : "border-slate-200 dark:border-white/8 hover:border-blue-300 hover:bg-slate-50 dark:hover:bg-muted/50"
               )}
             >
               <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
@@ -508,7 +508,7 @@ export default function Billing() {
               ) : (
                 <div className="space-y-2">
                   {importHistory.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-muted/30 text-xs">
+                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-white/8 bg-slate-50/50 dark:bg-muted/30 text-xs">
                       <div className="space-y-0.5">
                         <p className="font-medium text-slate-800 dark:text-slate-200">
                           {FORMAT_LABELS[item.format] || item.format}
@@ -517,7 +517,7 @@ export default function Billing() {
                         <p className="text-slate-500">{formatHistoryDate(item.importedAt)}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-3">
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-sky-300">
                           ✓ {item.successRows}
                         </span>
                         {item.errorRows > 0 && (

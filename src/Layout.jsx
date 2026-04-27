@@ -6,7 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import {
   LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar,
   LogOut, NotebookPen, ListTodo, AlarmClockOff,
-  ChevronRight, User, FlaskConical,
+  ChevronRight, User, FlaskConical, Settings as SettingsIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -28,8 +28,7 @@ import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
 import { applyTheme } from "@/lib/userSettings";
-import { AVATAR_PRESETS, getAvatarPreset, getUserDisplayName, getUserInitials } from "@/lib/avatars";
-import { updateUser } from "@/lib/localStorage";
+import { getAvatarPreset, getUserDisplayName, getUserInitials } from "@/lib/avatars";
 
 /** Sidebar IA: core daily tools first (TradesViz / Tradervue), then insights, workspace, account (TradeZella-style bottom account). */
 const NAV_GROUPS = (t) => [
@@ -68,24 +67,13 @@ function normalizePath(p) {
 
 function LayoutContent({ children }) {
   const { t } = useLanguage();
-  const { user, logout, checkSession } = useAuth();
+  const { user, logout } = useAuth();
   const isMobile = useIsMobile();
   const location = useLocation();
 
   const displayName = getUserDisplayName(user, t('profile'));
   const initials = getUserInitials(user);
   const avatarPreset = getAvatarPreset(user?.avatar);
-  const quickAvatars = AVATAR_PRESETS.slice(0, 6);
-
-  const handleQuickAvatar = async (presetId) => {
-    if (!user?.id || user.avatar === presetId) return;
-    try {
-      await updateUser(user.id, { avatar: presetId });
-      if (checkSession) await checkSession();
-    } catch {
-      // noop — tłumimy, żeby klik nigdy nie crashował UI
-    }
-  };
 
   React.useEffect(() => {
     if (!user) return;
@@ -106,93 +94,50 @@ function LayoutContent({ children }) {
       <div className="min-h-screen flex w-full bg-background">
 
         <Sidebar
-          className="cyber-app-sidebar border-r border-sidebar-border/80 bg-sidebar shadow-[inset_-1px_0_0_0_hsl(var(--sidebar-border)/0.35)]"
+          className="cyber-app-sidebar border-r border-sidebar-border/80 bg-sidebar"
           collapsible="icon"
         >
-          {/* Logo — compact brand rail (Notion / Linear density) */}
-          <SidebarHeader className="border-b border-sidebar-border/70 px-3 py-3 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3 bg-gradient-to-b from-sidebar-accent/25 to-transparent space-y-3">
-            <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center rounded-xl px-1 py-0.5">
-              <div className="logo-arrow logo-arrow-square w-[38px] h-[38px] flex-shrink-0 rounded-xl ring-1 ring-sidebar-border/60 shadow-sm">
+          {/* FX-Replay-style brand row + compact user card */}
+          <SidebarHeader className="border-b border-sidebar-border/60 px-3 py-3 group-data-[collapsible=icon]:px-2 space-y-3">
+            <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center px-1">
+              <div className="logo-arrow logo-arrow-square w-[34px] h-[34px] flex-shrink-0 rounded-lg">
                 <span className="logo-arrow-path" />
                 <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
                 <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
                 <span className="logo-arrow-wave" />
               </div>
               <div className="group-data-[collapsible=icon]:hidden min-w-0">
-                <h2 className="font-semibold text-[0.9375rem] text-sidebar-foreground tracking-tight truncate leading-tight">
-                  AiKeepTrade
-                </h2>
-                <p className="text-[11px] text-muted-foreground/90 mt-0.5 font-medium">{t("navTagline")}</p>
+                <h2 className="fx-brand-mark text-[12px] truncate leading-tight">AIKEEPTRADE</h2>
               </div>
             </div>
 
-            {/* User avatar card — avatar on top (centered), name below, quick-pick presets */}
+            {/* Compact user pill — avatar + name (FX Replay style) */}
             {user && (
-              <div className="relative rounded-xl border border-sidebar-border/50 bg-sidebar/80 px-3 py-3 group-data-[collapsible=icon]:px-1.5 group-data-[collapsible=icon]:py-2 group-data-[collapsible=icon]:border-transparent">
-                {/* Logout (top-right) — hidden in icon mode */}
-                <button
-                  type="button"
-                  onClick={() => logout()}
-                  className="group-data-[collapsible=icon]:hidden absolute top-2 right-2 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background/60 transition-colors"
-                  title={t("logout")}
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-
-                <Link
-                  to={createPageUrl("Settings")}
-                  title={t("settings")}
-                  className="flex flex-col items-center gap-2 group-data-[collapsible=icon]:gap-0"
-                >
-                  <Avatar className="h-14 w-14 ring-2 ring-sidebar-border/60 shadow-md group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:ring-1">
-                    <AvatarFallback
-                      className={`text-white font-semibold bg-gradient-to-br ${avatarPreset.gradient}`}
-                    >
-                      {avatarPreset.emoji ? (
-                        <span className="text-2xl leading-none group-data-[collapsible=icon]:text-base">{avatarPreset.emoji}</span>
-                      ) : (
-                        <span className="text-base group-data-[collapsible=icon]:text-[11px]">{initials || <User className="w-4 h-4" />}</span>
-                      )}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <div className="min-w-0 text-center group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">
-                      {displayName}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                      {user?.email || ""}
-                    </p>
-                  </div>
-                </Link>
-
-                {/* Quick-pick avatars */}
-                <div className="mt-3 flex items-center justify-center gap-1.5 group-data-[collapsible=icon]:hidden">
-                  {quickAvatars.map((preset) => {
-                    const active = (user?.avatar || 'initials') === preset.id;
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => handleQuickAvatar(preset.id)}
-                        title={preset.label}
-                        aria-pressed={active}
-                        className={`h-6 w-6 rounded-full flex items-center justify-center text-white text-[11px] font-semibold bg-gradient-to-br ${preset.gradient} transition-all ${
-                          active
-                            ? "ring-2 ring-blue-500 ring-offset-1 ring-offset-sidebar scale-110"
-                            : "opacity-80 hover:opacity-100 hover:scale-110 ring-1 ring-black/10 dark:ring-white/10"
-                        }`}
-                      >
-                        {preset.emoji ? (
-                          <span className="text-[13px] leading-none">{preset.emoji}</span>
-                        ) : (
-                          <span className="leading-none">{initials.slice(0, 1) || 'A'}</span>
-                        )}
-                      </button>
-                    );
-                  })}
+              <Link
+                to={createPageUrl("Settings")}
+                title={t("settings")}
+                className="flex items-center gap-2.5 rounded-lg px-2 py-2 hover:bg-sidebar-accent/60 transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1"
+              >
+                <Avatar className="h-8 w-8 ring-1 ring-sidebar-border/60">
+                  <AvatarFallback
+                    className={`text-white font-semibold bg-gradient-to-br ${avatarPreset.gradient}`}
+                  >
+                    {avatarPreset.emoji ? (
+                      <span className="text-base leading-none">{avatarPreset.emoji}</span>
+                    ) : (
+                      <span className="text-[11px]">{initials || <User className="w-3.5 h-3.5" />}</span>
+                    )}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
+                  <p className="text-[13px] font-semibold text-sidebar-foreground truncate leading-tight">
+                    {displayName}
+                  </p>
+                  {user?.plan && (
+                    <p className="text-[10px] uppercase tracking-wider text-blue-400/90 font-semibold mt-0.5">{user.plan}</p>
+                  )}
                 </div>
-              </div>
+              </Link>
             )}
           </SidebarHeader>
 
@@ -241,6 +186,42 @@ function LayoutContent({ children }) {
                 </SidebarGroupContent>
               </SidebarGroup>
             ))}
+
+            {/* Bottom section — settings + logout (FX Replay style) */}
+            <div className="mt-auto pt-3 border-t border-sidebar-border/60 space-y-1">
+              <SidebarMenu className="gap-1">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={t("settings")}
+                    className="relative rounded-xl transition-all duration-200 !py-0 !h-auto text-sidebar-foreground/90 hover:bg-sidebar-accent/85 hover:text-sidebar-accent-foreground"
+                  >
+                    <Link
+                      to={createPageUrl("Settings")}
+                      className="flex items-center gap-3 min-h-[2.5rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center"
+                    >
+                      <SettingsIcon className="w-[18px] h-[18px] flex-shrink-0 opacity-85" strokeWidth={2} />
+                      <span className="text-[13px] leading-snug group-data-[collapsible=icon]:hidden">{t("settings")}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip={t("logout")}
+                    onClick={() => logout()}
+                    className="relative rounded-xl transition-all duration-200 !py-0 !h-auto text-sidebar-foreground/80 hover:bg-red-500/10 hover:text-red-300"
+                  >
+                    <div className="flex items-center gap-3 min-h-[2.5rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center w-full cursor-pointer">
+                      <LogOut className="w-[18px] h-[18px] flex-shrink-0 opacity-85" strokeWidth={2} />
+                      <span className="text-[13px] leading-snug group-data-[collapsible=icon]:hidden">{t("logout")}</span>
+                    </div>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+              <p className="text-[10px] text-muted-foreground/60 text-center px-3 pt-2 group-data-[collapsible=icon]:hidden">
+                v1.0
+              </p>
+            </div>
           </SidebarContent>
         </Sidebar>
 

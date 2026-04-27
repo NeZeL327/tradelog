@@ -14,7 +14,7 @@ export default function Footer({ variant = 'default' }) {
     : 'inline-flex items-center text-sm text-muted-foreground transition-all duration-200 hover:text-foreground hover:translate-x-1';
 
   const footerClassName = isHero
-    ? 'mt-auto w-full border-t border-slate-800/70 bg-gradient-to-r from-slate-950/95 via-blue-950/70 to-slate-950/95 backdrop-blur supports-[backdrop-filter]:bg-slate-950/85'
+    ? 'mt-auto w-full border-t border-white/5 bg-[#06080c]/95 backdrop-blur supports-[backdrop-filter]:bg-[#06080c]/80'
     : isApp
       ? 'mt-auto w-full border-t border-slate-200/70 dark:border-white/10 bg-gradient-to-r from-slate-50/95 via-blue-50/85 to-slate-50/95 dark:from-background/95 dark:via-background/90 dark:to-background/95 backdrop-blur supports-[backdrop-filter]:dark:bg-background/80'
       : 'mt-auto w-full border-t border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80';

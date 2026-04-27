@@ -32,7 +32,7 @@ export default function Pricing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <Badge className="mb-4 bg-gradient-to-r from-emerald-500 to-blue-600 text-white border-0">
+            <Badge className="mb-4 fx-cta text-white border-0">
               {t('pricingBadge')}
             </Badge>
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
@@ -53,7 +53,7 @@ export default function Pricing() {
             <Card className="border-2 border-blue-500/50 bg-slate-900/80 backdrop-blur-sm shadow-2xl">
               <CardHeader className="text-center pb-8">
                 <div className="inline-block mx-auto mb-4">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                     <Zap className="w-8 h-8 text-white" />
                   </div>
                 </div>
@@ -68,41 +68,41 @@ export default function Pricing() {
                     <span className="text-5xl font-bold text-white">$9.9</span>
                     <span className="text-slate-400 text-lg">/ {t('pricingPerMonth')}</span>
                   </div>
-                  <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
+                  <Badge variant="secondary" className="bg-lime-400/20 text-sky-300 border-blue-500/30">
                     {t('pricing14DayTrial')}
                   </Badge>
                 </div>
 
                 <div className="space-y-3 pt-4">
                   <div className="flex items-start gap-3 text-slate-200">
-                    <Check className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <Check className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" />
                     <span>{t('pricingInclude1')}</span>
                   </div>
                   <div className="flex items-start gap-3 text-slate-200">
-                    <Check className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <Check className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" />
                     <span>{t('pricingInclude2')}</span>
                   </div>
                   <div className="flex items-start gap-3 text-slate-200">
-                    <Check className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <Check className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" />
                     <span>{t('pricingInclude3')}</span>
                   </div>
                   <div className="flex items-start gap-3 text-slate-200">
-                    <Check className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <Check className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" />
                     <span>{t('pricingInclude4')}</span>
                   </div>
                   <div className="flex items-start gap-3 text-slate-200">
-                    <Check className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <Check className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" />
                     <span>{t('pricingInclude5')}</span>
                   </div>
                   <div className="flex items-start gap-3 text-slate-200">
-                    <Check className="w-5 h-5 text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <Check className="w-5 h-5 text-sky-400 mt-0.5 flex-shrink-0" />
                     <span>{t('pricingInclude6')}</span>
                   </div>
                 </div>
 
                 <Button
                   onClick={() => navigate('/register')}
-                  className="hero-cta hero-cta-pulse w-full h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white text-base font-bold shadow-lg shadow-emerald-500/25"
+                  className="hero-cta hero-cta-pulse w-full h-11 rounded-xl fx-cta text-base font-bold shadow-lg "
                   size="lg"
                 >
                   {t('pricingStartTrial')}
@@ -137,7 +137,7 @@ export default function Pricing() {
                   >
                     <Card className="bg-slate-900/60 backdrop-blur-sm border-slate-700/50 h-full hover:border-blue-500/50 transition-all">
                       <CardContent className="p-6">
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500/20 to-blue-600/20 flex items-center justify-center mb-4">
+                        <div className="w-12 h-12 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4">
                           <Icon className="w-6 h-6 text-blue-400" />
                         </div>
                         <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
@@ -166,7 +166,7 @@ export default function Pricing() {
             <Button
               onClick={() => navigate('/register')}
               size="lg"
-              className="hero-cta hero-cta-pulse h-11 rounded-xl px-8 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white text-base font-bold shadow-lg shadow-emerald-500/25"
+              className="hero-cta hero-cta-pulse h-11 rounded-xl px-8 fx-cta text-base font-bold shadow-lg "
             >
               {t('pricingGetStarted')}
             </Button>

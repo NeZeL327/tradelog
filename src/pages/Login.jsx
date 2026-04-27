@@ -82,35 +82,35 @@ export default function Login() {
         <div className="hero-vignette" />
         <div className="parallax-layer parallax-layer-fast">
           <motion.div
-            className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"
+            className="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/12 rounded-full blur-3xl"
             animate={{ scale: [1, 1.25, 1], opacity: [0.2, 0.4, 0.2] }}
             transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
         <div className="parallax-layer">
           <motion.div
-            className="absolute -bottom-40 -left-40 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl"
+            className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500/12 rounded-full blur-3xl"
             animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.2, 0.3] }}
             transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
         <div className="parallax-layer parallax-layer-slow">
           <motion.div
-            className="absolute top-1/4 right-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-2xl"
+            className="absolute top-1/4 right-10 w-40 h-40 bg-blue-500/15 rounded-full blur-2xl"
             animate={{ y: [0, -20, 0], opacity: [0.25, 0.5, 0.25] }}
             transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
         <div className="parallax-layer">
           <motion.div
-            className="absolute bottom-12 left-24 w-36 h-36 border border-emerald-400/20 rounded-full"
+            className="absolute bottom-12 left-24 w-36 h-36 border border-blue-500/20 rounded-full"
             animate={{ rotate: 360 }}
             transition={{ duration: 38, repeat: Infinity, ease: 'linear' }}
           />
         </div>
         <div className="parallax-layer parallax-layer-fast">
           <motion.div
-            className="absolute top-24 right-1/3 w-56 h-56 border border-blue-500/20 rounded-full"
+            className="absolute top-24 right-1/3 w-56 h-56 border border-blue-400/15 rounded-full"
             animate={{ rotate: -360 }}
             transition={{ duration: 44, repeat: Infinity, ease: 'linear' }}
           />
@@ -132,7 +132,7 @@ export default function Login() {
               <span className="logo-arrow-wave" />
             </div>
           </div>
-          <h1 className="hero-title premium-title text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-emerald-300 to-blue-400 bg-clip-text text-transparent mb-3">
+          <h1 className="hero-title premium-title text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight fx-brand-text mb-3">
             AiKeepTrade
           </h1>
           <p className="premium-subtitle text-base sm:text-lg text-slate-200 mb-2">{t('loginWelcomeTitle')}</p>
@@ -176,7 +176,7 @@ export default function Login() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="w-full"
         >
-          <Card className="hero-card border border-slate-800/60 bg-slate-950/70 shadow-2xl shadow-blue-500/10 backdrop-blur-sm">
+          <Card className="hero-card fx-card-dark">
             <CardHeader className="text-center space-y-2 pb-4">
               <CardTitle className="text-xl sm:text-2xl font-bold text-white">{t('loginTitle')}</CardTitle>
               <CardDescription className="text-sm text-slate-400">{t('loginSubtitle')}</CardDescription>
@@ -201,7 +201,7 @@ export default function Login() {
                       placeholder={t('loginEmailPlaceholder')}
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500 text-sm"
+                      className="auth-input fx-input-dark pl-10 text-sm"
                       required
                       disabled={isLoading}
                     />
@@ -219,7 +219,7 @@ export default function Login() {
                       placeholder={t('loginPasswordPlaceholder')}
                       value={formData.password}
                       onChange={handleInputChange}
-                      className="auth-input pl-10 bg-slate-950/40 border-slate-800 text-slate-100 placeholder:text-slate-500 text-sm"
+                      className="auth-input fx-input-dark pl-10 text-sm"
                       required
                       disabled={isLoading}
                     />
@@ -228,7 +228,7 @@ export default function Login() {
 
                 <Button
                   type="submit"
-                  className="hero-cta hero-cta-pulse w-full h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white text-base font-bold shadow-lg shadow-emerald-500/25"
+                  className="hero-cta fx-cta w-full h-11 rounded-xl text-base"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -245,7 +245,7 @@ export default function Login() {
                 </Button>
 
                 <div className="pt-2 text-center text-xs sm:text-sm text-slate-400">
-                  {t('loginNoAccount')} <button type="button" onClick={() => navigate('/Register')} className="text-emerald-300 hover:text-emerald-200 underline">{t('loginRegisterLink')}</button>
+                  {t('loginNoAccount')} <button type="button" onClick={() => navigate('/Register')} className="text-sky-300 hover:text-sky-200 underline">{t('loginRegisterLink')}</button>
                 </div>
               </form>
 
@@ -265,7 +265,7 @@ export default function Login() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full border-slate-800 bg-slate-950/40 text-slate-100 hover:bg-slate-900/60 text-xs sm:text-sm h-9"
+                    className="fx-cta-ghost-dark w-full text-xs sm:text-sm h-9"
                     onClick={() => toast.info(t('loginGoogleSoon'))}
                   >
                     <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" viewBox="0 0 24 24">
@@ -280,7 +280,7 @@ export default function Login() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full border-slate-800 bg-slate-950/40 text-slate-100 hover:bg-slate-900/60 text-xs sm:text-sm h-9"
+                    className="fx-cta-ghost-dark w-full text-xs sm:text-sm h-9"
                     onClick={() => toast.info(t('loginMicrosoftSoon'))}
                   >
                     <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
@@ -299,7 +299,7 @@ export default function Login() {
                   {t('loginNoAccount')}{' '}
                   <button
                     onClick={() => navigate('/Register')}
-                    className="text-emerald-300 hover:text-emerald-200 font-medium"
+                    className="text-sky-300 hover:text-sky-200 font-medium"
                   >
                     {t('loginRegisterLink')}
                   </button>

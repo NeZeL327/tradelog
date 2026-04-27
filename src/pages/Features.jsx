@@ -68,7 +68,7 @@ export default function Features() {
             <div className="w-full max-w-3xl flex flex-col items-center text-center">
               <h1
                 id="features-heading"
-                className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-emerald-200 via-cyan-200 to-blue-300 bg-clip-text text-transparent pb-5 mb-4 drop-shadow-[0_0_20px_rgba(167,243,208,0.15)]"
+                className="text-5xl md:text-6xl font-bold fx-brand-text bg-clip-text text-transparent pb-5 mb-4 drop-shadow-[0_0_20px_rgba(167,243,208,0.15)]"
               >
                 {t('features') || 'Funkcje'}
               </h1>
@@ -101,11 +101,11 @@ export default function Features() {
                   >
                     <motion.div whileHover={v.hover} className="h-full">
                       <LiveCard variant="main" className="h-full">
-                        <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-slate-800 hover:border-emerald-500/50 h-full overflow-hidden shadow-lg group">
+                        <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-white/8 hover:border-blue-500/50 h-full overflow-hidden shadow-lg group">
                           <CardContent className="p-6 relative">
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-emerald-400/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                             <motion.div
-                              className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent"
+                              className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400/60 to-transparent"
                               initial={{ scaleX: 0 }}
                               animate={{ scaleX: 1 }}
                               transition={{ duration: 0.6, delay: 0.5 + index * 0.1 }}
@@ -154,7 +154,7 @@ export default function Features() {
                   >
                     <motion.div whileHover={v.hover} className="h-full">
                       <LiveCard variant="more" className="h-full">
-                        <Card className="feature-card-live feature-card-live-more bg-slate-800/70 border-slate-800 hover:border-primary/50 h-full overflow-hidden shadow-lg group">
+                        <Card className="feature-card-live feature-card-live-more bg-slate-800/70 border-white/8 hover:border-primary/50 h-full overflow-hidden shadow-lg group">
                           <CardContent className="p-6 relative">
                             <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-blue-400/8 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                             <AnimatedFeatureIcon
@@ -185,7 +185,7 @@ export default function Features() {
             className="text-center"
           >
             <LiveCard variant="main" className="max-w-2xl mx-auto">
-            <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-emerald-500/40 max-w-2xl mx-auto">
+            <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-blue-500/40 max-w-2xl mx-auto">
               <CardContent className="p-8">
                 <h2 className="text-2xl font-bold text-slate-100 mb-3">
                   Gotowy na start?
@@ -195,7 +195,7 @@ export default function Features() {
                 </p>
                 <a
                   href={createPageUrl('Register')}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-600 px-6 py-3 text-lg font-semibold text-white shadow-lg shadow-emerald-500/25 hover:from-emerald-600 hover:to-blue-700 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-xl fx-cta px-6 py-3 text-lg font-semibold text-white shadow-lg   transition-colors"
                 >
                   {t('pricingGetStarted') || 'Zacznij za darmo'}
                   <ArrowRight className="w-5 h-5" />
