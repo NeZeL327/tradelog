@@ -39,6 +39,14 @@ export default function Calendar() {
     return status === "open" || status === "closed";
   };
 
+  // Hide trades belonging to inactive accounts everywhere in the calendar view.
+  const isFromActiveAccount = (trade) => {
+    if (!trade?.account_id) return true;
+    const account = accounts.find((a) => String(a.id) === String(trade.account_id));
+    if (!account) return true;
+    return account.is_active !== false && account.status !== 'Inactive';
+  };
+
   const getTradeStatusLabel = (trade) => {
     const status = normalizeTradeStatus(trade?.status);
     if (status === "closed") return t('closedStatus') || 'Closed';
@@ -62,7 +70,7 @@ export default function Calendar() {
 
   const handleViewTrade = (trade) => {
     if (!trade) return;
-    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && isCalendarVisibleTrade(t));
+    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && isCalendarVisibleTrade(t) && isFromActiveAccount(t));
     const wins = symbolTrades.filter(t => t.outcome === "Win").length;
     const total = symbolTrades.length;
     const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
@@ -92,8 +100,8 @@ export default function Calendar() {
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
-  // Group trades by date
-  const calendarVisibleTrades = trades.filter(isCalendarVisibleTrade);
+  // Group trades by date — exclude trades from inactive accounts entirely.
+  const calendarVisibleTrades = trades.filter((t) => isCalendarVisibleTrade(t) && isFromActiveAccount(t));
 
   const tradesByDate = {};
   calendarVisibleTrades.forEach(trade => {
@@ -438,7 +446,7 @@ export default function Calendar() {
                     const monthExecutedTrades = trades
                       .filter(t => {
                         const tradeDate = new Date(t.date);
-                        return isSameMonth(tradeDate, currentDate) && isClosedStatus(t.status);
+                        return isSameMonth(tradeDate, currentDate) && isClosedStatus(t.status) && isFromActiveAccount(t);
                       })
                       .sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -525,7 +533,7 @@ export default function Calendar() {
 
                 const monthExecutedTrades = trades.filter(t => {
                   const tradeDate = new Date(t.date);
-                  return isSameMonth(tradeDate, currentDate) && isClosedStatus(t.status);
+                  return isSameMonth(tradeDate, currentDate) && isClosedStatus(t.status) && isFromActiveAccount(t);
                 });
                 
                 return monthExecutedTrades.length === 0 && (

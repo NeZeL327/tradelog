@@ -38,10 +38,10 @@ export default function Contact() {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h1 className="text-5xl font-bold fx-brand-text mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold fx-brand-text mb-4">
               Skontaktuj się z nami
             </h1>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto px-2">
               Masz pytania? Chętnie pomożemy! Napisz do nas lub skorzystaj z poniższych danych kontaktowych.
             </p>
           </motion.div>

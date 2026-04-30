@@ -75,12 +75,12 @@ export default function Home() {
                   AiKeepTrade
                 </span>
 
-                <h1 className="text-5xl md:text-6xl xl:text-7xl font-extrabold leading-[1.02] tracking-tight text-white">
+                <h1 className="text-3xl sm:text-5xl md:text-6xl xl:text-7xl font-extrabold leading-[1.05] sm:leading-[1.02] tracking-tight text-white">
                   AiKeepTrade<br />
                   <span className="fx-brand-text">{t('homeSubtitle')}</span>
                 </h1>
 
-                <p className="max-w-2xl text-xl leading-relaxed text-slate-300/90">
+                <p className="max-w-2xl text-base sm:text-lg md:text-xl leading-relaxed text-slate-300/90">
                   {t('homeDescription')}
                 </p>
 
@@ -170,8 +170,8 @@ export default function Home() {
                 className="mx-auto max-w-4xl text-center"
               >
                 <span className="inline-flex rounded-full border border-blue-500/25 bg-blue-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-300">Features</span>
-                <h2 className="mt-5 text-4xl md:text-5xl font-extrabold tracking-tight text-slate-100">{t('pricingWhyChoose')}</h2>
-                <p className="mt-4 text-lg md:text-xl text-slate-400 max-w-2xl mx-auto">{t('pricingCTADesc')}</p>
+                <h2 className="mt-5 text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight text-slate-100">{t('pricingWhyChoose')}</h2>
+                <p className="mt-4 text-base sm:text-lg md:text-xl text-slate-400 max-w-2xl mx-auto">{t('pricingCTADesc')}</p>
               </motion.div>
 
               <div className="mt-12 grid gap-5 md:grid-cols-3">
@@ -202,8 +202,8 @@ export default function Home() {
             <div className="container mx-auto px-4">
               <div className="mx-auto max-w-5xl text-center">
                 <span className="inline-flex rounded-full border border-blue-500/25 bg-blue-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-300">AiKeepTrade</span>
-                <h2 className="mt-5 text-4xl md:text-5xl font-extrabold tracking-tight text-slate-100">{t('pricingTitle')}</h2>
-                <p className="mt-4 text-lg md:text-xl text-slate-400 max-w-2xl mx-auto">{t('pricingSubtitle')}</p>
+                <h2 className="mt-5 text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight text-slate-100">{t('pricingTitle')}</h2>
+                <p className="mt-4 text-base sm:text-lg md:text-xl text-slate-400 max-w-2xl mx-auto">{t('pricingSubtitle')}</p>
               </div>
 
               <div className="mt-12 grid items-center gap-8 lg:grid-cols-[1fr_1fr]">
@@ -216,7 +216,7 @@ export default function Home() {
                   </div>
 
                   <div className="mt-5 flex items-end gap-2">
-                    <p className="text-5xl font-extrabold tracking-tight text-slate-100">$9.9</p>
+                    <p className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-100">$9.9</p>
                     <p className="pb-1 text-base text-slate-500">/ {t('pricingPerMonth')}</p>
                   </div>
 
@@ -244,8 +244,8 @@ export default function Home() {
 
                 <div>
                   <span className="inline-flex rounded-full border border-blue-500/25 bg-blue-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-300">{t('pricingBadge')}</span>
-                  <h3 className="mt-4 text-4xl md:text-5xl font-extrabold tracking-tight text-slate-100 leading-[1.05]">{t('pricingCTATitle')}</h3>
-                  <p className="mt-5 text-lg md:text-xl text-slate-400 leading-relaxed">{t('pricingCTADesc')}</p>
+                  <h3 className="mt-4 text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight text-slate-100 leading-[1.1] md:leading-[1.05]">{t('pricingCTATitle')}</h3>
+                  <p className="mt-5 text-base sm:text-lg md:text-xl text-slate-400 leading-relaxed">{t('pricingCTADesc')}</p>
 
                   <ul className="mt-6 space-y-3 text-base text-slate-300">
                     <li className="inline-flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-sky-400" /> {t('pricingInclude1')}</li>

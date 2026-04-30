@@ -448,7 +448,7 @@ export default function Analytics() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-3 items-end">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 items-end">
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('account')}</span>
             <div className="relative" ref={accountDropdownRef}>

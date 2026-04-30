@@ -38,10 +38,10 @@ export default function About() {
             transition={{ duration: 0.6 }}
             className="text-center mb-16"
           >
-            <h1 className="text-5xl md:text-6xl font-bold fx-brand-text mb-4">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold fx-brand-text mb-4">
               O AiKeepTrade
             </h1>
-            <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-3xl mx-auto px-2">
               Historia powstania profesjonalnego dziennika handlowego stworzonego w niekonwencjonalny sposób
             </p>
           </motion.div>

@@ -623,15 +623,15 @@ export default function JournalSimple({ mode = "all" }) {
         )}
 
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <div className="min-w-0">
             <h1 className="cyber-page-title">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : isMissedMode ? (t('missedTrades') || 'Missed Trades') : 'Trade Journal'}</h1>
             <p className="cyber-page-sub">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : isMissedMode ? (t('missedTrades') || 'Missed Trades') : 'Track and analyze your trading performance'}</p>
           </div>
           <div className="flex gap-3">
             <Button
               onClick={() => setShowAddForm(true)}
-              className="h-10 px-4 gap-2 rounded-xl shadow-md cyber-primary-btn"
+              className="h-10 px-4 gap-2 rounded-xl shadow-md cyber-primary-btn w-full sm:w-auto"
               title={t('addTrade')}
             >
               <Plus className="w-5 h-5 shrink-0" />

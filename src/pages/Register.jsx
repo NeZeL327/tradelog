@@ -202,7 +202,7 @@ export default function Register() {
               <span className="logo-arrow-wave" />
             </div>
           </div>
-          <h1 className="hero-title premium-title text-5xl md:text-6xl font-extrabold tracking-tight fx-brand-text mb-3">
+          <h1 className="hero-title premium-title text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight fx-brand-text mb-3">
             AiKeepTrade
           </h1>
           <p className="premium-subtitle text-lg text-slate-200 mb-2">{t('registerHeroSubtitle')}</p>

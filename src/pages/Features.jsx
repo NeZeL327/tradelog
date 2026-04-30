@@ -68,11 +68,11 @@ export default function Features() {
             <div className="w-full max-w-3xl flex flex-col items-center text-center">
               <h1
                 id="features-heading"
-                className="text-5xl md:text-6xl font-bold fx-brand-text bg-clip-text text-transparent pb-5 mb-4 drop-shadow-[0_0_20px_rgba(167,243,208,0.15)]"
+                className="text-3xl sm:text-5xl md:text-6xl font-bold fx-brand-text bg-clip-text text-transparent pb-5 mb-4 drop-shadow-[0_0_20px_rgba(167,243,208,0.15)]"
               >
                 {t('features') || 'Funkcje'}
               </h1>
-              <p className="text-slate-300 text-lg max-w-xl leading-relaxed">
+              <p className="text-slate-300 text-base sm:text-lg max-w-xl leading-relaxed px-2">
                 Wszystko, czego potrzebujesz do prowadzenia dziennika handlowego — w jednym miejscu.
               </p>
             </div>

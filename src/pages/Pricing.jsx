@@ -35,10 +35,10 @@ export default function Pricing() {
             <Badge className="mb-4 fx-cta text-white border-0">
               {t('pricingBadge')}
             </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-6">
               {t('pricingTitle')}
             </h1>
-            <p className="text-xl text-slate-300 max-w-2xl mx-auto mb-8">
+            <p className="text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-8 px-2">
               {t('pricingSubtitle')}
             </p>
           </motion.div>
@@ -65,8 +65,8 @@ export default function Pricing() {
               <CardContent className="space-y-6 pb-8">
                 <div className="text-center">
                   <div className="flex items-baseline justify-center gap-2 mb-2">
-                    <span className="text-5xl font-bold text-white">$9.9</span>
-                    <span className="text-slate-400 text-lg">/ {t('pricingPerMonth')}</span>
+                    <span className="text-4xl sm:text-5xl font-bold text-white">$9.9</span>
+                    <span className="text-slate-400 text-base sm:text-lg">/ {t('pricingPerMonth')}</span>
                   </div>
                   <Badge variant="secondary" className="bg-lime-400/20 text-sky-300 border-blue-500/30">
                     {t('pricing14DayTrial')}

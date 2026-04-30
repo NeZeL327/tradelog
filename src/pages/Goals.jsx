@@ -75,8 +75,8 @@ export default function Goals() {
   return (
     <div className="w-full min-h-0 space-y-6 dashboard-surface">
       <div className="max-w-none mx-0 space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <div className="min-w-0">
             <h1 className="cyber-page-title">{t('financialGoals')}</h1>
             <p className="cyber-page-sub">{t('defineTrackGoals')}</p>
           </div>
@@ -85,7 +85,7 @@ export default function Goals() {
               setEditingGoal(null);
               setShowForm(!showForm);
             }}
-            className="cyber-primary-btn"
+            className="cyber-primary-btn w-full sm:w-auto"
           >
             <Plus className="w-5 h-5 mr-2" />
             {t('newGoal')}
