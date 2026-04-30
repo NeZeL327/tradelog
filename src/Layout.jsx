@@ -7,6 +7,7 @@ import {
   LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar,
   LogOut, NotebookPen, ListTodo, AlarmClockOff,
   ChevronRight, User, FlaskConical, Settings as SettingsIcon,
+  CreditCard,
 } from "lucide-react";
 import {
   Sidebar,
@@ -187,14 +188,37 @@ function LayoutContent({ children }) {
               </SidebarGroup>
             ))}
 
-            {/* Bottom section — settings + logout (FX Replay style) */}
+            {/* Bottom section — billing + settings + logout (FX Replay style) */}
             <div className="mt-auto pt-3 border-t border-sidebar-border/60 space-y-1">
               <SidebarMenu className="gap-1">
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
+                    tooltip={t("billing") || "Subskrypcja"}
+                    className={`relative rounded-xl transition-all duration-200 !py-0 !h-auto ${
+                      pathNorm === normalizePath(createPageUrl("Billing"))
+                        ? "sidebar-active font-semibold shadow-sm"
+                        : "text-sidebar-foreground/90 hover:bg-sidebar-accent/85 hover:text-sidebar-accent-foreground"
+                    }`}
+                  >
+                    <Link
+                      to={createPageUrl("Billing")}
+                      className="flex items-center gap-3 min-h-[2.5rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center"
+                    >
+                      <CreditCard className="w-[18px] h-[18px] flex-shrink-0 opacity-85" strokeWidth={2} />
+                      <span className="text-[13px] leading-snug group-data-[collapsible=icon]:hidden">{t("billing") || "Subskrypcja"}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
                     tooltip={t("settings")}
-                    className="relative rounded-xl transition-all duration-200 !py-0 !h-auto text-sidebar-foreground/90 hover:bg-sidebar-accent/85 hover:text-sidebar-accent-foreground"
+                    className={`relative rounded-xl transition-all duration-200 !py-0 !h-auto ${
+                      pathNorm === normalizePath(createPageUrl("Settings"))
+                        ? "sidebar-active font-semibold shadow-sm"
+                        : "text-sidebar-foreground/90 hover:bg-sidebar-accent/85 hover:text-sidebar-accent-foreground"
+                    }`}
                   >
                     <Link
                       to={createPageUrl("Settings")}
