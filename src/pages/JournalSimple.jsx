@@ -23,7 +23,7 @@ import {
   ChevronRight,
   CalendarRange
 } from "lucide-react";
-import { parseISO, isSameDay, isSameWeek, isSameMonth, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { parseISO, isSameDay, isSameWeek, isSameMonth } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   AlertDialog,

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 import { pagesConfig } from "@/pages.config";
-import { ChevronDown, ChevronLeft, ChevronRight, CheckSquare, FolderTree, Plus } from "lucide-react";
+import { ChevronDown, FolderTree, Plus } from "lucide-react";
 import {
   addDoc,
   collection,

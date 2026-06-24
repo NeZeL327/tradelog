@@ -14,7 +14,7 @@ import {
   Link2, ImagePlus, Table2, Highlighter,
   Pin, PinOff, Trash2, Plus, Search, FolderOpen, FileText,
   ChevronRight, MoreHorizontal, Check, X, Download, Upload,
-  Clock, BookOpen, Copy, Clipboard, Hash, Undo2, Redo2
+  Clock, BookOpen, Copy, Clipboard, Undo2, Redo2
 } from "lucide-react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -362,7 +362,7 @@ export default function Notes() {
     if (!editor) return;
     editor.commands.setContent(selectedNote?.body || '', false);
     editor.setEditable(!!selectedNote);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [selectedNoteId, editor]);
 
   // Attach update handler (fresh closure on every note/updateNote change)

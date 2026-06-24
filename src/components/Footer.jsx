@@ -24,14 +24,13 @@ export default function Footer({ variant = 'default' }) {
       <div className="container mx-auto px-4 py-10">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="logo-arrow h-9 w-9 rounded-lg">
-                <span className="logo-arrow-path" />
-                <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
-                <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
-                <span className="logo-arrow-wave" />
-              </div>
-              <span className={isHero ? 'text-base font-semibold text-slate-100' : isApp ? 'text-base font-semibold text-slate-800 dark:text-slate-100' : 'text-base font-semibold text-foreground'}>AiKeepTrade</span>
+            <div className="flex items-center">
+              <img
+                src="/aikeeptrade-wordmark.jpg"
+                alt="AiKeepTrade"
+                height="40"
+                className="h-10 w-auto"
+              />
             </div>
             <p className={isHero ? 'max-w-xs text-sm leading-relaxed text-slate-400' : isApp ? 'max-w-xs text-sm leading-relaxed text-slate-500 dark:text-slate-400' : 'max-w-xs text-sm leading-relaxed text-muted-foreground'}>
               {t('footerTagline') || 'Professional trading journal for serious traders'}

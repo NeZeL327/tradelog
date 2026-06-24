@@ -2,14 +2,13 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/lib/AuthContext";
 import { useLanguage } from "@/components/LanguageProvider";
 import { createCheckoutSession, createPortalSession } from "@/lib/billing";
 import { useSubscription } from "@/hooks/use-subscription";
 import { toast } from "sonner";
 import {
-  CreditCard, ShieldCheck, CheckCircle2, XCircle,
+  CreditCard, CheckCircle2, XCircle,
   Zap, BarChart2, BookOpen, Target, Download, Upload,
   Clock, AlertTriangle, Sparkles, ExternalLink, RefreshCw, FileJson,
   FileText, ChevronRight, Info, X, Eye, History, FileUp,

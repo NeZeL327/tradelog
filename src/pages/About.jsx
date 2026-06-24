@@ -57,12 +57,12 @@ export default function About() {
               <CardContent className="p-12">
                 <div className="flex items-center justify-center">
                   <div className="relative">
-                    <div className="logo-arrow hero-logo w-32 h-32 rounded-3xl shadow-2xl ">
-                      <span className="logo-arrow-path" />
-                      <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
-                      <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
-                      <span className="logo-arrow-wave" />
-                    </div>
+                    <img
+                      src="/aikeeptrade-wordmark.jpg"
+                      alt="AiKeepTrade"
+                      height="160"
+                      className="h-32 sm:h-40 w-auto rounded-2xl shadow-2xl ring-1 ring-blue-500/20"
+                    />
                     <div className="absolute -top-4 -right-4">
                       <Sparkles className="w-12 h-12 text-yellow-400 animate-[pulse_2.8s_ease-in-out_infinite]" />
                     </div>

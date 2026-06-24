@@ -66,12 +66,13 @@ export default function Home() {
                 className="space-y-6"
               >
                 <span className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-sky-300">
-                  <span className="logo-arrow w-5 h-5 rounded-md">
-                    <span className="logo-arrow-path" />
-                    <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
-                    <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
-                    <span className="logo-arrow-wave" />
-                  </span>
+                  <img
+                    src="/aikeeptrade-icon.jpg"
+                    alt=""
+                    width="20"
+                    height="20"
+                    className="w-5 h-5 rounded-md"
+                  />
                   AiKeepTrade
                 </span>
 

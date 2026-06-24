@@ -125,12 +125,12 @@ export default function Login() {
           className="text-center md:text-left"
         >
           <div className="inline-flex items-center justify-center mb-6 md:justify-start">
-            <div className="logo-arrow hero-logo w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex-shrink-0">
-              <span className="logo-arrow-path" />
-              <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
-              <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
-              <span className="logo-arrow-wave" />
-            </div>
+            <img
+              src="/aikeeptrade-wordmark.jpg"
+              alt="AiKeepTrade"
+              height="80"
+              className="h-16 sm:h-20 w-auto rounded-2xl flex-shrink-0 ring-1 ring-blue-500/30 shadow-2xl"
+            />
           </div>
           <h1 className="hero-title premium-title text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight fx-brand-text mb-3">
             AiKeepTrade

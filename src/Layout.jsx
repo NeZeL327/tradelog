@@ -100,16 +100,20 @@ function LayoutContent({ children }) {
         >
           {/* FX-Replay-style brand row + compact user card */}
           <SidebarHeader className="border-b border-sidebar-border/60 px-3 py-3 group-data-[collapsible=icon]:px-2 space-y-3">
-            <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center px-1">
-              <div className="logo-arrow logo-arrow-square w-[34px] h-[34px] flex-shrink-0 rounded-lg">
-                <span className="logo-arrow-path" />
-                <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
-                <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
-                <span className="logo-arrow-wave" />
-              </div>
-              <div className="group-data-[collapsible=icon]:hidden min-w-0">
-                <h2 className="fx-brand-mark text-[12px] truncate leading-tight">AIKEEPTRADE</h2>
-              </div>
+            <div className="flex items-center group-data-[collapsible=icon]:justify-center px-1">
+              <img
+                src="/aikeeptrade-wordmark.jpg"
+                alt="AiKeepTrade"
+                height="36"
+                className="h-9 w-auto flex-shrink-0 group-data-[collapsible=icon]:hidden"
+              />
+              <img
+                src="/aikeeptrade-icon.jpg"
+                alt="AiKeepTrade"
+                width="34"
+                height="34"
+                className="w-[34px] h-[34px] flex-shrink-0 rounded-lg ring-1 ring-blue-500/20 hidden group-data-[collapsible=icon]:block"
+              />
             </div>
 
             {/* Compact user pill — avatar + name (FX Replay style) */}

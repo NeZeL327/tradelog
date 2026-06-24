@@ -5,19 +5,18 @@ import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TrendingUp, TrendingDown, Calendar, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, CalendarDays, CalendarRange, Wallet, Plus } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, ScatterChart, Scatter } from "recharts";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, subDays } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday } from "date-fns";
 import { enUS, pl } from "date-fns/locale";
 import TradeCard from "../components/TradeCard";
 import TradeFormNew from "../components/TradeFormNew";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionLabel, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor, tradeStatusBadgeClass } from "@/lib/utils";
+import { directionLabel, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor } from "@/lib/utils";
 import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
 // ─── Mini date-range calendar (same as Journal) ──────────────────────────────

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   Check, Zap, TrendingUp, Shield, BarChart3, Brain, Target,
   Sparkles, Clock, CreditCard, ArrowRight, Lock, X,

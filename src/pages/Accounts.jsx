@@ -386,12 +386,12 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
                 />
               </button>
             </div>
-            <AccountImportButton 
-              account={account} 
+            <AccountImportButton
+              account={account}
+              existingTrades={trades}
               onImportSuccess={() => {
                 queryClient.invalidateQueries({ queryKey: ['trades', user?.id] });
-                toast.success('Transakcje zaimportowane pomyślnie');
-              }} 
+              }}
             />
             <Button size="sm" variant="outline" onClick={() => onEdit(account)} className="h-8 w-8 p-0">
               <Edit className="w-3.5 h-3.5" />

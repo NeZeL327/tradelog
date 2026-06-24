@@ -23,14 +23,13 @@ export default function PublicNavbar({ variant = 'default' }) {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="logo-arrow w-9 h-9 rounded-lg transition-transform group-hover:scale-105">
-                <span className="logo-arrow-path" />
-                <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
-                <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
-                <span className="logo-arrow-wave" />
-              </div>
-              <span className="font-semibold text-lg tracking-tight">AiKeepTrade</span>
+            <Link to="/" className="flex items-center group">
+              <img
+                src="/aikeeptrade-wordmark.jpg"
+                alt="AiKeepTrade"
+                height="40"
+                className="h-10 w-auto transition-transform group-hover:scale-[1.03]"
+              />
             </Link>
             <div className="hidden md:flex items-center gap-3">
               <LanguageToggle variant="light" />
@@ -48,14 +47,13 @@ export default function PublicNavbar({ variant = 'default' }) {
       <nav className="fx-pill-nav hidden md:block">
         <div className="fx-pill-nav-inner">
           {/* Logo (left, inside pill) */}
-          <Link to="/" className="flex items-center gap-2 pl-2 pr-3 group">
-            <div className="logo-arrow w-7 h-7 rounded-md transition-transform group-hover:scale-105">
-              <span className="logo-arrow-path" />
-              <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
-              <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
-              <span className="logo-arrow-wave" />
-            </div>
-            <span className="fx-brand-mark text-[13px]">AIKEEPTRADE</span>
+          <Link to="/" className="flex items-center pl-2 pr-3 group">
+            <img
+              src="/aikeeptrade-wordmark.jpg"
+              alt="AiKeepTrade"
+              height="28"
+              className="h-7 w-auto transition-transform group-hover:scale-[1.03]"
+            />
           </Link>
 
           {/* Center menu */}
@@ -96,14 +94,13 @@ export default function PublicNavbar({ variant = 'default' }) {
       {/* Mobile floating header */}
       <nav className="md:hidden fx-pill-nav">
         <div className="fx-pill-nav-inner">
-          <Link to="/" className="flex items-center gap-2 pl-1 pr-2">
-            <div className="logo-arrow w-7 h-7 rounded-md">
-              <span className="logo-arrow-path" />
-              <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
-              <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
-              <span className="logo-arrow-wave" />
-            </div>
-            <span className="fx-brand-mark text-[12px]">AIKEEPTRADE</span>
+          <Link to="/" className="flex items-center pl-1 pr-2">
+            <img
+              src="/aikeeptrade-wordmark.jpg"
+              alt="AiKeepTrade"
+              height="26"
+              className="h-[26px] w-auto"
+            />
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <LanguageToggle variant="dark" />
