@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Edit, Calendar, Clock, Target } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeStatusBadgeClass } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, getTradeRealizedPL, tradeOutcomeBadgeClass, tradeStatusBadgeClass } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
 import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
@@ -249,7 +249,7 @@ export default function TradeCard({ trade, onEdit = null }) {
               </div>
               <div className="text-right">
                 <p className={`text-2xl font-bold ${plColor}`}>
-                  {parseFloat(trade.profit_loss) > 0 ? '+' : ''}{parseFloat(trade.profit_loss).toFixed(2)}
+                  {(getTradeRealizedPL(trade) ?? 0) > 0 ? '+' : ''}{(getTradeRealizedPL(trade) ?? 0).toFixed(2)}
                 </p>
                 {trade.profit_loss_percent != null && (
                   <p className={`text-sm ${plColor}`}>

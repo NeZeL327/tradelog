@@ -42,7 +42,30 @@ const normalizeTradeStatus = (status) => {
   return "default";
 };
 
+export const tradeStatusMatchesFilter = (tradeStatus, filterValue) => {
+  if (filterValue === "all") return true;
+  return normalizeTradeStatus(tradeStatus) === normalizeTradeStatus(filterValue);
+};
+
 export const isClosedTrade = (trade) => normalizeTradeStatus(trade?.status) === "closed";
+
+/** Net realized P&L — dla importu CSV dolicza commission/swap jeśli nie są już w profit_loss. */
+export function getTradeRealizedPL(trade) {
+  if (!trade || trade.profit_loss == null || trade.profit_loss === "") return null;
+  let pl = parseFloat(trade.profit_loss);
+  if (Number.isNaN(pl)) return null;
+
+  if (trade.fees_included_in_pl) return pl;
+
+  if (trade.imported && (trade.commission != null || trade.swap != null)) {
+    const commission = parseFloat(trade.commission);
+    const swap = parseFloat(trade.swap);
+    if (!Number.isNaN(commission)) pl += commission;
+    if (!Number.isNaN(swap)) pl += swap;
+  }
+
+  return pl;
+}
 
 const normalizeTradeOutcome = (outcome) => {
   const normalized = String(outcome || "").toLowerCase();

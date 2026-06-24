@@ -16,7 +16,7 @@ import TradeCard from "../components/TradeCard";
 import TradeFormNew from "../components/TradeFormNew";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionLabel, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor } from "@/lib/utils";
+import { directionLabel, getTradeRealizedPL, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor } from "@/lib/utils";
 import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
 // ─── Mini date-range calendar (same as Journal) ──────────────────────────────
@@ -219,7 +219,7 @@ export default function Dashboard() {
     const symbolTrades = trades.filter(t => t.symbol === trade.symbol && isClosedTrade(t));
     const wins = symbolTrades.filter(t => t.outcome === "Win").length;
     const total = symbolTrades.length;
-    const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+    const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
     const avgPLForSymbol = total ? (totalPLForSymbol / total) : 0;
 
     const account = accounts.find(a => String(a.id) === String(trade.account_id));
@@ -318,10 +318,10 @@ export default function Dashboard() {
   const breakeven = closedTrades.filter(t => t.outcome === "Breakeven").length;
   const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : 0;
   
-  const totalPL = closedTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+  const totalPL = closedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
   const avgPL = totalTrades > 0 ? (totalPL / totalTrades).toFixed(2) : 0;
-  const avgWin = wins > 0 ? (closedTrades.filter(t => t.outcome === "Win").reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) / wins).toFixed(2) : 0;
-  const avgLoss = losses > 0 ? (closedTrades.filter(t => t.outcome === "Loss").reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) / losses).toFixed(2) : 0;
+  const avgWin = wins > 0 ? (closedTrades.filter(t => t.outcome === "Win").reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / wins).toFixed(2) : 0;
+  const avgLoss = losses > 0 ? (closedTrades.filter(t => t.outcome === "Loss").reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / losses).toFixed(2) : 0;
   
   const profitFactor = (avgLoss !== 0 && avgWin !== 0) ? Math.abs(avgWin / avgLoss).toFixed(2) : 0;
 
@@ -340,7 +340,7 @@ export default function Dashboard() {
   const dailyPLByDate = {};
   closedTrades.forEach(t => {
     if (t.date) {
-      dailyPLByDate[t.date] = (dailyPLByDate[t.date] || 0) + (parseFloat(t.profit_loss) || 0);
+      dailyPLByDate[t.date] = (dailyPLByDate[t.date] || 0) + (getTradeRealizedPL(t) ?? 0);
     }
   });
   const dailyPLData = Object.entries(dailyPLByDate)
@@ -366,7 +366,7 @@ export default function Dashboard() {
   });
 
   const zellaScore = (() => {
-    const maxDrawdown = Math.abs(Math.min(...closedTrades.map(t => parseFloat(t.profit_loss) || 0), 0));
+    const maxDrawdown = Math.abs(Math.min(...closedTrades.map(t => (getTradeRealizedPL(t) ?? 0)), 0));
     const recovery = maxDrawdown > 0 ? totalPL / maxDrawdown : totalPL;
     const profitFactorScore = Math.min((parseFloat(profitFactor) || 0) * 10, 100);
     const winRateScore = Math.min(parseFloat(winRate) || 0, 100);
@@ -406,7 +406,7 @@ export default function Dashboard() {
       if (!tr.date) return;
       const key = tr.date.slice(0, 7);
       if (!map[key]) map[key] = { month: key, winPl: 0, lossPl: 0 };
-      const pl = parseFloat(tr.profit_loss) || 0;
+      const pl = (getTradeRealizedPL(tr) ?? 0);
       if (pl >= 0) map[key].winPl += pl;
       else map[key].lossPl += Math.abs(pl);
     });
@@ -432,7 +432,7 @@ export default function Dashboard() {
       }
       strategyStats[trade.strategy].total++;
       if (trade.outcome === "Win") strategyStats[trade.strategy].wins++;
-      strategyStats[trade.strategy].pl += parseFloat(trade.profit_loss) || 0;
+      strategyStats[trade.strategy].pl += (getTradeRealizedPL(trade) ?? 0);
     }
   });
 
@@ -467,7 +467,7 @@ export default function Dashboard() {
   const plOverTime = [
     { trade: '#0', pl: 0, symbol: '', date: '' },
     ...recentTrades.map((trade, index) => {
-      cumulativePL += parseFloat(trade.profit_loss) || 0;
+      cumulativePL += (getTradeRealizedPL(trade) ?? 0);
       return {
         trade: `#${index + 1}`,
         pl: Math.round(cumulativePL * 100) / 100,
@@ -596,7 +596,7 @@ export default function Dashboard() {
   const accountBalanceOverTime = [
     { trade: '#0', pl: 0, symbol: '', date: '' },
     ...[...accountBalanceTrades].reverse().slice(0, 20).map((trade, index) => {
-      accountBalanceCum += parseFloat(trade.profit_loss) || 0;
+      accountBalanceCum += (getTradeRealizedPL(trade) ?? 0);
       return {
         trade: `#${index + 1}`,
         pl: Math.round(accountBalanceCum * 100) / 100,
@@ -614,7 +614,7 @@ export default function Dashboard() {
     .forEach(t => {
       const dateKey = t.date.substring(0, 10);
       if (!dailyCumulativeByDate[dateKey]) dailyCumulativeByDate[dateKey] = 0;
-      dailyCumulativeByDate[dateKey] += parseFloat(t.profit_loss) || 0;
+      dailyCumulativeByDate[dateKey] += (getTradeRealizedPL(t) ?? 0);
     });
   let dailyCum = 0;
   const sortedDailyCumEntries = Object.entries(dailyCumulativeByDate)
@@ -634,7 +634,7 @@ export default function Dashboard() {
   const drawdownData = [...filteredTrades]
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .map((trade, index) => {
-      running += parseFloat(trade.profit_loss) || 0;
+      running += (getTradeRealizedPL(trade) ?? 0);
       peak = Math.max(peak, running);
       const drawdown = running - peak;
       return {
@@ -650,7 +650,7 @@ export default function Dashboard() {
       const hour = time ? parseInt(time.split(":")[0], 10) : 0;
       return {
         hour,
-        pl: parseFloat(t.profit_loss) || 0,
+        pl: (getTradeRealizedPL(t) ?? 0),
       };
     });
 
@@ -658,7 +658,7 @@ export default function Dashboard() {
   const shortTrades = trades.filter(t => normalizeDirection(t.direction) === "Short");
 
   // Best and worst trades
-  const sortedByPL = [...filteredTrades].sort((a, b) => (parseFloat(b.profit_loss) || 0) - (parseFloat(a.profit_loss) || 0));
+  const sortedByPL = [...filteredTrades].sort((a, b) => ((getTradeRealizedPL(b) ?? 0) || 0) - ((getTradeRealizedPL(a) ?? 0) || 0));
   const bestTrade = sortedByPL[0];
   const worstTrade = sortedByPL[sortedByPL.length - 1];
 
@@ -672,7 +672,7 @@ export default function Dashboard() {
     if (t.date) {
       const day = new Date(t.date).toLocaleDateString(dayLocale, { weekday: 'long' });
       if (!dayPL[day]) dayPL[day] = 0;
-      dayPL[day] += parseFloat(t.profit_loss) || 0;
+      dayPL[day] += (getTradeRealizedPL(t) ?? 0);
     }
   });
   
@@ -680,7 +680,7 @@ export default function Dashboard() {
   const symbolPL = {};
   trades.forEach(t => {
     if (!symbolPL[t.symbol]) symbolPL[t.symbol] = { pl: 0, wins: 0, total: 0 };
-    symbolPL[t.symbol].pl += parseFloat(t.profit_loss) || 0;
+    symbolPL[t.symbol].pl += (getTradeRealizedPL(t) ?? 0);
     symbolPL[t.symbol].total++;
     if (t.outcome === "Win") symbolPL[t.symbol].wins++;
   });
@@ -1619,7 +1619,7 @@ export default function Dashboard() {
                         const dayTrades = tradesByDate[dateStr] || [];
                         const isCurrentMonth = isSameMonth(day, calendarDate);
                         const isTodayDay = isToday(day);
-                        const totalPLDay = dayTrades.reduce((sum, tr) => sum + (parseFloat(tr.profit_loss) || 0), 0);
+                        const totalPLDay = dayTrades.reduce((sum, tr) => sum + (getTradeRealizedPL(tr) ?? 0), 0);
                         const isSelected = selectedCalendarDate && format(selectedCalendarDate, "yyyy-MM-dd") === dateStr;
                         return (
                           <button
@@ -1654,10 +1654,10 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center self-center gap-2.5 shrink-0">
                               <span
-                                className={`inline-block min-w-[90px] text-right tabular-nums leading-none font-semibold text-sm ${parseFloat(trade.profit_loss || 0) >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                                className={`inline-block min-w-[90px] text-right tabular-nums leading-none font-semibold text-sm ${(getTradeRealizedPL(trade) ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"}`}
                               >
-                                {parseFloat(trade.profit_loss || 0) >= 0 ? "+" : ""}
-                                {parseFloat(trade.profit_loss || 0).toFixed(2)}
+                                {(getTradeRealizedPL(trade) ?? 0) >= 0 ? "+" : ""}
+                                {(getTradeRealizedPL(trade) ?? 0).toFixed(2)}
                               </span>
                               <Button
                                 type="button"
@@ -2064,11 +2064,11 @@ export default function Dashboard() {
                           <td className="px-2 py-1.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">{fmtDate(trade.date) || "-"}</td>
                           <td className="px-2 py-1.5 font-medium text-slate-900 dark:text-white">{trade.symbol || "-"}</td>
                           <td
-                            className={`px-2 py-1.5 font-semibold text-right ${parseFloat(trade.profit_loss || 0) >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                            className={`px-2 py-1.5 font-semibold text-right ${(getTradeRealizedPL(trade) ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"}`}
                           >
                             {trade.status === "Planned" || trade.profit_loss == null
                               ? "-"
-                              : `${parseFloat(trade.profit_loss || 0) >= 0 ? "+" : ""}${parseFloat(trade.profit_loss || 0).toFixed(2)}`}
+                              : `${(getTradeRealizedPL(trade) ?? 0) >= 0 ? "+" : ""}${(getTradeRealizedPL(trade) ?? 0).toFixed(2)}`}
                           </td>
                           <td className="px-2 py-1.5 text-center">
                             <Button
@@ -2247,12 +2247,12 @@ export default function Dashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-green-50 p-3 rounded-lg border border-green-200">
                       <p className="text-xs text-green-700 mb-1">{t('totalProfit')}</p>
-                      <p className="text-xl font-bold text-green-600">+{winningTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0).toFixed(2)}</p>
+                      <p className="text-xl font-bold text-green-600">+{winningTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0).toFixed(2)}</p>
                       <p className="text-xs text-green-600 mt-1">{winningTrades.length} {t('wins')}</p>
                     </div>
                     <div className="bg-red-50 p-3 rounded-lg border border-red-200">
                       <p className="text-xs text-red-700 mb-1">{t('totalLoss')}</p>
-                      <p className="text-xl font-bold text-red-600">{losingTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0).toFixed(2)}</p>
+                      <p className="text-xl font-bold text-red-600">{losingTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0).toFixed(2)}</p>
                       <p className="text-xs text-red-600 mt-1">{losingTrades.length} {t('losses')}</p>
                     </div>
                     <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
@@ -2350,13 +2350,13 @@ export default function Dashboard() {
                     <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
                       <p className="text-xs text-blue-700 mb-1">{t('medianWin')}</p>
                       <p className="text-xl font-bold text-blue-600">
-                        +{winningTrades.length > 0 ? winningTrades.sort((a,b) => parseFloat(a.profit_loss) - parseFloat(b.profit_loss))[Math.floor(winningTrades.length/2)]?.profit_loss?.toFixed(2) || 0 : 0}
+                        +{(() => { const m = winningTrades.sort((a,b) => (getTradeRealizedPL(a) ?? 0) - (getTradeRealizedPL(b) ?? 0))[Math.floor(winningTrades.length/2)]; return (getTradeRealizedPL(m) ?? 0).toFixed(2); })()}
                       </p>
                     </div>
                     <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
                       <p className="text-xs text-orange-700 mb-1">{t('medianLoss')}</p>
                       <p className="text-xl font-bold text-orange-600">
-                        {losingTrades.length > 0 ? losingTrades.sort((a,b) => parseFloat(a.profit_loss) - parseFloat(b.profit_loss))[Math.floor(losingTrades.length/2)]?.profit_loss?.toFixed(2) || 0 : 0}
+                        {(() => { const m = losingTrades.sort((a,b) => (getTradeRealizedPL(a) ?? 0) - (getTradeRealizedPL(b) ?? 0))[Math.floor(losingTrades.length/2)]; return (getTradeRealizedPL(m) ?? 0).toFixed(2); })()}
                       </p>
                     </div>
                   </div>
@@ -2365,15 +2365,15 @@ export default function Dashboard() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-white p-3 rounded border border-slate-200">
                         <p className="text-xs text-slate-600 mb-1">{t('longLabel')}</p>
-                        <p className={`text-lg font-bold ${(longTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) / longTrades.length) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {((longTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) / longTrades.length) || 0).toFixed(2)}
+                        <p className={`text-lg font-bold ${(longTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / longTrades.length) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {((longTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / longTrades.length) || 0).toFixed(2)}
                         </p>
                         <p className="text-[10px] text-slate-500">{longTrades.length} {t('trades')}</p>
                       </div>
                       <div className="bg-white p-3 rounded border border-slate-200">
                         <p className="text-xs text-slate-600 mb-1">{t('shortLabel')}</p>
-                        <p className={`text-lg font-bold ${(shortTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) / shortTrades.length) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {((shortTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) / shortTrades.length) || 0).toFixed(2)}
+                        <p className={`text-lg font-bold ${(shortTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / shortTrades.length) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {((shortTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / shortTrades.length) || 0).toFixed(2)}
                         </p>
                         <p className="text-[10px] text-slate-500">{shortTrades.length} {t('trades')}</p>
                       </div>
@@ -2536,7 +2536,7 @@ export default function Dashboard() {
                 <div className="flex justify-between items-baseline gap-3">
                   <span className="text-lg font-bold text-slate-900 dark:text-white truncate">{bestTrade.symbol}</span>
                   <span className="text-lg font-bold tabular-nums cyber-trade-pl-best shrink-0">
-                    +{parseFloat(bestTrade.profit_loss).toFixed(2)}
+                    +{(getTradeRealizedPL(bestTrade) ?? 0).toFixed(2)}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
@@ -2574,7 +2574,7 @@ export default function Dashboard() {
                 <div className="flex justify-between items-baseline gap-3">
                   <span className="text-lg font-bold text-slate-900 dark:text-white truncate">{worstTrade.symbol}</span>
                   <span className="text-lg font-bold tabular-nums cyber-trade-pl-worst shrink-0">
-                    {parseFloat(worstTrade.profit_loss).toFixed(2)}
+                    {(getTradeRealizedPL(worstTrade) ?? 0).toFixed(2)}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">

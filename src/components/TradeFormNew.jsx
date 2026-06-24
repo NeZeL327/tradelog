@@ -108,7 +108,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
   useEffect(() => {
     if (!trade) return;
-    setManualPLOvride(false);
+    const useImportedNetPL = Boolean(trade.fees_included_in_pl && trade.profit_loss != null);
+    setManualPLOvride(useImportedNetPL);
     setFormData({
       symbol: trade.symbol || "",
       direction: normalizeDirection(trade.direction) || "Long",
@@ -127,8 +128,12 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
       session: trade.session || "",
       stop_loss_pips: trade.stop_loss_pips != null ? String(trade.stop_loss_pips) : "",
       take_profit_pips: trade.take_profit_pips != null ? String(trade.take_profit_pips) : "",
-      stop_loss_amount: trade.stop_loss_amount != null ? String(trade.stop_loss_amount) : "",
-      take_profit_amount: trade.take_profit_amount != null ? String(trade.take_profit_amount) : "",
+      stop_loss_amount: trade.stop_loss_amount != null
+        ? String(trade.stop_loss_amount)
+        : trade.stop_loss != null ? String(trade.stop_loss) : "",
+      take_profit_amount: trade.take_profit_amount != null
+        ? String(trade.take_profit_amount)
+        : trade.take_profit != null ? String(trade.take_profit) : "",
       commission: trade.commission != null
         ? String(
             trade.commission_operation
@@ -136,7 +141,10 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
               : Number(trade.commission)
           )
         : "",
-      profit_loss_manual: trade.profit_loss_manual != null ? String(trade.profit_loss_manual) : "",
+      fees_included_in_pl: Boolean(trade.fees_included_in_pl),
+      profit_loss_manual: useImportedNetPL
+        ? String(trade.profit_loss)
+        : trade.profit_loss_manual != null ? String(trade.profit_loss_manual) : "",
       scale_outs: Array.isArray(trade.scale_outs) ? trade.scale_outs.map((item) => ({
         id: item.id || `${Date.now()}_${Math.random().toString(16).slice(2)}`,
         size: item.size != null ? String(item.size) : "",
@@ -298,7 +306,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
       return null;
     }
 
-    const commissionAdjustment = toNumber(formData.commission) || 0;
+    const commissionAdjustment = formData.fees_included_in_pl ? 0 : (toNumber(formData.commission) || 0);
 
     if (manualPLOvride && formData.profit_loss_manual !== "") {
       const manual = parseFloat(formData.profit_loss_manual);

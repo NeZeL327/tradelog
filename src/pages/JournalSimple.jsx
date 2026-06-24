@@ -38,7 +38,7 @@ import {
 import TradeFormNew from "../components/TradeFormNew";
 import TradeCard from "../components/TradeCard";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, getTradeRealizedPL, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
 import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
@@ -337,7 +337,7 @@ export default function JournalSimple({ mode = "all" }) {
     const symbolTrades = tradesFromActiveAccounts.filter(t => t.symbol === trade.symbol && isClosedTrade(t));
     const wins = symbolTrades.filter(t => t.outcome === "Win").length;
     const total = symbolTrades.length;
-    const totalPL = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+    const totalPL = symbolTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
     const avgPL = total ? (totalPL / total) : 0;
 
     const account = accounts.find(a => String(a.id) === String(trade.account_id));
@@ -362,8 +362,8 @@ export default function JournalSimple({ mode = "all" }) {
       let bVal = b[sortField];
 
       if (sortField === "profit_loss") {
-        aVal = parseFloat(aVal) || 0;
-        bVal = parseFloat(bVal) || 0;
+        aVal = getTradeRealizedPL(a) ?? 0;
+        bVal = getTradeRealizedPL(b) ?? 0;
       }
 
       if (sortOrder === "asc") {
@@ -463,7 +463,7 @@ export default function JournalSimple({ mode = "all" }) {
 
   const statusFilteredTrades = statusFilters.includes("all")
     ? baseFilteredTrades
-    : baseFilteredTrades.filter(t => statusFilters.includes(t.status));
+    : baseFilteredTrades.filter(t => statusFilters.some(f => tradeStatusMatchesFilter(t.status, f)));
 
   const outcomeFilteredTrades = outcomeFilters.includes("all")
     ? statusFilteredTrades
@@ -566,7 +566,7 @@ export default function JournalSimple({ mode = "all" }) {
     missed: baseFilteredTrades.filter(t => t.status === "Missed").length,
     wins: statsSource.filter(t => t.outcome === "Win").length,
     losses: statsSource.filter(t => t.outcome === "Loss").length,
-    totalPL: statsSource.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0)
+    totalPL: statsSource.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0)
   };
 
   if (isLoading) {
@@ -1047,7 +1047,14 @@ export default function JournalSimple({ mode = "all" }) {
                         {accountNameById[String(trade.account_id)] || '-'}
                       </td>
                       {visibleColumns.date && (
-                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{fmtDate(trade.date)}</td>
+                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          <div>{fmtDate(trade.date)}</div>
+                          {(trade.entry_time || trade.time) && (
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                              {String(trade.entry_time || trade.time).slice(0, 8)}
+                            </div>
+                          )}
+                        </td>
                       )}
                       {visibleColumns.symbol && (
                         <td className="px-1.5 py-1 text-sm font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.symbol}</td>
@@ -1065,32 +1072,43 @@ export default function JournalSimple({ mode = "all" }) {
                       {visibleColumns.entry && (
                         <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
                       )}
-                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
-                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
+                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? trade.stop_loss_amount ?? trade.stop_loss ?? '-'}</td>
+                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? trade.take_profit_amount ?? trade.take_profit ?? '-'}</td>
                       {visibleColumns.exit && (
-                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.exit_price || '-'}</td>
+                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          <div>{trade.exit_price ?? '-'}</div>
+                          {(trade.exit_time || (trade.close_date && trade.close_date !== trade.date)) && (
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                              {trade.close_date && trade.close_date !== trade.date ? `${fmtDate(trade.close_date)} ` : ''}
+                              {trade.exit_time ? String(trade.exit_time).slice(0, 8) : ''}
+                            </div>
+                          )}
+                        </td>
                       )}
                       {visibleColumns.position && (
                         <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap max-w-[72px] truncate" title={String(trade.position_size || '')}>{trade.position_size}</td>
                       )}
                       {visibleColumns.pl && (
                         <td className="px-1.5 py-1">
-                          {trade.profit_loss != null ? (
+                          {trade.profit_loss != null ? (() => {
+                            const pl = getTradeRealizedPL(trade) ?? 0;
+                            return (
                             <div data-private className="flex items-center gap-0.5">
-                              {parseFloat(trade.profit_loss || 0) > 0 ? (
+                              {pl > 0 ? (
                                 <TrendingUp className="w-3 h-3 text-green-600" />
-                              ) : parseFloat(trade.profit_loss || 0) < 0 ? (
+                              ) : pl < 0 ? (
                                 <TrendingDown className="w-3 h-3 text-red-600" />
                               ) : null}
                               <span className={`text-sm font-semibold ${
-                                parseFloat(trade.profit_loss || 0) > 0 ? 'text-green-600' :
-                                parseFloat(trade.profit_loss || 0) < 0 ? 'text-red-600' :
+                                pl > 0 ? 'text-green-600' :
+                                pl < 0 ? 'text-red-600' :
                                 'text-slate-600'
-                              }`}>
-                                {parseFloat(trade.profit_loss || 0) > 0 ? '+' : ''}{parseFloat(trade.profit_loss || 0).toFixed(2)}
+                              }`} title={trade.commission != null ? `Commission: ${trade.commission}` : undefined}>
+                                {pl > 0 ? '+' : ''}{pl.toFixed(2)}
                               </span>
                             </div>
-                          ) : <span className="text-sm text-slate-400">-</span>}
+                            );
+                          })() : <span className="text-sm text-slate-400">-</span>}
                         </td>
                       )}
                       {visibleColumns.outcome && (

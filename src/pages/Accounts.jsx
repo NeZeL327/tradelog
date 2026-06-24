@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
 import { getTradingAccounts, createTradingAccount, deleteTradingAccount, updateTradingAccount, getTrades } from "@/lib/localStorage";
-import { isClosedTrade } from "@/lib/utils";
+import { getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -295,7 +295,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
   const accountTrades = trades.filter(
     (trade) => String(trade.account_id) === String(account.id) && isClosedTrade(trade)
   );
-  const realizedPL = accountTrades.reduce((sum, trade) => sum + (parseFloat(trade.profit_loss) || 0), 0);
+  const realizedPL = accountTrades.reduce((sum, trade) => sum + (getTradeRealizedPL(trade) ?? 0), 0);
   const balanceBasedPL = Number.isFinite(currentBalance) ? currentBalance - initialBalance : 0;
   const profitLoss = accountTrades.length > 0 ? realizedPL : balanceBasedPL;
   const displayedBalance = Number.isFinite(currentBalance) ? currentBalance : initialBalance + realizedPL;
