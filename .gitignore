@@ -1,5 +1,7 @@
 #env
 .env
+firebase-key.json
+*-firebase-adminsdk-*.json
 
 # Windows reserved filename artifact
 nul

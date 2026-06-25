@@ -24,7 +24,7 @@ import {
   CalendarRange
 } from "lucide-react";
 import { parseISO, isSameDay, isSameWeek, isSameMonth } from "date-fns";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1321,7 +1321,7 @@ export default function JournalSimple({ mode = "all" }) {
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
           <DialogContent
             className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
-            onPointerDownOutside={(event) => event.preventDefault()}
+            {...preventDialogDismissProps}
             onEscapeKeyDown={(event) => event.preventDefault()}
           >
             <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
@@ -1342,13 +1342,18 @@ export default function JournalSimple({ mode = "all" }) {
 
         {/* Edit Trade Dialog */}
         <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0">
+          <DialogContent
+            className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
+            {...preventDialogDismissProps}
+          >
             <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
               <DialogTitle>Edit Trade</DialogTitle>
             </div>
             <div className="p-6">
               {editingTrade && (
                 <TradeFormNew
+                  key={editingTrade.id}
+                  embedded
                   trade={editingTrade}
                   onSuccess={() => {
                     refetch();

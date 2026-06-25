@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TrendingUp, TrendingDown, Calendar, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, CalendarDays, CalendarRange, Wallet, Plus } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, ScatterChart, Scatter } from "recharts";
@@ -2596,7 +2596,7 @@ export default function Dashboard() {
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
           <DialogContent
             className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
-            onPointerDownOutside={(event) => event.preventDefault()}
+            {...preventDialogDismissProps}
             onEscapeKeyDown={(event) => event.preventDefault()}
           >
             <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
@@ -2616,13 +2616,18 @@ export default function Dashboard() {
 
         {/* Edit Trade Dialog */}
         <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0">
+          <DialogContent
+            className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
+            {...preventDialogDismissProps}
+          >
             <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
               <DialogTitle>Edit Trade</DialogTitle>
             </div>
             <div className="p-6">
               {editingTrade && (
                 <TradeFormNew
+                  key={editingTrade.id}
+                  embedded
                   trade={editingTrade}
                   onSuccess={() => {
                     refetch();

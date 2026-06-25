@@ -82,6 +82,13 @@ const DialogDescription = React.forwardRef(({ className, ...props }, ref) => (
 ))
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
+/** Zapobiega zamknięciu dialogu przy oknie wyboru pliku (Radix traktuje je jako „outside”). */
+export const preventDialogDismissProps = {
+  onPointerDownOutside: (event) => event.preventDefault(),
+  onFocusOutside: (event) => event.preventDefault(),
+  onInteractOutside: (event) => event.preventDefault(),
+};
+
 export {
   Dialog,
   DialogPortal,

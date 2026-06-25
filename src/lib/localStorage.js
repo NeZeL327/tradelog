@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import imageCompression from 'browser-image-compression';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 
 const userCollection = (userId, name) => collection(db, 'users', String(userId), name);
 const TRADE_TRASH_RETENTION_DAYS = 30;
@@ -58,16 +58,20 @@ const runSafe = async (label, action) => {
   }
 };
 
-const isImageFile = (file) => file && typeof file.type === 'string' && file.type.startsWith('image/');
+const isImageFile = (file) => {
+  if (!file) return false;
+  if (file.type?.startsWith('image/')) return true;
+  return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(file.name || '');
+};
 
 export const compressImage = async (file) => {
   if (!isImageFile(file)) return file;
 
   const options = {
     maxSizeMB: 0.6,
-    maxWidthOrHeight: 2560,
-    useWebWorker: true,
-    initialQuality: 0.95
+    maxWidthOrHeight: 1920,
+    useWebWorker: false,
+    initialQuality: 0.85
   };
 
   try {
@@ -76,6 +80,40 @@ export const compressImage = async (file) => {
     console.error('compressImage error:', error);
     return file;
   }
+};
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Nie udało się odczytać pliku.'));
+    reader.readAsDataURL(file);
+  });
+
+const formatStorageError = (error) => {
+  const code = String(error?.code || '');
+  if (code.includes('storage/unauthorized') || code.includes('permission-denied')) {
+    return 'Brak uprawnień do zapisu zdjęcia. Zaloguj się ponownie.';
+  }
+  if (code.includes('storage/canceled')) {
+    return 'Upload anulowany.';
+  }
+  if (code.includes('storage/quota-exceeded')) {
+    return 'Przekroczono limit miejsca w Storage.';
+  }
+  return error?.message || 'Nie udało się wysłać zdjęcia.';
+};
+
+export const imageFileToDataUrl = async (file) => {
+  const compressed = await compressImage(file);
+  if (compressed.size > 850_000) {
+    throw new Error('Zdjęcie jest za duże (max ~800 KB). Wybierz mniejszy plik.');
+  }
+  const dataUrl = await readFileAsDataUrl(compressed);
+  if (!dataUrl.startsWith('data:image/')) {
+    throw new Error('Dozwolone są tylko pliki graficzne.');
+  }
+  return dataUrl;
 };
 
 export const updateUser = async (userId, updates) => {
@@ -422,14 +460,36 @@ export const uploadUserFile = async (userId, file, folder = 'uploads') => {
 
 export const uploadTradeScreenshot = async (userId, file) => {
   return runSafe('uploadTradeScreenshot', async () => {
-    if (!userId || !file) return '';
+    const uid = auth.currentUser?.uid || userId;
+    if (!uid) throw new Error('Użytkownik nie jest zalogowany');
+    if (!file) throw new Error('Nie wybrano pliku');
+
     const fileToUpload = await compressImage(file);
-    const safeName = file.name ? file.name.replace(/\s+/g, '_') : `file_${Date.now()}`;
-    const path = `tradeScreenshots/${userId}/${Date.now()}_${safeName}`;
+    const safeName = file.name ? file.name.replace(/[^\w.-]+/g, '_') : `file_${Date.now()}.jpg`;
+    const path = `users/${uid}/trade-screenshots/${Date.now()}_${safeName}`;
     const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, fileToUpload);
-    return getDownloadURL(storageRef);
+
+    try {
+      await uploadBytes(storageRef, fileToUpload, {
+        contentType: fileToUpload.type || file.type || 'image/jpeg',
+      });
+      const url = await getDownloadURL(storageRef);
+      if (!url) throw new Error('Nie udało się uzyskać adresu zdjęcia');
+      return url;
+    } catch (error) {
+      throw new Error(formatStorageError(error));
+    }
   });
+};
+
+/** Upload do Storage; jeśli Storage niedostępny — zapis inline (data URL) w Firestore. */
+export const persistTradeScreenshot = async (userId, file) => {
+  try {
+    return await uploadTradeScreenshot(userId, file);
+  } catch (storageError) {
+    console.warn('persistTradeScreenshot: storage failed, using data URL fallback', storageError);
+    return imageFileToDataUrl(file);
+  }
 };
 
 // --- Backtesting: strategies only for this module (not global "Strategies" page) ---

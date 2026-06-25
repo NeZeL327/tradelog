@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Calendar as CalendarIcon, Eye } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek } from "date-fns";
 import { pl, enUS } from "date-fns/locale";
@@ -549,13 +549,18 @@ export default function Calendar() {
 
       {/* Edit Trade Dialog */}
       <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0">
+        <DialogContent
+          className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
+          {...preventDialogDismissProps}
+        >
           <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
             <DialogTitle>Edit Trade</DialogTitle>
           </div>
           <div className="p-6">
             {editingTrade && (
               <TradeFormNew
+                key={editingTrade.id}
+                embedded
                 trade={editingTrade}
                 onSuccess={() => {
                   refetch();

@@ -1,17 +1,101 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/AuthContext";
-import { createTrade, updateTrade, getTradingAccounts, getStrategies, uploadTradeScreenshot } from "@/lib/localStorage";
+import { createTrade, updateTrade, getTradingAccounts, getStrategies, persistTradeScreenshot } from "@/lib/localStorage";
 import { useLanguage } from "@/components/LanguageProvider";
 import { X, Plus } from "lucide-react";
 import ImageViewer from "@/components/common/ImageViewer";
 import { normalizeDirection } from "@/lib/utils";
 
-export default function TradeFormNew({ trade = null, onSuccess, onClose, defaultStatus = "Open" }) {
+const SCREENSHOT_KEYS = ["screenshot_1", "screenshot_2", "screenshot_3"];
+
+function isImageFile(file) {
+  if (!file) return false;
+  if (file.type?.startsWith("image/")) return true;
+  return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(file.name || "");
+}
+
+function ScreenshotField({
+  slotId,
+  label,
+  value,
+  pending,
+  onPickFile,
+  onRemove,
+  onView,
+  addLabel,
+  changeLabel,
+  removeLabel,
+  viewLabel,
+  uploadError,
+}) {
+  return (
+    <div>
+      <Label className="block text-sm font-semibold mb-2">{label}</Label>
+      <input
+        id={slotId}
+        type="file"
+        accept="image/*,.heic,.heif"
+        className="sr-only"
+        onChange={onPickFile}
+      />
+      <label
+        htmlFor={slotId}
+        className="relative flex items-center justify-center h-28 w-full border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition cursor-pointer overflow-hidden"
+      >
+        {value ? (
+          <>
+            <img
+              src={value}
+              alt={label}
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            />
+            <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+            {pending && (
+              <div className="absolute bottom-1 left-1 right-1 text-center text-[10px] font-medium text-white bg-blue-600/90 rounded px-1 py-0.5 pointer-events-none">
+                Zapisze po „Zapisz”
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center">
+            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center mb-2">
+              <Plus className="w-4 h-4" />
+            </div>
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{addLabel}</span>
+          </div>
+        )}
+      </label>
+      {uploadError && (
+        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{uploadError}</p>
+      )}
+      {value && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={onRemove}>
+            {removeLabel}
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={onView}>
+            {viewLabel}
+          </Button>
+          <Button type="button" variant="outline" size="sm" asChild>
+            <label htmlFor={slotId} className="cursor-pointer">
+              {changeLabel}
+            </label>
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const stripUndefined = (obj) =>
+  Object.fromEntries(Object.entries(obj).filter(([, value]) => value !== undefined));
+
+export default function TradeFormNew({ trade = null, onSuccess, onClose, defaultStatus = "Open", embedded = false }) {
   const { user } = useAuth();
   const { t } = useLanguage();
   
@@ -54,28 +138,18 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerImage, setViewerImage] = useState("");
-  const [screenshotDirHandle, setScreenshotDirHandle] = useState(null);
+  const [screenshotErrors, setScreenshotErrors] = useState({});
+  const [pendingScreenshotKeys, setPendingScreenshotKeys] = useState(() => new Set());
+  const formUid = useId().replace(/:/g, "");
+  const tradeInitRef = useRef(null);
+  const blobUrlsRef = useRef([]);
+  const pendingScreenshotsRef = useRef({});
 
   const toNumber = (value) => {
     if (value === "" || value === null || value === undefined) return null;
     const normalized = typeof value === "string" ? value.replace(",", ".") : value;
     const parsed = Number(normalized);
     return Number.isFinite(parsed) ? parsed : null;
-  };
-
-  const supportsDirectoryAccess = () => typeof window !== "undefined" && "showDirectoryPicker" in window;
-
-  const ensureScreenshotDirectory = async () => {
-    if (!supportsDirectoryAccess()) return;
-    try {
-      const handle = await window.showDirectoryPicker();
-      setScreenshotDirHandle(handle);
-    } catch (error) {
-      if (error?.name !== "AbortError") {
-        console.error('Directory picker error:', error);
-        setError(t('errorSavingTrade'));
-      }
-    }
   };
 
   // Wczytaj konta i strategie
@@ -107,9 +181,18 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
   }, [user?.id, t]);
 
   useEffect(() => {
-    if (!trade) return;
+    if (!trade?.id) {
+      tradeInitRef.current = null;
+      return;
+    }
+    if (tradeInitRef.current === trade.id) return;
+    tradeInitRef.current = trade.id;
+
     const useImportedNetPL = Boolean(trade.fees_included_in_pl && trade.profit_loss != null);
     setManualPLOvride(useImportedNetPL);
+    setScreenshotErrors({});
+    pendingScreenshotsRef.current = {};
+    setPendingScreenshotKeys(new Set());
     setFormData({
       symbol: trade.symbol || "",
       direction: normalizeDirection(trade.direction) || "Long",
@@ -158,6 +241,25 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
       screenshot_3: trade.screenshot_3 || ""
     });
   }, [trade]);
+
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      blobUrlsRef.current = [];
+    };
+  }, []);
+
+  const trackBlobUrl = (url) => {
+    if (url?.startsWith('blob:')) {
+      blobUrlsRef.current.push(url);
+    }
+  };
+
+  const revokeBlobUrl = (url) => {
+    if (!url?.startsWith('blob:')) return;
+    URL.revokeObjectURL(url);
+    blobUrlsRef.current = blobUrlsRef.current.filter((item) => item !== url);
+  };
 
   const addScaleOut = () => {
     setFormData(prev => ({
@@ -274,25 +376,77 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
     }));
   };
 
-  const handleFileChange = async (e) => {
-    const { name, files } = e.target;
-    const file = files && files[0];
+  const handleScreenshotPick = (fieldName) => (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
 
-    if (!file) {
-      setFormData(prev => ({ ...prev, [name]: "" }));
+    if (!file) return;
+
+    if (!user?.id) {
+      setScreenshotErrors((prev) => ({ ...prev, [fieldName]: "Musisz być zalogowany." }));
       return;
     }
 
-    try {
-      const url = await uploadTradeScreenshot(user?.id, file);
-      setFormData(prev => ({
-        ...prev,
-        [name]: url || ""
-      }));
-    } catch (error) {
-      console.error('Upload error:', error);
-      setError(t('errorSavingTrade'));
+    if (!isImageFile(file)) {
+      setScreenshotErrors((prev) => ({ ...prev, [fieldName]: "Wybierz plik graficzny (JPG, PNG, WebP)." }));
+      return;
     }
+
+    setScreenshotErrors((prev) => ({ ...prev, [fieldName]: null }));
+    setError(null);
+
+    setFormData((prev) => {
+      revokeBlobUrl(prev[fieldName]);
+      return prev;
+    });
+
+    const previewUrl = URL.createObjectURL(file);
+    trackBlobUrl(previewUrl);
+    pendingScreenshotsRef.current[fieldName] = file;
+    setPendingScreenshotKeys((prev) => new Set(prev).add(fieldName));
+
+    setFormData((prev) => ({
+      ...prev,
+      [fieldName]: previewUrl,
+    }));
+  };
+
+  const resolveScreenshotsForSubmit = async () => {
+    const resolved = {};
+    for (const key of SCREENSHOT_KEYS) {
+      const pendingFile = pendingScreenshotsRef.current[key];
+      if (pendingFile) {
+        try {
+          resolved[key] = await persistTradeScreenshot(user.id, pendingFile);
+        } catch (uploadErr) {
+          const message = uploadErr?.message || "Nie udało się wysłać zdjęcia.";
+          setScreenshotErrors((prev) => ({ ...prev, [key]: message }));
+          throw new Error(message);
+        }
+        revokeBlobUrl(formData[key]);
+        pendingScreenshotsRef.current[key] = null;
+        continue;
+      }
+
+      const current = formData[key];
+      resolved[key] = current && !String(current).startsWith("blob:") ? current : null;
+    }
+    setPendingScreenshotKeys(new Set());
+    return resolved;
+  };
+
+  const clearScreenshot = (fieldName) => {
+    pendingScreenshotsRef.current[fieldName] = null;
+    setPendingScreenshotKeys((prev) => {
+      const next = new Set(prev);
+      next.delete(fieldName);
+      return next;
+    });
+    setFormData((prev) => {
+      revokeBlobUrl(prev[fieldName]);
+      return { ...prev, [fieldName]: "" };
+    });
+    setScreenshotErrors((prev) => ({ ...prev, [fieldName]: null }));
   };
 
   const openViewer = (imageUrl) => {
@@ -391,8 +545,9 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
       }
 
       const pl = calculatePL();
+      const screenshots = await resolveScreenshotsForSubmit();
 
-      const submitData = {
+      const submitData = stripUndefined({
         ...formData,
         account_id: formData.account_id || null,
         strategy_id: formData.strategy_id || null,
@@ -406,6 +561,9 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
         timeframe: formData.timeframe || null,
         session: formData.session || null,
         commission: toNumber(formData.commission),
+        screenshot_1: screenshots.screenshot_1,
+        screenshot_2: screenshots.screenshot_2,
+        screenshot_3: screenshots.screenshot_3,
         scale_outs: (formData.scale_outs || []).map(item => ({
           id: item.id,
           size: toNumber(item.size),
@@ -421,7 +579,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
           profit_loss_percent: pl.profit_loss_percent ? parseFloat(pl.profit_loss_percent) : null,
           outcome: pl.outcome
         })
-      };
+      });
 
       console.log('Submitting trade:', submitData);
       
@@ -496,19 +654,21 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <Card className="border border-slate-200/80 dark:border-slate-700 shadow-xl shadow-slate-900/5 overflow-hidden bg-white dark:bg-card">
+      <Card className={`overflow-hidden bg-white dark:bg-card ${embedded ? "border-0 shadow-none" : "border border-slate-200/80 dark:border-slate-700 shadow-xl shadow-slate-900/5"}`}>
+        {!embedded && (
         <CardHeader className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-slate-100 border-b border-slate-700/80 rounded-none">
           <div className="flex justify-between items-center">
             <CardTitle>{trade?.id ? t('editTrade') : t('addTrade')}</CardTitle>
             {onClose && (
-              <button onClick={onClose} className="text-slate-200 hover:bg-white/10 p-1 rounded">
+              <button type="button" onClick={onClose} className="text-slate-200 hover:bg-white/10 p-1 rounded">
                 <X className="w-5 h-5" />
               </button>
             )}
           </div>
         </CardHeader>
+        )}
 
-        <CardContent className="p-6">
+        <CardContent className={embedded ? "p-0" : "p-6"}>
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
               {error}
@@ -975,204 +1135,54 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
             {/* Screenshots */}
             <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-lg space-y-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    await ensureScreenshotDirectory();
-                  }}
-                  disabled={!supportsDirectoryAccess()}
-                >
-                  {t('chooseScreenshotFolder')}
-                </Button>
-                <span className="text-xs text-slate-500">
-                  {supportsDirectoryAccess()
-                    ? (screenshotDirHandle ? t('folderSelected') : t('folderNotSelected'))
-                    : t('folderNotSupported')}
-                </span>
-              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Wybierz zdjęcie — podgląd od razu, wysyłka po kliknięciu Zapisz.
+              </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label className="block text-sm font-semibold mb-2">{t('screenshot')} 1</Label>
-                <input
-                  id="screenshot_1"
-                  type="file"
-                  name="screenshot_1"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
+                <ScreenshotField
+                  slotId={`${formUid}-screenshot-1`}
+                  label={`${t('screenshot')} 1`}
+                  value={formData.screenshot_1}
+                  pending={pendingScreenshotKeys.has("screenshot_1")}
+                  uploadError={screenshotErrors.screenshot_1}
+                  onPickFile={handleScreenshotPick("screenshot_1")}
+                  onRemove={() => clearScreenshot("screenshot_1")}
+                  onView={() => openViewer(formData.screenshot_1)}
+                  addLabel={t('add')}
+                  changeLabel={t('change')}
+                  removeLabel={t('remove')}
+                  viewLabel={t('view')}
                 />
-                <label
-                  htmlFor="screenshot_1"
-                  className="relative flex items-center justify-center h-28 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition cursor-pointer overflow-hidden"
-                >
-                  {formData.screenshot_1 ? (
-                    <img
-                      src={formData.screenshot_1}
-                      alt="Screenshot 1"
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center mb-2">
-                        <Plus className="w-4 h-4" />
-                      </div>
-                      <span className="text-sm font-medium text-slate-700">{t('add')}</span>
-                    </div>
-                  )}
-                  {formData.screenshot_1 && (
-                    <div className="absolute inset-0 bg-black/20" />
-                  )}
-                </label>
-                {formData.screenshot_1 && (
-                  <div className="mt-2 flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setFormData(prev => ({ ...prev, screenshot_1: "" }))}
-                    >
-                      {t('remove')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openViewer(formData.screenshot_1)}
-                    >
-                      {t('view')}
-                    </Button>
-                    <label
-                      htmlFor="screenshot_1"
-                      className="inline-flex items-center justify-center px-3 py-1 text-sm border rounded-md cursor-pointer hover:bg-slate-50"
-                    >
-                      {t('change')}
-                    </label>
-                  </div>
-                )}
-              </div>
-              <div>
-                <Label className="block text-sm font-semibold mb-2">{t('screenshot')} 2</Label>
-                <input
-                  id="screenshot_2"
-                  type="file"
-                  name="screenshot_2"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
+                <ScreenshotField
+                  slotId={`${formUid}-screenshot-2`}
+                  label={`${t('screenshot')} 2`}
+                  value={formData.screenshot_2}
+                  pending={pendingScreenshotKeys.has("screenshot_2")}
+                  uploadError={screenshotErrors.screenshot_2}
+                  onPickFile={handleScreenshotPick("screenshot_2")}
+                  onRemove={() => clearScreenshot("screenshot_2")}
+                  onView={() => openViewer(formData.screenshot_2)}
+                  addLabel={t('add')}
+                  changeLabel={t('change')}
+                  removeLabel={t('remove')}
+                  viewLabel={t('view')}
                 />
-                <label
-                  htmlFor="screenshot_2"
-                  className="relative flex items-center justify-center h-28 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition cursor-pointer overflow-hidden"
-                >
-                  {formData.screenshot_2 ? (
-                    <img
-                      src={formData.screenshot_2}
-                      alt="Screenshot 2"
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center mb-2">
-                        <Plus className="w-4 h-4" />
-                      </div>
-                      <span className="text-sm font-medium text-slate-700">{t('add')}</span>
-                    </div>
-                  )}
-                  {formData.screenshot_2 && (
-                    <div className="absolute inset-0 bg-black/20" />
-                  )}
-                </label>
-                {formData.screenshot_2 && (
-                  <div className="mt-2 flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setFormData(prev => ({ ...prev, screenshot_2: "" }))}
-                    >
-                      {t('remove')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openViewer(formData.screenshot_2)}
-                    >
-                      {t('view')}
-                    </Button>
-                    <label
-                      htmlFor="screenshot_2"
-                      className="inline-flex items-center justify-center px-3 py-1 text-sm border rounded-md cursor-pointer hover:bg-slate-50"
-                    >
-                      {t('change')}
-                    </label>
-                  </div>
-                )}
-              </div>
-              <div>
-                <Label className="block text-sm font-semibold mb-2">{t('screenshot')} 3</Label>
-                <input
-                  id="screenshot_3"
-                  type="file"
-                  name="screenshot_3"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
+                <ScreenshotField
+                  slotId={`${formUid}-screenshot-3`}
+                  label={`${t('screenshot')} 3`}
+                  value={formData.screenshot_3}
+                  pending={pendingScreenshotKeys.has("screenshot_3")}
+                  uploadError={screenshotErrors.screenshot_3}
+                  onPickFile={handleScreenshotPick("screenshot_3")}
+                  onRemove={() => clearScreenshot("screenshot_3")}
+                  onView={() => openViewer(formData.screenshot_3)}
+                  addLabel={t('add')}
+                  changeLabel={t('change')}
+                  removeLabel={t('remove')}
+                  viewLabel={t('view')}
                 />
-                <label
-                  htmlFor="screenshot_3"
-                  className="relative flex items-center justify-center h-28 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition cursor-pointer overflow-hidden"
-                >
-                  {formData.screenshot_3 ? (
-                    <img
-                      src={formData.screenshot_3}
-                      alt="Screenshot 3"
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center mb-2">
-                        <Plus className="w-4 h-4" />
-                      </div>
-                      <span className="text-sm font-medium text-slate-700">{t('add')}</span>
-                    </div>
-                  )}
-                  {formData.screenshot_3 && (
-                    <div className="absolute inset-0 bg-black/20" />
-                  )}
-                </label>
-                {formData.screenshot_3 && (
-                  <div className="mt-2 flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setFormData(prev => ({ ...prev, screenshot_3: "" }))}
-                    >
-                      {t('remove')}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openViewer(formData.screenshot_3)}
-                    >
-                      {t('view')}
-                    </Button>
-                    <label
-                      htmlFor="screenshot_3"
-                      className="inline-flex items-center justify-center px-3 py-1 text-sm border rounded-md cursor-pointer hover:bg-slate-50"
-                    >
-                      {t('change')}
-                    </label>
-                  </div>
-                )}
               </div>
-            </div>
             </div>
 
             {/* P&L Preview */}

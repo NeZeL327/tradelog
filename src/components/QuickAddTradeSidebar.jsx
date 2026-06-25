@@ -1,7 +1,7 @@
 ﻿import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
 import TradeFormNew from "@/components/TradeFormNew";
 import { useAuth } from "@/lib/AuthContext";
 import { cn } from "@/lib/utils";
@@ -64,7 +64,7 @@ export default function QuickAddTradeSidebar() {
       <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
         <DialogContent
           className="max-w-2xl max-h-[90vh] overflow-y-auto"
-          onPointerDownOutside={(event) => event.preventDefault()}
+          {...preventDialogDismissProps}
           onEscapeKeyDown={(event) => event.preventDefault()}
         >
           <DialogHeader>
