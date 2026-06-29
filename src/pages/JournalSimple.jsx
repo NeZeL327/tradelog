@@ -1070,7 +1070,15 @@ export default function JournalSimple({ mode = "all" }) {
                         {strategyNameById[String(trade.strategy_id)] || '-'}
                       </td>
                       {visibleColumns.entry && (
-                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
+                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          <div>{trade.entry_price ?? '-'}</div>
+                          {(trade.entry_time || trade.time || trade.date) && (
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                              {trade.date ? `${fmtDate(trade.date)} ` : ''}
+                              {(trade.entry_time || trade.time) ? String(trade.entry_time || trade.time).slice(0, 8) : ''}
+                            </div>
+                          )}
+                        </td>
                       )}
                       <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? trade.stop_loss_amount ?? trade.stop_loss ?? '-'}</td>
                       <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? trade.take_profit_amount ?? trade.take_profit ?? '-'}</td>
