@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 import { pagesConfig } from "@/pages.config";
-import { CheckSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -148,11 +148,11 @@ export default function PinnedChecklistPanels() {
         return (
           <div
             key={note.id}
-            className={cn("pointer-events-auto relative w-[320px]", collapsed && "h-16")}
+            className={cn("pointer-events-none relative w-[320px]", collapsed && "h-16")}
           >
             {!collapsed && (
               <div
-                className="mr-14 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl backdrop-blur-sm dark:border-slate-600 dark:bg-slate-700 transition-[transform,box-shadow,opacity] duration-300"
+                className="pointer-events-auto mr-14 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl backdrop-blur-sm dark:border-slate-600 dark:bg-slate-700 transition-[transform,box-shadow,opacity] duration-300"
                 style={{ borderColor }}
               >
                 <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 dark:border-slate-700" style={{ backgroundColor: containerBg || undefined }}>
@@ -201,7 +201,7 @@ export default function PinnedChecklistPanels() {
               type="button"
               variant="ghost"
               size="icon"
-              className="absolute right-0 top-3 h-10 w-10 rounded-xl border border-white/30 text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl"
+              className="pointer-events-auto absolute right-0 top-3 h-10 w-10 rounded-xl border border-white/30 text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl"
               style={{
                 background: `linear-gradient(135deg, ${buttonBg || note.sidebarColor || "#60a5fa"} 0%, ${note.sidebarColor || "#3b82f6"} 100%)`
               }}

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 import { pagesConfig } from "@/pages.config";
-import { ChevronDown, ChevronLeft, ChevronRight, CheckSquare, FolderTree, Plus } from "lucide-react";
+import { ChevronDown, FolderTree, Plus } from "lucide-react";
 import {
   addDoc,
   collection,
@@ -372,9 +372,9 @@ export default function PinnedNotesSidebar() {
   if (!user?.id) return null;
 
   return (
-    <div className={cn("pointer-events-auto relative w-[320px]", collapsed && "h-16")}>
+    <div className={cn("pointer-events-none relative w-[320px]", collapsed && "h-16")}>
       {!collapsed && (
-        <div className="mr-14 rounded-xl border border-slate-200 bg-white shadow-xl backdrop-blur-sm dark:border-slate-600 dark:bg-slate-700 transition-[transform,box-shadow,opacity] duration-300">
+        <div className="pointer-events-auto mr-14 rounded-xl border border-slate-200 bg-white shadow-xl backdrop-blur-sm dark:border-slate-600 dark:bg-slate-700 transition-[transform,box-shadow,opacity] duration-300">
           <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 dark:border-slate-700">
             <div className="flex items-center gap-2 px-1">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-blue-200/70 bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600 text-[13px] font-black text-white shadow-sm dark:border-slate-500/70">
@@ -472,7 +472,7 @@ export default function PinnedNotesSidebar() {
           type="button"
           variant="ghost"
           size="icon"
-          className="absolute right-0 top-3 h-10 w-10 rounded-xl border border-blue-200/70 bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600 text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl dark:border-slate-500/70"
+          className="pointer-events-auto absolute right-0 top-3 h-10 w-10 rounded-xl border border-blue-200/70 bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600 text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl dark:border-slate-500/70"
           onClick={() => setCollapsed((prev) => !prev)}
           aria-label={collapsed ? "Rozwiń panel notatek" : "Zwiń panel notatek"}
         >

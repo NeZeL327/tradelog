@@ -294,17 +294,6 @@ export default function Login() {
                 </div>
               </div>
 
-              <div className="mt-6 text-center">
-                <p className="text-sm text-slate-400">
-                  {t('loginNoAccount')}{' '}
-                  <button
-                    onClick={() => navigate('/Register')}
-                    className="text-emerald-300 hover:text-emerald-200 font-medium"
-                  >
-                    {t('loginRegisterLink')}
-                  </button>
-                </p>
-              </div>
             </CardContent>
           </Card>
         </motion.div>

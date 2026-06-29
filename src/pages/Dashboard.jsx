@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TrendingUp, TrendingDown, Calendar, Eye, ChevronDown, ChevronUp, Filter, CalendarDays, Wallet } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, ScatterChart, Scatter } from "recharts";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday, subDays } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday } from "date-fns";
 import { enUS, pl } from "date-fns/locale";
 import TradeCard from "../components/TradeCard";
 import TradeFormNew from "../components/TradeFormNew";
@@ -618,6 +618,12 @@ export default function Dashboard() {
     }
   }
 
+  const streakTrendData = streakTrades.slice(-14).map((trade, index) => ({
+    step: index + 1,
+    momentum: trade.outcome === 'Win' ? 1 : trade.outcome === 'Loss' ? -1 : 0,
+    outcome: trade.outcome,
+  }));
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -1031,12 +1037,12 @@ export default function Dashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-slate-900 dark:text-white text-sm md:text-base">{t('currentStreak')}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
+            <CardContent className="p-4">
+              <div className="h-[220px] flex flex-col">
+                <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs text-slate-500 dark:text-slate-400">{t('streakDirection')}</p>
-                    <p className={`text-2xl font-bold ${activeStreakType === 'Win' ? 'text-emerald-600' : activeStreakType === 'Loss' ? 'text-rose-600' : 'text-slate-700 dark:text-slate-200'}`}>
+                    <p className={`mt-1 text-2xl font-bold ${activeStreakType === 'Win' ? 'text-emerald-600' : activeStreakType === 'Loss' ? 'text-rose-600' : 'text-slate-700 dark:text-slate-200'}`}>
                       {activeStreakType === 'Win'
                         ? `${activeStreakCount}W`
                         : activeStreakType === 'Loss'
@@ -1044,7 +1050,7 @@ export default function Dashboard() {
                           : '0'}
                     </p>
                   </div>
-                  <div className={`rounded-full p-3 ${activeStreakType === 'Win' ? 'bg-emerald-100 dark:bg-emerald-900/30' : activeStreakType === 'Loss' ? 'bg-rose-100 dark:bg-rose-900/30' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                  <div className={`rounded-full p-2.5 ${activeStreakType === 'Win' ? 'bg-emerald-100 dark:bg-emerald-900/30' : activeStreakType === 'Loss' ? 'bg-rose-100 dark:bg-rose-900/30' : 'bg-slate-100 dark:bg-slate-700'}`}>
                     {activeStreakType === 'Loss' ? (
                       <TrendingDown className="w-5 h-5 text-rose-600" />
                     ) : (
@@ -1053,12 +1059,36 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border border-emerald-200/70 dark:border-emerald-700/40 bg-emerald-50/70 dark:bg-emerald-950/20 p-3">
+                <div className="mt-3 flex-1 min-h-0 rounded-lg border border-slate-200/80 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40 p-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={streakTrendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="streakFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6d4dff" stopOpacity={0.28} />
+                          <stop offset="95%" stopColor="#6d4dff" stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#cbd5e1" opacity={0.45} />
+                      <YAxis hide domain={[-1.2, 1.2]} />
+                      <Tooltip
+                        cursor={{ stroke: '#94a3b8', strokeDasharray: '4 4' }}
+                        formatter={(value, name, payload) => [payload?.payload?.outcome || '-', t('streakDirection')]}
+                        labelFormatter={() => ''}
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                        itemStyle={{ color: '#e2e8f0' }}
+                      />
+                      <Area type="monotone" dataKey="momentum" stroke="none" fill="url(#streakFill)" />
+                      <Line type="monotone" dataKey="momentum" stroke="#6d4dff" strokeWidth={2.5} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-emerald-200/70 dark:border-emerald-700/40 bg-emerald-50/70 dark:bg-emerald-950/20 p-2.5">
                     <p className="text-[11px] text-emerald-700 dark:text-emerald-300">{t('maxWins')}</p>
                     <p className="text-lg font-semibold text-emerald-800 dark:text-emerald-200">{filteredMaxWinStreak}</p>
                   </div>
-                  <div className="rounded-lg border border-rose-200/70 dark:border-rose-700/40 bg-rose-50/70 dark:bg-rose-950/20 p-3">
+                  <div className="rounded-lg border border-rose-200/70 dark:border-rose-700/40 bg-rose-50/70 dark:bg-rose-950/20 p-2.5">
                     <p className="text-[11px] text-rose-700 dark:text-rose-300">{t('maxLosses')}</p>
                     <p className="text-lg font-semibold text-rose-800 dark:text-rose-200">{filteredMaxLossStreak}</p>
                   </div>

@@ -12,7 +12,8 @@ import { createPageUrl } from '@/utils';
 import { mainFeaturesVariants, moreFeaturesVariants } from './featuresCardVariants';
 
 export default function Features() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isPolish = language === 'pl';
 
   const mainFeatures = [
     {
@@ -50,6 +51,18 @@ export default function Features() {
     },
   ];
 
+  const pageCopy = {
+    subtitle: isPolish
+      ? 'Wszystko, czego potrzebujesz do prowadzenia dziennika handlowego - w jednym miejscu.'
+      : 'Everything you need to run your trading journal - in one place.',
+    mainTools: isPolish ? 'Główne narzędzia' : 'Main tools',
+    moreFeatures: isPolish ? 'Co jeszcze oferujemy' : 'What else we offer',
+    ctaTitle: isPolish ? 'Gotowy na start?' : 'Ready to get started?',
+    ctaDescription: isPolish
+      ? 'Załóż konto i korzystaj ze wszystkich funkcji. Bez karty kredytowej.'
+      : 'Create an account and use all features. No credit card required.'
+  };
+
   return (
     <>
       <PublicNavbar variant="hero" />
@@ -73,7 +86,7 @@ export default function Features() {
                 {t('features') || 'Funkcje'}
               </h1>
               <p className="text-slate-300 text-lg max-w-xl leading-relaxed">
-                Wszystko, czego potrzebujesz do prowadzenia dziennika handlowego — w jednym miejscu.
+                {pageCopy.subtitle}
               </p>
             </div>
           </motion.section>
@@ -86,7 +99,7 @@ export default function Features() {
             className="mb-20"
           >
             <h2 className="text-2xl font-semibold text-slate-100 text-center mb-8">
-              Główne narzędzia
+              {pageCopy.mainTools}
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
               {mainFeatures.map((feature, index) => {
@@ -139,7 +152,7 @@ export default function Features() {
             className="mb-16"
           >
             <h2 className="text-2xl font-semibold text-slate-100 text-center mb-8">
-              Co jeszcze oferujemy
+              {pageCopy.moreFeatures}
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
               {moreFeatures.map((feature, index) => {
@@ -188,10 +201,10 @@ export default function Features() {
             <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-emerald-500/40 max-w-2xl mx-auto">
               <CardContent className="p-8">
                 <h2 className="text-2xl font-bold text-slate-100 mb-3">
-                  Gotowy na start?
+                  {pageCopy.ctaTitle}
                 </h2>
                 <p className="text-slate-400 mb-6">
-                  Załóż konto i korzystaj ze wszystkich funkcji. Bez karty kredytowej.
+                  {pageCopy.ctaDescription}
                 </p>
                 <a
                   href={createPageUrl('Register')}
