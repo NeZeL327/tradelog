@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, TrendingUp, AlertCircle, Wallet, Activity, X, ChevronDown } from "lucide-react";
+import { Brain, TrendingUp, AlertCircle, Wallet, Activity, X, ChevronDown, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, ComposedChart } from "recharts";
 import { ExportButton } from "../components/ExportButton";
@@ -407,6 +407,72 @@ export default function Analytics() {
 
   const hasConfidenceData = confCount > 0;
   const avgConfidence = confCount > 0 ? Number((confSum / confCount).toFixed(1)) : 0;
+
+  // === Analiza czasu wejścia (przedziały 15-minutowe + godzinowe) ===
+  const parseEntryMinutes = (tr) => {
+    const raw = String(tr.entry_time || tr.time || '').trim();
+    const m = raw.match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    const h = Number(m[1]);
+    const min = Number(m[2]);
+    if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+    return h * 60 + min;
+  };
+
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const fmtSlot = (slotStart) => {
+    const end = slotStart + 15;
+    return `${pad2(Math.floor(slotStart / 60))}:${pad2(slotStart % 60)}–${pad2(Math.floor(end / 60) % 24)}:${pad2(end % 60)}`;
+  };
+
+  const timeSlotMap = {};
+  const hourMap = {};
+  filteredTrades.forEach((tr) => {
+    const mins = parseEntryMinutes(tr);
+    if (mins == null) return;
+    const pl = getTradeRealizedPL(tr) ?? 0;
+    const isWin = tr.outcome === 'Win';
+
+    const slot = Math.floor(mins / 15) * 15;
+    if (!timeSlotMap[slot]) timeSlotMap[slot] = { slot, wins: 0, total: 0, pl: 0 };
+    timeSlotMap[slot].total++;
+    if (isWin) timeSlotMap[slot].wins++;
+    timeSlotMap[slot].pl += pl;
+
+    const hour = Math.floor(mins / 60);
+    if (!hourMap[hour]) hourMap[hour] = { hour, wins: 0, total: 0, pl: 0 };
+    hourMap[hour].total++;
+    if (isWin) hourMap[hour].wins++;
+    hourMap[hour].pl += pl;
+  });
+
+  const timeSlotData = Object.values(timeSlotMap)
+    .sort((a, b) => a.slot - b.slot)
+    .map((s) => ({
+      slot: fmtSlot(s.slot),
+      slotStart: s.slot,
+      winRate: s.total > 0 ? Number(((s.wins / s.total) * 100).toFixed(1)) : 0,
+      avgPL: s.total > 0 ? Number((s.pl / s.total).toFixed(2)) : 0,
+      totalPL: Number(s.pl.toFixed(2)),
+      trades: s.total,
+    }));
+
+  const hourData = Object.values(hourMap)
+    .sort((a, b) => a.hour - b.hour)
+    .map((s) => ({
+      hour: `${pad2(s.hour)}:00`,
+      winRate: s.total > 0 ? Number(((s.wins / s.total) * 100).toFixed(1)) : 0,
+      avgPL: s.total > 0 ? Number((s.pl / s.total).toFixed(2)) : 0,
+      totalPL: Number(s.pl.toFixed(2)),
+      trades: s.total,
+    }));
+
+  const tradesWithTime = timeSlotData.reduce((sum, s) => sum + s.trades, 0);
+  const rankedSlots = timeSlotData.filter((s) => s.trades >= 2);
+  const bestSlot = rankedSlots.length ? rankedSlots.reduce((a, b) => (b.avgPL > a.avgPL ? b : a)) : null;
+  const worstSlot = rankedSlots.length ? rankedSlots.reduce((a, b) => (b.avgPL < a.avgPL ? b : a)) : null;
+  const rankedHours = hourData.filter((h) => h.trades >= 2);
+  const bestHour = rankedHours.length ? rankedHours.reduce((a, b) => (b.winRate > a.winRate ? b : a)) : null;
 
   // Equity curve
   let cumulative = 0;
@@ -917,11 +983,12 @@ export default function Analytics() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-white dark:bg-card shadow-lg">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 bg-white dark:bg-card shadow-lg">
             <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
             <TabsTrigger value="symbols">{t('symbols')}</TabsTrigger>
             <TabsTrigger value="strategies">{t('strategiesAnalytics')}</TabsTrigger>
             <TabsTrigger value="accounts">{t('accountsAnalytics')}</TabsTrigger>
+            <TabsTrigger value="time">{t('timeTab')}</TabsTrigger>
             <TabsTrigger value="psychology">{t('psychology')}</TabsTrigger>
           </TabsList>
 
@@ -2093,6 +2160,161 @@ export default function Analytics() {
           </TabsContent>
 
           {/* Psychology Tab */}
+          <TabsContent value="time" className="space-y-6">
+            {tradesWithTime === 0 ? (
+              <Card className="shadow-md">
+                <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
+                  <Clock className="w-10 h-10 text-cyan-400" />
+                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noTimeData')}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* KPI czasu */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950 dark:to-sky-950 border border-cyan-200 dark:border-cyan-800 shadow-lg">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-cyan-700 dark:text-cyan-300">{t('tradesWithTime')}</span>
+                        <Clock className="w-4 h-4 text-cyan-500" />
+                      </div>
+                      <p className="mt-2 text-2xl font-bold text-cyan-900 dark:text-cyan-200">
+                        {tradesWithTime}<span className="text-base text-cyan-500">/{filteredTrades.length}</span>
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('bestSlot')}</span>
+                        <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      </div>
+                      <p className="mt-2 text-lg font-bold text-emerald-900 dark:text-emerald-200">{bestSlot ? bestSlot.slot : '—'}</p>
+                      <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
+                        {bestSlot ? `+${bestSlot.avgPL} ${t('avg')} · ${bestSlot.winRate}%` : t('noData')}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('worstSlot')}</span>
+                        <AlertCircle className="w-4 h-4 text-rose-500" />
+                      </div>
+                      <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200">{worstSlot ? worstSlot.slot : '—'}</p>
+                      <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                        {worstSlot ? `${worstSlot.avgPL} ${t('avg')} · ${worstSlot.winRate}%` : t('noData')}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 border border-indigo-200 dark:border-indigo-800 shadow-lg">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">{t('bestHour')}</span>
+                        <Activity className="w-4 h-4 text-indigo-500" />
+                      </div>
+                      <p className="mt-2 text-2xl font-bold text-indigo-900 dark:text-indigo-200">{bestHour ? bestHour.hour : '—'}</p>
+                      <p className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80">
+                        {bestHour ? `${bestHour.winRate}% · ${bestHour.trades} ${t('trades')}` : t('noData')}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Wg godziny */}
+                <Card className="shadow-md">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('byHourTitle')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('byHourDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="overflow-hidden p-4">
+                    <div className="w-full overflow-hidden px-2 py-2">
+                      <ResponsiveContainer width="100%" height={320}>
+                        <BarChart data={hourData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="hour" stroke="#64748b" />
+                          <YAxis yAxisId="left" stroke="#64748b" width={50} domain={[0, 100]} />
+                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                            itemStyle={{ color: '#e2e8f0' }}
+                            labelStyle={{ color: '#f1f5f9' }}
+                          />
+                          <Legend />
+                          <Bar dataKey="winRate" yAxisId="left" fill="#06b6d4" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="avgPL" yAxisId="right" name={t('avgPLLabel')} radius={[8, 8, 0, 0]}>
+                            {hourData.map((d, i) => (
+                              <Cell key={i} fill={d.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Wg przedziału 15-minutowego */}
+                <Card className="shadow-md">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('bySlotTitle')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('bySlotDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="overflow-hidden p-4">
+                    <div className="w-full overflow-x-auto py-2">
+                      <ResponsiveContainer width="100%" height={Math.max(320, timeSlotData.length * 30)} minWidth={320}>
+                        <BarChart data={timeSlotData} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis type="number" stroke="#64748b" />
+                          <YAxis type="category" dataKey="slot" stroke="#64748b" width={110} tick={{ fontSize: 11 }} />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                            itemStyle={{ color: '#e2e8f0' }}
+                            labelStyle={{ color: '#f1f5f9' }}
+                          />
+                          <Legend />
+                          <Bar dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
+                            {timeSlotData.map((d, i) => (
+                              <Cell key={i} fill={d.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
+                            ))}
+                          </Bar>
+                          <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill="#06b6d4" radius={[0, 6, 6, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                            <th className="text-left py-2 px-2">{t('timeSlot')}</th>
+                            <th className="text-right py-2 px-2">{t('trades')}</th>
+                            <th className="text-right py-2 px-2">{t('winRate')}</th>
+                            <th className="text-right py-2 px-2">{t('avg')}</th>
+                            <th className="text-right py-2 px-2">{t('total')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {timeSlotData.map((s) => (
+                            <tr key={s.slotStart} className="border-b border-slate-100 dark:border-slate-800">
+                              <td className="py-1.5 px-2 font-medium text-slate-800 dark:text-slate-200">{s.slot}</td>
+                              <td className="py-1.5 px-2 text-right text-slate-600 dark:text-slate-400">{s.trades}</td>
+                              <td className={`py-1.5 px-2 text-right font-semibold ${s.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{s.winRate}%</td>
+                              <td className={`py-1.5 px-2 text-right ${s.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{s.avgPL >= 0 ? '+' : ''}{s.avgPL}</td>
+                              <td className={`py-1.5 px-2 text-right font-semibold ${s.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{s.totalPL >= 0 ? '+' : ''}{s.totalPL}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+
           <TabsContent value="psychology" className="space-y-6">
             {/* Tiltometr — kluczowe wskaźniki psychologiczne */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
