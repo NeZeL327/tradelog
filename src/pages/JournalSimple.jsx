@@ -1072,10 +1072,9 @@ export default function JournalSimple({ mode = "all" }) {
                       {visibleColumns.entry && (
                         <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
                           <div>{trade.entry_price ?? '-'}</div>
-                          {(trade.entry_time || trade.time || trade.date) && (
+                          {(trade.entry_time || trade.time) && (
                             <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                              {trade.date ? `${fmtDate(trade.date)} ` : ''}
-                              {(trade.entry_time || trade.time) ? String(trade.entry_time || trade.time).slice(0, 8) : ''}
+                              {String(trade.entry_time || trade.time).slice(0, 8)}
                             </div>
                           )}
                         </td>
