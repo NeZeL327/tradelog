@@ -41,7 +41,19 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       - name: Deploy hosting
-        run: npx firebase-tools deploy --only hosting --project trade-log-b814b --non-interactive --force
+        shell: bash
+        run: |
+          set +e
+          out=$(npx firebase-tools deploy --only hosting --project trade-log-b814b --non-interactive --force 2>&1)
+          code=$?
+          echo "$out"
+          if [ $code -ne 0 ]; then
+            if echo "$out" | grep -q "is the current active version"; then
+              echo "Brak zmian w hostingu — wersja juz aktywna na produkcji. Traktuje jako sukces."
+              exit 0
+            fi
+            exit $code
+          fi
 
       - name: Deploy storage rules (optional)
         run: npx firebase-tools deploy --only storage --project trade-log-b814b --non-interactive --force
