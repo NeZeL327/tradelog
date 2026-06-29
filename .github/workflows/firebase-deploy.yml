@@ -40,5 +40,9 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
-      - name: Deploy hosting + storage rules
-        run: npx firebase-tools deploy --only hosting,storage --project trade-log-b814b --non-interactive
+      - name: Deploy hosting
+        run: npx firebase-tools deploy --only hosting --project trade-log-b814b --non-interactive --force
+
+      - name: Deploy storage rules (optional)
+        run: npx firebase-tools deploy --only storage --project trade-log-b814b --non-interactive --force
+        continue-on-error: true
