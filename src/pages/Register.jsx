@@ -196,10 +196,10 @@ export default function Register() {
         >
           <div className="inline-flex items-center justify-center mb-6 md:justify-start">
             <img
-              src="/aikeeptrade-wordmark.jpg"
+              src="/aikeeptrade-icon-hires.png"
               alt="AiKeepTrade"
               height="80"
-              className="h-20 w-auto rounded-2xl ring-1 ring-blue-500/30 shadow-2xl"
+              className="h-20 w-auto object-contain drop-shadow-2xl"
             />
           </div>
           <h1 className="hero-title premium-title text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight fx-brand-text mb-3">

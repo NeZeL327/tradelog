@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/AuthContext";
 import { createTrade, updateTrade, getTradingAccounts, getStrategies, persistTradeScreenshot } from "@/lib/localStorage";
 import { useLanguage } from "@/components/LanguageProvider";
-import { X, Plus, Brain } from "lucide-react";
+import { X, Plus, Brain, Star } from "lucide-react";
 import ImageViewer from "@/components/common/ImageViewer";
 import { normalizeDirection } from "@/lib/utils";
 import EmotionsPanel, { createEmptyEmotions, normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
@@ -135,6 +135,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
     screenshot_1: "",
     screenshot_2: "",
     screenshot_3: "",
+    setup_confidence: 0,
     emotions: createEmptyEmotions()
   });
 
@@ -242,6 +243,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
       screenshot_1: trade.screenshot_1 || "",
       screenshot_2: trade.screenshot_2 || "",
       screenshot_3: trade.screenshot_3 || "",
+      setup_confidence: Number(trade.setup_confidence) || 0,
       emotions: normalizeEmotions(trade.emotions)
     });
   }, [trade]);
@@ -623,6 +625,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
           screenshot_1: "",
           screenshot_2: "",
           screenshot_3: "",
+          setup_confidence: 0,
           emotions: createEmptyEmotions()
         });
         setManualPLOvride(false);
@@ -1159,6 +1162,38 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                 </span>
               )}
             </button>
+
+            {/* Poziom pewności setupu */}
+            <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <Label className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {t('setupConfidence')}
+                  </Label>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md">
+                    {t('setupConfidenceHint')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      aria-label={`${t('setupConfidence')} ${n}`}
+                      onClick={() => setFormData((prev) => ({
+                        ...prev,
+                        setup_confidence: prev.setup_confidence === n ? 0 : n,
+                      }))}
+                      className="p-0.5 transition-transform hover:scale-110"
+                    >
+                      <Star
+                        className={`w-7 h-7 ${n <= formData.setup_confidence ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
             {/* Screenshots */}
             <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-lg space-y-4">

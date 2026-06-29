@@ -100,20 +100,17 @@ function LayoutContent({ children }) {
         >
           {/* FX-Replay-style brand row + compact user card */}
           <SidebarHeader className="border-b border-sidebar-border/60 px-3 py-3 group-data-[collapsible=icon]:px-2 space-y-3">
-            <div className="flex items-center group-data-[collapsible=icon]:justify-center px-1">
+            <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center px-1">
               <img
-                src="/aikeeptrade-wordmark.jpg"
+                src="/aikeeptrade-icon-hires.png"
                 alt="AiKeepTrade"
+                width="36"
                 height="36"
-                className="h-9 w-auto flex-shrink-0 group-data-[collapsible=icon]:hidden"
+                className="w-9 h-9 flex-shrink-0 rounded-lg object-contain"
               />
-              <img
-                src="/aikeeptrade-icon.jpg"
-                alt="AiKeepTrade"
-                width="34"
-                height="34"
-                className="w-[34px] h-[34px] flex-shrink-0 rounded-lg ring-1 ring-blue-500/20 hidden group-data-[collapsible=icon]:block"
-              />
+              <span className="text-lg font-bold tracking-tight text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+                AiKeepTrade
+              </span>
             </div>
 
             {/* Compact user pill — avatar + name (FX Replay style) */}

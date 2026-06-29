@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
-import { getStrategies, createStrategy, updateStrategy, getTrades, getTradingAccounts } from '@/lib/localStorage';
+import { getStrategies, createStrategy, updateStrategy, deleteStrategy, getTrades, getTradingAccounts } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Brain, TrendingUp, Target, Award, X, Eye, Star } from "lucide-react";
+import { Plus, Edit, Brain, TrendingUp, Target, Award, X, Eye, Star, Trash2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
@@ -61,6 +61,19 @@ export default function Strategies() {
       setEditingStrategy(null);
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deleteStrategy(user?.id, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['strategies'] });
+    },
+  });
+
+  const handleDeleteStrategy = (strategy) => {
+    if (window.confirm(t('confirmDeleteStrategy').replace('{name}', strategy.name))) {
+      deleteMutation.mutate(strategy.id);
+    }
+  };
 
   // Strategy comparison data
   const strategyStats = strategies.map(strategy => {
@@ -174,6 +187,7 @@ export default function Strategies() {
                     setEditingStrategy(strategy);
                     setShowForm(true);
                   }}
+                  onDelete={() => handleDeleteStrategy(strategy)}
                 />
               </motion.div>
             );
@@ -533,7 +547,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
   );
 }
 
-function StrategyCard({ strategy, stats, onEdit }) {
+function StrategyCard({ strategy, stats, onEdit, onDelete }) {
   const accent = strategy.color || "#6366f1";
   const statusStyles = {
     Aktywna: "bg-emerald-500/12 text-emerald-800 dark:text-emerald-200 border-emerald-500/25",
@@ -610,8 +624,18 @@ function StrategyCard({ strategy, stats, onEdit }) {
               size="icon"
               className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
               onClick={onEdit}
+              title="Edytuj strategię"
             >
               <Edit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
+              onClick={onDelete}
+              title="Usuń strategię"
+            >
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>

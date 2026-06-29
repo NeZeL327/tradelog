@@ -56,13 +56,14 @@ export default function About() {
             <Card className="fx-card-dark border-white/8 shadow-2xl  overflow-hidden">
               <CardContent className="p-12">
                 <div className="flex items-center justify-center">
-                  <div className="relative">
+                  <div className="relative flex flex-col items-center gap-3">
                     <img
-                      src="/aikeeptrade-wordmark.jpg"
+                      src="/aikeeptrade-icon-hires.png"
                       alt="AiKeepTrade"
                       height="160"
-                      className="h-32 sm:h-40 w-auto rounded-2xl shadow-2xl ring-1 ring-blue-500/20"
+                      className="h-28 sm:h-36 w-auto object-contain drop-shadow-2xl"
                     />
+                    <span className="text-3xl sm:text-4xl font-extrabold tracking-tight fx-brand-text">AiKeepTrade</span>
                     <div className="absolute -top-4 -right-4">
                       <Sparkles className="w-12 h-12 text-yellow-400 animate-[pulse_2.8s_ease-in-out_infinite]" />
                     </div>

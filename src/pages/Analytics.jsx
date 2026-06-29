@@ -12,6 +12,7 @@ import { BarChart, Bar, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, 
 import { ExportButton } from "../components/ExportButton";
 import { ImportButton } from "../components/ImportButton";
 import { useLanguage } from "@/components/LanguageProvider";
+import { normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
 
 export default function Analytics() {
   const { t } = useLanguage();
@@ -285,6 +286,127 @@ export default function Analytics() {
     avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
     trades: stats.total
   }));
+
+  // === Dziennik emocji (przed / w trakcie / po) z formularza trejdu ===
+  const emoStages = [
+    { key: 'before', label: t('emoStageBefore') },
+    { key: 'during', label: t('emoStageDuring') },
+    { key: 'after', label: t('emoStageAfter') },
+  ];
+
+  const tradesWithEmotions = filteredTrades.filter((tr) => countFilledEmotionStages(tr.emotions) > 0);
+
+  // Emocja (tag) -> skuteczność. Liczona raz na trejd, nawet jeśli tag powtarza się w etapach.
+  const emoTagMap = {};
+  let ratingSum = 0;
+  let ratingCount = 0;
+  tradesWithEmotions.forEach((tr) => {
+    const em = normalizeEmotions(tr.emotions);
+    const pl = getTradeRealizedPL(tr) ?? 0;
+    const isWin = tr.outcome === 'Win';
+    const seen = new Set();
+    emoStages.forEach((s) => {
+      const st = em[s.key];
+      if (st.rating > 0) { ratingSum += st.rating; ratingCount++; }
+      st.tags.forEach((tag) => {
+        if (seen.has(tag)) return;
+        seen.add(tag);
+        if (!emoTagMap[tag]) emoTagMap[tag] = { tag, wins: 0, total: 0, pl: 0 };
+        emoTagMap[tag].total++;
+        if (isWin) emoTagMap[tag].wins++;
+        emoTagMap[tag].pl += pl;
+      });
+    });
+  });
+
+  const emotionPerf = Object.values(emoTagMap)
+    .map((x) => ({
+      tag: x.tag,
+      winRate: x.total > 0 ? Number(((x.wins / x.total) * 100).toFixed(1)) : 0,
+      avgPL: x.total > 0 ? Number((x.pl / x.total).toFixed(2)) : 0,
+      totalPL: Number(x.pl.toFixed(2)),
+      trades: x.total,
+    }))
+    .sort((a, b) => a.avgPL - b.avgPL); // od najgorszej do najlepszej
+
+  const avgEmotionRating = ratingCount > 0 ? Number((ratingSum / ratingCount).toFixed(1)) : 0;
+
+  // Średnia ocena emocji wg etapu: wygrane vs przegrane
+  const stageRatingByOutcome = emoStages.map((s) => {
+    let winSum = 0, winN = 0, lossSum = 0, lossN = 0;
+    tradesWithEmotions.forEach((tr) => {
+      const st = normalizeEmotions(tr.emotions)[s.key];
+      if (st.rating > 0) {
+        if (tr.outcome === 'Win') { winSum += st.rating; winN++; }
+        else if (tr.outcome === 'Loss') { lossSum += st.rating; lossN++; }
+      }
+    });
+    return {
+      stage: s.label,
+      win: winN > 0 ? Number((winSum / winN).toFixed(2)) : 0,
+      loss: lossN > 0 ? Number((lossSum / lossN).toFixed(2)) : 0,
+    };
+  });
+
+  // Tiltometr w czasie — średnia ocena emocji per trejd, chronologicznie
+  const tiltOverTime = tradesWithEmotions.slice().reverse().map((tr, i) => {
+    const em = normalizeEmotions(tr.emotions);
+    const vals = emoStages.map((s) => em[s.key].rating).filter((r) => r > 0);
+    const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    return { idx: i + 1, rating: Number(avg.toFixed(2)), date: tr.date };
+  });
+
+  // Najczęstsze emocje wg etapu (top 5 każdy)
+  const topTagsByStage = emoStages.map((s) => {
+    const m = {};
+    tradesWithEmotions.forEach((tr) => {
+      const st = normalizeEmotions(tr.emotions)[s.key];
+      st.tags.forEach((tag) => {
+        if (!m[tag]) m[tag] = { tag, wins: 0, total: 0 };
+        m[tag].total++;
+        if (tr.outcome === 'Win') m[tag].wins++;
+      });
+    });
+    const items = Object.values(m)
+      .map((x) => ({ ...x, winRate: x.total > 0 ? Math.round((x.wins / x.total) * 100) : 0 }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+    return { stage: s.label, items };
+  });
+
+  const worstEmotion = emotionPerf.length ? emotionPerf[0] : null;
+  const bestEmotion = emotionPerf.length ? emotionPerf[emotionPerf.length - 1] : null;
+  const emotionCoverage = filteredTrades.length > 0
+    ? Math.round((tradesWithEmotions.length / filteredTrades.length) * 100)
+    : 0;
+
+  // === Poziom pewności setupu (1–5⭐) z formularza trejdu ===
+  const confidenceMap = {};
+  let confSum = 0;
+  let confCount = 0;
+  filteredTrades.forEach((tr) => {
+    const level = Number(tr.setup_confidence) || 0;
+    if (level < 1 || level > 5) return;
+    confSum += level;
+    confCount++;
+    if (!confidenceMap[level]) confidenceMap[level] = { level, wins: 0, total: 0, pl: 0 };
+    confidenceMap[level].total++;
+    if (tr.outcome === 'Win') confidenceMap[level].wins++;
+    confidenceMap[level].pl += getTradeRealizedPL(tr) ?? 0;
+  });
+
+  const confidenceData = [1, 2, 3, 4, 5].map((level) => {
+    const s = confidenceMap[level];
+    return {
+      level: `${level}⭐`,
+      winRate: s && s.total > 0 ? Number(((s.wins / s.total) * 100).toFixed(1)) : 0,
+      avgPL: s && s.total > 0 ? Number((s.pl / s.total).toFixed(2)) : 0,
+      trades: s ? s.total : 0,
+    };
+  });
+
+  const hasConfidenceData = confCount > 0;
+  const avgConfidence = confCount > 0 ? Number((confSum / confCount).toFixed(1)) : 0;
 
   // Equity curve
   let cumulative = 0;
@@ -1972,24 +2094,218 @@ export default function Analytics() {
 
           {/* Psychology Tab */}
           <TabsContent value="psychology" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Tiltometr — kluczowe wskaźniki psychologiczne */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 border border-indigo-200 dark:border-indigo-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">{t('emotionControl')}</span>
+                    <Brain className="w-4 h-4 text-indigo-500" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-indigo-900 dark:text-indigo-200">
+                    {avgEmotionRating > 0 ? `${avgEmotionRating}/5` : '—'}
+                  </p>
+                  <p className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80">{t('emotionControlDesc')}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950 dark:to-cyan-950 border border-sky-200 dark:border-sky-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-sky-700 dark:text-sky-300">{t('emotionCoverage')}</span>
+                    <Activity className="w-4 h-4 text-sky-500" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-sky-900 dark:text-sky-200">
+                    {tradesWithEmotions.length}<span className="text-base text-sky-500">/{filteredTrades.length}</span>
+                  </p>
+                  <p className="text-[11px] text-sky-600/80 dark:text-sky-400/80">{emotionCoverage}% {t('emotionCoverageDesc')}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('costliestEmotion')}</span>
+                    <AlertCircle className="w-4 h-4 text-rose-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200 truncate" title={worstEmotion?.tag}>
+                    {worstEmotion && worstEmotion.avgPL < 0 ? worstEmotion.tag : '—'}
+                  </p>
+                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                    {worstEmotion && worstEmotion.avgPL < 0 ? `${worstEmotion.avgPL} ${t('perTrade')}` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('bestEmotionLabel')}</span>
+                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-emerald-900 dark:text-emerald-200 truncate" title={bestEmotion?.tag}>
+                    {bestEmotion && bestEmotion.avgPL > 0 ? bestEmotion.tag : '—'}
+                  </p>
+                  <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
+                    {bestEmotion && bestEmotion.avgPL > 0 ? `+${bestEmotion.avgPL} ${t('perTrade')}` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {tradesWithEmotions.length === 0 ? (
               <Card className="shadow-md">
+                <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
+                  <Brain className="w-10 h-10 text-purple-400" />
+                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noEmotionData')}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Emocje a wynik */}
+                  <Card className="shadow-md">
+                    <CardHeader>
+                      <CardTitle className="dark:text-white">{t('emotionVsResult')}</CardTitle>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('emotionVsResultDesc')}</p>
+                    </CardHeader>
+                    <CardContent className="overflow-hidden p-4">
+                      <div className="w-full overflow-hidden px-2 py-2">
+                        <ResponsiveContainer width="100%" height={Math.max(320, emotionPerf.length * 46)}>
+                          <BarChart data={emotionPerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis type="number" stroke="#64748b" />
+                            <YAxis type="category" dataKey="tag" stroke="#64748b" width={150} tick={{ fontSize: 11 }} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                              itemStyle={{ color: '#e2e8f0' }}
+                              labelStyle={{ color: '#f1f5f9' }}
+                            />
+                            <Legend />
+                            <Bar dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
+                              {emotionPerf.map((e, i) => (
+                                <Cell key={i} fill={e.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
+                              ))}
+                            </Bar>
+                            <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill="#8b5cf6" radius={[0, 6, 6, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Ocena wg etapu: wygrane vs przegrane */}
+                  <Card className="shadow-md">
+                    <CardHeader>
+                      <CardTitle className="dark:text-white">{t('ratingByOutcomeTitle')}</CardTitle>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('ratingByOutcomeDesc')}</p>
+                    </CardHeader>
+                    <CardContent className="overflow-hidden p-4">
+                      <div className="w-full overflow-hidden px-2 py-2">
+                        <ResponsiveContainer width="100%" height={340}>
+                          <BarChart data={stageRatingByOutcome} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis dataKey="stage" stroke="#64748b" />
+                            <YAxis stroke="#64748b" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} width={40} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                              itemStyle={{ color: '#e2e8f0' }}
+                              labelStyle={{ color: '#f1f5f9' }}
+                            />
+                            <Legend />
+                            <Bar dataKey="win" name={t('ratingWin')} fill="#22c55e" radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="loss" name={t('ratingLoss')} fill="#ef4444" radius={[6, 6, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Tiltometr w czasie */}
+                  <Card className="shadow-md">
+                    <CardHeader>
+                      <CardTitle className="dark:text-white">{t('tiltMeterTitle')}</CardTitle>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('tiltMeterDesc')}</p>
+                    </CardHeader>
+                    <CardContent className="overflow-hidden p-4">
+                      <div className="w-full overflow-hidden px-2 py-2">
+                        <ResponsiveContainer width="100%" height={320}>
+                          <AreaChart data={tiltOverTime} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                            <defs>
+                              <linearGradient id="tiltGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.5} />
+                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis dataKey="idx" stroke="#64748b" />
+                            <YAxis stroke="#64748b" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} width={40} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                              itemStyle={{ color: '#e2e8f0' }}
+                              labelStyle={{ color: '#f1f5f9' }}
+                            />
+                            <Area type="monotone" dataKey="rating" name={t('emotionRatingShort')} stroke="#8b5cf6" strokeWidth={2} fill="url(#tiltGradient)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Najczęstsze emocje wg etapu */}
+                  <Card className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950 dark:to-purple-950 border border-pink-200 dark:border-pink-800 shadow-xl">
+                    <CardHeader>
+                      <CardTitle className="text-purple-900 dark:text-purple-300">{t('topEmotionsTitle')}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {topTagsByStage.map((stage) => (
+                        <div key={stage.stage}>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-purple-700/80 dark:text-purple-300/80 mb-2">{stage.stage}</p>
+                          {stage.items.length === 0 ? (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 pl-1">{t('noData')}</p>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {stage.items.map((it) => (
+                                <div key={it.tag} className="flex justify-between items-center px-3 py-1.5 bg-white/70 dark:bg-muted/70 rounded-lg">
+                                  <span className="text-sm text-slate-800 dark:text-slate-200 truncate">{it.tag}</span>
+                                  <span className="flex items-center gap-3 shrink-0">
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">×{it.total}</span>
+                                    <span className={`text-xs font-semibold ${it.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{it.winRate}%</span>
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
+
+            {/* Pewność setupu a wynik */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2 shadow-md">
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{t('setupQuality')}</CardTitle>
+                  <CardTitle className="dark:text-white">{t('confidenceVsResultTitle')}</CardTitle>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('confidenceVsResultDesc')}</p>
                 </CardHeader>
                 <CardContent className="overflow-hidden p-4">
-                  {setupData.length === 0 ? (
-                    <div className="h-[340px] flex items-center justify-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                      {t('noData')}
+                  {!hasConfidenceData ? (
+                    <div className="h-[320px] flex items-center justify-center text-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 px-6">
+                      {t('noConfidenceData')}
                     </div>
                   ) : (
-                    <div className="w-full overflow-hidden px-4 py-2">
-                      <ResponsiveContainer width="100%" height={340}>
-                        <BarChart data={setupData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                    <div className="w-full overflow-hidden px-2 py-2">
+                      <ResponsiveContainer width="100%" height={320}>
+                        <BarChart data={confidenceData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="quality" stroke="#64748b" />
-                          <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                          <XAxis dataKey="level" stroke="#64748b" />
+                          <YAxis yAxisId="left" stroke="#64748b" width={50} domain={[0, 100]} />
+                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                           <Tooltip
                             contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                             itemStyle={{ color: '#e2e8f0' }}
@@ -1997,7 +2313,11 @@ export default function Analytics() {
                           />
                           <Legend />
                           <Bar dataKey="winRate" yAxisId="left" fill="#f59e0b" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                          <Bar dataKey="avgPL" yAxisId="right" fill="#22c55e" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="avgPL" yAxisId="right" name={t('avgPLLabel')} radius={[8, 8, 0, 0]}>
+                            {confidenceData.map((d, i) => (
+                              <Cell key={i} fill={d.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
+                            ))}
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -2005,94 +2325,64 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-md">
+              <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 border border-amber-200 dark:border-amber-800 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{t('emotionalState')}</CardTitle>
+                  <CardTitle className="text-amber-900 dark:text-amber-300 flex items-center justify-between">
+                    <span>{t('avgConfidence')}</span>
+                    <span className="text-2xl">{hasConfidenceData ? `${avgConfidence}⭐` : '—'}</span>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="overflow-hidden p-4">
-                  {emotionalData.length === 0 ? (
-                    <div className="h-[360px] flex items-center justify-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                      {t('noData')}
-                    </div>
+                <CardContent className="space-y-2">
+                  {!hasConfidenceData ? (
+                    <p className="text-xs text-amber-700 dark:text-amber-300">{t('noConfidenceData')}</p>
                   ) : (
-                    <div className="w-full overflow-hidden px-4 py-2">
-                      <ResponsiveContainer width="100%" height={360}>
-                        <BarChart data={emotionalData} margin={{ top: 30, right: 35, left: 20, bottom: 100 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="state" stroke="#64748b" angle={-45} textAnchor="end" height={95} />
-                          <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                            itemStyle={{ color: '#e2e8f0' }}
-                            labelStyle={{ color: '#f1f5f9' }}
-                          />
-                          <Legend />
-                          <Bar dataKey="winRate" yAxisId="left" fill="#ec4899" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                          <Bar dataKey="avgPL" yAxisId="right" fill="#8b5cf6" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    confidenceData.filter((d) => d.trades > 0).map((d) => (
+                      <div key={d.level} className="flex justify-between items-center px-3 py-2 bg-white/70 dark:bg-muted/70 rounded-lg">
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{d.level}</span>
+                        <span className="flex items-center gap-3 shrink-0">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">×{d.trades}</span>
+                          <span className={`text-xs font-semibold ${d.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{d.winRate}%</span>
+                          <span className={`text-xs font-semibold ${d.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{d.avgPL >= 0 ? '+' : ''}{d.avgPL}</span>
+                        </span>
+                      </div>
+                    ))
                   )}
                 </CardContent>
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 border border-amber-200 dark:border-amber-800 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-amber-900 dark:text-amber-300">{t('setupQualityDetails')}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {setupData.length === 0 && (
-                    <div className="rounded-lg border border-dashed border-amber-300 dark:border-amber-700 p-4 text-sm text-amber-700 dark:text-amber-300">
-                      {t('noData')}
-                    </div>
-                  )}
-                  {setupData.map((item) => (
-                    <div key={item.quality} className="flex justify-between items-center p-3 bg-white/70 dark:bg-muted/70 rounded-lg">
-                      <div>
-                        <span className="font-semibold text-slate-900 dark:text-white">{item.quality}</span>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} {t('trades')}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-blue-600 dark:text-blue-400">{item.winRate}%</p>
-                        <p className={`text-xs ${item.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {t('avg')}: {item.avgPL.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950 dark:to-purple-950 border border-pink-200 dark:border-pink-800 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-purple-900 dark:text-purple-300">{t('emotionalAnalysis')}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {emotionalData.length === 0 && (
-                    <div className="rounded-lg border border-dashed border-purple-300 dark:border-purple-700 p-4 text-sm text-purple-700 dark:text-purple-300">
-                      {t('noData')}
-                    </div>
-                  )}
-                  {emotionalData.map((item) => (
-                    <div key={item.state} className="flex justify-between items-center p-3 bg-white/70 dark:bg-muted/70 rounded-lg">
-                      <div>
-                        <span className="font-semibold text-slate-900 dark:text-white">{item.state}</span>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} {t('trades')}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-blue-600 dark:text-blue-400">{item.winRate}%</p>
-                        <p className={`text-xs ${item.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {t('avg')}: {item.avgPL.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
+            {/* Jakość setupu (uzupełniająco) */}
+            <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle className="dark:text-white">{t('setupQuality')}</CardTitle>
+              </CardHeader>
+              <CardContent className="overflow-hidden p-4">
+                {setupData.length === 0 ? (
+                  <div className="h-[300px] flex items-center justify-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                    {t('noData')}
+                  </div>
+                ) : (
+                  <div className="w-full overflow-hidden px-4 py-2">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={setupData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="quality" stroke="#64748b" />
+                        <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="winRate" yAxisId="left" fill="#f59e0b" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" yAxisId="right" fill="#22c55e" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
