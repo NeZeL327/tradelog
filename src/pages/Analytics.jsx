@@ -2233,24 +2233,26 @@ export default function Analytics() {
                   <CardContent className="overflow-hidden p-4">
                     <div className="w-full overflow-hidden px-2 py-2">
                       <ResponsiveContainer width="100%" height={320}>
-                        <BarChart data={hourData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                        <ComposedChart data={hourData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                          <defs>
+                            <linearGradient id="hourPLGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
+                              <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                           <XAxis dataKey="hour" stroke="#64748b" />
-                          <YAxis yAxisId="left" stroke="#64748b" width={50} domain={[0, 100]} />
-                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                          <YAxis yAxisId="left" stroke="#06b6d4" width={50} domain={[0, 100]} />
+                          <YAxis yAxisId="right" orientation="right" stroke="#22c55e" width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                           <Tooltip
                             contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                             itemStyle={{ color: '#e2e8f0' }}
                             labelStyle={{ color: '#f1f5f9' }}
                           />
                           <Legend />
-                          <Bar dataKey="winRate" yAxisId="left" fill="#06b6d4" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                          <Bar dataKey="avgPL" yAxisId="right" name={t('avgPLLabel')} radius={[8, 8, 0, 0]}>
-                            {hourData.map((d, i) => (
-                              <Cell key={i} fill={d.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
-                            ))}
-                          </Bar>
-                        </BarChart>
+                          <Area yAxisId="right" type="monotone" dataKey="avgPL" name={t('avgPLLabel')} stroke="#22c55e" strokeWidth={2.5} fill="url(#hourPLGradient)" dot={{ r: 3, fill: '#22c55e' }} activeDot={{ r: 5 }} />
+                          <Line yAxisId="left" type="monotone" dataKey="winRate" name={`${t('winRate')} (%)`} stroke="#06b6d4" strokeWidth={2.5} dot={{ r: 3, fill: '#06b6d4' }} activeDot={{ r: 5 }} />
+                        </ComposedChart>
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
