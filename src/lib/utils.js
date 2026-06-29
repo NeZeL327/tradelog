@@ -58,9 +58,12 @@ export function getTradeRealizedPL(trade) {
   if (trade.fees_included_in_pl) return pl;
 
   if (trade.imported && (trade.commission != null || trade.swap != null)) {
-    const commission = parseFloat(trade.commission);
+    let commission = parseFloat(trade.commission);
     const swap = parseFloat(trade.swap);
-    if (!Number.isNaN(commission)) pl += commission;
+    if (!Number.isNaN(commission)) {
+      if (commission > 0) commission = -Math.abs(commission);
+      pl += commission;
+    }
     if (!Number.isNaN(swap)) pl += swap;
   }
 

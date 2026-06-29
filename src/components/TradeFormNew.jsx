@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/AuthContext";
 import { createTrade, updateTrade, getTradingAccounts, getStrategies, persistTradeScreenshot } from "@/lib/localStorage";
 import { useLanguage } from "@/components/LanguageProvider";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Brain } from "lucide-react";
 import ImageViewer from "@/components/common/ImageViewer";
 import { normalizeDirection } from "@/lib/utils";
+import EmotionsPanel, { createEmptyEmotions, normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
 
 const SCREENSHOT_KEYS = ["screenshot_1", "screenshot_2", "screenshot_3"];
 
@@ -133,11 +134,13 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
     breakeven_price: "",
     screenshot_1: "",
     screenshot_2: "",
-    screenshot_3: ""
+    screenshot_3: "",
+    emotions: createEmptyEmotions()
   });
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerImage, setViewerImage] = useState("");
+  const [emotionsOpen, setEmotionsOpen] = useState(false);
   const [screenshotErrors, setScreenshotErrors] = useState({});
   const [pendingScreenshotKeys, setPendingScreenshotKeys] = useState(() => new Set());
   const formUid = useId().replace(/:/g, "");
@@ -238,7 +241,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
       breakeven_price: trade.breakeven_price != null ? String(trade.breakeven_price) : "",
       screenshot_1: trade.screenshot_1 || "",
       screenshot_2: trade.screenshot_2 || "",
-      screenshot_3: trade.screenshot_3 || ""
+      screenshot_3: trade.screenshot_3 || "",
+      emotions: normalizeEmotions(trade.emotions)
     });
   }, [trade]);
 
@@ -618,7 +622,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
           breakeven_price: "",
           screenshot_1: "",
           screenshot_2: "",
-          screenshot_3: ""
+          screenshot_3: "",
+          emotions: createEmptyEmotions()
         });
         setManualPLOvride(false);
       }
@@ -1133,6 +1138,28 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
               </div>
             </div>
 
+            {/* Dziennik emocji — wysuwany panel z lewej */}
+            <button
+              type="button"
+              onClick={() => setEmotionsOpen(true)}
+              className="w-full flex items-center justify-between gap-3 p-4 rounded-lg border border-purple-200 dark:border-purple-900/50 bg-purple-50 dark:bg-purple-950/30 hover:border-purple-400 transition text-left"
+            >
+              <span className="flex items-center gap-3">
+                <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-purple-600 text-white">
+                  <Brain className="w-5 h-5" />
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">Dziennik emocji</span>
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">Przed wejściem · w trakcie · po zakończeniu</span>
+                </span>
+              </span>
+              {countFilledEmotionStages(formData.emotions) > 0 && (
+                <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-purple-600 text-white">
+                  {countFilledEmotionStages(formData.emotions)}/3
+                </span>
+              )}
+            </button>
+
             {/* Screenshots */}
             <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-lg space-y-4">
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -1213,6 +1240,12 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
             </div>
           </form>
           <ImageViewer open={viewerOpen} onOpenChange={setViewerOpen} imageUrl={viewerImage} />
+          <EmotionsPanel
+            open={emotionsOpen}
+            onOpenChange={setEmotionsOpen}
+            value={formData.emotions}
+            onChange={(next) => setFormData((prev) => ({ ...prev, emotions: next }))}
+          />
         </CardContent>
       </Card>
     </div>

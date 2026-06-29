@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Download, Upload, FileSpreadsheet } from "lucide-react";
-import { createTrade } from "@/lib/localStorage";
+import { createTrade, getTrades } from "@/lib/localStorage";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
 import {
@@ -109,25 +109,32 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
     if (!next) resetDialog();
   };
 
+  const buildPreview = async (file, brokerId, tradesForDedup) => {
+    const content = await file.text();
+    const { trades, format } = parseTradesFromCSV(content, {
+      accountId: account.id,
+      brokerId,
+    });
+    const { newTrades, skipped } = filterNewTrades(trades, tradesForDedup, account.id);
+    const sample = newTrades[0] || trades[0] || null;
+    return {
+      total: trades.length,
+      newCount: newTrades.length,
+      skipped,
+      format,
+      newTrades,
+      sample,
+    };
+  };
+
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setSelectedFile(file);
 
     try {
-      const content = await file.text();
-      const { trades, format } = parseTradesFromCSV(content, {
-        accountId: account.id,
-        brokerId: broker,
-      });
-      const { newTrades, skipped } = filterNewTrades(trades, existingTrades, account.id);
-      setPreview({
-        total: trades.length,
-        newCount: newTrades.length,
-        skipped,
-        format,
-        newTrades,
-      });
+      const tradesForDedup = user?.id ? await getTrades(user.id) : existingTrades;
+      setPreview(await buildPreview(file, broker, tradesForDedup));
     } catch (err) {
       setPreview(null);
       toast.error(err.message || "Nie udało się odczytać pliku CSV");
@@ -139,19 +146,8 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
     if (!selectedFile) return;
 
     try {
-      const content = await selectedFile.text();
-      const { trades, format } = parseTradesFromCSV(content, {
-        accountId: account.id,
-        brokerId: value,
-      });
-      const { newTrades, skipped } = filterNewTrades(trades, existingTrades, account.id);
-      setPreview({
-        total: trades.length,
-        newCount: newTrades.length,
-        skipped,
-        format,
-        newTrades,
-      });
+      const tradesForDedup = user?.id ? await getTrades(user.id) : existingTrades;
+      setPreview(await buildPreview(selectedFile, value, tradesForDedup));
     } catch {
       setPreview(null);
     }
@@ -162,19 +158,39 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
       toast.error("Musisz być zalogowany, aby importować transakcje");
       return;
     }
-    if (!preview?.newTrades?.length) {
-      toast.error("Brak nowych transakcji do importu");
+    if (!selectedFile) {
+      toast.error("Wybierz plik CSV");
       return;
     }
 
     setImporting(true);
-    const loadingToast = toast.loading(`Importowanie ${preview.newTrades.length} transakcji...`);
+    const loadingToast = toast.loading("Sprawdzanie duplikatów...");
 
     let successCount = 0;
     let errorCount = 0;
+    let skipped = 0;
+    let format = broker;
 
     try {
-      for (const trade of preview.newTrades) {
+      const freshTrades = await getTrades(user.id);
+      const previewNow = await buildPreview(selectedFile, broker, freshTrades);
+      skipped = previewNow.skipped;
+      format = previewNow.format;
+
+      if (!previewNow.newTrades.length) {
+        toast.info(
+          previewNow.total > 0
+            ? `Wszystkie ${previewNow.total} transakcji z pliku są już w dzienniku — duplikaty pominięte.`
+            : "Plik nie zawiera transakcji do importu.",
+          { id: loadingToast, duration: 6000 }
+        );
+        setPreview(previewNow);
+        return;
+      }
+
+      toast.loading(`Importowanie ${previewNow.newTrades.length} nowych transakcji...`, { id: loadingToast });
+
+      for (const trade of previewNow.newTrades) {
         try {
           await createTrade(user.id, trade);
           successCount++;
@@ -184,17 +200,17 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
         }
       }
 
-      const brokerLabel = BROKER_LABELS[preview.format] || BROKER_LABELS[broker] || broker;
-      const skippedMsg = preview.skipped > 0 ? `, pominięto ${preview.skipped} duplikatów` : "";
+      const brokerLabel = BROKER_LABELS[format] || BROKER_LABELS[broker] || broker;
+      const skippedMsg = skipped > 0 ? `, pominięto ${skipped} duplikatów` : "";
 
       if (errorCount === 0) {
         toast.success(
-          `✅ Zaimportowano ${successCount} ${successCount === 1 ? "transakcję" : "transakcji"} (${brokerLabel})${skippedMsg}`,
+          `✅ Dodano ${successCount} ${successCount === 1 ? "nową transakcję" : "nowych transakcji"} (${brokerLabel})${skippedMsg}`,
           { id: loadingToast, duration: 6000 }
         );
       } else {
         toast.warning(
-          `⚠️ Zaimportowano ${successCount}, błędów: ${errorCount}${skippedMsg}`,
+          `⚠️ Dodano ${successCount}, błędów: ${errorCount}${skippedMsg}`,
           { id: loadingToast, duration: 6000 }
         );
       }
@@ -232,7 +248,7 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
           <DialogHeader>
             <DialogTitle>Import CSV — {account.name}</DialogTitle>
             <DialogDescription>
-              Wybierz brokera/źródło pliku. Przy ponownym imporcie transakcje z tą samą datą, godziną otwarcia i wolumenem nie będą nadpisywane — dodane zostaną tylko nowe.
+              Możesz importować ten sam plik lub nowy eksport z brokera — dodane zostaną tylko transakcje, których jeszcze nie ma na tym koncie (duplikaty po Ticket ID, dacie, symbolu i wolumenie są pomijane).
             </DialogDescription>
           </DialogHeader>
 
@@ -283,6 +299,23 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
                     Pominięte duplikaty: <strong>{preview.skipped}</strong>
                   </p>
                 )}
+                {preview.newCount === 0 && preview.total > 0 && (
+                  <p className="text-slate-600 dark:text-slate-400">
+                    Brak nowych transakcji — wszystkie z tego pliku są już w dzienniku.
+                  </p>
+                )}
+                {preview.sample && (
+                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                    <p className="font-medium text-slate-700 dark:text-slate-300">
+                      Przykład ({preview.sample.symbol}):
+                    </p>
+                    <p>Profit z CSV: <strong>{preview.sample.profit_loss_gross ?? "—"}</strong></p>
+                    <p>Commission: <strong>{preview.sample.commission ?? 0}</strong>
+                      {preview.sample.swap != null ? ` · Swap: ${preview.sample.swap}` : ""}
+                    </p>
+                    <p>Netto P&L: <strong>{preview.sample.profit_loss ?? "—"}</strong></p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -294,9 +327,15 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
             <Button
               type="button"
               onClick={handleImport}
-              disabled={importing || !preview?.newCount}
+              disabled={importing || !preview?.total}
             >
-              {importing ? "Importowanie..." : `Importuj${preview?.newCount ? ` (${preview.newCount})` : ""}`}
+              {importing
+                ? "Importowanie..."
+                : preview?.newCount
+                  ? `Dodaj nowe (${preview.newCount})`
+                  : preview?.total
+                    ? "Sprawdź duplikaty"
+                    : "Importuj"}
             </Button>
           </DialogFooter>
         </DialogContent>

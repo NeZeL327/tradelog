@@ -131,17 +131,60 @@ function rowToMap(headers, line, delimiter) {
 
   const map = {};
   headers.forEach((header, index) => {
-    map[header.toLowerCase()] = cells[index] ?? "";
+    const key = String(header).replace(/^\uFEFF/, "").trim().toLowerCase().replace(/\s+/g, " ");
+    map[key] = cells[index] ?? "";
   });
   return map;
 }
 
 function getField(row, ...keys) {
-  for (const key of keys) {
-    const val = row[key.toLowerCase()];
+  const normalizedKeys = keys.map((k) => k.toLowerCase().trim());
+
+  for (const key of normalizedKeys) {
+    const val = row[key];
     if (val !== undefined && val !== "") return val;
   }
+
+  for (const [header, val] of Object.entries(row)) {
+    if (val === undefined || val === "") continue;
+    const h = String(header).toLowerCase().trim();
+    for (const key of normalizedKeys) {
+      if (h === key || h.includes(key) || key.includes(h)) return val;
+    }
+  }
+
   return "";
+}
+
+function getFeeField(row, ...extraPatterns) {
+  return getField(
+    row,
+    "commission",
+    "commissions",
+    "comm",
+    "prowizja",
+    "fee",
+    "fees",
+    "brokerage",
+    ...extraPatterns
+  );
+}
+
+function getSwapField(row) {
+  return getField(row, "swap", "swaps", "rollover", "overnight");
+}
+
+function getProfitField(row) {
+  return getField(
+    row,
+    "profit",
+    "p&l",
+    "pnl",
+    "net profit",
+    "net p&l",
+    "zysk",
+    "profit/loss"
+  );
 }
 
 function parseDirection(value) {
@@ -156,6 +199,12 @@ export function parseNum(value) {
 
   let s = String(value).trim().replace(/\u00A0/g, "").replace(/\s/g, "");
   if (!s) return null;
+
+  // (123.45) → -123.45
+  const paren = s.match(/^\((.+)\)$/);
+  if (paren) s = `-${paren[1]}`;
+
+  s = s.replace(/\u2212/g, "-");
 
   s = s.replace(/[^\d.,+\-]/g, "");
   if (!s || s === "-" || s === "+") return null;
@@ -195,10 +244,21 @@ function baseTrade(accountId, brokerId) {
   };
 }
 
+function normalizeImportedCommission(value) {
+  const n = parseNum(value);
+  if (n == null || n === 0) return 0;
+  // Niektóre eksporty CSV podają prowizję jako dodatnią kwotę kosztu
+  return n < 0 ? n : -Math.abs(n);
+}
+
 function finalizeTrade(obj) {
   const gross = parseNum(obj.profit_loss);
-  const commission = parseNum(obj.commission) ?? 0;
+  let commission = obj.imported ? normalizeImportedCommission(obj.commission) : (parseNum(obj.commission) ?? 0);
   const swap = parseNum(obj.swap) ?? 0;
+
+  if (obj.imported && commission !== 0) {
+    obj.commission = commission;
+  }
 
   let profit = gross;
   if (obj.imported && gross != null) {
@@ -265,7 +325,7 @@ function parseFundedNextRow(r, accountId, brokerId) {
 
   const trade = {
     ...baseTrade(accountId, brokerId),
-    external_ticket: getField(r, "ticket id", "ticket", "id"),
+    external_ticket: normalizeTicket(getField(r, "ticket id", "ticket", "id")),
     date: open.date,
     time: open.time,
     entry_time: open.time,
@@ -278,9 +338,9 @@ function parseFundedNextRow(r, accountId, brokerId) {
     volume_units: volume,
     entry_price: parseNum(getField(r, "open price", "price", "entry")),
     exit_price: parseNum(getField(r, "close price", "close", "exit")),
-    profit_loss: parseNum(getField(r, "profit", "p&l", "pnl")),
-    commission: parseNum(getField(r, "commission")),
-    swap: parseNum(getField(r, "swap")),
+    profit_loss: parseNum(getProfitField(r)),
+    commission: parseNum(getFeeField(r)),
+    swap: parseNum(getSwapField(r)),
     stop_loss: parseNum(getField(r, "sl", "s/l", "stop loss")),
     take_profit: parseNum(getField(r, "tp", "t/p", "take profit")),
     pips: parseNum(getField(r, "pips")),
@@ -299,7 +359,7 @@ function parseMT4Row(r, accountId, brokerId) {
   const lots = parseNum(getField(r, "lots", "lot", "size", "volume"));
   const trade = {
     ...baseTrade(accountId, brokerId),
-    external_ticket: getField(r, "ticket id", "ticket", "id"),
+    external_ticket: normalizeTicket(getField(r, "ticket id", "ticket", "id")),
     date: open.date,
     time: open.time,
     entry_time: open.time,
@@ -313,9 +373,9 @@ function parseMT4Row(r, accountId, brokerId) {
     exit_price: parseNum(getField(r, "close price", "close")),
     stop_loss: parseNum(getField(r, "sl", "s/l", "stop loss")),
     take_profit: parseNum(getField(r, "tp", "t/p", "take profit")),
-    profit_loss: parseNum(getField(r, "profit")),
-    commission: parseNum(getField(r, "commission")),
-    swap: parseNum(getField(r, "swap")),
+    profit_loss: parseNum(getProfitField(r)),
+    commission: parseNum(getFeeField(r)),
+    swap: parseNum(getSwapField(r)),
   };
 
   return finalizeTrade(trade);
@@ -339,8 +399,8 @@ function parseTradingViewRow(r, accountId, brokerId) {
     quantity: qty,
     entry_price: parseNum(getField(r, "entry price", "entry")),
     exit_price: parseNum(getField(r, "exit price", "exit")),
-    profit_loss: parseNum(getField(r, "profit", "p&l")),
-    commission: parseNum(getField(r, "commission")),
+    profit_loss: parseNum(getProfitField(r)),
+    commission: parseNum(getFeeField(r)),
     notes: "Imported from TradingView",
   };
 
@@ -388,6 +448,13 @@ function parseCustomRow(headers, line, accountId, brokerId, delimiter) {
       case "P&L":
         obj.profit_loss = parseNum(value);
         break;
+      case "Prowizja":
+      case "Commission":
+        obj.commission = parseNum(value);
+        break;
+      case "Swap":
+        obj.swap = parseNum(value);
+        break;
       case "P&L %":
         obj.profit_loss_percent = parseNum(value);
         break;
@@ -432,38 +499,79 @@ export function parseTradesFromCSV(content, { accountId, brokerId = "auto" }) {
   return { trades, format, delimiter };
 }
 
-export function tradeDedupKey(trade) {
+function normalizeTicket(value) {
+  if (value === "" || value == null) return "";
+  return String(value).trim().replace(/^#/, "");
+}
+
+/** Klucze dopasowania — im więcej trafień, tym pewniejsze wykrycie duplikatu. */
+export function tradeImportFingerprints(trade) {
+  const accountId = String(trade.account_id || "");
+  const ticket = normalizeTicket(trade.external_ticket);
+  const symbol = String(trade.symbol || "").toUpperCase().trim();
+
   const { date, time } = splitDateTime(
     trade.date ? `${trade.date} ${trade.entry_time || trade.time || "00:00:00"}` : ""
   );
+
   const vol = trade.position_size ?? trade.quantity ?? trade.volume_units;
   const volKey = vol != null ? Number(parseFloat(vol).toFixed(4)) : "";
-  return `${date}|${time}|${volKey}`;
+  const entry = parseNum(trade.entry_price);
+  const exit = parseNum(trade.exit_price);
+  const pl = parseNum(trade.profit_loss) ?? parseNum(trade.profit_loss_gross);
+
+  const keys = [];
+
+  if (ticket) {
+    keys.push(`ticket:${accountId}:${ticket}`);
+  }
+
+  if (date && symbol) {
+    keys.push(`sym:${accountId}:${symbol}:${date}:${time}:${volKey}`);
+    if (entry != null && exit != null) {
+      keys.push(`px:${accountId}:${symbol}:${date}:${Number(entry)}:${Number(exit)}:${volKey}`);
+    }
+    if (pl != null) {
+      keys.push(`pl:${accountId}:${symbol}:${date}:${time}:${volKey}:${Number(pl.toFixed(2))}`);
+    }
+  }
+
+  keys.push(`legacy:${accountId}:${date}|${time}|${volKey}`);
+
+  return keys;
+}
+
+/** @deprecated Użyj tradeImportFingerprints — zostawione dla kompatybilności. */
+export function tradeDedupKey(trade) {
+  const fps = tradeImportFingerprints(trade);
+  return fps[fps.length - 1] || "";
 }
 
 export function filterNewTrades(parsedTrades, existingTrades, accountId) {
-  const keys = new Set();
-  const tickets = new Set();
+  const knownKeys = new Set();
 
   for (const t of existingTrades) {
     if (String(t.account_id) !== String(accountId)) continue;
-    keys.add(tradeDedupKey(t));
-    if (t.external_ticket) tickets.add(String(t.external_ticket));
+    for (const key of tradeImportFingerprints(t)) {
+      knownKeys.add(key);
+    }
   }
 
   const newTrades = [];
   let skipped = 0;
+  const batchKeys = new Set(knownKeys);
 
   for (const trade of parsedTrades) {
-    const key = tradeDedupKey(trade);
-    const ticket = trade.external_ticket ? String(trade.external_ticket) : "";
-    if (keys.has(key) || (ticket && tickets.has(ticket))) {
+    const fingerprints = tradeImportFingerprints({ ...trade, account_id: accountId });
+    const isDuplicate = fingerprints.some((key) => batchKeys.has(key));
+
+    if (isDuplicate) {
       skipped++;
       continue;
     }
+
     newTrades.push(trade);
-    keys.add(key);
-    if (ticket) tickets.add(ticket);
+    fingerprints.forEach((key) => batchKeys.add(key));
   }
 
   return { newTrades, skipped };
