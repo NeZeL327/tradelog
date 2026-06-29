@@ -15,7 +15,6 @@ export default function PublicNavbar({ variant = 'default' }) {
     { label: t('features') || 'Features', href: '#features' },
     { label: t('about') || 'Resources', href: '/about' },
     { label: t('contact') || 'Contact', href: '/contact' },
-    { label: t('pricing') || 'Pricing', href: '/pricing' },
   ];
 
   if (!isHero) {

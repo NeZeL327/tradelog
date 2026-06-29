@@ -50,7 +50,6 @@
 import Accounts from './pages/Accounts';
 import Analytics from './pages/Analytics';
 import Backtesting from './pages/Backtesting';
-import Billing from './pages/Billing';
 import Calendar from './pages/Calendar';
 import Checklist from './pages/Checklist';
 import Dashboard from './pages/Dashboard';
@@ -71,7 +70,6 @@ export const PAGES = {
     "Accounts": Accounts,
     "Analytics": Analytics,
     "Backtesting": Backtesting,
-    "Billing": Billing,
     "Calendar": Calendar,
     "Checklist": Checklist,
     "Dashboard": Dashboard,

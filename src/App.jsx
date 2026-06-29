@@ -18,7 +18,6 @@ import Privacy from './pages/Privacy';
 import Cookies from './pages/Cookies';
 import Contact from './pages/Contact';
 import About from './pages/About';
-import Pricing from './pages/Pricing';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -69,7 +68,6 @@ const AuthenticatedApp = () => {
         <Route path="/cookies" element={<PageShell><Cookies /></PageShell>} />
         <Route path="/contact" element={<PageShell><Contact /></PageShell>} />
         <Route path="/about" element={<PageShell><About /></PageShell>} />
-        <Route path="/pricing" element={<PageShell><Pricing /></PageShell>} />
         <Route path="*" element={<PageShell><Home /></PageShell>} />
       </Routes>
     );
@@ -86,7 +84,6 @@ const AuthenticatedApp = () => {
       <Route path="/terms" element={<PageShell><Terms /></PageShell>} />
       <Route path="/privacy" element={<PageShell><Privacy /></PageShell>} />
       <Route path="/cookies" element={<PageShell><Cookies /></PageShell>} />
-      <Route path="/pricing" element={<PageShell><Pricing /></PageShell>} />
       {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}

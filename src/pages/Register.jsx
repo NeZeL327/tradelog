@@ -16,6 +16,9 @@ import { createUserWithEmailAndPassword, deleteUser } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
+// Rejestracja chwilowo wylaczona — konta zakladane recznie w Firebase.
+const REGISTRATION_ENABLED = false;
+
 export default function Register() {
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -72,6 +75,11 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!REGISTRATION_ENABLED) {
+      setError(t('registerDisabled'));
+      return;
+    }
 
     if (!validateForm()) {
       return;
@@ -252,6 +260,11 @@ export default function Register() {
             </CardHeader>
 
             <CardContent>
+              {!REGISTRATION_ENABLED && (
+                <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                  {t('registerDisabled')}
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
                   <Alert variant="destructive">
@@ -396,7 +409,7 @@ export default function Register() {
                 <Button
                   type="submit"
                   className="hero-cta fx-cta w-full h-11 rounded-xl text-base disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isLoading || !formData.acceptTerms}
+                  disabled={isLoading || !formData.acceptTerms || !REGISTRATION_ENABLED}
                 >
                   {isLoading ? (
                     <>

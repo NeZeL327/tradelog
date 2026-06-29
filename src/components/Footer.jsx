@@ -43,11 +43,6 @@ export default function Footer({ variant = 'default' }) {
             <h3 className={isHero ? 'text-sm font-semibold tracking-wide text-slate-100' : isApp ? 'text-sm font-semibold tracking-wide text-slate-800 dark:text-slate-100' : 'text-sm font-semibold tracking-wide text-foreground'}>{t('footerNavigation') || 'Navigation'}</h3>
             <ul className="space-y-2.5">
               <li>
-                <Link to="/pricing" className={linkClassName}>
-                  {t('pricing') || 'Pricing'}
-                </Link>
-              </li>
-              <li>
                 <Link to="/about" className={linkClassName}>
                   {t('about') || 'About'}
                 </Link>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { createPageUrl } from "@/utils";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, ShieldCheck, TrendingUp, BarChart3, Brain, Target } from "lucide-react";
+import { ArrowRight, CheckCircle2, BarChart3, Brain, Target } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 import PublicNavbar from "@/components/PublicNavbar";
 import Footer from "@/components/Footer";
@@ -119,8 +119,6 @@ export default function Home() {
                   <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-sky-400" /> {t('homeSecureLogin')}</span>
                   <span className="text-slate-600">•</span>
                   <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-sky-400" /> {t('homeAccessTo')}</span>
-                  <span className="text-slate-600">•</span>
-                  <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-sky-400" /> {t('pricingNoCreditCard')}</span>
                 </div>
               </motion.div>
 
@@ -199,64 +197,6 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="py-20 md:py-24">
-            <div className="container mx-auto px-4">
-              <div className="mx-auto max-w-5xl text-center">
-                <span className="inline-flex rounded-full border border-blue-500/25 bg-blue-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-300">AiKeepTrade</span>
-                <h2 className="mt-5 text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight text-slate-100">{t('pricingTitle')}</h2>
-                <p className="mt-4 text-base sm:text-lg md:text-xl text-slate-400 max-w-2xl mx-auto">{t('pricingSubtitle')}</p>
-              </div>
-
-              <div className="mt-12 grid items-center gap-8 lg:grid-cols-[1fr_1fr]">
-                <div className="fx-card-dark p-7">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-base text-slate-300">{t('pricingPlanDesc')}</p>
-                    <span className="shrink-0 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-sky-300">
-                      {t('pricing14DayTrial')}
-                    </span>
-                  </div>
-
-                  <div className="mt-5 flex items-end gap-2">
-                    <p className="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-100">$9.9</p>
-                    <p className="pb-1 text-base text-slate-500">/ {t('pricingPerMonth')}</p>
-                  </div>
-
-                  <div className="mt-6 rounded-xl border border-white/5 bg-[#07090d]/60 p-4">
-                    <ul className="space-y-2 text-sm text-slate-300">
-                      <li className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-sky-400" /> {t('pricingInclude1')}</li>
-                      <li className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-sky-400" /> {t('pricingInclude2')}</li>
-                      <li className="inline-flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-sky-400" /> {t('pricingInclude3')}</li>
-                    </ul>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => window.location.href = createPageUrl("Register")}
-                    className="fx-cta mt-6 w-full inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-base"
-                  >
-                    {t('pricingStartTrial')}
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-
-                  <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-sky-300">
-                    <CheckCircle2 className="w-4 h-4" /> {t('pricingNoCreditCard')}
-                  </p>
-                </div>
-
-                <div>
-                  <span className="inline-flex rounded-full border border-blue-500/25 bg-blue-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-300">{t('pricingBadge')}</span>
-                  <h3 className="mt-4 text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight text-slate-100 leading-[1.1] md:leading-[1.05]">{t('pricingCTATitle')}</h3>
-                  <p className="mt-5 text-base sm:text-lg md:text-xl text-slate-400 leading-relaxed">{t('pricingCTADesc')}</p>
-
-                  <ul className="mt-6 space-y-3 text-base text-slate-300">
-                    <li className="inline-flex items-center gap-2"><ShieldCheck className="w-5 h-5 text-sky-400" /> {t('pricingInclude1')}</li>
-                    <li className="inline-flex items-center gap-2"><TrendingUp className="w-5 h-5 text-sky-400" /> {t('pricingInclude2')}</li>
-                    <li className="inline-flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-sky-400" /> {t('pricingInclude3')}</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
         </main>
       </div>
       <Footer variant="hero" />
