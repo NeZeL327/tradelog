@@ -10,9 +10,10 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Calendar as Calend
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek } from "date-fns";
 import { pl, enUS } from "date-fns/locale";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass, tradeOutcomeDisplay } from "@/lib/utils";
 import TradeCard from "../components/TradeCard";
 import TradeFormNew from "../components/TradeFormNew";
+import TradeDetailView from "../components/TradeDetailView";
 import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
 export default function Calendar() {
@@ -30,13 +31,14 @@ export default function Calendar() {
     const normalized = String(status || "").toLowerCase();
     if (["open", "otwarta", "aktywna"].includes(normalized)) return "open";
     if (["closed", "wykonana", "zamknięta", "zamknieta", "executed"].includes(normalized)) return "closed";
+    if (["breakeven", "be", "na zero"].includes(normalized)) return "breakeven";
     if (["planned", "planowana"].includes(normalized)) return "planned";
     return "default";
   };
 
   const isCalendarVisibleTrade = (trade) => {
     const status = normalizeTradeStatus(trade?.status);
-    return status === "open" || status === "closed";
+    return status === "open" || status === "closed" || status === "breakeven";
   };
 
   // Hide trades belonging to inactive accounts everywhere in the calendar view.
@@ -50,6 +52,7 @@ export default function Calendar() {
   const getTradeStatusLabel = (trade) => {
     const status = normalizeTradeStatus(trade?.status);
     if (status === "closed") return t('closedStatus') || 'Closed';
+    if (status === "breakeven") return t('breakevenStatus') || 'Breakeven';
     return t('openStatus') || 'Open';
   };
 
@@ -436,6 +439,9 @@ export default function Calendar() {
                     const isClosedStatus = (status) => [
                       "Closed",
                       "closed",
+                      "Breakeven",
+                      "breakeven",
+                      "BE",
                       "Wykonana",
                       "Zamknięta",
                       "Zamknieta",
@@ -497,7 +503,7 @@ export default function Calendar() {
                           <td className="p-4">
                             {trade.outcome && (
                               <Badge variant="outline" className={tradeOutcomeBadgeClass(trade.outcome)}>
-                                {trade.outcome}
+                                {tradeOutcomeDisplay(trade.outcome)}
                               </Badge>
                             )}
                           </td>
@@ -524,6 +530,9 @@ export default function Calendar() {
                 const isClosedStatus = (status) => [
                   "Closed",
                   "closed",
+                  "Breakeven",
+                  "breakeven",
+                  "BE",
                   "Wykonana",
                   "Zamknięta",
                   "Zamknieta",
@@ -550,13 +559,13 @@ export default function Calendar() {
       {/* Edit Trade Dialog */}
       <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
         <DialogContent
-          className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
+          className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0"
           {...preventDialogDismissProps}
         >
-          <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
+          <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
             <DialogTitle>Edit Trade</DialogTitle>
           </div>
-          <div className="p-6">
+          <div className="p-4">
             {editingTrade && (
               <TradeFormNew
                 key={editingTrade.id}
@@ -575,13 +584,13 @@ export default function Calendar() {
 
       {/* Trade Details Dialog */}
       <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-card border-slate-200 dark:border-slate-700">
+        <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-700">
           <DialogHeader className="cyber-dialog-header sticky top-0 z-10 text-white px-6 py-4 border-b">
             <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
           </DialogHeader>
           <div className="p-6 bg-white dark:bg-card">
             {viewingTrade && (
-              <TradeCard
+              <TradeDetailView
                 trade={viewingTrade}
                 onEdit={(tradeToEdit) => {
                   setViewingTrade(null);

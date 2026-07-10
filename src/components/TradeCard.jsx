@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Edit, Calendar, Clock, Target } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, getTradeRealizedPL, tradeOutcomeBadgeClass, tradeStatusBadgeClass } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, getTradeRealizedPL, tradeOutcomeBadgeClass, tradeStatusBadgeClass, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
 import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
@@ -71,7 +71,7 @@ export default function TradeCard({ trade, onEdit = null }) {
               </Badge>
               {trade.outcome && (
                 <Badge variant="outline" className={tradeOutcomeBadgeClass(trade.outcome)}>
-                  {trade.outcome}
+                  {tradeOutcomeDisplay(trade.outcome)}
                 </Badge>
               )}
             </div>
@@ -147,8 +147,8 @@ export default function TradeCard({ trade, onEdit = null }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl dark:border dark:border-slate-700">
           <div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('statusLabel')}</p>
-            <Badge className={`${tradeStatusBadgeClass(trade.status)} truncate max-w-full`} title={trade.status || '-'}>
-              {trade.status || '-'}
+            <Badge className={`${tradeStatusBadgeClass(trade.status)} truncate max-w-full`} title={tradeStatusDisplay(trade.status)}>
+              {tradeStatusDisplay(trade.status)}
             </Badge>
           </div>
           <div>

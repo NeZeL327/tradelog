@@ -36,9 +36,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import TradeFormNew from "../components/TradeFormNew";
+import TradeDetailView from "../components/TradeDetailView";
 import TradeCard from "../components/TradeCard";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, getTradeRealizedPL, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, getTradeRealizedPL, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
 import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
@@ -566,6 +567,7 @@ export default function JournalSimple({ mode = "all" }) {
     missed: baseFilteredTrades.filter(t => t.status === "Missed").length,
     wins: statsSource.filter(t => t.outcome === "Win").length,
     losses: statsSource.filter(t => t.outcome === "Loss").length,
+    breakeven: statsSource.filter(t => t.outcome === "Breakeven").length,
     totalPL: statsSource.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0)
   };
 
@@ -648,6 +650,7 @@ export default function JournalSimple({ mode = "all" }) {
             { key: "open",   label: t('openStatus'),       count: stats.open,    active: statusFilters.includes("Open"),     accent: "blue",    onClick: () => { setStatusFilters(["Open"]);   setOutcomeFilters(["all"]); } },
             { key: "closed", label: t('closedStatus'),     count: stats.closed,  active: statusFilters.includes("Closed"),   accent: "emerald", onClick: () => { setStatusFilters(["Closed"]); setOutcomeFilters(["all"]); } },
             { key: "wins",   label: t('wins'),             count: stats.wins,    active: outcomeFilters.includes("Win"),     accent: "yellow",  onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Win"]); } },
+            { key: "be",     label: "BE",                  count: stats.breakeven, active: outcomeFilters.includes("Breakeven"), accent: "orange",  onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Breakeven"]); } },
             { key: "losses", label: t('losses'),           count: stats.losses,  active: outcomeFilters.includes("Loss"),    accent: "red",     onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Loss"]); } },
             { key: "planned",label: t('planned'),          count: stats.planned, active: statusFilters.includes("Planned"),  accent: "amber",   onClick: () => { setStatusFilters(["Planned"]); setOutcomeFilters(["all"]); } },
           ];
@@ -656,6 +659,7 @@ export default function JournalSimple({ mode = "all" }) {
             blue:    { dot: "bg-blue-500",    text: "text-blue-700 dark:text-blue-300",     badgeActive: "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-200" },
             emerald: { dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300", badgeActive: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200" },
             yellow:  { dot: "bg-yellow-500",  text: "text-yellow-700 dark:text-yellow-300", badgeActive: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/60 dark:text-yellow-200" },
+            orange:  { dot: "bg-orange-500",  text: "text-orange-700 dark:text-orange-300", badgeActive: "bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-200" },
             red:     { dot: "bg-red-500",     text: "text-red-700 dark:text-red-300",       badgeActive: "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-200" },
             amber:   { dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-300",   badgeActive: "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200" },
           };
@@ -1039,7 +1043,7 @@ export default function JournalSimple({ mode = "all" }) {
                         <td className="px-1.5 py-1">
                           <Badge className={`${tradeStatusBadgeClass(trade.status)} text-xs font-semibold px-1.5 py-0.5 border`}> 
                             {trade.status === "Open" ? <Clock className="w-3 h-3 mr-0.5" /> : <CheckCircle className="w-3 h-3 mr-0.5" />}
-                            {trade.status}
+                            {tradeStatusDisplay(trade.status)}
                           </Badge>
                         </td>
                       )}
@@ -1122,7 +1126,7 @@ export default function JournalSimple({ mode = "all" }) {
                         <td className="px-1 py-1">
                           {trade.outcome && (
                             <Badge variant="outline" className={`text-xs font-semibold px-1.5 py-0.5 border ${tradeOutcomeBadgeClass(trade.outcome)}`}>
-                              {trade.outcome}
+                              {tradeOutcomeDisplay(trade.outcome)}
                             </Badge>
                           )}
                         </td>
@@ -1327,15 +1331,16 @@ export default function JournalSimple({ mode = "all" }) {
         {/* Add Trade Dialog */}
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
           <DialogContent
-            className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
+            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0"
             {...preventDialogDismissProps}
             onEscapeKeyDown={(event) => event.preventDefault()}
           >
-            <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
+            <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
               <DialogTitle>{t('addTrade')}</DialogTitle>
             </div>
-            <div className="p-6">
+            <div className="p-4">
               <TradeFormNew
+                embedded
                 defaultStatus={isPlannedMode ? "Planned" : isMissedMode ? "Missed" : "Open"}
                 onSuccess={() => {
                   refetch();
@@ -1350,13 +1355,13 @@ export default function JournalSimple({ mode = "all" }) {
         {/* Edit Trade Dialog */}
         <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
           <DialogContent
-            className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
+            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0"
             {...preventDialogDismissProps}
           >
-            <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
+            <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
               <DialogTitle>Edit Trade</DialogTitle>
             </div>
-            <div className="p-6">
+            <div className="p-4">
               {editingTrade && (
                 <TradeFormNew
                   key={editingTrade.id}
@@ -1375,13 +1380,13 @@ export default function JournalSimple({ mode = "all" }) {
 
         {/* View Trade Dialog */}
         <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-card border-slate-200 dark:border-slate-700">
+          <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-700">
             <DialogHeader className="cyber-dialog-header sticky top-0 z-10 text-white px-6 py-4 border-b">
               <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
             </DialogHeader>
             <div className="p-6 bg-white dark:bg-card">
               {viewingTrade && (
-                <TradeCard
+                <TradeDetailView
                   trade={viewingTrade}
                   onEdit={(tradeToEdit) => {
                     setViewingTrade(null);

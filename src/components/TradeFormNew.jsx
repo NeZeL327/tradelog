@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/AuthContext";
 import { createTrade, updateTrade, getTradingAccounts, getStrategies, persistTradeScreenshot } from "@/lib/localStorage";
 import { useLanguage } from "@/components/LanguageProvider";
-import { X, Plus, Brain, Star } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import ImageViewer from "@/components/common/ImageViewer";
 import { normalizeDirection } from "@/lib/utils";
-import EmotionsPanel, { createEmptyEmotions, normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
+import { EmotionsInlinePanel, createEmptyEmotions, normalizeEmotions } from "@/components/EmotionsPanel";
+import { cn } from "@/lib/utils";
 
 const SCREENSHOT_KEYS = ["screenshot_1", "screenshot_2", "screenshot_3"];
 
@@ -106,6 +107,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [manualPLOvride, setManualPLOvride] = useState(false);
+  const [manualOutcomeOverride, setManualOutcomeOverride] = useState(false);
 
   const [formData, setFormData] = useState({
     symbol: "",
@@ -136,12 +138,12 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
     screenshot_2: "",
     screenshot_3: "",
     setup_confidence: 0,
+    setup_confidence_comment: "",
     emotions: createEmptyEmotions()
   });
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerImage, setViewerImage] = useState("");
-  const [emotionsOpen, setEmotionsOpen] = useState(false);
   const [screenshotErrors, setScreenshotErrors] = useState({});
   const [pendingScreenshotKeys, setPendingScreenshotKeys] = useState(() => new Set());
   const formUid = useId().replace(/:/g, "");
@@ -194,6 +196,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
     const useImportedNetPL = Boolean(trade.fees_included_in_pl && trade.profit_loss != null);
     setManualPLOvride(useImportedNetPL);
+    setManualOutcomeOverride(Boolean(trade.outcome));
     setScreenshotErrors({});
     pendingScreenshotsRef.current = {};
     setPendingScreenshotKeys(new Set());
@@ -244,6 +247,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
       screenshot_2: trade.screenshot_2 || "",
       screenshot_3: trade.screenshot_3 || "",
       setup_confidence: Number(trade.setup_confidence) || 0,
+      setup_confidence_comment: trade.setup_confidence_comment || "",
       emotions: normalizeEmotions(trade.emotions)
     });
   }, [trade]);
@@ -493,13 +497,21 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
     let totalRealized = scaleOutSummary.totalPnl;
     let hasRealizedPart = scaleOutSummary.hasPnlParts;
 
-    if (formData.status === "Closed" && remainingToClose > 0 && exit !== null) {
+    if ((formData.status === "Closed" || formData.status === "Breakeven") && remainingToClose > 0 && exit !== null) {
       totalRealized += (exit - entry) * remainingToClose * directionSign;
       hasRealizedPart = true;
       remainingToClose = 0;
     }
 
     if (!hasRealizedPart) {
+      if (formData.status === "Breakeven") {
+        const finalRealized = commissionAdjustment;
+        return {
+          profit_loss: finalRealized.toFixed(2),
+          profit_loss_percent: "",
+          outcome: finalRealized === 0 ? "Breakeven" : finalRealized > 0 ? "Win" : "Loss",
+        };
+      }
       return null;
     }
 
@@ -527,6 +539,11 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
     return (reward / risk).toFixed(2);
   };
 
+  const resolveOutcome = () => {
+    if (manualOutcomeOverride && formData.outcome) return formData.outcome;
+    return calculatePL()?.outcome || formData.outcome || "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -551,6 +568,10 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
       }
 
       const pl = calculatePL();
+      const resolvedOutcome =
+        manualOutcomeOverride && formData.outcome
+          ? formData.outcome
+          : pl?.outcome || null;
       const screenshots = await resolveScreenshotsForSubmit();
 
       const submitData = stripUndefined({
@@ -583,8 +604,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
         ...(pl && {
           profit_loss: parseFloat(pl.profit_loss),
           profit_loss_percent: pl.profit_loss_percent ? parseFloat(pl.profit_loss_percent) : null,
-          outcome: pl.outcome
-        })
+        }),
+        ...(resolvedOutcome && { outcome: resolvedOutcome }),
       });
 
       console.log('Submitting trade:', submitData);
@@ -596,6 +617,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
       console.log('Trade created:', result);
       
       if (!trade?.id) {
+        setManualOutcomeOverride(false);
         // Reset form only for new trade
         setFormData({
           symbol: "",
@@ -626,6 +648,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
           screenshot_2: "",
           screenshot_3: "",
           setup_confidence: 0,
+          setup_confidence_comment: "",
           emotions: createEmptyEmotions()
         });
         setManualPLOvride(false);
@@ -661,8 +684,28 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
   });
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <Card className={`overflow-hidden bg-white dark:bg-card ${embedded ? "border-0 shadow-none" : "border border-slate-200/80 dark:border-slate-700 shadow-xl shadow-slate-900/5"}`}>
+    <div className="w-full max-w-6xl mx-auto">
+      <div className="flex flex-col lg:flex-row gap-0 items-stretch">
+        <EmotionsInlinePanel
+          value={formData.emotions}
+          onChange={(next) => setFormData((prev) => ({ ...prev, emotions: next }))}
+          setupConfidence={formData.setup_confidence}
+          onSetupConfidenceChange={(n) =>
+            setFormData((prev) => ({ ...prev, setup_confidence: n }))
+          }
+          setupConfidenceComment={formData.setup_confidence_comment}
+          onSetupConfidenceCommentChange={(comment) =>
+            setFormData((prev) => ({ ...prev, setup_confidence_comment: comment }))
+          }
+          compact
+          className="lg:border-r-0"
+        />
+
+      <Card className={cn(
+        "flex-1 min-w-0 bg-white dark:bg-card",
+        embedded ? "border-0 shadow-none" : "border border-slate-200/80 dark:border-slate-700 shadow-xl shadow-slate-900/5",
+        "lg:rounded-l-none"
+      )}>
         {!embedded && (
         <CardHeader className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-slate-100 border-b border-slate-700/80 rounded-none">
           <div className="flex justify-between items-center">
@@ -685,7 +728,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Account and Strategy Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
               <div>
                 <Label className="block text-sm font-semibold mb-2">{t('tradingAccount')}</Label>
                 <select
@@ -730,7 +773,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
             </div>
 
             {/* Basic Trade Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
               <div>
                 <Label className="block text-sm font-semibold mb-2">{t('symbol')} *</Label>
                 <Input
@@ -783,6 +826,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                 >
                   <option value="Open">{t('openStatus')}</option>
                   <option value="Closed">{t('closedStatus')}</option>
+                  <option value="Breakeven">{t('breakevenStatus')}</option>
                   <option value="Planned">{t('plannedStatus')}</option>
                   <option value="Missed">{t('missedStatus')}</option>
                 </select>
@@ -824,7 +868,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
             </div>
 
             {/* Time Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-lg">
               <div>
                 <Label className="block text-sm font-semibold mb-2">{t('entryTime')}</Label>
                 <Input
@@ -848,7 +892,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
             {/* Price Info */}
             {formData.status !== 'Planned' && formData.status !== 'Missed' && (
               <div className="p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="block text-sm font-semibold mb-2">{t('entryPrice')} *</Label>
                     <Input
@@ -912,7 +956,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="block text-sm font-semibold mb-2">Kwota SL</Label>
                     <Input
@@ -937,7 +981,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="block text-sm font-semibold mb-2">Commission</Label>
                     <Input
@@ -951,7 +995,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="block text-sm font-semibold mb-2">{t('rr')}</Label>
                     <Input
@@ -1025,7 +1069,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                     )})}
                   </div>
 
-                  <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-2 text-sm">
                       <div className="text-xs text-slate-500 dark:text-slate-400">Suma zamkniec</div>
                       <div className="font-semibold text-slate-800 dark:text-slate-200">{totalScaleOutSize.toFixed(2)}</div>
@@ -1072,8 +1116,36 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                 </div>
             )}
 
-            {/* Manual P&L */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-700">
+            {/* Manual P&L + Outcome */}
+            {formData.status !== "Planned" && formData.status !== "Missed" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-white dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-700">
+              <div>
+                <Label className="block text-sm font-semibold mb-2">{t('outcome')}</Label>
+                <select
+                  value={resolveOutcome()}
+                  onChange={(e) => {
+                    setManualOutcomeOverride(true);
+                    setFormData((prev) => ({ ...prev, outcome: e.target.value }));
+                  }}
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Win">Win</option>
+                  <option value="Loss">Loss</option>
+                  <option value="Breakeven">{t('breakeven')}</option>
+                </select>
+                {manualOutcomeOverride && (
+                  <button
+                    type="button"
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-700"
+                    onClick={() => {
+                      setManualOutcomeOverride(false);
+                      setFormData((prev) => ({ ...prev, outcome: "" }));
+                    }}
+                  >
+                    Użyj auto-wyniku
+                  </button>
+                )}
+              </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <Label className="block text-sm font-semibold">{t('profitLoss')}</Label>
@@ -1122,10 +1194,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                   </button>
                 )}
               </div>
-              <div className="flex items-end text-sm text-slate-500">
-                {manualPLOvride ? t('profitLossManualHint') : 'Auto: wartosc aktualizuje sie na podstawie wszystkich czesci zamkniec i commission.'}
-              </div>
             </div>
+            )}
 
             {/* Notes & Tags */}
             <div className="p-4 bg-white dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -1141,67 +1211,13 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
               </div>
             </div>
 
-            {/* Dziennik emocji — wysuwany panel z lewej */}
-            <button
-              type="button"
-              onClick={() => setEmotionsOpen(true)}
-              className="w-full flex items-center justify-between gap-3 p-4 rounded-lg border border-purple-200 dark:border-purple-900/50 bg-purple-50 dark:bg-purple-950/30 hover:border-purple-400 transition text-left"
-            >
-              <span className="flex items-center gap-3">
-                <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-purple-600 text-white">
-                  <Brain className="w-5 h-5" />
-                </span>
-                <span>
-                  <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">Dziennik emocji</span>
-                  <span className="block text-xs text-slate-500 dark:text-slate-400">Przed wejściem · w trakcie · po zakończeniu</span>
-                </span>
-              </span>
-              {countFilledEmotionStages(formData.emotions) > 0 && (
-                <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-purple-600 text-white">
-                  {countFilledEmotionStages(formData.emotions)}/3
-                </span>
-              )}
-            </button>
-
-            {/* Poziom pewności setupu */}
-            <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div>
-                  <Label className="block text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {t('setupConfidence')}
-                  </Label>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md">
-                    {t('setupConfidenceHint')}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      aria-label={`${t('setupConfidence')} ${n}`}
-                      onClick={() => setFormData((prev) => ({
-                        ...prev,
-                        setup_confidence: prev.setup_confidence === n ? 0 : n,
-                      }))}
-                      className="p-0.5 transition-transform hover:scale-110"
-                    >
-                      <Star
-                        className={`w-7 h-7 ${n <= formData.setup_confidence ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
             {/* Screenshots */}
             <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-lg space-y-4">
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Wybierz zdjęcie — podgląd od razu, wysyłka po kliknięciu Zapisz.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <ScreenshotField
                   slotId={`${formUid}-screenshot-1`}
                   label={`${t('screenshot')} 1`}
@@ -1247,13 +1263,30 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
               </div>
             </div>
 
-            {/* P&L Preview */}
-            {calculatePL() && (
-              <div className="p-4 bg-gray-100 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  {t('profitLoss')}: <span className={calculatePL().outcome === 'Win' ? 'text-green-600 font-bold' : calculatePL().outcome === 'Loss' ? 'text-red-600 font-bold' : 'text-gray-600 font-bold'}>
-                    {calculatePL().outcome}
+            {(calculatePL() || resolveOutcome()) && (
+              <div className="p-4 bg-gray-100 dark:bg-slate-800 rounded-lg">
+                <p className="text-sm text-gray-600 dark:text-slate-300">
+                  {t('profitLoss')}:{" "}
+                  <span className="font-bold text-slate-800 dark:text-slate-100">
+                    {manualPLOvride ? formData.profit_loss_manual : (calculatePL()?.profit_loss ?? "—")}
                   </span>
+                  {resolveOutcome() ? (
+                    <>
+                      {" · "}
+                      {t('outcome')}:{" "}
+                      <span
+                        className={
+                          resolveOutcome() === "Win"
+                            ? "text-green-600 font-bold"
+                            : resolveOutcome() === "Loss"
+                              ? "text-red-600 font-bold"
+                              : "text-amber-600 font-bold"
+                        }
+                      >
+                        {resolveOutcome() === "Breakeven" ? "BE" : resolveOutcome()}
+                      </span>
+                    </>
+                  ) : null}
                 </p>
               </div>
             )}
@@ -1275,14 +1308,9 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
             </div>
           </form>
           <ImageViewer open={viewerOpen} onOpenChange={setViewerOpen} imageUrl={viewerImage} />
-          <EmotionsPanel
-            open={emotionsOpen}
-            onOpenChange={setEmotionsOpen}
-            value={formData.emotions}
-            onChange={(next) => setFormData((prev) => ({ ...prev, emotions: next }))}
-          />
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

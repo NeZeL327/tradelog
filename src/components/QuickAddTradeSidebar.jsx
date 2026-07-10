@@ -1,7 +1,7 @@
 ﻿import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
 import TradeFormNew from "@/components/TradeFormNew";
 import { useAuth } from "@/lib/AuthContext";
 import { cn } from "@/lib/utils";
@@ -63,17 +63,20 @@ export default function QuickAddTradeSidebar() {
 
       <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
         <DialogContent
-          className="max-w-2xl max-h-[90vh] overflow-y-auto"
+          className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
           {...preventDialogDismissProps}
           onEscapeKeyDown={(event) => event.preventDefault()}
         >
-          <DialogHeader>
+          <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
             <DialogTitle>Dodaj nowy trade</DialogTitle>
-          </DialogHeader>
+          </div>
+          <div className="p-4">
           <TradeFormNew 
+            embedded
             onClose={() => setShowAddForm(false)}
             onSuccess={() => setShowAddForm(false)}
           />
+          </div>
         </DialogContent>
       </Dialog>
     </>

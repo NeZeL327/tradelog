@@ -1,7 +1,7 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
-import { directionChartColor, getTradeRealizedPL, isClosedTrade } from '@/lib/utils';
+import { directionChartColor, getTradeRealizedPL, isClosedTrade, tradeOutcomeDisplay } from '@/lib/utils';
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -94,7 +94,10 @@ export default function Analytics() {
 
   const uniqueSymbols = [...new Set(tradesFromActiveAccounts.map(t => t.symbol).filter(Boolean))];
   const uniqueDirections = [...new Set(tradesFromActiveAccounts.map(t => normalizeDirection(t.direction)).filter(Boolean))];
-  const uniqueOutcomes = [...new Set(tradesFromActiveAccounts.map(t => t.outcome).filter(Boolean))];
+  const uniqueOutcomes = [...new Set([
+    ...["Win", "Loss", "Breakeven"],
+    ...tradesFromActiveAccounts.map(t => t.outcome).filter(Boolean),
+  ])];
   const uniqueTimeframes = [...new Set(tradesFromActiveAccounts.map(t => t.timeframe).filter(Boolean))];
 
   const toggleMultiFilter = (setter, value) => {
@@ -130,7 +133,7 @@ export default function Analytics() {
     (value) => strategies.find((strategy) => String(strategy.id) === String(value))?.name
   );
   const selectedDirectionsLabel = getMultiFilterLabel(filterDirections, t('all'), (value) => value);
-  const selectedOutcomesLabel = getMultiFilterLabel(filterOutcomes, t('all'), (value) => value);
+  const selectedOutcomesLabel = getMultiFilterLabel(filterOutcomes, t('all'), (value) => tradeOutcomeDisplay(value));
   const selectedTimeframesLabel = getMultiFilterLabel(filterTimeframes, t('all'), (value) => value);
 
   // Filter trades by selected filters
@@ -333,18 +336,20 @@ export default function Analytics() {
 
   // Średnia ocena emocji wg etapu: wygrane vs przegrane
   const stageRatingByOutcome = emoStages.map((s) => {
-    let winSum = 0, winN = 0, lossSum = 0, lossN = 0;
+    let winSum = 0, winN = 0, lossSum = 0, lossN = 0, beSum = 0, beN = 0;
     tradesWithEmotions.forEach((tr) => {
       const st = normalizeEmotions(tr.emotions)[s.key];
       if (st.rating > 0) {
         if (tr.outcome === 'Win') { winSum += st.rating; winN++; }
         else if (tr.outcome === 'Loss') { lossSum += st.rating; lossN++; }
+        else if (tr.outcome === 'Breakeven') { beSum += st.rating; beN++; }
       }
     });
     return {
       stage: s.label,
       win: winN > 0 ? Number((winSum / winN).toFixed(2)) : 0,
       loss: lossN > 0 ? Number((lossSum / lossN).toFixed(2)) : 0,
+      breakeven: beN > 0 ? Number((beSum / beN).toFixed(2)) : 0,
     };
   });
 
@@ -571,7 +576,7 @@ export default function Analytics() {
       name: t('breakeven'),
       count: outcomeCounts.breakeven,
       rate: outcomeTotal ? (outcomeCounts.breakeven / outcomeTotal) * 100 : 0,
-      fill: '#94a3b8'
+      fill: '#f59e0b'
     },
     {
       name: t('losses'),
@@ -890,7 +895,7 @@ export default function Analytics() {
                       onClick={() => toggleMultiFilter(setFilterOutcomes, out)}
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
-                      <span className="truncate">{out}</span>
+                      <span className="truncate">{tradeOutcomeDisplay(out)}</span>
                       <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -980,6 +985,36 @@ export default function Analytics() {
               {t('reset')}
             </Button>
           </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="border-emerald-200/70 dark:border-emerald-900/50 bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-950/30 dark:to-card shadow-sm">
+            <CardContent className="p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{t('wins')}</p>
+              <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{outcomeCounts.wins}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {outcomeTotal ? `${((outcomeCounts.wins / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-amber-200/70 dark:border-amber-900/50 bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-950/30 dark:to-card shadow-sm">
+            <CardContent className="p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">BE</p>
+              <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">{outcomeCounts.breakeven}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {outcomeTotal ? `${((outcomeCounts.breakeven / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-rose-200/70 dark:border-rose-900/50 bg-gradient-to-br from-rose-50/80 to-white dark:from-rose-950/30 dark:to-card shadow-sm">
+            <CardContent className="p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">{t('losses')}</p>
+              <p className="text-3xl font-bold text-rose-600 dark:text-rose-400 mt-1">{outcomeCounts.losses}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {outcomeTotal ? `${((outcomeCounts.losses / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -2438,6 +2473,7 @@ export default function Analytics() {
                             />
                             <Legend />
                             <Bar dataKey="win" name={t('ratingWin')} fill="#22c55e" radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="breakeven" name={t('ratingBreakeven')} fill="#f59e0b" radius={[6, 6, 0, 0]} />
                             <Bar dataKey="loss" name={t('ratingLoss')} fill="#ef4444" radius={[6, 6, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>

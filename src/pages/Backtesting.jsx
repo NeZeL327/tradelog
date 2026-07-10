@@ -76,11 +76,7 @@ import { toast } from "sonner";
 import ImageViewer from "@/components/common/ImageViewer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
-import EmotionsPanel, {
-  createEmptyEmotions,
-  normalizeEmotions,
-  countFilledEmotionStages,
-} from "@/components/EmotionsPanel";
+import { EmotionsInlinePanel, createEmptyEmotions, normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
 
 const OUTCOMES = ["Win", "Loss", "Breakeven"];
 const DIRECTIONS = ["Long", "Short"];
@@ -169,6 +165,13 @@ export default function Backtesting() {
   const [form, setForm] = useState(emptyForm);
   const [filePending, setFilePending] = useState(null);
   const [emotionsOpen, setEmotionsOpen] = useState(false);
+  const [detailEmotionsOpen, setDetailEmotionsOpen] = useState(false);
+
+  useEffect(() => {
+    if (detailRow) {
+      setDetailEmotionsOpen(countFilledEmotionStages(detailRow.emotions) > 0);
+    }
+  }, [detailRow]);
 
   const toggleInArray = (field, value) =>
     setForm((f) => {
@@ -1461,9 +1464,19 @@ export default function Backtesting() {
       </div>
 
       <Dialog open={!!detailRow} onOpenChange={(o) => { if (!o) setDetailRow(null); }}>
-        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto bg-background dark:bg-card border-border gap-0 p-0">
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto bg-background dark:bg-card border-border gap-0 p-0">
           {detailRow && (
-            <>
+            <div className="flex flex-col lg:flex-row gap-0 items-stretch">
+              {detailEmotionsOpen && countFilledEmotionStages(detailRow.emotions) > 0 && (
+                <EmotionsInlinePanel
+                  readOnly
+                  value={detailRow.emotions}
+                  showSetupConfidence={false}
+                  onClose={() => setDetailEmotionsOpen(false)}
+                  className="lg:rounded-l-xl lg:rounded-r-none"
+                />
+              )}
+              <div className="flex-1 min-w-0">
               <DialogHeader className="px-6 py-4 border-b border-border bg-muted/30">
                 <DialogTitle className="text-lg flex items-center gap-2">
                   <FlaskConical className="w-5 h-5 text-primary" />
@@ -1488,6 +1501,25 @@ export default function Backtesting() {
                 </div>
               </DialogHeader>
               <div className="p-6 space-y-4">
+                {!detailEmotionsOpen && countFilledEmotionStages(detailRow.emotions) > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setDetailEmotionsOpen(true)}
+                    className="w-full flex items-center justify-between gap-3 p-3 rounded-lg border border-purple-200 dark:border-purple-900/50 bg-purple-50 dark:bg-purple-950/30 hover:border-purple-400 transition text-left"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-600 text-white">
+                        <Brain className="w-4 h-4" />
+                      </span>
+                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Pokaż dziennik emocji
+                      </span>
+                    </span>
+                    <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 bg-white dark:bg-slate-900 rounded-full px-2 py-0.5">
+                      {countFilledEmotionStages(detailRow.emotions)}/3
+                    </span>
+                  </button>
+                )}
                 {(detailRow.strategy_description ||
                   strategyDescriptionLookup(detailRow.strategy_id)) ? (
                   <div className="rounded-xl border border-border bg-muted/15 p-4">
@@ -1550,29 +1582,6 @@ export default function Backtesting() {
                       {detailRow.mistakes.map((m, i) => (
                         <span key={i} className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs">{m}</span>
                       ))}
-                    </div>
-                  </div>
-                ) : null}
-                {countFilledEmotionStages(detailRow.emotions) > 0 ? (
-                  <div className="rounded-xl border border-violet-200 dark:border-violet-900/40 bg-violet-50/50 dark:bg-violet-950/20 p-4">
-                    <p className="text-xs font-medium text-violet-700 dark:text-violet-300 mb-2 flex items-center gap-1.5"><Brain className="w-3.5 h-3.5" /> Emocje</p>
-                    <div className="space-y-1.5">
-                      {[
-                        { key: "before", label: "Przed" },
-                        { key: "during", label: "W trakcie" },
-                        { key: "after", label: "Po" },
-                      ].map(({ key, label }) => {
-                        const st = normalizeEmotions(detailRow.emotions)[key];
-                        if (st.rating === 0 && st.tags.length === 0 && !st.comment.trim()) return null;
-                        return (
-                          <div key={key} className="text-xs">
-                            <span className="font-semibold text-slate-700 dark:text-slate-200">{label}:</span>{" "}
-                            {st.rating > 0 ? <span className="text-amber-500">{"★".repeat(st.rating)}</span> : null}{" "}
-                            <span className="text-slate-600 dark:text-slate-300">{st.tags.join(", ")}</span>
-                            {st.comment.trim() ? <span className="text-muted-foreground italic"> — {st.comment}</span> : null}
-                          </div>
-                        );
-                      })}
                     </div>
                   </div>
                 ) : null}
@@ -1662,14 +1671,26 @@ export default function Backtesting() {
                   </Button>
                 </div>
               </div>
-            </>
+            </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) { resetForm(); setDialogOpen(false); } }}>
-        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto bg-background dark:bg-card border-border">
-          <DialogHeader className="border-b border-border pb-3">
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto bg-background dark:bg-card border-border gap-0 p-0">
+          <div className="flex flex-col lg:flex-row gap-0 items-stretch">
+            {emotionsOpen && (
+              <EmotionsInlinePanel
+                value={form.emotions}
+                onChange={(next) => setForm((f) => ({ ...f, emotions: next }))}
+                showSetupConfidence={false}
+                onClose={() => setEmotionsOpen(false)}
+                className="lg:rounded-l-xl lg:rounded-r-none"
+              />
+            )}
+          <div className="flex-1 min-w-0 p-6 overflow-y-auto max-h-[92vh]">
+          <DialogHeader className="border-b border-border pb-3 -mt-2">
             <DialogTitle className="flex items-center gap-2">
               <FlaskConical className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
               {editingId ? t("backtestEditEntry") : t("backtestAddEntry")}
@@ -1893,8 +1914,12 @@ export default function Backtesting() {
               </div>
               <button
                 type="button"
-                onClick={() => setEmotionsOpen(true)}
-                className="rounded-lg border border-violet-200 dark:border-violet-900/50 p-3 bg-violet-50 dark:bg-violet-950/20 hover:border-violet-400 transition flex items-center justify-between gap-2 text-left"
+                onClick={() => setEmotionsOpen((open) => !open)}
+                className={`rounded-lg border p-3 transition flex items-center justify-between gap-2 text-left ${
+                  emotionsOpen
+                    ? "border-violet-400 dark:border-violet-600 bg-violet-100 dark:bg-violet-950/50"
+                    : "border-violet-200 dark:border-violet-900/50 bg-violet-50 dark:bg-violet-950/20 hover:border-violet-400"
+                }`}
               >
                 <span className="flex items-center gap-2">
                   <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-violet-600 text-white">
@@ -1989,6 +2014,8 @@ export default function Backtesting() {
                 {saveMutation.isPending ? t("loading") : t("save")}
               </Button>
             </div>
+          </div>
+          </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -2091,13 +2118,6 @@ export default function Backtesting() {
         open={viewerOpen}
         onOpenChange={setViewerOpen}
         imageUrl={viewerUrl}
-      />
-
-      <EmotionsPanel
-        open={emotionsOpen}
-        onOpenChange={setEmotionsOpen}
-        value={form.emotions}
-        onChange={(next) => setForm((f) => ({ ...f, emotions: next }))}
       />
     </div>
   );

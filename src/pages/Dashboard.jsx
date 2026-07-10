@@ -14,6 +14,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOf
 import { enUS, pl } from "date-fns/locale";
 import TradeCard from "../components/TradeCard";
 import TradeFormNew from "../components/TradeFormNew";
+import TradeDetailView from "../components/TradeDetailView";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionLabel, getTradeRealizedPL, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor } from "@/lib/utils";
@@ -2595,15 +2596,16 @@ export default function Dashboard() {
         {/* Add Trade Dialog */}
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
           <DialogContent
-            className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
+            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0"
             {...preventDialogDismissProps}
             onEscapeKeyDown={(event) => event.preventDefault()}
           >
-            <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
+            <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
               <DialogTitle>{t('addTrade')}</DialogTitle>
             </div>
-            <div className="p-6">
+            <div className="p-4">
               <TradeFormNew
+                embedded
                 onSuccess={() => {
                   refetch();
                   setShowAddForm(false);
@@ -2617,13 +2619,13 @@ export default function Dashboard() {
         {/* Edit Trade Dialog */}
         <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
           <DialogContent
-            className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-card p-0"
+            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0"
             {...preventDialogDismissProps}
           >
-            <div className="sticky top-0 bg-white dark:bg-card p-6 border-b border-border">
+            <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
               <DialogTitle>Edit Trade</DialogTitle>
             </div>
-            <div className="p-6">
+            <div className="p-4">
               {editingTrade && (
                 <TradeFormNew
                   key={editingTrade.id}
@@ -2642,13 +2644,13 @@ export default function Dashboard() {
 
         {/* Trade Detail Dialog */}
         <Dialog open={!!selectedTrade} onOpenChange={() => setSelectedTrade(null)}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-card border-slate-200 dark:border-slate-700">
+          <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-700">
             <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 text-white px-6 py-4 border-b border-slate-200 dark:border-slate-700">
               <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
             </DialogHeader>
             <div className="p-6 bg-white dark:bg-card">
               {selectedTrade && (
-                <TradeCard
+                <TradeDetailView
                   trade={selectedTrade}
                   onEdit={(tradeToEdit) => {
                     setSelectedTrade(null);
