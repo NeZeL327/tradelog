@@ -10,11 +10,11 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Calendar as Calend
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek } from "date-fns";
 import { pl, enUS } from "date-fns/locale";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass, tradeOutcomeDisplay } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, getTradeRealizedPL, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass, tradeOutcomeDisplay } from "@/lib/utils";
 import TradeCard from "../components/TradeCard";
 import TradeFormNew from "../components/TradeFormNew";
 import TradeDetailView from "../components/TradeDetailView";
-import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
+import { formatTradeDate, formatTradeClock, getDateFormat } from "@/lib/userSettings";
 
 export default function Calendar() {
   const { t, language } = useLanguage();
@@ -76,7 +76,7 @@ export default function Calendar() {
     const symbolTrades = trades.filter(t => t.symbol === trade.symbol && isCalendarVisibleTrade(t) && isFromActiveAccount(t));
     const wins = symbolTrades.filter(t => t.outcome === "Win").length;
     const total = symbolTrades.length;
-    const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+    const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
     const avgPLForSymbol = total ? (totalPLForSymbol / total) : 0;
 
     const account = accounts.find(a => String(a.id) === String(trade.account_id));
@@ -125,7 +125,7 @@ export default function Calendar() {
     const dayTrades = tradesByDate[dateStr] || [];
     const wins = dayTrades.filter(t => t.outcome === "Win").length;
     const losses = dayTrades.filter(t => t.outcome === "Loss").length;
-    const totalPL = dayTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+    const totalPL = dayTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
     
     return { trades: dayTrades.length, wins, losses, totalPL };
   };
@@ -254,17 +254,17 @@ export default function Calendar() {
                       <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{selectedTrades.length}</p>
                     </div>
                     <div className={`p-3 rounded-lg text-center ${
-                      selectedTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) >= 0 
+                      selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) >= 0 
                         ? 'bg-green-50 dark:bg-green-950' 
                         : 'bg-red-50 dark:bg-red-950'
                     }`}>
                       <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">P&L</p>
                       <p className={`text-xl font-bold ${
-                        selectedTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) >= 0 
+                        selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) >= 0 
                           ? 'text-green-600 dark:text-green-400' 
                           : 'text-red-600 dark:text-red-400'
                       }`}>
-                        {selectedTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0).toFixed(2)}
+                        {selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -280,7 +280,7 @@ export default function Calendar() {
                           <div className="flex items-start justify-between mb-2">
                             <div>
                               <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">{trade.symbol}</h3>
-                              <p className="text-xs text-slate-600 dark:text-slate-400">{trade.open_time || trade.time || '--:--'}</p>
+                              <p className="text-xs text-slate-600 dark:text-slate-400">{formatTradeClock(trade, "entry") || trade.open_time || trade.time || '--:--'}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <Badge className={tradeStatusBadgeClass(trade.status)}>
@@ -324,7 +324,10 @@ export default function Calendar() {
                             )}
                           </div>
 
-                          {trade.profit_loss != null && (
+                          {(() => {
+                            const pl = getTradeRealizedPL(trade);
+                            if (pl == null) return null;
+                            return (
                             <div className={`mt-3 p-2 rounded-lg text-center ${tradeOutcomeToneClass(trade.outcome)}`}>
                               <div className="flex items-center justify-center gap-2">
                                 {trade.outcome === "Win" ? (
@@ -337,11 +340,12 @@ export default function Calendar() {
                                   trade.outcome === "Loss" ? 'text-rose-600 dark:text-rose-300' : 
                                   'text-amber-600 dark:text-amber-300'
                                 }`}>
-                                  {parseFloat(trade.profit_loss) > 0 ? '+' : ''}{parseFloat(trade.profit_loss).toFixed(2)}
+                                  {pl > 0 ? '+' : ''}{pl.toFixed(2)}
                                 </span>
                               </div>
                             </div>
-                          )}
+                            );
+                          })()}
 
                           {trade.notes && (
                             <p className="text-xs text-slate-600 dark:text-slate-400 mt-3 line-clamp-2">
@@ -382,8 +386,9 @@ export default function Calendar() {
                 });
                 const wins = monthTrades.filter(t => t.outcome === "Win").length;
                 const losses = monthTrades.filter(t => t.outcome === "Loss").length;
-                const totalPL = monthTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
-                const winRate = monthTrades.length > 0 ? ((wins / monthTrades.length) * 100).toFixed(1) : 0;
+                const totalPL = monthTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
+                const decided = wins + losses;
+                const winRate = decided > 0 ? ((wins / decided) * 100).toFixed(1) : 0;
 
                 return (
                   <>
@@ -464,7 +469,7 @@ export default function Calendar() {
                         <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                           <td className="p-4 text-sm text-slate-900 dark:text-slate-100">
                             {fmtDate(trade.date)}
-                            {trade.open_time && <div className="text-xs text-slate-500 dark:text-slate-400">{t('open')}: {trade.open_time}</div>}
+                            {trade.open_time && <div className="text-xs text-slate-500 dark:text-slate-400">{t('open')}: {formatTradeClock(trade, "entry") || trade.open_time}</div>}
                             {trade.close_time && <div className="text-xs text-slate-500 dark:text-slate-400">{t('close')}: {trade.close_time}</div>}
                           </td>
                           <td className="p-4">
@@ -481,24 +486,26 @@ export default function Calendar() {
                           <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.entry_price}</td>
                           <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.exit_price || '-'}</td>
                           <td className="p-4">
-                            {trade.profit_loss != null ? (
+                            {(() => {
+                              const pl = getTradeRealizedPL(trade);
+                              if (pl == null) return <span className="text-slate-400">-</span>;
+                              return (
                               <div className="flex items-center gap-1">
-                                {parseFloat(trade.profit_loss) > 0 ? (
+                                {pl > 0 ? (
                                   <TrendingUp className="w-4 h-4 text-green-600" />
-                                ) : parseFloat(trade.profit_loss) < 0 ? (
+                                ) : pl < 0 ? (
                                   <TrendingDown className="w-4 h-4 text-red-600" />
                                 ) : null}
                                 <span className={`font-semibold ${
-                                  parseFloat(trade.profit_loss) > 0 ? 'text-green-600' : 
-                                  parseFloat(trade.profit_loss) < 0 ? 'text-red-600' : 
+                                  pl > 0 ? 'text-green-600' : 
+                                  pl < 0 ? 'text-red-600' : 
                                   'text-slate-600'
                                 }`}>
-                                  {parseFloat(trade.profit_loss) > 0 ? '+' : ''}{parseFloat(trade.profit_loss).toFixed(2)}
+                                  {pl > 0 ? '+' : ''}{pl.toFixed(2)}
                                 </span>
                               </div>
-                            ) : (
-                              <span className="text-slate-400">-</span>
-                            )}
+                              );
+                            })()}
                           </td>
                           <td className="p-4">
                             {trade.outcome && (

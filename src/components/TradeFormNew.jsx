@@ -12,6 +12,7 @@ import ImageViewer from "@/components/common/ImageViewer";
 import { normalizeDirection } from "@/lib/utils";
 import { EmotionsInlinePanel, createEmptyEmotions, normalizeEmotions } from "@/components/EmotionsPanel";
 import { cn } from "@/lib/utils";
+import { getTradeTimeSource, TIMEZONE_OPTIONS } from "@/lib/userSettings";
 
 const SCREENSHOT_KEYS = ["screenshot_1", "screenshot_2", "screenshot_3"];
 
@@ -869,6 +870,13 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
             {/* Time Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-slate-800/40 rounded-lg">
+              <div className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400">
+                Godziny zapisujesz w strefie:{" "}
+                <span className="font-semibold text-slate-700 dark:text-slate-200">
+                  {TIMEZONE_OPTIONS.find((o) => o.value === getTradeTimeSource())?.label || getTradeTimeSource()}
+                </span>
+                {" "}(Ustawienia → Czas zapisany w trade'ach)
+              </div>
               <div>
                 <Label className="block text-sm font-semibold mb-2">{t('entryTime')}</Label>
                 <Input

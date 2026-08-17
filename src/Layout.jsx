@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
+import SessionClocks from "@/components/SessionClocks";
 import Footer from "@/components/Footer";
 import { applyTheme } from "@/lib/userSettings";
 import { getAvatarPreset, getUserDisplayName, getUserInitials } from "@/lib/avatars";
@@ -243,6 +244,7 @@ function LayoutContent({ children }) {
             </div>
 
             <div className="flex items-center gap-2">
+              <SessionClocks />
               <LanguageToggle />
               <ThemeToggle />
               {/* Desktop user button */}

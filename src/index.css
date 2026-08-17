@@ -14,6 +14,8 @@ body {
   height: 100%;
   margin: 0;
   overflow: hidden;
+  /* Zoom leaves uncovered strips around #root — match dark shell so no white gap */
+  background-color: #020617;
 }
 
 #root {
@@ -26,6 +28,7 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  background-color: #020617;
 }
 
 @supports not (zoom: 1) {

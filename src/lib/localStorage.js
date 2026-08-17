@@ -224,11 +224,36 @@ export const getDeletedTrades = async (userId) => {
   });
 };
 
+const stripUndefinedDeep = (value) => {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefinedDeep).filter((item) => item !== undefined);
+  }
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    // Keep Firestore FieldValue / Timestamp-like objects as-is
+    if (typeof value.isEqual === 'function' || typeof value.toMillis === 'function') {
+      return value;
+    }
+    const out = {};
+    for (const [key, nested] of Object.entries(value)) {
+      if (nested === undefined) continue;
+      if (typeof nested === 'number' && Number.isNaN(nested)) continue;
+      out[key] = stripUndefinedDeep(nested);
+    }
+    return out;
+  }
+  return value;
+};
+
 export const createTrade = async (userId, tradeData) => {
   return runSafe('createTrade', async () => {
     if (!userId) throw new Error('Użytkownik nie jest zalogowany');
-    const payload = {
+    const cleaned = stripUndefinedDeep({
       ...tradeData,
+      account_id: tradeData?.account_id != null ? String(tradeData.account_id) : tradeData?.account_id,
+      status: tradeData?.status || 'Closed',
+    });
+    const payload = {
+      ...cleaned,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };

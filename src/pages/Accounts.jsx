@@ -391,6 +391,8 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
               existingTrades={trades}
               onImportSuccess={() => {
                 queryClient.invalidateQueries({ queryKey: ['trades', user?.id] });
+                queryClient.invalidateQueries({ queryKey: ['trades'] });
+                queryClient.refetchQueries({ queryKey: ['trades', user?.id] });
               }}
             />
             <Button size="sm" variant="outline" onClick={() => onEdit(account)} className="h-8 w-8 p-0">

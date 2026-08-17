@@ -17,6 +17,7 @@ import {
   loadLocalUserSettings,
   pickUserSettings,
   saveLocalUserSettings,
+  TIMEZONE_OPTIONS,
 } from "@/lib/userSettings";
 import { AVATAR_PRESETS, getAvatarPreset, getUserInitials } from "@/lib/avatars";
 
@@ -156,8 +157,16 @@ export default function Settings() {
       email: "Email",
       language: "Język",
       currency: "Domyślna waluta",
-      timezone: "Strefa czasowa",
+      timezone: "Strefa wyświetlania",
+      timezoneDesc: "W tej strefie pokazujemy godziny w dzienniku i na dashboardzie",
+      tradeTimeSource: "Czas zapisany w trade'ach",
+      tradeTimeSourceDesc: "W jakiej strefie są godziny z brokera/CSV. Jeśli import jest w UTC, wybierz UTC — wtedy 10:27 UTC stanie się np. 11:27/12:27 PL. Przy serwerze MT4 GMT+2 wybierz Broker GMT+2 (10:27 → 9:27 PL zimą).",
       dateFormat: "Format daty",
+      timeFormat: "Format godziny",
+      timeFormat24: "24-godzinny",
+      timeFormat12: "12-godzinny (AM/PM)",
+      showSessionClocks: "Zegary sesji w pasku górnym",
+      showSessionClocksDesc: "Pokazuj aktualną godzinę PL, NY i Asia (Tokyo)",
       theme: "Motyw",
       skin: "Skórka",
       defaultAccount: "Domyślne konto",
@@ -198,8 +207,16 @@ export default function Settings() {
       email: "Email",
       language: "Language",
       currency: "Default Currency",
-      timezone: "Timezone",
+      timezone: "Display timezone",
+      timezoneDesc: "Timezone used to show times in journal and dashboard",
+      tradeTimeSource: "Times stored in trades",
+      tradeTimeSourceDesc: "Timezone of broker/CSV times. For UTC imports pick UTC. For common MT4 GMT+2 server pick Broker GMT+2.",
       dateFormat: "Date Format",
+      timeFormat: "Time format",
+      timeFormat24: "24-hour",
+      timeFormat12: "12-hour (AM/PM)",
+      showSessionClocks: "Session clocks in top bar",
+      showSessionClocksDesc: "Show current time for PL, NY and Asia (Tokyo)",
       theme: "Theme",
       skin: "Skin",
       defaultAccount: "Default Account",
@@ -439,14 +456,28 @@ export default function Settings() {
                   </div>
                   <div>
                     <Label>{t.timezone}</Label>
+                    <p className="text-xs text-muted-foreground mb-1.5">{t.timezoneDesc}</p>
                     <Select value={settings.timezone || "Europe/Warsaw"} onValueChange={(value) => setSettings({ ...settings, timezone: value })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Europe/Warsaw">Europe/Warsaw (GMT+1)</SelectItem>
-                        <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
-                        <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
-                        <SelectItem value="Asia/Tokyo">Asia/Tokyo (JST)</SelectItem>
-                        <SelectItem value="Australia/Sydney">Australia/Sydney (AEDT)</SelectItem>
+                        {TIMEZONE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>{t.tradeTimeSource}</Label>
+                    <p className="text-xs text-muted-foreground mb-1.5">{t.tradeTimeSourceDesc}</p>
+                    <Select
+                      value={settings.trade_time_source || "Europe/Warsaw"}
+                      onValueChange={(value) => setSettings({ ...settings, trade_time_source: value })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TIMEZONE_OPTIONS.map((opt) => (
+                          <SelectItem key={`src-${opt.value}`} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -461,6 +492,29 @@ export default function Settings() {
                         <SelectItem value="DD.MM.YYYY">DD.MM.YYYY (03.02.2026)</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label>{t.timeFormat}</Label>
+                    <Select
+                      value={settings.time_format || "24h"}
+                      onValueChange={(value) => setSettings({ ...settings, time_format: value })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="24h">{t.timeFormat24}</SelectItem>
+                        <SelectItem value="12h">{t.timeFormat12}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+                    <div className="space-y-0.5">
+                      <Label>{t.showSessionClocks}</Label>
+                      <p className="text-xs text-muted-foreground">{t.showSessionClocksDesc}</p>
+                    </div>
+                    <Switch
+                      checked={settings.show_session_clocks !== false}
+                      onCheckedChange={(checked) => setSettings({ ...settings, show_session_clocks: checked })}
+                    />
                   </div>
                   <div>
                     <Label>{t.theme}</Label>

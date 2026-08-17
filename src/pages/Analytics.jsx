@@ -13,6 +13,7 @@ import { ExportButton } from "../components/ExportButton";
 import { ImportButton } from "../components/ImportButton";
 import { useLanguage } from "@/components/LanguageProvider";
 import { normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
+import { convertTradeDateTime } from "@/lib/userSettings";
 
 export default function Analytics() {
   const { t } = useLanguage();
@@ -53,8 +54,16 @@ export default function Analytics() {
   });
 
   const activeAccounts = accounts.filter((account) => account.is_active !== false && account.status !== 'Inactive');
-  const activeAccountIds = new Set(activeAccounts.map((account) => String(account.id)));
-  const tradesFromActiveAccounts = trades.filter((trade) => activeAccountIds.has(String(trade.account_id)));
+  const inactiveAccountIds = new Set(
+    accounts
+      .filter((account) => account.is_active === false || account.status === 'Inactive')
+      .map((account) => String(account.id))
+  );
+  // Include trades without account_id; exclude only inactive accounts (same as Journal/Dashboard)
+  const tradesFromActiveAccounts = trades.filter((trade) => {
+    if (!trade.account_id) return true;
+    return !inactiveAccountIds.has(String(trade.account_id));
+  });
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies'],
@@ -151,21 +160,25 @@ export default function Analytics() {
   const symbolStats = {};
   filteredTrades.forEach(trade => {
     if (!symbolStats[trade.symbol]) {
-      symbolStats[trade.symbol] = { wins: 0, total: 0, pl: 0 };
+      symbolStats[trade.symbol] = { wins: 0, losses: 0, total: 0, pl: 0 };
     }
     symbolStats[trade.symbol].total++;
     if (trade.outcome === "Win") symbolStats[trade.symbol].wins++;
+    if (trade.outcome === "Loss") symbolStats[trade.symbol].losses++;
     symbolStats[trade.symbol].pl += (getTradeRealizedPL(trade) ?? 0);
   });
 
   const symbolData = Object.entries(symbolStats)
-    .map(([symbol, stats]) => ({
-      symbol,
-      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
-      avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
-      totalPL: Number(stats.pl.toFixed(2)),
-      trades: stats.total
-    }))
+    .map(([symbol, stats]) => {
+      const decided = stats.wins + stats.losses;
+      return {
+        symbol,
+        winRate: decided > 0 ? Number(((stats.wins / decided) * 100).toFixed(1)) : 0,
+        avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
+        totalPL: Number(stats.pl.toFixed(2)),
+        trades: stats.total
+      };
+    })
     .sort((a, b) => b.totalPL - a.totalPL)
     .slice(0, 10);
 
@@ -176,20 +189,24 @@ export default function Analytics() {
     const strategyName = strategy?.name || "Bez strategii";
     
     if (!strategyStats[strategyName]) {
-      strategyStats[strategyName] = { wins: 0, total: 0, pl: 0 };
+      strategyStats[strategyName] = { wins: 0, losses: 0, total: 0, pl: 0 };
     }
     strategyStats[strategyName].total++;
     if (trade.outcome === "Win") strategyStats[strategyName].wins++;
+    if (trade.outcome === "Loss") strategyStats[strategyName].losses++;
     strategyStats[strategyName].pl += (getTradeRealizedPL(trade) ?? 0);
   });
 
-  const strategyData = Object.entries(strategyStats).map(([name, stats]) => ({
-    name,
-    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
-    avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
-    totalPL: Number(stats.pl.toFixed(2)),
-    trades: stats.total
-  }));
+  const strategyData = Object.entries(strategyStats).map(([name, stats]) => {
+    const decided = stats.wins + stats.losses;
+    return {
+      name,
+      winRate: decided > 0 ? Number(((stats.wins / decided) * 100).toFixed(1)) : 0,
+      avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
+      totalPL: Number(stats.pl.toFixed(2)),
+      trades: stats.total
+    };
+  });
 
   // Timeframe analysis
   const timeframeStats = {};
@@ -415,8 +432,11 @@ export default function Analytics() {
 
   // === Analiza czasu wejścia (przedziały 15-minutowe + godzinowe) ===
   const parseEntryMinutes = (tr) => {
-    const raw = String(tr.entry_time || tr.time || '').trim();
-    const m = raw.match(/^(\d{1,2}):(\d{2})/);
+    const date = tr.date || "";
+    const raw = tr.entry_time || tr.time || "";
+    if (!raw) return null;
+    const converted = convertTradeDateTime(date, raw);
+    const m = String(converted.time || "").match(/^(\d{1,2}):(\d{2})/);
     if (!m) return null;
     const h = Number(m[1]);
     const min = Number(m[2]);
@@ -536,15 +556,19 @@ export default function Analytics() {
 
   // Account comparison
   const accountData = activeAccounts.map(account => {
-    const accountTrades = trades.filter(t => t.account_id === account.id && isClosedTrade(t));
+    const accountTrades = trades.filter(t => String(t.account_id) === String(account.id) && isClosedTrade(t));
     const wins = accountTrades.filter(t => t.outcome === "Win").length;
+    const losses = accountTrades.filter(t => t.outcome === "Loss").length;
+    const decided = wins + losses;
     const totalPL = accountTrades.reduce((sum, t) => sum + ((getTradeRealizedPL(t) ?? 0)), 0);
-    
+
     return {
       name: account.name,
-      winRate: accountTrades.length > 0 ? Number(((wins / accountTrades.length) * 100).toFixed(1)) : 0,
-      totalPL: Number(totalPL.toFixed(2)),
       trades: accountTrades.length,
+      wins,
+      winRate: decided > 0 ? Number(((wins / decided) * 100).toFixed(1)) : 0,
+      totalPL: Number(totalPL.toFixed(2)),
+      avgPL: accountTrades.length > 0 ? Number((totalPL / accountTrades.length).toFixed(2)) : 0,
       roi: account.initial_balance > 0 ? Number(((totalPL / parseFloat(account.initial_balance)) * 100).toFixed(2)) : 0
     };
   }).filter(a => a.trades > 0);
@@ -564,7 +588,9 @@ export default function Analytics() {
     losses: filteredTrades.filter(t => t.outcome === 'Loss').length,
     breakeven: filteredTrades.filter(t => t.outcome === 'Breakeven').length
   };
+  const outcomeDecided = outcomeCounts.wins + outcomeCounts.losses;
   const outcomeTotal = outcomeCounts.wins + outcomeCounts.losses + outcomeCounts.breakeven;
+  const outcomeWinRate = outcomeDecided > 0 ? (outcomeCounts.wins / outcomeDecided) * 100 : 0;
   const outcomeChartData = [
     {
       name: t('wins'),

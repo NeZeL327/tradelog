@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, TrendingUp, Target, Award, Star, AlertCircle } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
-import { isClosedTrade } from "@/lib/utils";
+import { getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
 
 export default function StrategyDetails() {
   const { id } = useParams();
@@ -71,23 +71,26 @@ export default function StrategyDetails() {
   );
 
   const strategyTrades = trades.filter(
-    (t) => t.strategy_id === id && isClosedTrade(t) && activeAccountIds.has(String(t.account_id))
+    (t) => t.strategy_id === id && isClosedTrade(t) && (!t.account_id || activeAccountIds.has(String(t.account_id)))
   );
   const wins = strategyTrades.filter(t => t.outcome === "Win").length;
   const losses = strategyTrades.filter(t => t.outcome === "Loss").length;
   const breakevens = strategyTrades.filter(t => t.outcome === "Breakeven").length;
 
   // Kalkulacje
-  const winRate = strategyTrades.length > 0 ? ((wins / strategyTrades.length) * 100).toFixed(1) : 0;
-  const totalPL = strategyTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+  const decided = wins + losses;
+  const winRate = decided > 0 ? ((wins / decided) * 100).toFixed(1) : 0;
+  const totalPL = strategyTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
   const avgPL = strategyTrades.length > 0 ? (totalPL / strategyTrades.length).toFixed(2) : 0;
-  const profitFactor = strategyTrades.length > 0 ? (wins / (losses || 1)).toFixed(2) : 0;
+  const winPLSum = strategyTrades.filter(t => t.outcome === "Win").reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
+  const lossPLSum = strategyTrades.filter(t => t.outcome === "Loss").reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
+  const profitFactor = Math.abs(lossPLSum) > 0 ? (winPLSum / Math.abs(lossPLSum)).toFixed(2) : (winPLSum > 0 ? "∞" : "0");
 
   // Dane do wykresu - P&L po transakcjach
   const cumulativePL = strategyTrades
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .reduce((acc, trade, idx) => {
-      const pl = parseFloat(trade.profit_loss) || 0;
+      const pl = getTradeRealizedPL(trade) ?? 0;
       const cumulative = (acc[idx - 1]?.cumulative || 0) + pl;
       acc.push({
         date: trade.date,
@@ -103,18 +106,19 @@ export default function StrategyDetails() {
   const monthlyStats = strategyTrades.reduce((acc, trade) => {
     const month = new Date(trade.date).toLocaleString('pl-PL', { year: 'numeric', month: 'short' });
     if (!acc[month]) {
-      acc[month] = { month, trades: 0, wins: 0, pl: 0 };
+      acc[month] = { month, trades: 0, wins: 0, losses: 0, pl: 0 };
     }
     acc[month].trades += 1;
     if (trade.outcome === "Win") acc[month].wins += 1;
-    acc[month].pl += parseFloat(trade.profit_loss) || 0;
+    if (trade.outcome === "Loss") acc[month].losses += 1;
+    acc[month].pl += getTradeRealizedPL(trade) ?? 0;
     return acc;
   }, {});
 
   const monthlyData = Object.values(monthlyStats).map(m => ({
     ...m,
     pl: parseFloat(m.pl.toFixed(2)),
-    winRate: m.trades > 0 ? ((m.wins / m.trades) * 100).toFixed(1) : 0
+    winRate: (m.wins + m.losses) > 0 ? ((m.wins / (m.wins + m.losses)) * 100).toFixed(1) : 0
   }));
 
   return (

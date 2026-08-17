@@ -6,7 +6,7 @@ import { TrendingUp, TrendingDown, Edit, Calendar, Clock, Target } from "lucide-
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionBadgeClass, directionLabel, getTradeRealizedPL, tradeOutcomeBadgeClass, tradeStatusBadgeClass, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
-import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
+import { formatTradeDate, formatTradeClock, getDateFormat } from "@/lib/userSettings";
 
 export default function TradeCard({ trade, onEdit = null }) {
   const { t } = useLanguage();
@@ -112,8 +112,8 @@ export default function TradeCard({ trade, onEdit = null }) {
             <Badge variant="outline">{t('lotSize')}: {trade.position_size || '-'}</Badge>
             <Badge variant="outline">{t('entryPrice')}: {trade.entry_price || '-'}</Badge>
             <Badge variant="outline">{t('closePrice')}: {trade.exit_price || '-'}</Badge>
-            <Badge variant="outline">{t('entryTime')}: {trade.entry_time || '-'}</Badge>
-            <Badge variant="outline">{t('exitTime')}: {trade.exit_time || '-'}</Badge>
+            <Badge variant="outline">{t('entryTime')}: {formatTradeClock(trade, "entry") || '-'}</Badge>
+            <Badge variant="outline">{t('exitTime')}: {formatTradeClock(trade, "exit") || '-'}</Badge>
           </div>
         </div>
 

@@ -18,11 +18,30 @@ import TradeDetailView from "../components/TradeDetailView";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionLabel, getTradeRealizedPL, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor } from "@/lib/utils";
-import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
+import { formatTradeDate, formatTradeClock, getDateFormat, getTradeEntryHour } from "@/lib/userSettings";
 
 // ─── Mini date-range calendar (same as Journal) ──────────────────────────────
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
+const MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS_PL = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
+
+function monthLabel(ym, language) {
+  if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return "";
+  const [y, m] = ym.split("-");
+  const idx = Number(m) - 1;
+  const names = language === "pl" ? MONTHS_PL : MONTHS_EN;
+  return `${names[idx] || m} ${y}`;
+}
+
+function monthBounds(ym) {
+  if (!ym || !/^\d{4}-\d{2}$/.test(ym)) return { from: "", to: "" };
+  const [y, m] = ym.split("-").map(Number);
+  const last = new Date(y, m, 0).getDate();
+  return {
+    from: `${ym}-01`,
+    to: `${ym}-${String(last).padStart(2, "0")}`,
+  };
+}
 
 function MiniCalendar({ from, to, onSelect }) {
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -93,7 +112,7 @@ export default function Dashboard() {
   }, []);
   const gridColor = isDark ? '#334155' : '#e2e8f0';
   const axisColor = isDark ? '#94a3b8' : '#64748b';
-  const dashboardFiltersStorageKey = `dashboard_filters_${user?.id || 'guest'}`;
+  const dashboardFiltersStorageKey = `dashboard_filters_v2_${user?.id || 'guest'}`;
   const dateLocale = language === "pl" ? pl : enUS;
   const dayLocale = language === "pl" ? "pl-PL" : "en-US";
   const hasLoadedDashboardFilters = useRef(false);
@@ -109,7 +128,7 @@ export default function Dashboard() {
   const [recentTradesAccountOpen, setRecentTradesAccountOpen] = useState(false);
   const recentTradesAccountRef = useRef(null);
   const [dashboardAccounts, setDashboardAccounts] = useState(["all"]);
-  const [dashboardRanges, setDashboardRanges] = useState(["30d"]);
+  const [dashboardRanges, setDashboardRanges] = useState(["all"]);
   const [rangeFilterOpen, setRangeFilterOpen] = useState(false);
   const rangeFilterMainRef = useRef(null);
   const rangeFilterChartRef = useRef(null);
@@ -128,6 +147,9 @@ export default function Dashboard() {
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const datePickerRef = useRef(null);
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [monthFilterOpen, setMonthFilterOpen] = useState(false);
+  const monthFilterRef = useRef(null);
 
   useEffect(() => {
     hasLoadedDashboardFilters.current = false;
@@ -140,10 +162,10 @@ export default function Dashboard() {
           setDashboardAccounts(parsed.dashboardAccounts.map((value) => String(value)));
         }
 
-        const validRanges = ["7d", "30d", "90d"];
+        const validRanges = ["all", "7d", "30d", "90d"];
         if (Array.isArray(parsed.dashboardRanges) && parsed.dashboardRanges.length > 0) {
           const normalizedRange = String(parsed.dashboardRanges[0]);
-          setDashboardRanges(validRanges.includes(normalizedRange) ? [normalizedRange] : ["30d"]);
+          setDashboardRanges(validRanges.includes(normalizedRange) ? [normalizedRange] : ["all"]);
         }
 
         if (Array.isArray(parsed.filterSymbols) && parsed.filterSymbols.length > 0) {
@@ -156,6 +178,10 @@ export default function Dashboard() {
 
         if (Array.isArray(parsed.filterOutcomes) && parsed.filterOutcomes.length > 0) {
           setFilterOutcomes(parsed.filterOutcomes.map((value) => String(value)));
+        }
+
+        if (typeof parsed.selectedMonth === "string" && /^\d{4}-\d{2}$/.test(parsed.selectedMonth)) {
+          setSelectedMonth(parsed.selectedMonth);
         }
       }
     } catch (error) {
@@ -173,7 +199,8 @@ export default function Dashboard() {
         dashboardFiltersStorageKey,
         JSON.stringify({
           dashboardAccounts,
-          dashboardRanges: [dashboardRanges[0] || "30d"],
+          dashboardRanges: [dashboardRanges[0] || "all"],
+          selectedMonth: selectedMonth || "",
           filterSymbols,
           filterDirections,
           filterOutcomes
@@ -186,6 +213,7 @@ export default function Dashboard() {
     dashboardFiltersStorageKey,
     dashboardAccounts,
     dashboardRanges,
+    selectedMonth,
     filterSymbols,
     filterDirections,
     filterOutcomes
@@ -273,34 +301,78 @@ export default function Dashboard() {
   );
   const dashboardRangeLabel = buildFilterLabel(
     dashboardRanges,
-    t('last30Days'),
-    (value) => (value === '7d' ? t('last7Days') : value === '90d' ? t('last90Days') : t('last30Days'))
+    t('allTime'),
+    (value) => (
+      value === 'all' ? t('allTime')
+        : value === '7d' ? t('last7Days')
+        : value === '90d' ? t('last90Days')
+        : t('last30Days')
+    )
   );
 
   const toggleDashboardAccount = (value) => toggleMultiFilter(setDashboardAccounts, value);
   const toggleDashboardRange = (value) => {
     const normalizedValue = String(value);
-    if (!["7d", "30d", "90d"].includes(normalizedValue)) return;
+    if (!["all", "7d", "30d", "90d"].includes(normalizedValue)) return;
+    setSelectedMonth("");
+    setDateRange({ from: "", to: "" });
     setDashboardRanges([normalizedValue]);
     setRangeFilterOpen(false);
   };
 
-  const rangeStartDate = (() => {
-    // If a custom date range is set, use it instead of the quick range buttons
-    if (dateRange.from) return new Date(dateRange.from + "T00:00:00");
-    const selectedRange = dashboardRanges[0] || "30d";
+  const selectDashboardMonth = (ym) => {
+    setSelectedMonth(ym);
+    setDateRange({ from: "", to: "" });
+    setDashboardRanges(["all"]);
+    setMonthFilterOpen(false);
+  };
+
+  const clearDashboardMonth = () => {
+    setSelectedMonth("");
+    setMonthFilterOpen(false);
+  };
+
+  const toDateKey = (value) => {
+    if (!value) return "";
+    const raw = String(value);
+    if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return "";
+    return parsed.toISOString().slice(0, 10);
+  };
+
+  const availableMonths = useMemo(() => {
+    const months = new Set();
+    tradesFromActiveAccounts.forEach((trade) => {
+      const key = toDateKey(trade.date);
+      if (key) months.add(key.slice(0, 7));
+    });
+    return [...months].sort((a, b) => b.localeCompare(a));
+  }, [tradesFromActiveAccounts]);
+
+  const monthBoundsActive = selectedMonth ? monthBounds(selectedMonth) : { from: "", to: "" };
+
+  const rangeStartKey = (() => {
+    if (selectedMonth) return monthBoundsActive.from;
+    if (dateRange.from) return dateRange.from;
+    const selectedRange = dashboardRanges[0] || "all";
+    if (selectedRange === "all") return null;
     const maxDays = selectedRange === "7d" ? 7 : selectedRange === "90d" ? 90 : 30;
     const d = new Date();
+    d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() - maxDays);
-    return d;
+    return d.toISOString().slice(0, 10);
   })();
 
-  const rangeEndDate = dateRange.to ? new Date(dateRange.to + "T23:59:59") : null;
+  const rangeEndKey = (() => {
+    if (selectedMonth) return monthBoundsActive.to;
+    return dateRange.to || null;
+  })();
 
   const filteredTrades = tradesFromActiveAccounts.filter(t => {
-    const tradeDate = t.date ? new Date(t.date) : null;
-    const afterStart = tradeDate ? tradeDate >= rangeStartDate : true;
-    const beforeEnd = rangeEndDate && tradeDate ? tradeDate <= rangeEndDate : true;
+    const tradeKey = toDateKey(t.date);
+    const afterStart = !rangeStartKey || !tradeKey || tradeKey >= rangeStartKey;
+    const beforeEnd = !rangeEndKey || !tradeKey || tradeKey <= rangeEndKey;
     return (
       (dashboardAccounts.includes("all") || !t.account_id || dashboardAccounts.includes(String(t.account_id))) &&
       (filterSymbols.includes("all") || filterSymbols.includes(String(t.symbol))) &&
@@ -317,20 +389,23 @@ export default function Dashboard() {
   const wins = closedTrades.filter(t => t.outcome === "Win").length;
   const losses = closedTrades.filter(t => t.outcome === "Loss").length;
   const breakeven = closedTrades.filter(t => t.outcome === "Breakeven").length;
-  const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : 0;
+  const decidedTrades = wins + losses;
+  const winRate = decidedTrades > 0 ? ((wins / decidedTrades) * 100).toFixed(1) : 0;
   
   const totalPL = closedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
   const avgPL = totalTrades > 0 ? (totalPL / totalTrades).toFixed(2) : 0;
-  const avgWin = wins > 0 ? (closedTrades.filter(t => t.outcome === "Win").reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / wins).toFixed(2) : 0;
-  const avgLoss = losses > 0 ? (closedTrades.filter(t => t.outcome === "Loss").reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / losses).toFixed(2) : 0;
+  const winPLSum = closedTrades.filter(t => t.outcome === "Win").reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
+  const lossPLSum = closedTrades.filter(t => t.outcome === "Loss").reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
+  const avgWin = wins > 0 ? (winPLSum / wins).toFixed(2) : 0;
+  const avgLoss = losses > 0 ? (lossPLSum / losses).toFixed(2) : 0;
   
-  const profitFactor = (avgLoss !== 0 && avgWin !== 0) ? Math.abs(avgWin / avgLoss).toFixed(2) : 0;
+  const profitFactor = Math.abs(lossPLSum) > 0 ? (winPLSum / Math.abs(lossPLSum)).toFixed(2) : (winPLSum > 0 ? "∞" : "0");
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const dayTrades = closedTrades.filter(t => t.date === todayStr);
   const dayWins = dayTrades.filter(t => t.outcome === "Win").length;
   const dayWinRate = dayTrades.length > 0 ? ((dayWins / dayTrades.length) * 100).toFixed(1) : 0;
-  const avgWinLossRatio = avgLoss !== 0 ? Math.abs(avgWin / avgLoss).toFixed(2) : 0;
+  const avgWinLossRatio = Math.abs(Number(avgLoss)) > 0 ? Math.abs(Number(avgWin) / Number(avgLoss)).toFixed(2) : (Number(avgWin) > 0 ? "∞" : "0");
 
   const plRing = Math.min((Math.abs(totalPL) / 1000) * 100, 100);
   const winRateRing = Math.min(parseFloat(winRate) || 0, 100);
@@ -393,13 +468,13 @@ export default function Dashboard() {
   ];
 
   const directionPieData = useMemo(() => {
-    const longCount = filteredTrades.filter((tr) => normalizeDirection(tr.direction) === 'Long').length;
-    const shortCount = filteredTrades.filter((tr) => normalizeDirection(tr.direction) === 'Short').length;
+    const longCount = closedTrades.filter((tr) => normalizeDirection(tr.direction) === 'Long').length;
+    const shortCount = closedTrades.filter((tr) => normalizeDirection(tr.direction) === 'Short').length;
     return [
       { name: t('longLabel'), value: longCount, color: '#22d3ee' },
       { name: t('shortLabel'), value: shortCount, color: '#fb923c' },
     ];
-  }, [filteredTrades, t]);
+  }, [closedTrades, t]);
 
   const monthlyStackData = useMemo(() => {
     const map = {};
@@ -545,6 +620,17 @@ export default function Dashboard() {
   }, [datePickerOpen]);
 
   useEffect(() => {
+    if (!monthFilterOpen) return;
+    const handleOutsideClick = (event) => {
+      if (monthFilterRef.current && !monthFilterRef.current.contains(event.target)) {
+        setMonthFilterOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [monthFilterOpen]);
+
+  useEffect(() => {
     if (!accountDropdownOpen) return;
 
     const handleOutsideClick = (event) => {
@@ -607,10 +693,10 @@ export default function Dashboard() {
     })
   ];
 
-  // Daily cumulative P&L — use all trades that have a profit_loss value
+  // Daily cumulative P&L — closed trades only
   const dailyCumulativeByDate = {};
-  [...filteredTrades]
-    .filter(t => t.date && t.profit_loss != null)
+  [...closedTrades]
+    .filter(t => t.date)
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .forEach(t => {
       const dateKey = t.date.substring(0, 10);
@@ -632,7 +718,7 @@ export default function Dashboard() {
 
   let running = 0;
   let peak = 0;
-  const drawdownData = [...filteredTrades]
+  const drawdownData = [...closedTrades]
     .sort((a, b) => new Date(a.date) - new Date(b.date))
     .map((trade, index) => {
       running += (getTradeRealizedPL(trade) ?? 0);
@@ -644,32 +730,31 @@ export default function Dashboard() {
       };
     });
 
-  const tradeTimeData = filteredTrades
-    .filter(t => t.open_time || t.time)
+  const tradeTimeData = closedTrades
+    .filter(t => t.open_time || t.time || t.entry_time)
     .map(t => {
-      const time = t.open_time || t.time;
-      const hour = time ? parseInt(time.split(":")[0], 10) : 0;
+      const hour = getTradeEntryHour(t) ?? 0;
       return {
         hour,
         pl: (getTradeRealizedPL(t) ?? 0),
       };
     });
 
-  const longTrades = trades.filter(t => normalizeDirection(t.direction) === "Long");
-  const shortTrades = trades.filter(t => normalizeDirection(t.direction) === "Short");
+  const longTrades = closedTrades.filter(t => normalizeDirection(t.direction) === "Long");
+  const shortTrades = closedTrades.filter(t => normalizeDirection(t.direction) === "Short");
 
   // Best and worst trades
-  const sortedByPL = [...filteredTrades].sort((a, b) => ((getTradeRealizedPL(b) ?? 0) || 0) - ((getTradeRealizedPL(a) ?? 0) || 0));
+  const sortedByPL = [...closedTrades].sort((a, b) => ((getTradeRealizedPL(b) ?? 0) || 0) - ((getTradeRealizedPL(a) ?? 0) || 0));
   const bestTrade = sortedByPL[0];
   const worstTrade = sortedByPL[sortedByPL.length - 1];
 
   // Additional analytics for expandable sections
-  const winningTrades = filteredTrades.filter(t => t.outcome === "Win");
-  const losingTrades = filteredTrades.filter(t => t.outcome === "Loss");
+  const winningTrades = closedTrades.filter(t => t.outcome === "Win");
+  const losingTrades = closedTrades.filter(t => t.outcome === "Loss");
   
   // P&L by day of week
   const dayPL = {};
-  filteredTrades.forEach(t => {
+  closedTrades.forEach(t => {
     if (t.date) {
       const day = new Date(t.date).toLocaleDateString(dayLocale, { weekday: 'long' });
       if (!dayPL[day]) dayPL[day] = 0;
@@ -679,7 +764,7 @@ export default function Dashboard() {
   
   // P&L by symbol
   const symbolPL = {};
-  trades.forEach(t => {
+  closedTrades.forEach(t => {
     if (!symbolPL[t.symbol]) symbolPL[t.symbol] = { pl: 0, wins: 0, total: 0 };
     symbolPL[t.symbol].pl += (getTradeRealizedPL(t) ?? 0);
     symbolPL[t.symbol].total++;
@@ -691,7 +776,7 @@ export default function Dashboard() {
   let maxWinStreak = 0;
   let maxLossStreak = 0;
   let currentLossStreak = 0;
-  [...trades].reverse().forEach(t => {
+  [...closedTrades].reverse().forEach(t => {
     if (t.outcome === "Win") {
       currentStreak++;
       currentLossStreak = 0;
@@ -982,15 +1067,33 @@ export default function Dashboard() {
               <div className="relative" ref={rangeFilterMainRef}>
                 <button
                   type="button"
-                  onClick={() => setRangeFilterOpen((prev) => !prev)}
+                  onClick={() => {
+                    setRangeFilterOpen((prev) => !prev);
+                    setMonthFilterOpen(false);
+                    setDatePickerOpen(false);
+                  }}
                   className="relative h-9 md:h-10 w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent shrink-0"
                 >
                   <CalendarDays className="absolute left-3 w-4 h-4 text-slate-500" />
-                  <span className="truncate text-center w-full px-6">{dashboardRangeLabel || t('last30Days')}</span>
+                  <span className="truncate text-center w-full px-6">{dashboardRangeLabel || t('allTime')}</span>
                   <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
                 </button>
                 {rangeFilterOpen && (
                   <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md">
+                    <button
+                      type="button"
+                      onClick={() => { toggleDashboardRange('all'); }}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardRanges.includes('all') ? 'bg-accent' : ''}`}
+                    >
+                      <span>{t('allTime')}</span>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                        {dashboardRanges.includes('all') && (
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => { toggleDashboardRange('7d'); }}
@@ -1037,11 +1140,83 @@ export default function Dashboard() {
                 )}
               </div>
 
+              <div className="relative" ref={monthFilterRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMonthFilterOpen((prev) => !prev);
+                    setRangeFilterOpen(false);
+                    setDatePickerOpen(false);
+                  }}
+                  className={`relative h-9 md:h-10 min-w-[150px] md:min-w-[180px] px-3 rounded-md border text-sm flex items-center justify-center hover:bg-accent shrink-0 ${
+                    selectedMonth
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
+                      : "border-input bg-transparent"
+                  }`}
+                >
+                  <Calendar className="absolute left-3 w-4 h-4 text-slate-500" />
+                  <span className="truncate text-center w-full px-6">
+                    {selectedMonth
+                      ? monthLabel(selectedMonth, language)
+                      : (language === "pl" ? "Miesiąc" : "Month")}
+                  </span>
+                  <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
+                </button>
+                {monthFilterOpen && (
+                  <div className="absolute left-0 top-full mt-1 z-50 w-[220px] max-h-72 overflow-y-auto rounded-md border bg-popover p-1 shadow-md">
+                    <button
+                      type="button"
+                      onClick={clearDashboardMonth}
+                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${!selectedMonth ? "bg-accent" : ""}`}
+                    >
+                      <span>{language === "pl" ? "Wszystkie miesiące" : "All months"}</span>
+                      {!selectedMonth && (
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full border-[3px] border-blue-600 bg-blue-600">
+                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </span>
+                      )}
+                    </button>
+                    {availableMonths.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-slate-500">
+                        {language === "pl" ? "Brak miesięcy z trade'ami" : "No months with trades"}
+                      </p>
+                    ) : (
+                      availableMonths.map((ym) => {
+                        const isSelected = selectedMonth === ym;
+                        return (
+                          <button
+                            key={ym}
+                            type="button"
+                            onClick={() => selectDashboardMonth(ym)}
+                            className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? "bg-accent" : ""}`}
+                          >
+                            <span>{monthLabel(ym, language)}</span>
+                            {isSelected && (
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full border-[3px] border-blue-600 bg-blue-600">
+                                <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Date range picker — rightmost */}
               <div className="relative" ref={datePickerRef}>
                 <button
                   type="button"
-                  onClick={() => setDatePickerOpen(prev => !prev)}
+                  onClick={() => {
+                    setDatePickerOpen(prev => !prev);
+                    setMonthFilterOpen(false);
+                    setRangeFilterOpen(false);
+                  }}
                   className={`relative flex items-center gap-2 px-3 py-2 h-9 md:h-10 border rounded-md text-sm transition-colors shrink-0 ${
                     dateRange.from
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
@@ -1063,7 +1238,10 @@ export default function Dashboard() {
                     <MiniCalendar
                       from={dateRange.from}
                       to={dateRange.to}
-                      onSelect={(f, t) => setDateRange({ from: f, to: t })}
+                      onSelect={(f, toVal) => {
+                        setSelectedMonth("");
+                        setDateRange({ from: f, to: toVal });
+                      }}
                     />
                     {(dateRange.from || dateRange.to) && (
                       <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -1104,7 +1282,14 @@ export default function Dashboard() {
                   <div data-private className={`mt-1.5 text-xl md:text-2xl font-bold ${totalPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     {totalPL >= 0 ? '+' : ''}{totalPL.toFixed(2)}
                   </div>
-                  <p className="text-xs text-slate-500 mt-1 truncate">{t('from')} {totalTrades} {t('trades')}</p>
+                  <p className="text-xs text-slate-500 mt-1 truncate">
+                    {selectedMonth
+                      ? monthLabel(selectedMonth, language)
+                      : dateRange.from
+                        ? `${dateRange.from}${dateRange.to ? ` → ${dateRange.to}` : ""}`
+                        : dashboardRangeLabel}
+                    {" · "}{totalTrades} {t('trades')}
+                  </p>
                 </div>
                 <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${totalPL >= 0 ? '#22c55e' : '#f43f5e'} ${plRing}%, #e5e7eb 0)` }} />
               </div>
@@ -1120,7 +1305,7 @@ export default function Dashboard() {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-slate-500 truncate">{t('winRate')}</p>
                   <div className="mt-1.5 text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{winRate}%</div>
-                  <p className="text-xs text-slate-500 mt-1 truncate">{wins} {t('wins')} / {totalTrades} {t('trades')}</p>
+                  <p className="text-xs text-slate-500 mt-1 truncate">{wins}W / {losses}L{breakeven > 0 ? ` / ${breakeven}BE` : ""}</p>
                 </div>
                 <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(#6d4dff ${winRateRing}%, #e5e7eb 0)` }} />
               </div>
@@ -1651,7 +1836,7 @@ export default function Dashboard() {
                           <div className="flex items-center justify-between gap-2 min-h-10">
                             <div className="min-w-0 flex-1">
                               <div className="font-semibold text-slate-800 dark:text-white truncate text-sm">{trade.symbol}</div>
-                              <div className="text-[11px] leading-none mt-1 text-slate-500 dark:text-slate-400">{trade.open_time || trade.time || "--:--"}</div>
+                              <div className="text-[11px] leading-none mt-1 text-slate-500 dark:text-slate-400">{formatTradeClock(trade, "entry") || trade.open_time || trade.time || "--:--"}</div>
                             </div>
                             <div className="flex items-center self-center gap-2.5 shrink-0">
                               <span
@@ -1876,11 +2061,34 @@ export default function Dashboard() {
                     className="relative w-20 justify-center text-[10px] h-8 cyber-btn-outline px-1"
                     onClick={() => setRangeFilterOpen((prev) => !prev)}
                   >
-                    <span className="truncate text-center w-full pr-3">{dashboardRangeLabel || "30d"}</span>
+                    <span className="truncate text-center w-full pr-3">{dashboardRangeLabel || t('allTime')}</span>
                     <ChevronDown className="absolute right-1 w-3 h-3 opacity-70" />
                   </Button>
                   {rangeFilterOpen && (
                     <div className="absolute right-0 top-full mt-1 z-50 w-40 rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        className={`w-full justify-between text-xs ${dashboardRanges.includes("all") ? "bg-slate-100 dark:bg-slate-700" : ""}`}
+                        onClick={() => {
+                          toggleDashboardRange("all");
+                        }}
+                      >
+                        <span>{t('allTime')}</span>
+                        <span
+                          className={`flex h-4 w-4 items-center justify-center rounded-full border-[2px] ${dashboardRanges.includes("all") ? "border-cyan-500 bg-cyan-500" : "border-slate-400"}`}
+                        >
+                          {dashboardRanges.includes("all") && (
+                            <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          )}
+                        </span>
+                      </Button>
                       <Button
                         variant="ghost"
                         type="button"

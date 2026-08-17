@@ -10,14 +10,10 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import Home from './pages/Home';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Cookies from './pages/Cookies';
-import Contact from './pages/Contact';
-import About from './pages/About';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -56,19 +52,14 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // For unauthenticated users, show only Home and Login/Register pages without layout
+  // For unauthenticated users: only login (no marketing / register pages)
   if (!isAuthenticated) {
     return (
       <Routes>
-        <Route path="/" element={<PageShell><Home /></PageShell>} />
+        <Route path="/" element={<PageShell><Login /></PageShell>} />
         <Route path="/login" element={<PageShell><Login /></PageShell>} />
-        <Route path="/register" element={<PageShell><Register /></PageShell>} />
-        <Route path="/terms" element={<PageShell><Terms /></PageShell>} />
-        <Route path="/privacy" element={<PageShell><Privacy /></PageShell>} />
-        <Route path="/cookies" element={<PageShell><Cookies /></PageShell>} />
-        <Route path="/contact" element={<PageShell><Contact /></PageShell>} />
-        <Route path="/about" element={<PageShell><About /></PageShell>} />
-        <Route path="*" element={<PageShell><Home /></PageShell>} />
+        <Route path="/Login" element={<PageShell><Login /></PageShell>} />
+        <Route path="*" element={<PageShell><Login /></PageShell>} />
       </Routes>
     );
   }

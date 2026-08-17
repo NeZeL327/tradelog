@@ -14,7 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "@/components/LanguageProvider";
-import { cn, isClosedTrade } from "@/lib/utils";
+import { cn, getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
 
 export default function Strategies() {
   const { t } = useLanguage();
@@ -78,12 +78,14 @@ export default function Strategies() {
   // Strategy comparison data
   const strategyStats = strategies.map(strategy => {
     const strategyTrades = trades.filter(
-      (t) => t.strategy_id === strategy.id && isClosedTrade(t) && activeAccountIds.has(String(t.account_id))
+      (t) => t.strategy_id === strategy.id && isClosedTrade(t) && (!t.account_id || activeAccountIds.has(String(t.account_id)))
     );
     const wins = strategyTrades.filter(t => t.outcome === "Win").length;
-    const totalPL = strategyTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+    const losses = strategyTrades.filter(t => t.outcome === "Loss").length;
+    const decided = wins + losses;
+    const totalPL = strategyTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
     const avgPL = strategyTrades.length > 0 ? totalPL / strategyTrades.length : 0;
-    const winRate = strategyTrades.length > 0 ? (wins / strategyTrades.length) * 100 : 0;
+    const winRate = decided > 0 ? (wins / decided) * 100 : 0;
 
     return {
       ...strategy,

@@ -41,7 +41,7 @@ import TradeCard from "../components/TradeCard";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionBadgeClass, directionLabel, getTradeRealizedPL, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
-import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
+import { formatTradeDate, formatTradeClock, formatTradeClockDate, getDateFormat } from "@/lib/userSettings";
 
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
 const DAYS_PL = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
@@ -433,7 +433,7 @@ export default function JournalSimple({ mode = "all" }) {
 
   // Filter and search (base)
   const baseFilteredTrades = tradesFromActiveAccounts.filter(t => {
-    if (searchTerm && !t.symbol.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (searchTerm && !(t.symbol || "").toLowerCase().includes(searchTerm.toLowerCase())) return false;
 
     if (dateRange.from) {
       if (!t.date) return false;
@@ -1052,10 +1052,10 @@ export default function JournalSimple({ mode = "all" }) {
                       </td>
                       {visibleColumns.date && (
                         <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                          <div>{fmtDate(trade.date)}</div>
+                          <div>{formatTradeClockDate(trade, "entry", dateFormat) || fmtDate(trade.date)}</div>
                           {(trade.entry_time || trade.time) && (
                             <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                              {String(trade.entry_time || trade.time).slice(0, 8)}
+                              {formatTradeClock(trade, "entry")}
                             </div>
                           )}
                         </td>
@@ -1078,7 +1078,7 @@ export default function JournalSimple({ mode = "all" }) {
                           <div>{trade.entry_price ?? '-'}</div>
                           {(trade.entry_time || trade.time) && (
                             <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                              {String(trade.entry_time || trade.time).slice(0, 8)}
+                              {formatTradeClock(trade, "entry")}
                             </div>
                           )}
                         </td>
@@ -1090,8 +1090,10 @@ export default function JournalSimple({ mode = "all" }) {
                           <div>{trade.exit_price ?? '-'}</div>
                           {(trade.exit_time || (trade.close_date && trade.close_date !== trade.date)) && (
                             <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                              {trade.close_date && trade.close_date !== trade.date ? `${fmtDate(trade.close_date)} ` : ''}
-                              {trade.exit_time ? String(trade.exit_time).slice(0, 8) : ''}
+                              {trade.close_date && trade.close_date !== trade.date
+                                ? `${formatTradeClockDate(trade, "exit", dateFormat)} `
+                                : ""}
+                              {trade.exit_time ? formatTradeClock(trade, "exit") : ""}
                             </div>
                           )}
                         </td>
