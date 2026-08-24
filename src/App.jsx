@@ -86,6 +86,22 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
+      {/* Lowercase aliases (createPageUrl) e.g. /raporty */}
+      {Object.entries(Pages).map(([path, Page]) => {
+        const lower = path.toLowerCase();
+        if (lower === path) return null;
+        return (
+          <Route
+            key={`${path}-lower`}
+            path={`/${lower}`}
+            element={
+              <LayoutWrapper currentPageName={path}>
+                <Page />
+              </LayoutWrapper>
+            }
+          />
+        );
+      })}
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

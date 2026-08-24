@@ -343,11 +343,26 @@ export function getTradeEntryHour(trade) {
   const date = trade?.date || "";
   const time = trade?.entry_time || trade?.open_time || trade?.time || "";
   if (!time) return null;
-  const converted = convertTradeDateTime(date, time);
+  // Always 24h so "01:30 PM" does not become hour 1
+  const converted = convertTradeDateTime(date, time, { timeFormat: "24h" });
   const match = String(converted.time || "").match(/^(\d{1,2}):/);
   if (!match) return null;
   const h = Number(match[1]);
-  return Number.isFinite(h) ? h : null;
+  return Number.isFinite(h) && h >= 0 && h <= 23 ? h : null;
+}
+
+/** Minutes from midnight (0–1439) for entry clocks */
+export function getTradeEntryMinutes(trade) {
+  const date = trade?.date || "";
+  const time = trade?.entry_time || trade?.open_time || trade?.time || "";
+  if (!time) return null;
+  const converted = convertTradeDateTime(date, time, { timeFormat: "24h" });
+  const match = String(converted.time || "").match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const h = Number(match[1]);
+  const min = Number(match[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(min) || h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return h * 60 + min;
 }
 
 export function applyRuntimeSettings(settings) {

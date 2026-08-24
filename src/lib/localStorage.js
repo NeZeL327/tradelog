@@ -644,3 +644,66 @@ export const saveBacktestStrategyPage = async (userId, strategyId, { content = '
 
 export const seedTradingData = () => Promise.resolve();
 export const initDemoData = () => Promise.resolve();
+
+// --- Trading reports (Raporty) ---
+
+export const getReports = async (userId) => {
+  return runSafe('getReports', async () => {
+    if (!userId) return [];
+    const snapshot = await getDocs(userCollection(userId, 'reports'));
+    return mapDocs(snapshot);
+  });
+};
+
+export const getReport = async (userId, reportId) => {
+  return runSafe('getReport', async () => {
+    if (!userId || !reportId) return null;
+    const refDoc = doc(db, 'users', String(userId), 'reports', String(reportId));
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
+export const createReport = async (userId, reportData) => {
+  return runSafe('createReport', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const cleaned = stripUndefinedDeep({ ...reportData });
+    const payload = {
+      ...cleaned,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    const refDoc = await addDoc(userCollection(userId, 'reports'), payload);
+    return { id: refDoc.id, ...payload };
+  });
+};
+
+export const updateReport = async (userId, reportId, reportData) => {
+  return runSafe('updateReport', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const cleaned = stripUndefinedDeep({ ...reportData });
+    const refDoc = doc(db, 'users', String(userId), 'reports', String(reportId));
+    await updateDoc(refDoc, { ...cleaned, updatedAt: serverTimestamp() });
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
+export const deleteReport = async (userId, reportId) => {
+  return runSafe('deleteReport', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const refDoc = doc(db, 'users', String(userId), 'reports', String(reportId));
+    await deleteDoc(refDoc);
+    return true;
+  });
+};
+
+/** Upload screenshot for reports; Storage with data-URL fallback */
+export const persistReportScreenshot = async (userId, file) => {
+  try {
+    return await uploadUserFile(userId, file, 'report-screenshots');
+  } catch (storageError) {
+    console.warn('persistReportScreenshot: storage failed, using data URL fallback', storageError);
+    return imageFileToDataUrl(file);
+  }
+};

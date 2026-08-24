@@ -14,8 +14,8 @@ body {
   height: 100%;
   margin: 0;
   overflow: hidden;
-  /* Zoom leaves uncovered strips around #root — match dark shell so no white gap */
-  background-color: #020617;
+  /* Zoom strips around #root — match app shell */
+  background-color: hsl(var(--app-shell));
 }
 
 #root {
@@ -28,7 +28,7 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background-color: #020617;
+  background-color: hsl(var(--app-shell));
 }
 
 @supports not (zoom: 1) {
@@ -73,104 +73,106 @@ body {
 /* ===== DESIGN TOKENS — FX Replay 2.0 (deep navy + royal blue) ===== */
 @layer base {
   :root {
-    /* Backgrounds */
-    --background: 220 20% 98%;
-    --foreground: 222 30% 8%;
+    /* FundedNext light: white content panel on lavender shell */
+    --background: 0 0% 100%;
+    --foreground: 222 30% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 222 30% 8%;
+    --card-foreground: 222 30% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 30% 8%;
+    --popover-foreground: 222 30% 12%;
 
-    /* Brand: Royal blue (FX Replay signature) */
-    --primary: 217 91% 55%;
+    /* Brand: violet (#5856D6 / FundedNext light) */
+    --primary: 241 62% 59%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary & Muted */
-    --secondary: 220 18% 94%;
+    --secondary: 235 30% 96%;
     --secondary-foreground: 222 25% 18%;
-    --muted: 220 16% 95%;
-    --muted-foreground: 220 10% 44%;
+    --muted: 235 28% 96%;
+    --muted-foreground: 225 12% 48%;
 
-    /* Accent (soft blue tint) */
-    --accent: 217 90% 96%;
-    --accent-foreground: 217 90% 38%;
+    /* Accent (soft violet tint) */
+    --accent: 245 100% 97%;
+    --accent-foreground: 241 62% 45%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 220 16% 90%;
-    --input: 220 16% 90%;
-    --ring: 217 91% 55%;
+    --border: 235 18% 90%;
+    --input: 235 18% 90%;
+    --ring: 241 62% 59%;
     --radius: 0.75rem;
 
     /* Charts */
-    --chart-1: 217 91% 55%;
+    --chart-1: 241 62% 59%;
     --chart-2: 160 65% 42%;
     --chart-3: 0 84% 58%;
     --chart-4: 38 90% 56%;
     --chart-5: 280 70% 60%;
 
-    /* Sidebar */
-    --sidebar-background: 0 0% 100%;
+    /* Shell frame (sidebar + header) — pale lavender-grey #F0F1F9 */
+    --app-shell: 235 28% 96%;
+    --sidebar-background: 235 28% 96%;
     --sidebar-foreground: 222 22% 28%;
-    --sidebar-primary: 217 91% 55%;
+    --sidebar-primary: 241 62% 59%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 90% 96%;
-    --sidebar-accent-foreground: 217 90% 38%;
-    --sidebar-border: 220 16% 90%;
-    --sidebar-ring: 217 91% 55%;
+    --sidebar-accent: 245 100% 96%;
+    --sidebar-accent-foreground: 241 62% 45%;
+    --sidebar-border: 235 20% 90%;
+    --sidebar-ring: 241 62% 59%;
   }
 
   .dark {
-    /* FX Replay deep navy/black */
-    --background: 222 32% 5%;
+    /* FundedNext-style shell: deep navy frame + slightly lifted panel */
+    --background: 233 28% 12%;
     --foreground: 210 20% 96%;
-    --card: 222 28% 8%;
+    --card: 233 26% 14%;
     --card-foreground: 210 20% 96%;
-    --popover: 222 30% 7%;
+    --popover: 236 32% 10%;
     --popover-foreground: 210 20% 96%;
 
-    /* Brand: Royal blue (slightly brighter on dark) */
-    --primary: 217 92% 60%;
+    /* Brand: violet accent (FundedNext / #7367f0) */
+    --primary: 245 82% 67%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary & Muted */
-    --secondary: 222 22% 13%;
+    --secondary: 233 22% 16%;
     --secondary-foreground: 210 15% 86%;
-    --muted: 222 22% 11%;
-    --muted-foreground: 220 8% 60%;
+    --muted: 233 20% 15%;
+    --muted-foreground: 220 10% 62%;
 
-    /* Accent (dark blue tint) */
-    --accent: 217 50% 18%;
-    --accent-foreground: 217 90% 78%;
+    /* Accent (violet tint) */
+    --accent: 245 40% 18%;
+    --accent-foreground: 245 90% 82%;
 
     /* Destructive */
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 222 20% 14%;
-    --input: 222 20% 14%;
-    --ring: 217 92% 60%;
+    --border: 233 18% 20%;
+    --input: 233 18% 18%;
+    --ring: 245 82% 67%;
 
-    /* Charts (brighter for dark bg) */
-    --chart-1: 217 92% 65%;
+    /* Charts */
+    --chart-1: 245 82% 70%;
     --chart-2: 160 70% 52%;
     --chart-3: 0 80% 62%;
     --chart-4: 38 90% 62%;
     --chart-5: 280 80% 68%;
 
-    /* Sidebar: deepest near-black navy */
-    --sidebar-background: 222 35% 4%;
-    --sidebar-foreground: 215 14% 78%;
-    --sidebar-primary: 217 92% 60%;
+    /* Shell frame (sidebar + top bar) — deeper than content panel */
+    --app-shell: 236 42% 7%;
+    --sidebar-background: 236 42% 7%;
+    --sidebar-foreground: 215 14% 82%;
+    --sidebar-primary: 245 82% 67%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 28% 10%;
-    --sidebar-accent-foreground: 217 90% 78%;
-    --sidebar-border: 222 25% 11%;
-    --sidebar-ring: 217 92% 60%;
+    --sidebar-accent: 245 45% 18%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 236 28% 12%;
+    --sidebar-ring: 245 82% 67%;
   }
 }
 
@@ -406,47 +408,60 @@ body[data-is-home="false"] {
 }
 
 html.dark .cyber-dashboard {
-  --cyber-accent: #22d3ee;
-  background: radial-gradient(ellipse 100% 60% at 50% -10%, rgba(34, 211, 238, 0.07), transparent 55%),
-    hsl(var(--background));
-}
-
-/* App shell (Layout main): light mode subtle surface */
-html:not(.dark) main.cyber-dashboard.dashboard-surface {
-  background: linear-gradient(180deg, hsl(var(--muted) / 0.35) 0%, hsl(var(--background)) 28%);
-}
-
-/* Top bar — spójnie z cyber panelami */
-.cyber-app-header {
-  border-bottom-color: hsl(var(--border));
-  background: hsl(var(--card) / 0.85);
+  --cyber-accent: #7367f0;
+  background: hsl(var(--background));
 }
 
 html.dark .cyber-app-header {
-  border-bottom-color: rgba(34, 211, 238, 0.2);
-  background: hsl(222 40% 8% / 0.88);
-  backdrop-filter: blur(12px);
+  border-bottom-color: transparent;
+  background: transparent;
 }
 
-/* Sidebar — obramowanie cyan w dark */
-html.dark .cyber-app-sidebar {
-  border-right-color: rgba(34, 211, 238, 0.18) !important;
-  box-shadow: inset -1px 0 0 rgba(34, 211, 238, 0.08);
+/* App shell: content panel is solid white / dark panel (no light gradient wash) */
+html:not(.dark) main.cyber-dashboard.dashboard-surface {
+  background: hsl(var(--background));
 }
 
+/* Top bar — blends into shell both themes */
+.cyber-app-header {
+  border-bottom-color: transparent;
+  background: transparent;
+}
+
+html.dark .cyber-app-header {
+  border-bottom-color: transparent;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+/* Sidebar — connected frame + active states */
+html.dark .cyber-app-sidebar,
+html:not(.dark) .cyber-app-sidebar {
+  border-right-color: transparent !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Light: soft violet pill (FundedNext Accounts style) */
+html:not(.dark) .cyber-app-sidebar .sidebar-active {
+  background: hsl(245 100% 96%) !important;
+  color: hsl(var(--primary)) !important;
+  box-shadow: none;
+}
+
+html:not(.dark) .cyber-app-sidebar .sidebar-active::before {
+  display: none;
+}
+
+/* Dark: solid violet pill */
 html.dark .cyber-app-sidebar .sidebar-active {
-  background: linear-gradient(
-    90deg,
-    rgba(34, 211, 238, 0.12) 0%,
-    rgba(34, 211, 238, 0.04) 100%
-  ) !important;
-  color: #67e8f9 !important;
-  box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.2);
+  background: hsl(var(--primary)) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px hsl(var(--primary) / 0.35);
 }
 
 html.dark .cyber-app-sidebar .sidebar-active::before {
-  background: linear-gradient(180deg, #22d3ee 0%, rgba(34, 211, 238, 0.55) 100%);
-  box-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+  display: none;
 }
 
 /* Shadcn Card w treści — jak .cyber-panel (bez duplikatu na specjalnych kartach) */
@@ -525,8 +540,8 @@ main.cyber-dashboard .cyber-primary-btn:hover {
 }
 
 html.dark main.cyber-dashboard .cyber-primary-btn {
-  background: linear-gradient(90deg, #0e7490 0%, #22d3ee 55%, #0891b2 100%) !important;
-  box-shadow: 0 0 24px rgba(34, 211, 238, 0.22);
+  background: hsl(var(--primary)) !important;
+  box-shadow: 0 0 24px hsl(var(--primary) / 0.28);
 }
 
 /* Recharts w obszarze aplikacji */
@@ -1811,53 +1826,54 @@ table th, table td {
 }
 .fx-input-dark::placeholder { color: #64748b; }
 
-/* --- App sidebar (FX Replay 2.0 narrow + minimal) --- */
+/* --- App sidebar (FundedNext connected shell + violet active) --- */
 html.dark .cyber-app-sidebar {
-  border-right-color: rgba(255, 255, 255, 0.06) !important;
+  border-right-color: transparent !important;
   box-shadow: none !important;
-  background: hsl(222 35% 4%) !important;
+  background: transparent !important;
 }
 
 html.dark .cyber-app-sidebar .sidebar-active {
-  background: rgba(37, 99, 235, 0.14) !important;
-  color: #93c5fd !important;
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.22);
+  background: hsl(var(--primary)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px hsl(var(--primary) / 0.35);
 }
 
 html.dark .cyber-app-sidebar .sidebar-active::before {
-  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%) !important;
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.40) !important;
+  display: none !important;
 }
 
+html:not(.dark) .cyber-app-sidebar .sidebar-active::before,
 html:not(.dark) .sidebar-active::before {
-  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%) !important;
-  box-shadow: 0 0 12px rgba(37, 99, 235, 0.25) !important;
+  display: none !important;
 }
 
-/* App top bar */
+/* App top bar — blends into shell (connected with sidebar) */
 html.dark .cyber-app-header {
-  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
-  background: rgba(7, 10, 20, 0.85) !important;
+  border-bottom-color: transparent !important;
+  background: transparent !important;
 }
 
-/* Subtle blue glow on dashboard */
+/* Content panel sits on shell; no extra glow overlay */
 html.dark .cyber-dashboard {
-  --cyber-accent: #3b82f6;
-  background:
-    radial-gradient(ellipse 100% 60% at 50% -10%, rgba(37, 99, 235, 0.06), transparent 55%),
-    hsl(var(--background));
+  --cyber-accent: #7367f0;
+  background: transparent;
+}
+
+html.dark main.cyber-dashboard.dashboard-surface {
+  background: hsl(var(--background));
 }
 
 html.dark main.cyber-dashboard
   .border.bg-card.text-card-foreground:not(.ocean-stat-card):not(.cyber-panel):not(.cyber-stat-tile):not(.cyber-trade-card):not(.no-cyber-card) {
   border-color: rgba(255, 255, 255, 0.06) !important;
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
 }
 
 html.dark main.cyber-dashboard table thead th {
-  background: hsl(222 28% 8%) !important;
+  background: hsl(233 26% 14%) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
-  color: rgba(186, 230, 253, 0.80) !important;
+  color: hsl(var(--muted-foreground)) !important;
 }
 
 html.dark main.cyber-dashboard input[type="text"],
@@ -1868,29 +1884,29 @@ html.dark main.cyber-dashboard input[type="password"],
 html.dark main.cyber-dashboard textarea,
 html.dark main.cyber-dashboard select {
   border-color: rgba(255, 255, 255, 0.08) !important;
-  background: rgba(7, 10, 20, 0.7) !important;
+  background: hsl(var(--app-shell) / 0.55) !important;
 }
 
 html.dark main.cyber-dashboard input:focus,
 html.dark main.cyber-dashboard textarea:focus,
 html.dark main.cyber-dashboard select:focus {
-  border-color: rgba(59, 130, 246, 0.45) !important;
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25) !important;
+  border-color: hsl(var(--primary) / 0.55) !important;
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.28) !important;
 }
 
 html.dark main.cyber-dashboard [role="tab"][data-state="active"] {
   color: #ffffff !important;
   background: transparent !important;
-  box-shadow: inset 0 -2px 0 #3b82f6 !important;
+  box-shadow: inset 0 -2px 0 hsl(var(--primary)) !important;
   border-radius: 0 !important;
 }
 
 html.dark main.cyber-dashboard .cyber-primary-btn,
 main.cyber-dashboard .cyber-primary-btn {
-  background: #2563eb !important;
+  background: hsl(var(--primary)) !important;
   color: #ffffff !important;
-  box-shadow: 0 6px 18px -4px rgba(37, 99, 235, 0.45) !important;
-  border: 1px solid rgba(59, 130, 246, 0.5) !important;
+  box-shadow: 0 6px 18px -4px hsl(var(--primary) / 0.45) !important;
+  border: 1px solid hsl(var(--primary) / 0.55) !important;
 }
 
 html.dark .cyber-page-title {

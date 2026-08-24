@@ -59,6 +59,7 @@ import Journal from './pages/Journal';
 import Missed from './pages/Missed';
 import Notes from './pages/Notes';
 import Planned from './pages/Planned';
+import Raporty from './pages/Raporty';
 import Settings from './pages/Settings';
 import Strategies from './pages/Strategies';
 import StrategyDetails from './pages/StrategyDetails';
@@ -79,6 +80,7 @@ export const PAGES = {
     "Planned": Planned,
     "Missed": Missed,
     "Notes": Notes,
+    "Raporty": Raporty,
     "Settings": Settings,
     "Strategies": Strategies,
     "StrategyDetails": StrategyDetails,

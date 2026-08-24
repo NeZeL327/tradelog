@@ -46,6 +46,23 @@ import { formatTradeDate, formatTradeClock, formatTradeClockDate, getDateFormat 
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
 const DAYS_PL = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
 
+/** Normalize HH:MM[:SS] so string compare works (9:00 vs 15:00). */
+function padTradeTime(time) {
+  const match = String(time || "").trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return "00:00:00";
+  return `${String(Number(match[1])).padStart(2, "0")}:${match[2]}:${match[3] || "00"}`;
+}
+
+/** Sort key: entry/exit date + time (newest-first when compared descending). */
+function tradeDateTimeSortKey(trade, which = "entry") {
+  if (which === "exit") {
+    const date = String(trade?.close_date || trade?.date || "").slice(0, 10);
+    return `${date}T${padTradeTime(trade?.exit_time)}`;
+  }
+  const date = String(trade?.date || "").slice(0, 10);
+  return `${date}T${padTradeTime(trade?.entry_time || trade?.open_time || trade?.time)}`;
+}
+
 function MiniCalendar({ from, to, onSelect }) {
   const todayStr = new Date().toISOString().slice(0, 10);
   const [view, setView] = useState(() => {
@@ -359,19 +376,32 @@ export default function JournalSimple({ mode = "all" }) {
 
   const sortTrades = (list) => {
     return [...list].sort((a, b) => {
-      let aVal = a[sortField];
-      let bVal = b[sortField];
+      let cmp = 0;
 
       if (sortField === "profit_loss") {
-        aVal = getTradeRealizedPL(a) ?? 0;
-        bVal = getTradeRealizedPL(b) ?? 0;
+        const aVal = getTradeRealizedPL(a) ?? 0;
+        const bVal = getTradeRealizedPL(b) ?? 0;
+        cmp = aVal === bVal ? 0 : aVal > bVal ? 1 : -1;
+      } else if (sortField === "date") {
+        cmp = tradeDateTimeSortKey(a, "entry").localeCompare(tradeDateTimeSortKey(b, "entry"));
+        if (cmp === 0) {
+          cmp = tradeDateTimeSortKey(a, "exit").localeCompare(tradeDateTimeSortKey(b, "exit"));
+        }
+      } else {
+        const aVal = a[sortField];
+        const bVal = b[sortField];
+        if (aVal == null && bVal == null) cmp = 0;
+        else if (aVal == null) cmp = -1;
+        else if (bVal == null) cmp = 1;
+        else if (aVal === bVal) cmp = 0;
+        else cmp = aVal > bVal ? 1 : -1;
+        if (cmp === 0) {
+          cmp = tradeDateTimeSortKey(a, "entry").localeCompare(tradeDateTimeSortKey(b, "entry"));
+        }
       }
 
-      if (sortOrder === "asc") {
-        return aVal > bVal ? 1 : -1;
-      } else {
-        return aVal < bVal ? 1 : -1;
-      }
+      if (cmp === 0) return 0;
+      return sortOrder === "asc" ? cmp : -cmp;
     });
   };
 

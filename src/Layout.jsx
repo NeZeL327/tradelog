@@ -6,7 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import {
   LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar,
   LogOut, NotebookPen, ListTodo, AlarmClockOff,
-  ChevronRight, User, FlaskConical, Settings as SettingsIcon,
+  ChevronRight, User, FlaskConical, Settings as SettingsIcon, FileBarChart,
 } from "lucide-react";
 import {
   Sidebar,
@@ -55,6 +55,7 @@ const NAV_GROUPS = (t) => [
     label: t("navGroupWorkspace"),
     items: [
       { title: t("notes"), url: createPageUrl("Notes"), icon: NotebookPen },
+      { title: t("reports") || "Raporty", url: createPageUrl("Raporty"), icon: FileBarChart },
       { title: t("accounts"), url: createPageUrl("Accounts"), icon: Wallet },
     ],
   },
@@ -92,14 +93,15 @@ function LayoutContent({ children }) {
 
   return (
     <SidebarProvider defaultOpen={!isMobile}>
-      <div className="min-h-screen flex w-full bg-background">
+      {/* Connected shell (sidebar + header) + inset rounded content — both themes */}
+      <div className="min-h-screen flex w-full bg-[hsl(var(--app-shell))]">
 
         <Sidebar
-          className="cyber-app-sidebar border-r border-sidebar-border/80 bg-sidebar"
+          className="cyber-app-sidebar border-transparent bg-transparent"
           collapsible="icon"
         >
-          {/* FX-Replay-style brand row + compact user card */}
-          <SidebarHeader className="border-b border-sidebar-border/60 px-3 py-3 group-data-[collapsible=icon]:px-2 space-y-3">
+          {/* Brand row + compact user card */}
+          <SidebarHeader className="border-transparent px-3 py-3 group-data-[collapsible=icon]:px-2 space-y-3">
             <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center px-1">
               <img
                 src="/aikeeptrade-icon-hires.png"
@@ -189,8 +191,8 @@ function LayoutContent({ children }) {
               </SidebarGroup>
             ))}
 
-            {/* Bottom section — settings + logout (FX Replay style) */}
-            <div className="mt-auto pt-3 border-t border-sidebar-border/60 space-y-1">
+            {/* Bottom section — settings + logout */}
+            <div className="mt-auto pt-3 border-t border-sidebar-border/50 space-y-1 dark:border-white/5">
               <SidebarMenu className="gap-1">
                 <SidebarMenuItem>
                   <SidebarMenuButton
@@ -231,13 +233,12 @@ function LayoutContent({ children }) {
           </SidebarContent>
         </Sidebar>
 
-        {/* Main content — cyber-dashboard: tło, karty i typografia jak na Dashboardzie */}
-        <main className="flex-1 flex flex-col min-w-0 min-h-screen overflow-auto cyber-dashboard dashboard-surface">
-
-          {/* Top header bar */}
-          <header className="cyber-app-header border-b px-4 md:px-6 py-3 sticky top-0 z-10 flex items-center justify-between gap-4 backdrop-blur-md">
+        {/* Column: top bar (shell) + inset content panel */}
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-[hsl(var(--app-shell))]">
+          {/* Top header — same color as sidebar (connected frame) */}
+          <header className="cyber-app-header border-transparent bg-transparent px-4 md:px-6 py-3 sticky top-0 z-10 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="h-8 w-8 rounded-lg hover:bg-accent transition-colors duration-150 flex items-center justify-center text-muted-foreground hover:text-foreground" />
+              <SidebarTrigger className="h-8 w-8 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-150 flex items-center justify-center text-muted-foreground hover:text-foreground" />
 
               {/* Mobile brand name */}
               <span className="md:hidden text-sm font-semibold text-foreground">AiKeepTrade</span>
@@ -249,7 +250,7 @@ function LayoutContent({ children }) {
               <ThemeToggle />
               {/* Desktop user button */}
               {user && (
-                <Button variant="ghost" size="sm" className="hidden md:flex h-8 gap-2 items-center px-2.5" onClick={() => logout()}>
+                <Button variant="ghost" size="sm" className="hidden md:flex h-8 gap-2 items-center px-2.5 hover:bg-black/5 dark:hover:bg-white/5" onClick={() => logout()}>
                   <Avatar className="h-6 w-6">
                     <AvatarFallback className={`text-white text-[10px] font-semibold bg-gradient-to-br ${avatarPreset.gradient}`}>
                       {avatarPreset.emoji ? (
@@ -268,12 +269,14 @@ function LayoutContent({ children }) {
             </div>
           </header>
 
-          {/* Page content */}
-          <div className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 py-6">
-            {children}
-          </div>
-          <Footer variant="app" />
-        </main>
+          {/* Content panel — rounded inset (connected transition under header) */}
+          <main className="flex-1 flex flex-col min-w-0 overflow-auto cyber-dashboard dashboard-surface bg-[hsl(var(--background))] md:mr-3 md:mb-3 md:rounded-2xl md:border border-black/[0.06] dark:border-white/[0.06] shadow-[0_1px_3px_rgba(15,23,42,0.04)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <div className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 py-6">
+              {children}
+            </div>
+            <Footer variant="app" />
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   );

@@ -338,7 +338,18 @@ export default function Dashboard() {
     if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
     const parsed = new Date(raw);
     if (Number.isNaN(parsed.getTime())) return "";
-    return parsed.toISOString().slice(0, 10);
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, "0");
+    const d = String(parsed.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const localTodayKey = () => {
+    const n = new Date();
+    const y = n.getFullYear();
+    const m = String(n.getMonth() + 1).padStart(2, "0");
+    const d = String(n.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   };
 
   const availableMonths = useMemo(() => {
@@ -361,7 +372,7 @@ export default function Dashboard() {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() - maxDays);
-    return d.toISOString().slice(0, 10);
+    return toDateKey(d);
   })();
 
   const rangeEndKey = (() => {
@@ -371,10 +382,10 @@ export default function Dashboard() {
 
   const filteredTrades = tradesFromActiveAccounts.filter(t => {
     const tradeKey = toDateKey(t.date);
-    const afterStart = !rangeStartKey || !tradeKey || tradeKey >= rangeStartKey;
-    const beforeEnd = !rangeEndKey || !tradeKey || tradeKey <= rangeEndKey;
+    const afterStart = !rangeStartKey || (!!tradeKey && tradeKey >= rangeStartKey);
+    const beforeEnd = !rangeEndKey || (!!tradeKey && tradeKey <= rangeEndKey);
     return (
-      (dashboardAccounts.includes("all") || !t.account_id || dashboardAccounts.includes(String(t.account_id))) &&
+      (dashboardAccounts.includes("all") || dashboardAccounts.includes(String(t.account_id))) &&
       (filterSymbols.includes("all") || filterSymbols.includes(String(t.symbol))) &&
       (filterDirections.includes("all") || filterDirections.includes(String(normalizeDirection(t.direction)))) &&
       (filterOutcomes.includes("all") || filterOutcomes.includes(String(t.outcome))) &&
@@ -401,10 +412,11 @@ export default function Dashboard() {
   
   const profitFactor = Math.abs(lossPLSum) > 0 ? (winPLSum / Math.abs(lossPLSum)).toFixed(2) : (winPLSum > 0 ? "∞" : "0");
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const dayTrades = closedTrades.filter(t => t.date === todayStr);
+  const todayStr = localTodayKey();
+  const dayTrades = closedTrades.filter(t => toDateKey(t.date) === todayStr);
   const dayWins = dayTrades.filter(t => t.outcome === "Win").length;
-  const dayWinRate = dayTrades.length > 0 ? ((dayWins / dayTrades.length) * 100).toFixed(1) : 0;
+  const dayDecided = dayTrades.filter(t => t.outcome === "Win" || t.outcome === "Loss").length;
+  const dayWinRate = dayDecided > 0 ? ((dayWins / dayDecided) * 100).toFixed(1) : 0;
   const avgWinLossRatio = Math.abs(Number(avgLoss)) > 0 ? Math.abs(Number(avgWin) / Number(avgLoss)).toFixed(2) : (Number(avgWin) > 0 ? "∞" : "0");
 
   const plRing = Math.min((Math.abs(totalPL) / 1000) * 100, 100);
@@ -415,8 +427,9 @@ export default function Dashboard() {
 
   const dailyPLByDate = {};
   closedTrades.forEach(t => {
-    if (t.date) {
-      dailyPLByDate[t.date] = (dailyPLByDate[t.date] || 0) + (getTradeRealizedPL(t) ?? 0);
+    const key = toDateKey(t.date);
+    if (key) {
+      dailyPLByDate[key] = (dailyPLByDate[key] || 0) + (getTradeRealizedPL(t) ?? 0);
     }
   });
   const dailyPLData = Object.entries(dailyPLByDate)
@@ -435,10 +448,10 @@ export default function Dashboard() {
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   const tradesByDate = {};
   closedTrades.forEach(trade => {
-    if (trade.date) {
-      if (!tradesByDate[trade.date]) tradesByDate[trade.date] = [];
-      tradesByDate[trade.date].push(trade);
-    }
+    const key = toDateKey(trade.date);
+    if (!key) return;
+    if (!tradesByDate[key]) tradesByDate[key] = [];
+    tradesByDate[key].push(trade);
   });
 
   const zellaScore = (() => {
@@ -502,31 +515,35 @@ export default function Dashboard() {
   // Strategy performance
   const strategyStats = {};
   closedTrades.forEach(trade => {
-    if (trade.strategy) {
-      if (!strategyStats[trade.strategy]) {
-        strategyStats[trade.strategy] = { wins: 0, total: 0, pl: 0 };
-      }
-      strategyStats[trade.strategy].total++;
-      if (trade.outcome === "Win") strategyStats[trade.strategy].wins++;
-      strategyStats[trade.strategy].pl += (getTradeRealizedPL(trade) ?? 0);
+    const strategy = strategies.find((s) => String(s.id) === String(trade.strategy_id));
+    const name = strategy?.name || "Bez strategii";
+    if (!strategyStats[name]) {
+      strategyStats[name] = { wins: 0, losses: 0, total: 0, pl: 0 };
     }
+    strategyStats[name].total++;
+    if (trade.outcome === "Win") strategyStats[name].wins++;
+    if (trade.outcome === "Loss") strategyStats[name].losses++;
+    strategyStats[name].pl += (getTradeRealizedPL(trade) ?? 0);
   });
 
-  const strategyData = Object.entries(strategyStats).map(([name, stats]) => ({
-    name,
-    winRate: ((stats.wins / stats.total) * 100).toFixed(1),
-    trades: stats.total,
-    pl: stats.pl.toFixed(2)
-  }));
+  const strategyData = Object.entries(strategyStats).map(([name, stats]) => {
+    const decided = stats.wins + stats.losses;
+    return {
+      name,
+      winRate: decided > 0 ? ((stats.wins / decided) * 100).toFixed(1) : "0.0",
+      trades: stats.total,
+      pl: stats.pl.toFixed(2)
+    };
+  });
 
-  // P&L over time (last 10 trades) with filters
+  // P&L over time (last 20 trades chronologically) with filters
   const getFilteredTradesForChart = () => {
     if (plChartFilter === "all" || plChartValue === "all") return closedTrades;
     
     if (plChartFilter === "account") {
-      return closedTrades.filter(t => t.account_id === plChartValue);
+      return closedTrades.filter(t => String(t.account_id) === String(plChartValue));
     } else if (plChartFilter === "strategy") {
-      return closedTrades.filter(t => t.strategy_id === plChartValue);
+      return closedTrades.filter(t => String(t.strategy_id) === String(plChartValue));
     } else if (plChartFilter === "symbol") {
       return closedTrades.filter(t => t.symbol === plChartValue);
     } else if (plChartFilter === "direction") {
@@ -538,7 +555,19 @@ export default function Dashboard() {
     return closedTrades;
   };
 
-  const recentTrades = [...getFilteredTradesForChart()].reverse().slice(0, 20);
+  const tradeChronoKey = (trade) => {
+    const date = toDateKey(trade?.date);
+    const raw = String(trade?.entry_time || trade?.open_time || trade?.time || "00:00:00");
+    const m = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    const hh = m ? String(Number(m[1])).padStart(2, "0") : "00";
+    const mm = m ? m[2] : "00";
+    const ss = m?.[3] || "00";
+    return `${date}T${hh}:${mm}:${ss}`;
+  };
+
+  const recentTrades = [...getFilteredTradesForChart()]
+    .sort((a, b) => tradeChronoKey(a).localeCompare(tradeChronoKey(b)))
+    .slice(-20);
   let cumulativePL = 0;
   const plOverTime = [
     { trade: '#0', pl: 0, symbol: '', date: '' },
@@ -631,6 +660,17 @@ export default function Dashboard() {
   }, [monthFilterOpen]);
 
   useEffect(() => {
+    if (!recentTradesAccountOpen) return;
+    const handleOutsideClick = (event) => {
+      if (recentTradesAccountRef.current && !recentTradesAccountRef.current.contains(event.target)) {
+        setRecentTradesAccountOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [recentTradesAccountOpen]);
+
+  useEffect(() => {
     if (!accountDropdownOpen) return;
 
     const handleOutsideClick = (event) => {
@@ -682,7 +722,10 @@ export default function Dashboard() {
   let accountBalanceCum = 0;
   const accountBalanceOverTime = [
     { trade: '#0', pl: 0, symbol: '', date: '' },
-    ...[...accountBalanceTrades].reverse().slice(0, 20).map((trade, index) => {
+    ...[...accountBalanceTrades]
+      .sort((a, b) => tradeChronoKey(a).localeCompare(tradeChronoKey(b)))
+      .slice(-20)
+      .map((trade, index) => {
       accountBalanceCum += (getTradeRealizedPL(trade) ?? 0);
       return {
         trade: `#${index + 1}`,
@@ -1240,6 +1283,7 @@ export default function Dashboard() {
                       to={dateRange.to}
                       onSelect={(f, toVal) => {
                         setSelectedMonth("");
+                        setDashboardRanges(["all"]);
                         setDateRange({ from: f, to: toVal });
                       }}
                     />
