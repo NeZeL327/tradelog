@@ -697,7 +697,7 @@ export default function JournalSimple({ mode = "all" }) {
             <div className="flex flex-col lg:flex-row lg:items-end gap-3">
               <div
                 role="tablist"
-                className="flex-1 flex flex-wrap items-end gap-1 border-b border-slate-200 dark:border-slate-700/70 px-1"
+                className="flex-1 app-h-scroll items-end gap-1 border-b border-slate-200 dark:border-slate-700/70 px-1 lg:flex-wrap lg:overflow-visible"
               >
                 {tabs.map((tab) => {
                   const a = accentMap[tab.accent];
@@ -708,16 +708,16 @@ export default function JournalSimple({ mode = "all" }) {
                       role="tab"
                       aria-selected={tab.active}
                       onClick={tab.onClick}
-                      className={`group relative inline-flex items-center gap-2 px-4 py-2.5 rounded-t-xl border border-b-0 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
+                      className={`group relative shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-t-xl border border-b-0 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
                         tab.active
                           ? `bg-card border-slate-200 dark:border-slate-700 shadow-[0_-2px_6px_-2px_rgba(0,0,0,0.08)] -mb-px ${a.text}`
                           : "bg-slate-100/70 dark:bg-slate-800/40 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-100 hover:-translate-y-0.5"
                       }`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${a.dot} ${tab.active ? "opacity-100" : "opacity-60"}`} />
-                      <span className="text-sm font-semibold tracking-tight">{tab.label}</span>
+                      <span className="text-xs sm:text-sm font-semibold tracking-tight whitespace-nowrap">{tab.label}</span>
                       <span
-                        className={`ml-1 min-w-[1.5rem] text-center text-[11px] font-bold px-1.5 py-0.5 rounded-full transition-colors ${
+                        className={`ml-0.5 min-w-[1.5rem] text-center text-[11px] font-bold px-1.5 py-0.5 rounded-full transition-colors ${
                           tab.active ? a.badgeActive : "bg-slate-200/80 text-slate-600 dark:bg-slate-700/60 dark:text-slate-300"
                         }`}
                       >
@@ -761,8 +761,8 @@ export default function JournalSimple({ mode = "all" }) {
                 </div>
               </div>
               {!isSingleStatusMode && (
-              <div className="flex flex-wrap gap-3 items-center">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="flex flex-wrap gap-2 sm:gap-3 items-center w-full md:w-auto">
+                <label className="flex items-center gap-2 cursor-pointer min-h-10">
                   <div 
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("all")
@@ -832,11 +832,11 @@ export default function JournalSimple({ mode = "all" }) {
                 </label>
               </div>
               )}
-              <div className="relative" ref={accountFilterRef}>
+              <div className="relative w-full sm:w-auto" ref={accountFilterRef}>
                 <button
                   type="button"
                   onClick={() => setAccountFilterOpen((prev) => !prev)}
-                  className="relative w-[220px] h-10 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-card dark:text-slate-200 flex items-center justify-center"
+                  className="relative w-full sm:w-[220px] h-10 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-card dark:text-slate-200 flex items-center justify-center"
                 >
                   <span className="truncate text-center w-full pr-4">
                     {activeAccountFilterLabel || (t('allAccounts') || 'All Accounts')}
@@ -898,11 +898,11 @@ export default function JournalSimple({ mode = "all" }) {
                   </div>
                 )}
               </div>
-              <div className="relative ml-auto" ref={timeFilterRef}>
+              <div className="relative w-full sm:w-auto sm:ml-auto" ref={timeFilterRef}>
                 <button
                   type="button"
                   onClick={() => setTimeFilterOpen((prev) => !prev)}
-                  className="relative min-w-[160px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-card dark:text-slate-200 flex items-center justify-center"
+                  className="relative w-full sm:min-w-[160px] h-10 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-card dark:text-slate-200 flex items-center justify-center"
                 >
                   <span className="truncate text-center w-full pr-4">{activeTimeFilterLabel}</span>
                   {timeFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
@@ -963,7 +963,7 @@ export default function JournalSimple({ mode = "all" }) {
                   {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
                 {datePickerOpen && (
-                  <div className="absolute right-0 mt-2 z-30 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-xl p-3">
+                  <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-30 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-xl p-3">
                     <MiniCalendar
                       from={dateRange.from}
                       to={dateRange.to}

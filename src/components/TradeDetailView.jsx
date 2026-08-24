@@ -12,7 +12,7 @@ export default function TradeDetailView({ trade, onEdit }) {
   const [emotionsOpen, setEmotionsOpen] = useState(hasEmotionData);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-0 items-stretch">
+    <div className="flex flex-col lg:flex-row gap-0 items-start">
       {emotionsOpen && hasEmotionData && (
         <EmotionsInlinePanel
           readOnly

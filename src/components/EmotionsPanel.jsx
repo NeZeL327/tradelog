@@ -85,7 +85,7 @@ export const countFilledEmotionStages = (emotions) => {
 
 function StarRating({ value, onChange, readOnly = false, size = "md" }) {
   const starClass =
-    size === "xs" ? "w-3.5 h-3.5" : size === "sm" ? "w-4 h-4" : "w-6 h-6";
+    size === "xs" ? "w-3.5 h-3.5" : size === "sm" ? "w-4 h-4" : "w-5 h-5";
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -99,7 +99,7 @@ function StarRating({ value, onChange, readOnly = false, size = "md" }) {
             !readOnly && "hover:scale-110",
             readOnly && "cursor-default"
           )}
-          aria-label={`Ocena ${n}`}
+          aria-label={`Intensywność ${n}`}
         >
           <Star
             className={cn(
@@ -115,15 +115,103 @@ function StarRating({ value, onChange, readOnly = false, size = "md" }) {
   );
 }
 
+const INTENSITY_LEVELS = [
+  { n: 1, label: "Spokój", hint: "prawie brak emocji", color: "text-emerald-600 dark:text-emerald-400" },
+  { n: 2, label: "Lekko", hint: "delikatne emocje", color: "text-lime-600 dark:text-lime-400" },
+  { n: 3, label: "Umiarkowanie", hint: "wyczuwalne napięcie", color: "text-amber-600 dark:text-amber-400" },
+  { n: 4, label: "Silnie", hint: "dużo emocji", color: "text-orange-600 dark:text-orange-400" },
+  { n: 5, label: "Bardzo mocno", hint: "przeładowanie", color: "text-rose-600 dark:text-rose-400" },
+];
+
+function MiniStars({ count, active = false }) {
+  return (
+    <span className="inline-flex items-center gap-px shrink-0" aria-hidden>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          className={cn(
+            "w-2.5 h-2.5",
+            i <= count
+              ? active
+                ? "fill-amber-400 text-amber-400"
+                : "fill-amber-400/70 text-amber-400/70"
+              : "fill-transparent text-slate-300/80 dark:text-slate-600"
+          )}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** Ładna legenda skali 1–5 z gwiazdkami i opisami */
+function IntensityLegend({ value = 0, variant = "full" }) {
+  if (variant === "selected") {
+    const level = INTENSITY_LEVELS.find((l) => l.n === value);
+    if (!level) return null;
+    return (
+      <div className="flex items-center gap-1.5 rounded-md bg-amber-500/10 border border-amber-500/20 px-1.5 py-1">
+        <MiniStars count={value} active />
+        <span className={cn("text-[10px] font-semibold leading-none", level.color)}>
+          {level.n}. {level.label}
+        </span>
+        <span className="text-[10px] text-muted-foreground leading-none truncate">
+          — {level.hint}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-amber-500/25 bg-gradient-to-b from-amber-500/[0.08] to-transparent p-1.5 space-y-1">
+      <div className="flex items-center justify-between gap-2 px-1">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-800/90 dark:text-amber-200/90">
+          Skala intensywności
+        </p>
+        <p className="text-[9px] text-muted-foreground">1 = mało · 5 = dużo</p>
+      </div>
+      <ul className="space-y-px">
+        {INTENSITY_LEVELS.map((level) => {
+          const active = value === level.n;
+          return (
+            <li
+              key={level.n}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition-colors",
+                active
+                  ? "bg-amber-400/20 ring-1 ring-amber-400/40"
+                  : "hover:bg-muted/40"
+              )}
+            >
+              <MiniStars count={level.n} active={active} />
+              <span className={cn("text-[10px] font-bold tabular-nums shrink-0", level.color)}>
+                {level.n}
+              </span>
+              <span className={cn(
+                "text-[10px] font-semibold truncate",
+                active ? "text-foreground" : "text-foreground/90"
+              )}>
+                {level.label}
+              </span>
+              <span className="text-[9px] text-muted-foreground truncate ml-auto">
+                {level.hint}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function EmotionTag({ active, emoji, label, onClick, readOnly = false, compact = false }) {
   if (readOnly) {
     if (!active) return null;
     return (
       <span className={cn(
-        "inline-flex items-center gap-1 rounded-full border bg-blue-600/10 border-blue-500/30 text-slate-800 dark:text-slate-100",
-        compact ? "px-1.5 py-0 text-[10px] gap-0.5" : "px-3 py-1.5 text-sm gap-1.5"
+        "inline-flex items-center rounded-full border bg-violet-600/10 border-violet-500/30 text-foreground",
+        compact ? "px-1.5 py-0.5 text-[10px] gap-0.5" : "px-2 py-0.5 text-[11px] gap-1"
       )}>
-        <span className={cn("leading-none", compact ? "text-xs" : "text-base")}>{emoji}</span>
+        <span className={cn("leading-none", compact ? "text-[11px]" : "text-xs")}>{emoji}</span>
         <span>{label}</span>
       </span>
     );
@@ -134,14 +222,14 @@ function EmotionTag({ active, emoji, label, onClick, readOnly = false, compact =
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center rounded-full border transition",
-        compact ? "gap-0.5 px-1.5 py-0 text-[10px]" : "gap-1.5 px-3 py-1.5 text-sm",
+        "inline-flex items-center rounded-full border transition min-h-[1.55rem]",
+        compact ? "gap-0.5 px-1.5 py-0.5 text-[10px]" : "gap-1 px-2 py-0.5 text-[11px]",
         active
-          ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:border-blue-400"
+          ? "bg-violet-600 border-violet-600 text-white shadow-sm"
+          : "bg-background/80 border-border/80 text-muted-foreground hover:border-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
       )}
     >
-      <span className={cn("leading-none", compact ? "text-xs" : "text-base")}>{emoji}</span>
+      <span className={cn("leading-none", compact ? "text-[11px]" : "text-xs")}>{emoji}</span>
       <span>{label}</span>
     </button>
   );
@@ -285,27 +373,35 @@ function EmotionStage({ stage, value, onChange, readOnly = false, compact = fals
 
   return (
     <div className={cn(
-      "rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40",
-      compact ? "space-y-1.5 p-2" : "space-y-3 p-4"
+      "rounded-xl border border-border/60 bg-muted/20 dark:bg-white/[0.03]",
+      compact ? "space-y-1.5 p-2" : "space-y-2 p-2.5"
     )}>
       <h3 className={cn(
-        "font-semibold text-slate-900 dark:text-slate-100 shrink-0",
-        compact ? "text-[10px] leading-tight" : "text-sm"
+        "font-semibold uppercase tracking-wide text-muted-foreground shrink-0",
+        compact ? "text-[10px] leading-tight" : "text-[10px]"
       )}>{stage.title}</h3>
 
       {value.rating > 0 || !readOnly ? (
-        <div className="shrink-0">
+        <div className="shrink-0 space-y-1">
+          <p className="text-[10px] font-medium text-muted-foreground">Intensywność emocji</p>
           <StarRating
             value={value.rating}
             onChange={(rating) => onChange({ ...value, rating })}
             readOnly={readOnly}
-            size={compact ? "xs" : "md"}
+            size="xs"
           />
+          {value.rating > 0 ? (
+            <IntensityLegend value={value.rating} variant="selected" />
+          ) : !readOnly ? (
+            <p className="text-[10px] text-muted-foreground/80 leading-snug">
+              Kliknij gwiazdki — 1 spokój, 5 bardzo mocno
+            </p>
+          ) : null}
         </div>
       ) : null}
 
       {(readOnly ? value.tags.length > 0 : true) && (
-        <div className={cn("flex flex-wrap", compact ? "gap-1" : "gap-2")}>
+        <div className={cn("flex flex-wrap", compact ? "gap-1" : "gap-1")}>
           {stage.options.map((opt) => (
             <EmotionTag
               key={opt.label}
@@ -313,7 +409,7 @@ function EmotionStage({ stage, value, onChange, readOnly = false, compact = fals
               label={opt.label}
               active={value.tags.includes(opt.label)}
               readOnly={readOnly}
-              compact={compact}
+              compact
               onClick={() => toggleTag(opt.label)}
             />
           ))}
@@ -322,10 +418,7 @@ function EmotionStage({ stage, value, onChange, readOnly = false, compact = fals
 
       <div>
         {(compact || !readOnly) && (
-          <p className={cn(
-            "font-medium text-slate-500 dark:text-slate-400",
-            compact ? "text-[10px] mb-0.5" : "text-xs mb-1"
-          )}>
+          <p className="text-[10px] font-medium text-muted-foreground mb-0.5">
             Komentarz
           </p>
         )}
@@ -334,7 +427,7 @@ function EmotionStage({ stage, value, onChange, readOnly = false, compact = fals
             <AutoGrowTextarea
               value={value.comment}
               readOnly
-              className={compact ? "text-[11px] leading-snug" : "text-sm"}
+              className="text-[12px] leading-snug"
             />
           ) : null
         ) : (
@@ -343,7 +436,7 @@ function EmotionStage({ stage, value, onChange, readOnly = false, compact = fals
             onChange={(next) => onChange({ ...value, comment: next })}
             placeholder={stage.placeholder}
             minRows={1}
-            className={compact ? "text-[11px] py-1" : "text-sm"}
+            className="text-[12px] py-1 min-h-[28px] border-border/70 bg-muted/25 dark:bg-white/[0.03]"
           />
         )}
       </div>
@@ -380,12 +473,16 @@ export function EmotionsPanelContent({
   return (
     <div className={cn(
       "flex flex-col",
-      compact ? "gap-1.5" : "space-y-3"
+      compact ? "gap-1.5" : "gap-2"
     )}>
       {readOnly && !hasAnyStage && !hasSetupData && (
-        <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-6">
+        <p className="text-[12px] text-muted-foreground text-center py-4">
           Brak wpisów w dzienniku emocji.
         </p>
+      )}
+
+      {!readOnly && (
+        <IntensityLegend value={0} variant="full" />
       )}
 
       {showSetupConfidence && (
@@ -426,34 +523,31 @@ export function EmotionsInlinePanel({
   showSetupConfidence = true,
   onClose,
   className,
-  compact = false,
+  compact = true,
 }) {
   return (
     <div
       className={cn(
-        "shrink-0 flex flex-col w-full lg:w-[290px]",
-        "border border-slate-200/80 dark:border-slate-700",
-        "bg-white dark:bg-card",
+        "shrink-0 flex flex-col h-fit self-start w-full lg:w-[260px] text-[12px]",
+        "border border-border/70",
+        "bg-background dark:bg-card",
         "rounded-xl lg:rounded-r-none lg:rounded-l-xl",
-        "shadow-lg shadow-slate-900/5 dark:shadow-black/20",
+        "shadow-md shadow-slate-900/5 dark:shadow-black/20",
         className
       )}
     >
-      <div className={cn(
-        "bg-gradient-to-r from-purple-900 via-violet-900 to-purple-900 text-white border-b border-slate-700/80 flex items-center justify-between shrink-0",
-        compact ? "px-3 py-1.5" : "px-4 py-3"
-      )}>
-        <div>
-          <h3 className={cn("font-semibold", compact ? "text-xs" : "text-sm")}>Dziennik emocji</h3>
-          <p className={cn("text-violet-200/80", compact ? "text-[10px]" : "text-[11px]")}>
-            Setup · przed · w trakcie · po
+      <div className="bg-gradient-to-r from-violet-900 via-violet-800 to-purple-900 text-white border-b border-violet-700/50 flex items-center justify-between shrink-0 px-2.5 py-1.5">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-[12px] leading-tight">Dziennik emocji</h3>
+          <p className="text-[10px] text-violet-200/85 leading-tight">
+            przed · w trakcie · po
           </p>
         </div>
         {onClose && (
           <button
             type="button"
             onClick={onClose}
-            className="text-violet-200 hover:bg-white/10 p-1 rounded-lg transition"
+            className="text-violet-200 hover:bg-white/10 p-1 rounded-md transition shrink-0"
             aria-label="Zamknij panel emocji"
           >
             <X className="w-3.5 h-3.5" />
@@ -461,7 +555,7 @@ export function EmotionsInlinePanel({
         )}
       </div>
 
-      <div className={cn(compact ? "p-2" : "p-3 sm:p-4")}>
+      <div className="p-2">
         <EmotionsPanelContent
           value={value}
           onChange={onChange}
@@ -471,7 +565,7 @@ export function EmotionsInlinePanel({
           onSetupConfidenceCommentChange={onSetupConfidenceCommentChange}
           readOnly={readOnly}
           showSetupConfidence={showSetupConfidence}
-          compact={compact}
+          compact
         />
       </div>
     </div>

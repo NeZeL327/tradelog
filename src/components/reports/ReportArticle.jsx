@@ -19,9 +19,9 @@ function Block({ title, children }) {
 
 function Stat({ label, value, accent }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-4 py-3 text-center">
-      <p className={`text-2xl font-bold tabular-nums ${accent || "text-foreground"}`}>{value}</p>
-      <p className="text-xs text-muted-foreground mt-1">{label}</p>
+    <div className="rounded-xl border border-border bg-card px-3 py-2.5 sm:px-4 sm:py-3 text-center">
+      <p className={`text-xl sm:text-2xl font-bold tabular-nums ${accent || "text-foreground"}`}>{value}</p>
+      <p className="text-[11px] sm:text-xs text-muted-foreground mt-1">{label}</p>
     </div>
   );
 }
@@ -44,30 +44,33 @@ export default function ReportArticle({
       : `${Number(resultR) >= 0 ? "+" : ""}${Number(resultR).toFixed(1)}R`;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="ghost" size="sm" onClick={onBack}>
+    <div className="max-w-3xl mx-auto space-y-6 sm:space-y-8">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <Button type="button" variant="ghost" size="sm" className="justify-start h-10 sm:h-9 -ml-2 w-fit" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-1" />
           {t("back") || "Wróć"}
         </Button>
-        <div className="flex-1" />
-        <Button type="button" variant="outline" size="sm" onClick={onEdit}>
-          <Edit className="w-4 h-4 mr-1" />
-          {t("edit") || "Edytuj"}
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={onToggleStatus}>
-          <FileEdit className="w-4 h-4 mr-1" />
-          {report.status === "draft"
-            ? (t("reportPublish") || "Opublikuj")
-            : (t("reportToDraft") || "Ustaw jako szkic")}
-        </Button>
-        <Button type="button" variant="destructive" size="sm" onClick={onDelete}>
-          <Trash2 className="w-4 h-4 mr-1" />
-          {t("delete") || "Usuń"}
-        </Button>
+        <div className="grid grid-cols-3 gap-2 w-full sm:flex sm:w-auto sm:ml-auto">
+          <Button type="button" variant="outline" size="sm" className="h-10 sm:h-9" onClick={onEdit}>
+            <Edit className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">{t("edit") || "Edytuj"}</span>
+          </Button>
+          <Button type="button" variant="outline" size="sm" className="h-10 sm:h-9 px-2" onClick={onToggleStatus}>
+            <FileEdit className="w-4 h-4 sm:mr-1 shrink-0" />
+            <span className="truncate text-xs sm:text-sm">
+              {report.status === "draft"
+                ? (t("reportPublish") || "Opublikuj")
+                : (t("reportToDraft") || "Szkic")}
+            </span>
+          </Button>
+          <Button type="button" variant="destructive" size="sm" className="h-10 sm:h-9" onClick={onDelete}>
+            <Trash2 className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">{t("delete") || "Usuń"}</span>
+          </Button>
+        </div>
       </div>
 
-      <header className="space-y-3 border-b border-border pb-6">
+      <header className="space-y-2 sm:space-y-3 border-b border-border pb-4 sm:pb-6">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">
             {reportTypeLabel(report.report_type, t)}
@@ -76,12 +79,12 @@ export default function ReportArticle({
             <Badge variant="outline">{t("reportDraft") || "Szkic"}</Badge>
           )}
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
           {reportPeriodLabel(report, language)}
         </h1>
       </header>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <Stat
           label={t("reportResultR") || "Wynik"}
           value={resultLabel}

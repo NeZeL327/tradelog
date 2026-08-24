@@ -1466,7 +1466,7 @@ export default function Backtesting() {
       <Dialog open={!!detailRow} onOpenChange={(o) => { if (!o) setDetailRow(null); }}>
         <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto bg-background dark:bg-card border-border gap-0 p-0">
           {detailRow && (
-            <div className="flex flex-col lg:flex-row gap-0 items-stretch">
+            <div className="flex flex-col lg:flex-row gap-0 items-start">
               {detailEmotionsOpen && countFilledEmotionStages(detailRow.emotions) > 0 && (
                 <EmotionsInlinePanel
                   readOnly
@@ -1679,7 +1679,7 @@ export default function Backtesting() {
 
       <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) { resetForm(); setDialogOpen(false); } }}>
         <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto bg-background dark:bg-card border-border gap-0 p-0">
-          <div className="flex flex-col lg:flex-row gap-0 items-stretch">
+          <div className="flex flex-col lg:flex-row gap-0 items-start">
             {emotionsOpen && (
               <EmotionsInlinePanel
                 value={form.emotions}

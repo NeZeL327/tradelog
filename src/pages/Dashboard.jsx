@@ -888,25 +888,25 @@ export default function Dashboard() {
       <div className="w-full mx-auto space-y-6">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-3 sm:gap-4">
             <div className="min-w-0">
-              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white bordo:text-[#f9d5e5] mb-2">{t('dashboard')}</h1>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white bordo:text-[#f9d5e5] mb-1 sm:mb-2">{t('dashboard')}</h1>
               <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 bordo:text-[#d4a5b8]">{t('overviewOfYourTradingPerformance')}</p>
             </div>
-            <div className="flex items-center gap-3 md:gap-4 flex-wrap justify-end">
+            <div className="flex items-stretch sm:items-center gap-2 sm:gap-3 md:gap-4 flex-wrap">
               <Button
                 type="button"
                 onClick={() => setShowAddForm(true)}
-                className="h-9 md:h-10 px-3 md:px-4 gap-2 text-sm shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
+                className="h-10 px-3 md:px-4 gap-2 text-sm w-full sm:w-auto shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
                 title={t('addTrade')}
               >
                 <Plus className="w-4 h-4 shrink-0" />
                 <span className="font-semibold">{t('addTrade')}</span>
               </Button>
-              <div className="relative" ref={accountDropdownRef}>
+              <div className="relative flex-1 min-w-[min(100%,10.5rem)] sm:flex-none sm:min-w-0" ref={accountDropdownRef}>
                 <button
                   onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
-                  className="relative h-9 md:h-10 w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent shrink-0"
+                  className="relative h-10 w-full sm:w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
                 >
                   <Wallet className="absolute left-3 w-4 h-4 text-slate-500" />
                   <span className="truncate text-center w-full px-6">{dashboardAccountLabel || t('allAccounts')}</span>
@@ -953,12 +953,12 @@ export default function Dashboard() {
               </div>
               <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9 md:h-10 px-3 md:px-4 gap-2 text-sm shrink-0">
+                  <Button variant="outline" size="sm" className="h-10 px-3 md:px-4 gap-2 text-sm flex-1 sm:flex-none min-w-[6.5rem]">
                     <Filter className="w-4 h-4" />
                     {t('filters')}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="start" side="bottom" className="w-[320px] sm:w-[420px] p-4">
+                <PopoverContent align="start" side="bottom" className="w-[min(420px,calc(100vw-1.5rem))] p-4">
                   <div className="space-y-4">
                     <div>
                       <div className="text-xs text-slate-500 mb-2">{t('symbol')}</div>
@@ -1107,7 +1107,7 @@ export default function Dashboard() {
                 </PopoverContent>
               </Popover>
 
-              <div className="relative" ref={rangeFilterMainRef}>
+              <div className="relative flex-1 min-w-[min(100%,9rem)] sm:flex-none" ref={rangeFilterMainRef}>
                 <button
                   type="button"
                   onClick={() => {
@@ -1115,7 +1115,7 @@ export default function Dashboard() {
                     setMonthFilterOpen(false);
                     setDatePickerOpen(false);
                   }}
-                  className="relative h-9 md:h-10 w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent shrink-0"
+                  className="relative h-10 w-full min-w-[min(100%,9rem)] sm:w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent flex-1 sm:flex-none"
                 >
                   <CalendarDays className="absolute left-3 w-4 h-4 text-slate-500" />
                   <span className="truncate text-center w-full px-6">{dashboardRangeLabel || t('allTime')}</span>
@@ -1183,7 +1183,7 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <div className="relative" ref={monthFilterRef}>
+              <div className="relative flex-1 min-w-[min(100%,9rem)] sm:flex-none" ref={monthFilterRef}>
                 <button
                   type="button"
                   onClick={() => {
@@ -1191,7 +1191,7 @@ export default function Dashboard() {
                     setRangeFilterOpen(false);
                     setDatePickerOpen(false);
                   }}
-                  className={`relative h-9 md:h-10 min-w-[150px] md:min-w-[180px] px-3 rounded-md border text-sm flex items-center justify-center hover:bg-accent shrink-0 ${
+                  className={`relative h-10 flex-1 min-w-[min(100%,9rem)] sm:flex-none sm:min-w-[150px] md:min-w-[180px] px-3 rounded-md border text-sm flex items-center justify-center hover:bg-accent ${
                     selectedMonth
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
                       : "border-input bg-transparent"
@@ -1252,7 +1252,7 @@ export default function Dashboard() {
               </div>
 
               {/* Date range picker — rightmost */}
-              <div className="relative" ref={datePickerRef}>
+              <div className="relative flex-1 min-w-[min(100%,9rem)] sm:flex-none sm:w-auto" ref={datePickerRef}>
                 <button
                   type="button"
                   onClick={() => {
@@ -1260,14 +1260,14 @@ export default function Dashboard() {
                     setMonthFilterOpen(false);
                     setRangeFilterOpen(false);
                   }}
-                  className={`relative flex items-center gap-2 px-3 py-2 h-9 md:h-10 border rounded-md text-sm transition-colors shrink-0 ${
+                  className={`relative flex items-center justify-center gap-2 px-3 py-2 h-10 w-full sm:w-auto border rounded-md text-sm transition-colors ${
                     dateRange.from
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
                       : "border-input bg-transparent hover:bg-accent"
                   }`}
                 >
                   <CalendarRange className="w-4 h-4 shrink-0" />
-                  <span className="truncate max-w-[140px]">
+                  <span className="truncate max-w-[min(100%,11rem)] sm:max-w-[140px]">
                     {dateRange.from
                       ? dateRange.to && dateRange.to !== dateRange.from
                         ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
@@ -1277,7 +1277,7 @@ export default function Dashboard() {
                   {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
                 {datePickerOpen && (
-                  <div className="absolute right-0 mt-2 z-50 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-xl p-3">
+                  <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-50 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-xl p-3">
                     <MiniCalendar
                       from={dateRange.from}
                       to={dateRange.to}

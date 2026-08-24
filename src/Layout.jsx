@@ -20,6 +20,7 @@ import {
   SidebarHeader,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -67,15 +68,32 @@ function normalizePath(p) {
   return s.toLowerCase();
 }
 
+function NavLink({ to, children, className, onNavigate }) {
+  return (
+    <Link
+      to={to}
+      className={className}
+      onClick={() => onNavigate?.()}
+    >
+      {children}
+    </Link>
+  );
+}
+
 function LayoutContent({ children }) {
   const { t } = useLanguage();
   const { user, logout } = useAuth();
   const isMobile = useIsMobile();
   const location = useLocation();
+  const { setOpenMobile } = useSidebar();
 
   const displayName = getUserDisplayName(user, t('profile'));
   const initials = getUserInitials(user);
   const avatarPreset = getAvatarPreset(user?.avatar);
+
+  const closeMobileNav = React.useCallback(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [isMobile, setOpenMobile]);
 
   React.useEffect(() => {
     if (!user) return;
@@ -88,13 +106,18 @@ function LayoutContent({ children }) {
     applyTheme(effectiveTheme);
   }, [user]);
 
+  // Close sheet after route change (back/forward, deep links)
+  React.useEffect(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [location.pathname, isMobile, setOpenMobile]);
+
   const navGroups = NAV_GROUPS(t);
   const pathNorm = normalizePath(location.pathname);
 
   return (
-    <SidebarProvider defaultOpen={!isMobile}>
+    <>
       {/* Connected shell (sidebar + header) + inset rounded content — both themes */}
-      <div className="min-h-screen flex w-full bg-[hsl(var(--app-shell))]">
+      <div className="min-h-dvh flex w-full bg-[hsl(var(--app-shell))]">
 
         <Sidebar
           className="cyber-app-sidebar border-transparent bg-transparent"
@@ -117,9 +140,9 @@ function LayoutContent({ children }) {
 
             {/* Compact user pill — avatar + name (FX Replay style) */}
             {user && (
-              <Link
+              <NavLink
                 to={createPageUrl("Settings")}
-                title={t("settings")}
+                onNavigate={closeMobileNav}
                 className="flex items-center gap-2.5 rounded-lg px-2 py-2 hover:bg-sidebar-accent/60 transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1"
               >
                 <Avatar className="h-8 w-8 ring-1 ring-sidebar-border/60">
@@ -141,7 +164,7 @@ function LayoutContent({ children }) {
                     <p className="text-[10px] uppercase tracking-wider text-blue-400/90 font-semibold mt-0.5">{user.plan}</p>
                   )}
                 </div>
-              </Link>
+              </NavLink>
             )}
           </SidebarHeader>
 
@@ -172,16 +195,17 @@ function LayoutContent({ children }) {
                               }
                             `}
                           >
-                            <Link
+                            <NavLink
                               to={item.url}
-                              className="flex items-center gap-3 min-h-[2.5rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:min-h-[2.35rem]"
+                              onNavigate={closeMobileNav}
+                              className="flex items-center gap-3 min-h-[2.75rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:min-h-[2.35rem]"
                             >
                               <item.icon
                                 className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "opacity-100" : "opacity-85"}`}
                                 strokeWidth={isActive ? 2.25 : 2}
                               />
                               <span className="text-[13px] leading-snug group-data-[collapsible=icon]:hidden">{item.title}</span>
-                            </Link>
+                            </NavLink>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
                       );
@@ -192,7 +216,7 @@ function LayoutContent({ children }) {
             ))}
 
             {/* Bottom section — settings + logout */}
-            <div className="mt-auto pt-3 border-t border-sidebar-border/50 space-y-1 dark:border-white/5">
+            <div className="mt-auto pt-3 border-t border-sidebar-border/50 space-y-1 dark:border-white/5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
               <SidebarMenu className="gap-1">
                 <SidebarMenuItem>
                   <SidebarMenuButton
@@ -204,13 +228,14 @@ function LayoutContent({ children }) {
                         : "text-sidebar-foreground/90 hover:bg-sidebar-accent/85 hover:text-sidebar-accent-foreground"
                     }`}
                   >
-                    <Link
+                    <NavLink
                       to={createPageUrl("Settings")}
-                      className="flex items-center gap-3 min-h-[2.5rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center"
+                      onNavigate={closeMobileNav}
+                      className="flex items-center gap-3 min-h-[2.75rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center"
                     >
                       <SettingsIcon className="w-[18px] h-[18px] flex-shrink-0 opacity-85" strokeWidth={2} />
                       <span className="text-[13px] leading-snug group-data-[collapsible=icon]:hidden">{t("settings")}</span>
-                    </Link>
+                    </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -219,7 +244,7 @@ function LayoutContent({ children }) {
                     onClick={() => logout()}
                     className="relative rounded-xl transition-all duration-200 !py-0 !h-auto text-sidebar-foreground/80 hover:bg-red-500/10 hover:text-red-300"
                   >
-                    <div className="flex items-center gap-3 min-h-[2.5rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center w-full cursor-pointer">
+                    <div className="flex items-center gap-3 min-h-[2.75rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center w-full cursor-pointer">
                       <LogOut className="w-[18px] h-[18px] flex-shrink-0 opacity-85" strokeWidth={2} />
                       <span className="text-[13px] leading-snug group-data-[collapsible=icon]:hidden">{t("logout")}</span>
                     </div>
@@ -234,17 +259,17 @@ function LayoutContent({ children }) {
         </Sidebar>
 
         {/* Column: top bar (shell) + inset content panel */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-[hsl(var(--app-shell))]">
+        <div className="flex-1 flex flex-col min-w-0 min-h-dvh bg-[hsl(var(--app-shell))]">
           {/* Top header — same color as sidebar (connected frame) */}
-          <header className="cyber-app-header border-transparent bg-transparent px-4 md:px-6 py-3 sticky top-0 z-10 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <SidebarTrigger className="h-8 w-8 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-150 flex items-center justify-center text-muted-foreground hover:text-foreground" />
+          <header className="cyber-app-header border-transparent bg-transparent px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 sticky top-0 z-10 flex items-center justify-between gap-2 sm:gap-4 pt-[max(0.625rem,env(safe-area-inset-top))]">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <SidebarTrigger className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-150 flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0" />
 
               {/* Mobile brand name */}
-              <span className="md:hidden text-sm font-semibold text-foreground">AiKeepTrade</span>
+              <span className="md:hidden text-sm font-semibold text-foreground truncate">AiKeepTrade</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <SessionClocks />
               <LanguageToggle />
               <ThemeToggle />
@@ -271,17 +296,22 @@ function LayoutContent({ children }) {
 
           {/* Content panel — rounded inset (connected transition under header) */}
           <main className="flex-1 flex flex-col min-w-0 overflow-auto cyber-dashboard dashboard-surface bg-[hsl(var(--background))] md:mr-3 md:mb-3 md:rounded-2xl md:border border-black/[0.06] dark:border-white/[0.06] shadow-[0_1px_3px_rgba(15,23,42,0.04)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <div className="flex-1 w-full max-w-screen-2xl mx-auto px-4 sm:px-6 py-6">
+            <div className="flex-1 w-full max-w-screen-2xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
               {children}
             </div>
             <Footer variant="app" />
           </main>
         </div>
       </div>
-    </SidebarProvider>
+    </>
   );
 }
 
 export default function Layout({ children }) {
-  return <LayoutContent>{children}</LayoutContent>;
+  const isMobile = useIsMobile();
+  return (
+    <SidebarProvider defaultOpen={!isMobile}>
+      <LayoutContent>{children}</LayoutContent>
+    </SidebarProvider>
+  );
 }

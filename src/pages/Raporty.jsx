@@ -55,24 +55,24 @@ function ReportRow({ report, language, t, onOpen }) {
     <button
       type="button"
       onClick={() => onOpen(report)}
-      className="w-full text-left px-3.5 py-2.5 flex items-center gap-3 hover:bg-muted/40 transition-colors border-b border-border/50 last:border-b-0"
+      className="w-full text-left px-3 sm:px-3.5 py-3 sm:py-2.5 flex items-center gap-2.5 sm:gap-3 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-b-0 min-h-[3.25rem]"
     >
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             {reportTypeLabel(report.report_type, t)}
           </span>
           {report.status === "draft" && (
             <Badge variant="outline" className="h-5 text-[10px] px-1.5">{t("reportDraft") || "Szkic"}</Badge>
           )}
-          <span className="text-sm font-medium text-foreground truncate">
+          <span className="text-sm font-medium text-foreground truncate max-w-full">
             {reportPeriodLabel(report, language)}
           </span>
         </div>
         {snippet ? (
           <p className="text-xs text-muted-foreground truncate mt-0.5">„{snippet}”</p>
         ) : (
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
             {report.trades_count != null ? `${report.trades_count} trejdów` : "—"}
             {report.win_rate != null && report.win_rate !== "" ? ` · ${report.win_rate}% WR` : ""}
             {report.rating ? ` · ${report.rating}/10` : ""}
@@ -90,7 +90,7 @@ function ReportRow({ report, language, t, onOpen }) {
       >
         {resultLabel}
       </span>
-      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 opacity-70" />
     </button>
   );
 }
@@ -307,13 +307,13 @@ export default function Raporty() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-        <div className="flex flex-wrap gap-2">
+        <div className="app-h-scroll -mx-1 px-1 pb-0.5 sm:flex-wrap sm:overflow-visible">
           {TYPE_TABS.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setTypeFilter(tab.key)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+              className={`shrink-0 px-3 py-2 sm:py-1.5 rounded-lg text-sm font-medium border transition-colors ${
                 typeFilter === tab.key
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-background border-border text-muted-foreground hover:text-foreground"
@@ -324,7 +324,7 @@ export default function Raporty() {
           ))}
         </div>
         <Select value={yearFilter} onValueChange={setYearFilter}>
-          <SelectTrigger className="w-full sm:w-[140px]">
+          <SelectTrigger className="w-full sm:w-[140px] h-10">
             <SelectValue placeholder={t("year") || "Rok"} />
           </SelectTrigger>
           <SelectContent>

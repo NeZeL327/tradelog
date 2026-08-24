@@ -162,13 +162,13 @@ function NumberStepper({
 
 function TextRow({ label, value, onChange, placeholder, highlight = false }) {
   return (
-    <div className={`px-4 py-3 ${highlight ? "bg-primary/[0.04] dark:bg-primary/10" : ""}`}>
+    <div className={`px-3 sm:px-4 py-3 ${highlight ? "bg-primary/[0.04] dark:bg-primary/10" : ""}`}>
       <Label className={`text-[12px] font-semibold mb-1.5 block ${highlight ? "text-primary" : "text-foreground/80"}`}>
         {label}
       </Label>
       <Textarea
-        rows={2}
-        className={areaClass}
+        rows={3}
+        className={`${areaClass} text-base sm:text-sm`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -179,23 +179,25 @@ function TextRow({ label, value, onChange, placeholder, highlight = false }) {
 
 function RatingPicker({ value, onChange, label }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="text-[12px] font-semibold text-foreground/80 mr-1">{label}</span>
-      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-        <button
-          key={n}
-          type="button"
-          onClick={() => onChange(n)}
-          className={`h-8 w-8 rounded-md text-xs font-semibold transition-colors ${
-            Number(value) === n
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          {n}
-        </button>
-      ))}
-      <span className="text-xs text-muted-foreground ml-1">{value ? `${value}/10` : "—"}</span>
+    <div className="space-y-2">
+      <span className="text-[12px] font-semibold text-foreground/80 block">{label}</span>
+      <div className="grid grid-cols-5 sm:flex sm:flex-wrap gap-1.5 sm:gap-2">
+        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            className={`h-10 sm:h-8 sm:w-8 rounded-md text-sm sm:text-xs font-semibold transition-colors ${
+              Number(value) === n
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+      <span className="text-xs text-muted-foreground">{value ? `${value}/10` : "—"}</span>
     </div>
   );
 }
@@ -356,7 +358,7 @@ export default function ReportForm({
     <div className="space-y-4 max-w-4xl">
       {/* Okres + wyniki — jeden zwarty panel */}
       <div className="rounded-xl border border-border/70 bg-card/80 overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-border/60 flex items-center justify-between gap-3 bg-muted/20">
+        <div className="px-3 sm:px-4 py-2.5 border-b border-border/60 flex flex-col xs:flex-row sm:flex-row sm:items-center justify-between gap-2 bg-muted/20">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             {t("reportPeriod") || "Okres"} · {t("reportResults") || "Wyniki"}
           </p>
@@ -364,15 +366,15 @@ export default function ReportForm({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-7 text-xs"
+            className="h-9 sm:h-7 text-xs justify-start sm:justify-center w-full sm:w-auto"
             onClick={applyTradeStats}
           >
             {t("reportFillFromTrades") || "Uzupełnij z dziennika"}
           </Button>
         </div>
 
-        <div className="p-4 space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="p-3 sm:p-4 space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
             <Field label={t("year") || "Rok"}>
               <NumberStepper value={form.year} onChange={(v) => setField("year", v)} step={1} min={2000} max={2100} />
             </Field>
@@ -419,7 +421,7 @@ export default function ReportForm({
 
           <div className="h-px bg-border/60" />
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
             <Field label={t("reportResultR") || "Wynik R"}>
               <NumberStepper value={form.result_r} onChange={(v) => setField("result_r", v)} step={0.1} suffix="R" placeholder="0.0" />
             </Field>
@@ -558,16 +560,18 @@ export default function ReportForm({
         </div>
       </div>
 
-      <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end pb-4">
-        <Button type="button" variant="outline" className="rounded-lg h-10" onClick={onCancel} disabled={saving}>
-          {t("cancel") || "Anuluj"}
-        </Button>
-        <Button type="button" variant="secondary" className="rounded-lg h-10" disabled={saving} onClick={() => onSubmit(buildPayload("draft"))}>
-          {t("reportSaveDraft") || "Zapisz jako szkic"}
-        </Button>
-        <Button type="button" className="cyber-primary-btn rounded-lg h-10" disabled={saving} onClick={() => onSubmit(buildPayload("published"))}>
-          {t("reportPublish") || "Opublikuj raport"}
-        </Button>
+      <div className="sticky bottom-0 z-[1] -mx-1 px-1 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-[hsl(var(--background))] via-[hsl(var(--background))] to-transparent">
+        <div className="flex flex-col-reverse sm:flex-row gap-2 justify-end rounded-xl border border-border/60 bg-card/95 backdrop-blur-sm p-2 sm:p-0 sm:border-0 sm:bg-transparent sm:backdrop-blur-none">
+          <Button type="button" variant="outline" className="rounded-lg h-11 sm:h-10" onClick={onCancel} disabled={saving}>
+            {t("cancel") || "Anuluj"}
+          </Button>
+          <Button type="button" variant="secondary" className="rounded-lg h-11 sm:h-10" disabled={saving} onClick={() => onSubmit(buildPayload("draft"))}>
+            {t("reportSaveDraft") || "Zapisz jako szkic"}
+          </Button>
+          <Button type="button" className="cyber-primary-btn rounded-lg h-11 sm:h-10" disabled={saving} onClick={() => onSubmit(buildPayload("published"))}>
+            {t("reportPublish") || "Opublikuj raport"}
+          </Button>
+        </div>
       </div>
     </div>
   );

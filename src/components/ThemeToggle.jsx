@@ -98,12 +98,13 @@ export default function ThemeToggle({ className = "" }) {
             variant="ghost"
             onClick={() => handleThemeChange(entry.value)}
             className={cn(
-              "h-7 rounded-sm px-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
+              "h-7 rounded-sm px-1.5 sm:px-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
               isActive && "bg-accent text-foreground"
             )}
             aria-pressed={isActive}
           >
-            {entry.label}
+            <span className="sm:hidden">{entry.value === "dark" ? "D" : "L"}</span>
+            <span className="hidden sm:inline">{entry.label}</span>
           </Button>
         );
       })}
