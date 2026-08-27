@@ -19,9 +19,17 @@ const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 
-const LayoutWrapper = ({ children, currentPageName }) => Layout ?
-  <Layout currentPageName={currentPageName}>{children}</Layout>
-  : <>{children}</>;
+const LayoutWrapper = ({ children, currentPageName }) => {
+  // Dedicated popup window — no sidebar / footer chrome
+  if (currentPageName === "CalculatorPopup") {
+    return <>{children}</>;
+  }
+  return Layout ? (
+    <Layout currentPageName={currentPageName}>{children}</Layout>
+  ) : (
+    <>{children}</>
+  );
+};
 
 const PageShell = ({ children }) => (
   <div style={{ width: "100%", maxWidth: "100%" }}>

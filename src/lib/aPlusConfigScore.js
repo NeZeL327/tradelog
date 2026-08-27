@@ -177,6 +177,48 @@ export function formatPoints(n) {
   return String(v);
 }
 
+/** Option points: + green, 0 / negative red. */
+export function pointsToneClass(points) {
+  const v = Number(points) || 0;
+  if (v > 0) return "text-emerald-600 dark:text-emerald-400";
+  return "text-rose-600 dark:text-rose-400";
+}
+
+/**
+ * Sum number: red → strong green by score.
+ * ≤0 red · 1–4 warmer red/orange · 5–7 lime · 8–9 green · 10+ deep green
+ */
+export function sumToneClass(total) {
+  const n = Number(total);
+  const score = Number.isFinite(n) ? n : 0;
+  if (score <= 0) return "text-rose-700 dark:text-rose-400";
+  if (score <= 2) return "text-rose-600 dark:text-rose-400";
+  if (score <= 4) return "text-orange-600 dark:text-orange-400";
+  if (score <= 5) return "text-amber-600 dark:text-amber-400";
+  if (score <= 7) return "text-lime-600 dark:text-lime-400";
+  if (score <= 9) return "text-emerald-600 dark:text-emerald-400";
+  return "text-emerald-700 dark:text-emerald-300";
+}
+
+/** Panel border/bg for the suma block — same red→green scale. */
+export function sumPanelClass(total) {
+  const n = Number(total);
+  const score = Number.isFinite(n) ? n : 0;
+  if (score <= 0) {
+    return "border-rose-400/80 bg-rose-50/80 dark:border-rose-700/70 dark:bg-rose-950/40";
+  }
+  if (score <= 4) {
+    return "border-rose-300/70 bg-rose-50/60 dark:border-rose-700/50 dark:bg-rose-950/30";
+  }
+  if (score <= 7) {
+    return "border-lime-400/70 bg-lime-50/70 dark:border-lime-700/50 dark:bg-lime-950/30";
+  }
+  if (score <= 9) {
+    return "border-emerald-400/80 bg-emerald-50/80 dark:border-emerald-600/60 dark:bg-emerald-950/35";
+  }
+  return "border-emerald-500 bg-emerald-100/90 dark:border-emerald-400/70 dark:bg-emerald-950/50";
+}
+
 export function loadAPlusSelection() {
   try {
     const raw = localStorage.getItem(APLUS_STORAGE_KEY);

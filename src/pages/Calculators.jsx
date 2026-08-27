@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { openFloatingCalculator, openFloatingCalculatorPip, openCalculatorPopupWindow } from "@/components/calculators/FloatingCalculator";
 import {
   Calculator,
   RotateCcw,
@@ -14,13 +15,17 @@ import {
   TrendingUp,
   Crosshair,
   AppWindow,
+  ExternalLink,
+  PictureInPicture2,
 } from "lucide-react";
-import { openFloatingCalculator } from "@/components/calculators/FloatingCalculator";
 import {
   APLUS_SCORE_GROUPS,
   APLUS_SUM_TIERS,
   evaluateAPlusSum,
   formatPoints,
+  pointsToneClass,
+  sumToneClass,
+  sumPanelClass,
   loadAPlusSelection,
   saveAPlusSelection,
   sumAPlusPoints,
@@ -65,9 +70,7 @@ function saveActiveTab(tab) {
 }
 
 function totalClass(total) {
-  if (total > 0) return "text-emerald-600 dark:text-emerald-400";
-  if (total < 0) return "text-rose-600 dark:text-rose-400";
-  return "text-slate-700 dark:text-slate-200";
+  return sumToneClass(total);
 }
 
 const VERDICT_STYLES = {
@@ -139,11 +142,31 @@ function APlusCalculator() {
           type="button"
           variant="default"
           size="sm"
+          className="gap-1.5 bg-violet-600 hover:bg-violet-700"
+          onClick={() => openFloatingCalculatorPip("aplus")}
+        >
+          <PictureInPicture2 className="w-3.5 h-3.5" />
+          Picture-in-Picture
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => openCalculatorPopupWindow("aplus")}
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Osobne okno
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
           className="gap-1.5"
           onClick={() => openFloatingCalculator("aplus")}
         >
           <AppWindow className="w-3.5 h-3.5" />
-          Otwórz w okienku
+          Okienko w aplikacji
         </Button>
         <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={reset}>
           <RotateCcw className="w-3.5 h-3.5" />
@@ -225,16 +248,7 @@ function APlusCalculator() {
                               aria-label={opt.label}
                             />
                             <span className="flex-1 text-sm text-slate-800 dark:text-slate-200">{opt.label}</span>
-                            <span
-                              className={cn(
-                                "text-xs font-semibold tabular-nums shrink-0",
-                                negative
-                                  ? "text-rose-600 dark:text-rose-400"
-                                  : opt.points > 0
-                                    ? "text-emerald-600 dark:text-emerald-400"
-                                    : "text-muted-foreground"
-                              )}
-                            >
+                            <span className={cn("text-xs font-semibold tabular-nums shrink-0", pointsToneClass(opt.points))}>
                               {formatPoints(opt.points)} pkt
                             </span>
                           </label>
@@ -251,11 +265,11 @@ function APlusCalculator() {
             <div
               className={cn(
                 "rounded-2xl border-2 border-dashed px-4 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-colors",
-                verdictStyle.sum
+                sumPanelClass(total)
               )}
             >
               <div className="min-w-0 space-y-2">
-                <p className={cn("text-[11px] font-semibold uppercase tracking-wider", verdictStyle.label)}>
+                <p className={cn("text-[11px] font-semibold uppercase tracking-wider", sumToneClass(total))}>
                   Suma punktów
                 </p>
                 <div
@@ -319,13 +333,15 @@ function APlusCalculator() {
                     key={`${row.groupId}-${row.optionId}`}
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px]",
-                      row.points < 0
-                        ? "border-rose-300/60 bg-rose-500/10 text-rose-700 dark:text-rose-300"
-                        : "border-border bg-background text-slate-700 dark:text-slate-300"
+                      row.points > 0
+                        ? "border-emerald-300/60 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+                        : "border-rose-300/60 bg-rose-500/10 text-rose-700 dark:text-rose-300"
                     )}
                   >
                     {row.label}
-                    <strong className="tabular-nums">{formatPoints(row.points)}</strong>
+                    <strong className={cn("tabular-nums", pointsToneClass(row.points))}>
+                      {formatPoints(row.points)}
+                    </strong>
                   </span>
                 ))}
               </div>
@@ -373,11 +389,31 @@ function M1MasteryCalculator() {
           type="button"
           variant="default"
           size="sm"
+          className="gap-1.5 bg-cyan-600 hover:bg-cyan-700"
+          onClick={() => openFloatingCalculatorPip("m1")}
+        >
+          <PictureInPicture2 className="w-3.5 h-3.5" />
+          Picture-in-Picture
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => openCalculatorPopupWindow("m1")}
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Osobne okno
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
           className="gap-1.5"
           onClick={() => openFloatingCalculator("m1")}
         >
           <AppWindow className="w-3.5 h-3.5" />
-          Otwórz w okienku
+          Okienko w aplikacji
         </Button>
         <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={reset}>
           <RotateCcw className="w-3.5 h-3.5" />
@@ -417,7 +453,7 @@ function M1MasteryCalculator() {
                       {" — "}
                       {opt.label}
                     </span>
-                    <span className="text-xs font-semibold tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <span className={cn("text-xs font-semibold tabular-nums shrink-0", pointsToneClass(opt.points))}>
                       {formatM1Points(opt.points)} pkt
                     </span>
                   </label>
@@ -430,11 +466,11 @@ function M1MasteryCalculator() {
             <div
               className={cn(
                 "rounded-2xl border-2 border-dashed px-4 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-colors",
-                verdictStyle.sum
+                sumPanelClass(total)
               )}
             >
               <div className="min-w-0 space-y-2">
-                <p className={cn("text-[11px] font-semibold uppercase tracking-wider", verdictStyle.label)}>
+                <p className={cn("text-[11px] font-semibold uppercase tracking-wider", sumToneClass(total))}>
                   Suma punktów
                 </p>
                 <div
@@ -496,11 +532,13 @@ function M1MasteryCalculator() {
                 {breakdown.map((row) => (
                   <span
                     key={row.id}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[11px] text-slate-700 dark:text-slate-300"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/60 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-800 dark:text-emerald-300"
                   >
                     <span className="font-semibold text-cyan-700 dark:text-cyan-300">{row.code}</span>
                     {row.label}
-                    <strong className="tabular-nums">{formatM1Points(row.points)}</strong>
+                    <strong className={cn("tabular-nums", pointsToneClass(row.points))}>
+                      {formatM1Points(row.points)}
+                    </strong>
                   </span>
                 ))}
               </div>
@@ -528,7 +566,8 @@ export default function Calculators() {
           Kalkulatory
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Pełna wersja na stronie albo kompaktowe okienko (przeciąganie, rozmiar, zawsze na wierzchu).
+          <strong>Picture-in-Picture</strong> — duże fioletowe / cyjanowe przyciski powyżej list albo ikona w belce
+          okienka. Alternatywa: <strong>Osobne okno</strong>, jeśli PiP zniknie przy zmianie karty.
         </p>
       </div>
 
