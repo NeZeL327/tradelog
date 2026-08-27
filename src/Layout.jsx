@@ -29,6 +29,7 @@ import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import SessionClocks from "@/components/SessionClocks";
 import Footer from "@/components/Footer";
+import FloatingCalculator from "@/components/calculators/FloatingCalculator";
 import { applyTheme } from "@/lib/userSettings";
 import { getAvatarPreset, getUserDisplayName, getUserInitials } from "@/lib/avatars";
 
@@ -309,6 +310,7 @@ function LayoutContent({ children }) {
           </main>
         </div>
       </div>
+      <FloatingCalculator />
     </>
   );
 }

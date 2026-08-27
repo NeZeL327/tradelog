@@ -191,6 +191,9 @@ export function saveAPlusSelection(selection) {
   try {
     const safe = sanitizeAPlusSelection(selection);
     localStorage.setItem(APLUS_STORAGE_KEY, JSON.stringify(safe));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("aikeeptrade-calc-changed", { detail: { kind: "aplus" } }));
+    }
     return safe;
   } catch {
     return sanitizeAPlusSelection(selection);

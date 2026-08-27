@@ -79,6 +79,9 @@ export function saveM1Selection(selection) {
   try {
     const safe = sanitizeM1Selection(selection);
     localStorage.setItem(M1_STORAGE_KEY, JSON.stringify(safe));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("aikeeptrade-calc-changed", { detail: { kind: "m1" } }));
+    }
     return safe;
   } catch {
     return sanitizeM1Selection(selection);

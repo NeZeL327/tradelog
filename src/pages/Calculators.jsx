@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,7 +13,9 @@ import {
   MapPin,
   TrendingUp,
   Crosshair,
+  AppWindow,
 } from "lucide-react";
+import { openFloatingCalculator } from "@/components/calculators/FloatingCalculator";
 import {
   APLUS_SCORE_GROUPS,
   APLUS_SUM_TIERS,
@@ -107,6 +109,15 @@ function APlusCalculator() {
   const verdict = useMemo(() => evaluateAPlusSum(total), [total]);
   const verdictStyle = VERDICT_STYLES[verdict.tone] || VERDICT_STYLES.rose;
 
+  useEffect(() => {
+    const sync = (e) => {
+      if (e?.detail?.kind && e.detail.kind !== "aplus") return;
+      setSelection(loadAPlusSelection());
+    };
+    window.addEventListener("aikeeptrade-calc-changed", sync);
+    return () => window.removeEventListener("aikeeptrade-calc-changed", sync);
+  }, []);
+
   const updateSelection = (groupId, optionId) => {
     setSelection((prev) => {
       const next = toggleAPlusOption(prev, groupId, optionId);
@@ -123,7 +134,17 @@ function APlusCalculator() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => openFloatingCalculator("aplus")}
+        >
+          <AppWindow className="w-3.5 h-3.5" />
+          Otwórz w okienku
+        </Button>
         <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={reset}>
           <RotateCcw className="w-3.5 h-3.5" />
           Reset punktów
@@ -322,6 +343,15 @@ function M1MasteryCalculator() {
   const verdict = useMemo(() => evaluateAPlusSum(total), [total]);
   const verdictStyle = VERDICT_STYLES[verdict.tone] || VERDICT_STYLES.rose;
 
+  useEffect(() => {
+    const sync = (e) => {
+      if (e?.detail?.kind && e.detail.kind !== "m1") return;
+      setSelection(loadM1Selection());
+    };
+    window.addEventListener("aikeeptrade-calc-changed", sync);
+    return () => window.removeEventListener("aikeeptrade-calc-changed", sync);
+  }, []);
+
   const update = (optionId) => {
     setSelection((prev) => {
       const next = toggleM1Option(prev, optionId);
@@ -338,7 +368,17 @@ function M1MasteryCalculator() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => openFloatingCalculator("m1")}
+        >
+          <AppWindow className="w-3.5 h-3.5" />
+          Otwórz w okienku
+        </Button>
         <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={reset}>
           <RotateCcw className="w-3.5 h-3.5" />
           Reset punktów
@@ -488,7 +528,7 @@ export default function Calculators() {
           Kalkulatory
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Wybierz kalkulator — zaznacz warunki, suma liczy się automatycznie.
+          Pełna wersja na stronie albo kompaktowe okienko (przeciąganie, rozmiar, zawsze na wierzchu).
         </p>
       </div>
 
