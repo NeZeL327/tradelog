@@ -117,7 +117,7 @@ function LayoutContent({ children }) {
   return (
     <>
       {/* Connected shell (sidebar + header) + inset rounded content — both themes */}
-      <div className="min-h-dvh flex w-full bg-[hsl(var(--app-shell))]">
+      <div className="min-h-full h-full flex w-full bg-[hsl(var(--app-shell))]">
 
         <Sidebar
           className="cyber-app-sidebar border-transparent bg-transparent"
@@ -259,7 +259,7 @@ function LayoutContent({ children }) {
         </Sidebar>
 
         {/* Column: top bar (shell) + inset content panel */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-dvh bg-[hsl(var(--app-shell))]">
+        <div className="flex-1 flex flex-col min-w-0 min-h-full h-full bg-[hsl(var(--app-shell))]">
           {/* Top header — same color as sidebar (connected frame) */}
           <header className="cyber-app-header border-transparent bg-transparent px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 sticky top-0 z-10 flex items-center justify-between gap-2 sm:gap-4 pt-[max(0.625rem,env(safe-area-inset-top))]">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -310,7 +310,7 @@ function LayoutContent({ children }) {
 export default function Layout({ children }) {
   const isMobile = useIsMobile();
   return (
-    <SidebarProvider defaultOpen={!isMobile}>
+    <SidebarProvider defaultOpen={!isMobile} className="!min-h-full h-full">
       <LayoutContent>{children}</LayoutContent>
     </SidebarProvider>
   );

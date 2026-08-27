@@ -8,7 +8,9 @@
    Zoom is on #root (NOT html) so Radix portals (rendered at body level,
    outside #root) are unaffected and position themselves correctly.
    Body must not scroll: #root is height:100% and overflow-y:auto so one
-   scroll container exists (min-height-only on #root broke scrolling). */
+   scroll container exists (min-height-only on #root broke scrolling).
+   Width AND height are divided by zoom so the visual box still fills the
+   monitor — otherwise a large empty strip appears under the footer. */
 html,
 body {
   height: 100%;
@@ -20,11 +22,13 @@ body {
 
 #root {
   /* Desktop denser UI; phones/tablets stay 1:1 (iPhone 15 Pro etc.) */
-  zoom: 0.82;
-  /* Compensate: after zoom the visual width = CSS width * 0.82. */
-  width: calc(100vw / 0.82);
-  height: 100%;
-  max-height: 100%;
+  --app-zoom: 0.82;
+  zoom: var(--app-zoom);
+  /* Compensate: after zoom the visual size = CSS size * zoom. */
+  width: calc(100vw / var(--app-zoom));
+  height: calc(100% / var(--app-zoom));
+  min-height: calc(100% / var(--app-zoom));
+  max-height: calc(100% / var(--app-zoom));
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
@@ -37,9 +41,13 @@ body {
 /* No CSS zoom on phone / tablet — readable layout, correct dialogs & touch */
 @media (max-width: 1023px) {
   #root {
+    --app-zoom: 1;
     zoom: 1;
     width: 100%;
     max-width: 100vw;
+    height: 100%;
+    min-height: 100%;
+    max-height: 100%;
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
@@ -52,11 +60,13 @@ body {
     margin: 0;
   }
   #root {
+    --app-zoom: 0.82;
     zoom: unset;
-    width: calc(100vw / 0.82);
-    height: 100%;
-    max-height: 100%;
-    transform: scale(0.82);
+    width: calc(100vw / var(--app-zoom));
+    height: calc(100% / var(--app-zoom));
+    min-height: calc(100% / var(--app-zoom));
+    max-height: calc(100% / var(--app-zoom));
+    transform: scale(var(--app-zoom));
     transform-origin: top left;
     overflow-x: hidden;
     overflow-y: auto;
@@ -64,8 +74,12 @@ body {
   }
   @media (max-width: 1023px) {
     #root {
+      --app-zoom: 1;
       width: 100%;
       max-width: 100vw;
+      height: 100%;
+      min-height: 100%;
+      max-height: 100%;
       transform: none;
     }
   }

@@ -512,30 +512,6 @@ export default function Dashboard() {
   const winRateGauge = Math.min(parseFloat(winRate) || 0, 100);
   const pfGauge = Math.min((parseFloat(profitFactor) || 0) / 3 * 100, 100);
 
-  // Strategy performance
-  const strategyStats = {};
-  closedTrades.forEach(trade => {
-    const strategy = strategies.find((s) => String(s.id) === String(trade.strategy_id));
-    const name = strategy?.name || "Bez strategii";
-    if (!strategyStats[name]) {
-      strategyStats[name] = { wins: 0, losses: 0, total: 0, pl: 0 };
-    }
-    strategyStats[name].total++;
-    if (trade.outcome === "Win") strategyStats[name].wins++;
-    if (trade.outcome === "Loss") strategyStats[name].losses++;
-    strategyStats[name].pl += (getTradeRealizedPL(trade) ?? 0);
-  });
-
-  const strategyData = Object.entries(strategyStats).map(([name, stats]) => {
-    const decided = stats.wins + stats.losses;
-    return {
-      name,
-      winRate: decided > 0 ? ((stats.wins / decided) * 100).toFixed(1) : "0.0",
-      trades: stats.total,
-      pl: stats.pl.toFixed(2)
-    };
-  });
-
   // P&L over time (last 20 trades chronologically) with filters
   const getFilteredTradesForChart = () => {
     if (plChartFilter === "all" || plChartValue === "all") return closedTrades;
@@ -2732,37 +2708,6 @@ export default function Dashboard() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Strategy Performance */}
-        {strategyData.length > 0 && (
-          <Card className="bg-white dark:bg-muted bordo:bg-[#1f1018] shadow-xl border border-slate-200/60 dark:border-slate-700 bordo:border-[#4a2836]">
-            <CardHeader>
-              <CardTitle className="text-slate-900 dark:text-white">{t('strategyPerformance')}</CardTitle>
-            </CardHeader>
-            <CardContent className="overflow-hidden p-4">
-              <div className="w-full overflow-hidden">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={strategyData} margin={{ top: 15, right: 25, left: 10, bottom: 85 }}>
-                    <defs>
-                      <clipPath id="dashboard-strategy-clip">
-                        <rect x="0" y="0" width="100%" height="100%" />
-                      </clipPath>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                    <XAxis dataKey="name" stroke={axisColor} tick={{ fill: axisColor }} angle={-45} textAnchor="end" height={80} />
-                    <YAxis stroke={axisColor} tick={{ fill: axisColor }} width={55} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: isDark ? '#1e293b' : '#fff', border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`, borderRadius: '8px', color: isDark ? '#e2e8f0' : '#1e293b' }}
-                    />
-                    <Legend />
-                    <Bar dataKey="winRate" fill="#3b82f6" name={t('winRatePercent')} radius={[8, 8, 0, 0]} clipPath="url(#dashboard-strategy-clip)" />
-                    <Bar dataKey="trades" fill="#8b5cf6" name={t('tradesCount')} radius={[8, 8, 0, 0]} clipPath="url(#dashboard-strategy-clip)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Best & Worst Trades — styl jak reszta paneli cyber */}
         {bestTrade && worstTrade && (
