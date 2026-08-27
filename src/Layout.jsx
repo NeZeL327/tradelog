@@ -6,7 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import {
   LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar,
   LogOut, NotebookPen, ListTodo, AlarmClockOff,
-  ChevronRight, User, FlaskConical, Settings as SettingsIcon, FileBarChart,
+  ChevronRight, User, FlaskConical, Settings as SettingsIcon, FileBarChart, Calculator,
 } from "lucide-react";
 import {
   Sidebar,
@@ -50,6 +50,12 @@ const NAV_GROUPS = (t) => [
       { title: t("analytics"), url: createPageUrl("Analytics"), icon: BarChart3 },
       { title: t("backtesting"), url: createPageUrl("Backtesting"), icon: FlaskConical },
       { title: t("strategies"), url: createPageUrl("Strategies"), icon: Brain },
+    ],
+  },
+  {
+    label: t("navGroupCalculators"),
+    items: [
+      { title: t("calculators"), url: createPageUrl("Calculators"), icon: Calculator },
     ],
   },
   {
