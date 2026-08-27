@@ -1054,12 +1054,14 @@ function roundPriceKey(value) {
 }
 
 /**
- * Dedup like FundedNext: Ticket ID first, then date + open time + lots,
- * then symbol/prices / gross P&L so MT5 XLSX matches prior FundedNext CSV.
+ * Dedup fingerprints. Keep keys time-specific — never symbol+date+vol alone
+ * (many same-day GBPUSD 0.96 scalps were false "duplicates").
  */
 export function tradeImportFingerprints(trade) {
   const accountId = String(trade.account_id || "");
-  const ticket = normalizeTicket(trade.external_ticket);
+  const ticket = normalizeTicket(
+    trade.external_ticket || trade.ticket_id || trade.ticket
+  );
   const symbol = normalizeSymbolKey(trade.symbol);
 
   const { date, time: rawTime } = splitDateTime(
@@ -1072,41 +1074,31 @@ export function tradeImportFingerprints(trade) {
   const volKey = vol != null && Number.isFinite(Number(vol)) ? Number(parseFloat(vol).toFixed(4)) : "";
   const entry = roundPriceKey(trade.entry_price);
   const exit = roundPriceKey(trade.exit_price);
-  const gross = parseNum(trade.profit_loss_gross);
   const net = parseNum(trade.profit_loss);
 
   const keys = [];
 
-  // 1) Ticket / Pozycja / Ticket ID — strongest across FundedNext ↔ MT
+  // 1) Ticket / Pozycja — strongest across FundedNext ↔ MT
   if (ticket) {
     keys.push(`ticket:${accountId}:${ticket}`);
   }
 
-  // 2) FundedNext classic: date + open time + lots
-  if (date && volKey !== "") {
+  // 2) Date + open time + lots (FundedNext classic)
+  if (date && time && volKey !== "") {
     keys.push(`dtvol:${accountId}:${date}|${time}|${volKey}`);
-    keys.push(`dtvolmin:${accountId}:${date}|${timeMin}|${volKey}`);
   }
 
-  // 3) Symbol + datetime + volume
-  if (date && symbol) {
+  // 3) Symbol + full datetime + volume / prices / net
+  if (date && symbol && time) {
     keys.push(`sym:${accountId}:${symbol}:${date}:${time}:${volKey}`);
-    keys.push(`symmin:${accountId}:${symbol}:${date}:${timeMin}:${volKey}`);
-    keys.push(`dvl:${accountId}:${symbol}:${date}:${volKey}`);
 
-    if (entry !== "" && exit !== "") {
+    if (entry !== "" && exit !== "" && volKey !== "") {
       keys.push(`px:${accountId}:${symbol}:${date}:${entry}:${exit}:${volKey}`);
-      keys.push(`px2:${accountId}:${symbol}:${date}:${entry}:${exit}`);
     }
-    if (gross != null) {
-      keys.push(`gross:${accountId}:${symbol}:${date}:${Number(gross.toFixed(2))}`);
-    }
-    if (net != null) {
+    if (net != null && timeMin) {
       keys.push(`net:${accountId}:${symbol}:${date}:${timeMin}:${Number(net.toFixed(2))}`);
     }
   }
-
-  keys.push(`legacy:${accountId}:${date}|${time}|${volKey}`);
 
   return keys;
 }
@@ -1118,32 +1110,40 @@ export function tradeDedupKey(trade) {
 }
 
 /**
- * Dedup like FundedNext against existing journal trades on this account
- * (CSV FundedNext + MT XLSX/CSV share Ticket / date+time+lots).
+ * Dedup against journal on this account.
+ * Ticket match is authoritative; otherwise time-based fingerprints
+ * (symbol+date+lots alone is NOT used — same-day scalps were false duplicates).
  */
 export function filterNewTrades(parsedTrades, existingTrades, accountId) {
   const knownKeys = new Set();
+  const knownTickets = new Set();
   const account = String(accountId || "");
 
   for (const t of existingTrades || []) {
     const tradeAccount = String(t.account_id ?? t.accountId ?? "");
-    // Only same account; also accept missing account_id on legacy rows if ticket matches later via global ticket set
     if (tradeAccount && tradeAccount !== account) continue;
     for (const key of tradeImportFingerprints({ ...t, account_id: account || tradeAccount })) {
       knownKeys.add(key);
     }
-    // Cross-broker ticket match on this account (FundedNext CSV ↔ MT XLSX)
     const ticket = normalizeTicket(t.external_ticket || t.ticket_id || t.ticket);
-    if (ticket) knownKeys.add(`ticket:${account}:${ticket}`);
+    if (ticket) {
+      knownTickets.add(ticket);
+      knownKeys.add(`ticket:${account}:${ticket}`);
+    }
   }
 
   const newTrades = [];
   let skipped = 0;
   const batchKeys = new Set(knownKeys);
+  const batchTickets = new Set(knownTickets);
 
   for (const trade of parsedTrades) {
+    const ticket = normalizeTicket(trade.external_ticket || trade.ticket_id || trade.ticket);
     const fingerprints = tradeImportFingerprints({ ...trade, account_id: account });
-    const isDuplicate = fingerprints.some((key) => batchKeys.has(key));
+
+    const isDuplicate =
+      (ticket && batchTickets.has(ticket)) ||
+      fingerprints.some((key) => batchKeys.has(key));
 
     if (isDuplicate) {
       skipped++;
@@ -1152,6 +1152,7 @@ export function filterNewTrades(parsedTrades, existingTrades, accountId) {
 
     newTrades.push(trade);
     fingerprints.forEach((key) => batchKeys.add(key));
+    if (ticket) batchTickets.add(ticket);
   }
 
   return { newTrades, skipped };

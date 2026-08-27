@@ -26,21 +26,11 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getTradeTimeSource, TIMEZONE_OPTIONS } from "@/lib/userSettings";
+import { loadTradeTagLists, saveTradeTagLists } from "@/lib/tradeTags";
+import EditableTagChips from "@/components/EditableTagChips";
 
 const SCREENSHOT_KEYS = ["screenshot_1", "screenshot_2", "screenshot_3"];
 const SELECT_NONE = "__none__";
-
-const CONFLUENCES = [
-  "Sweep płynności", "FVG", "Order Block", "Breaker", "BOS", "CHoCH",
-  "Premium/Discount", "Imbalance", "Trendline", "Wsparcie/Opór",
-  "Fibo", "Sesja killzone", "News uniknięty", "HTF zgodny",
-];
-
-const MISTAKES = [
-  "FOMO", "Overtrading", "Przesunięty SL", "Za wczesne wyjście",
-  "Brak potwierdzenia", "Revenge trade", "Za duża pozycja",
-  "Wejście pod news", "Złamany plan", "Brak SL", "Late entry",
-];
 
 const fieldClass =
   "h-8 rounded-md border-border/70 bg-muted/30 dark:bg-white/[0.04] px-2.5 text-[12px] shadow-none " +
@@ -50,7 +40,6 @@ const selectTriggerClass =
   "focus:ring-1 focus:ring-primary/30 justify-start [&>span]:justify-start [&>span]:text-left [&>span]:pr-5";
 const labelClass = "text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1 block";
 const sectionClass = "rounded-xl border border-border/60 p-2.5 sm:p-3 space-y-2";
-const chipBase = "px-2 py-0.5 rounded-full text-[11px] leading-tight border transition min-h-[1.6rem]";
 
 function FormSelect({ value, onValueChange, placeholder, children, className, disabled }) {
   const resolved = value === "" || value == null ? SELECT_NONE : String(value);
@@ -171,6 +160,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
   const [manualPLOvride, setManualPLOvride] = useState(false);
   const [manualOutcomeOverride, setManualOutcomeOverride] = useState(false);
   const [emotionsOpen, setEmotionsOpen] = useState(false);
+  const [tagLists, setTagLists] = useState(() => loadTradeTagLists());
 
   const emptyTradeForm = (status = defaultStatus) => ({
     symbol: "",
@@ -227,6 +217,16 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
   };
 
   // Wczytaj konta i strategie
+  useEffect(() => {
+    setTagLists(loadTradeTagLists({ cloudSettings: user }));
+  }, [user]);
+
+  useEffect(() => {
+    const syncTags = () => setTagLists(loadTradeTagLists({ cloudSettings: user }));
+    window.addEventListener("user-settings-changed", syncTags);
+    return () => window.removeEventListener("user-settings-changed", syncTags);
+  }, [user]);
+
   useEffect(() => {
     const loadData = async () => {
       if (!user?.id) {
@@ -332,6 +332,30 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
       return { ...prev, [key]: next };
     });
   };
+
+  const persistTagLists = async (partial) => {
+    setTagLists((prev) => {
+      const next = { ...prev, ...partial };
+      void saveTradeTagLists({ ...next, userId: user?.id });
+      return next;
+    });
+  };
+
+  const confluenceOptions = useMemo(() => {
+    const base = tagLists.confluences || [];
+    const extras = (formData.confluences || []).filter(
+      (t) => !base.some((b) => String(b).toLowerCase() === String(t).toLowerCase())
+    );
+    return extras.length ? [...base, ...extras] : base;
+  }, [tagLists.confluences, formData.confluences]);
+
+  const mistakeOptions = useMemo(() => {
+    const base = tagLists.mistakes || [];
+    const extras = (formData.mistakes || []).filter(
+      (t) => !base.some((b) => String(b).toLowerCase() === String(t).toLowerCase())
+    );
+    return extras.length ? [...base, ...extras] : base;
+  }, [tagLists.mistakes, formData.mistakes]);
 
   useEffect(() => {
     return () => {
@@ -1118,57 +1142,29 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                 </div>
               )}
 
-              <div className={cn(sectionClass, "bg-emerald-500/[0.04] dark:bg-emerald-400/[0.06] border-emerald-500/20")}>
-                <Label className={cn(labelClass, "flex items-center gap-1.5 mb-1.5")}>
-                  <ListChecks className="w-3.5 h-3.5 text-emerald-600" /> Confluencje / warunki wejścia
-                </Label>
-                <div className="flex flex-wrap gap-1">
-                  {CONFLUENCES.map((c) => {
-                    const active = (formData.confluences || []).includes(c);
-                    return (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => toggleChip("confluences", c)}
-                        className={cn(
-                          chipBase,
-                          active
-                            ? "bg-emerald-600 border-emerald-600 text-white shadow-sm"
-                            : "bg-background/80 border-border/80 text-muted-foreground hover:border-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
-                        )}
-                      >
-                        {c}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <EditableTagChips
+                kind="confluences"
+                accent="emerald"
+                label="Confluencje / warunki wejścia"
+                icon={ListChecks}
+                options={confluenceOptions}
+                selected={formData.confluences}
+                onToggle={(tag) => toggleChip("confluences", tag)}
+                onOptionsChange={(confluences) => persistTagLists({ confluences })}
+                onSelectedChange={(confluences) => setFormData((prev) => ({ ...prev, confluences }))}
+              />
 
-              <div className={cn(sectionClass, "bg-rose-500/[0.04] dark:bg-rose-400/[0.06] border-rose-500/20")}>
-                <Label className={cn(labelClass, "flex items-center gap-1.5 mb-1.5")}>
-                  <AlertTriangle className="w-3.5 h-3.5 text-rose-500" /> Błędy w zagraniu
-                </Label>
-                <div className="flex flex-wrap gap-1">
-                  {MISTAKES.map((m) => {
-                    const active = (formData.mistakes || []).includes(m);
-                    return (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => toggleChip("mistakes", m)}
-                        className={cn(
-                          chipBase,
-                          active
-                            ? "bg-rose-600 border-rose-600 text-white shadow-sm"
-                            : "bg-background/80 border-border/80 text-muted-foreground hover:border-rose-400 hover:text-rose-700 dark:hover:text-rose-300"
-                        )}
-                      >
-                        {m}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <EditableTagChips
+                kind="mistakes"
+                accent="rose"
+                label="Błędy w zagraniu"
+                icon={AlertTriangle}
+                options={mistakeOptions}
+                selected={formData.mistakes}
+                onToggle={(tag) => toggleChip("mistakes", tag)}
+                onOptionsChange={(mistakes) => persistTagLists({ mistakes })}
+                onSelectedChange={(mistakes) => setFormData((prev) => ({ ...prev, mistakes }))}
+              />
 
               {/* Ocena + emocje */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

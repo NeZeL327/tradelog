@@ -72,6 +72,8 @@ import {
 } from "recharts";
 import { useLanguage } from "@/components/LanguageProvider";
 import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
+import { loadTradeTagLists, saveTradeTagLists } from "@/lib/tradeTags";
+import EditableTagChips from "@/components/EditableTagChips";
 import { toast } from "sonner";
 import ImageViewer from "@/components/common/ImageViewer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -90,20 +92,6 @@ const COMMON_PAIRS = [
 ];
 
 const WEEKDAYS = ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Ndz"];
-
-// Confluencje (setup) — SMC/ICT + klasyka. Wielokrotny wybor.
-const CONFLUENCES = [
-  "Sweep płynności", "FVG", "Order Block", "Breaker", "BOS", "CHoCH",
-  "Premium/Discount", "Imbalance", "Trendline", "Wsparcie/Opór",
-  "Fibo", "Sesja killzone", "News uniknięty", "HTF zgodny",
-];
-
-// Kategorie bledow — analiza procesu. Wielokrotny wybor.
-const MISTAKES = [
-  "FOMO", "Overtrading", "Przesunięty SL", "Za wczesne wyjście",
-  "Brak potwierdzenia", "Revenge trade", "Za duża pozycja",
-  "Wejście pod news", "Złamany plan", "Brak SL", "Late entry",
-];
 
 const pieColors = {
   Win: "hsl(var(--chart-2))",
@@ -136,6 +124,25 @@ export default function Backtesting() {
   const [deleteStrategyId, setDeleteStrategyId] = useState(null);
   const [strategyForm, setStrategyForm] = useState({ name: "", description: "" });
   const [analizaOpen, setAnalizaOpen] = useState(false);
+  const [tagLists, setTagLists] = useState(() => loadTradeTagLists());
+
+  useEffect(() => {
+    setTagLists(loadTradeTagLists({ cloudSettings: user }));
+  }, [user]);
+
+  useEffect(() => {
+    const syncTags = () => setTagLists(loadTradeTagLists({ cloudSettings: user }));
+    window.addEventListener("user-settings-changed", syncTags);
+    return () => window.removeEventListener("user-settings-changed", syncTags);
+  }, [user]);
+
+  const persistTagLists = async (partial) => {
+    setTagLists((prev) => {
+      const next = { ...prev, ...partial };
+      void saveTradeTagLists({ ...next, userId: user?.id });
+      return next;
+    });
+  };
 
   const emptyForm = () => ({
     date: new Date().toISOString().slice(0, 10),
@@ -166,6 +173,22 @@ export default function Backtesting() {
   const [filePending, setFilePending] = useState(null);
   const [emotionsOpen, setEmotionsOpen] = useState(false);
   const [detailEmotionsOpen, setDetailEmotionsOpen] = useState(false);
+
+  const confluenceOptions = useMemo(() => {
+    const base = tagLists.confluences || [];
+    const extras = (form.confluences || []).filter(
+      (t) => !base.some((b) => String(b).toLowerCase() === String(t).toLowerCase())
+    );
+    return extras.length ? [...base, ...extras] : base;
+  }, [tagLists.confluences, form.confluences]);
+
+  const mistakeOptions = useMemo(() => {
+    const base = tagLists.mistakes || [];
+    const extras = (form.mistakes || []).filter(
+      (t) => !base.some((b) => String(b).toLowerCase() === String(t).toLowerCase())
+    );
+    return extras.length ? [...base, ...extras] : base;
+  }, [tagLists.mistakes, form.mistakes]);
 
   useEffect(() => {
     if (detailRow) {
@@ -1842,57 +1865,29 @@ export default function Backtesting() {
               </div>
             </div>
 
-            {/* Confluencje (setup) */}
-            <div>
-              <Label className="text-xs flex items-center gap-1.5">
-                <ListChecks className="w-3.5 h-3.5 text-emerald-600" /> Confluencje / warunki wejścia
-              </Label>
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {CONFLUENCES.map((c) => {
-                  const active = form.confluences.includes(c);
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => toggleInArray("confluences", c)}
-                      className={`px-2.5 py-1 rounded-full text-xs border transition ${
-                        active
-                          ? "bg-emerald-600 border-emerald-600 text-white shadow-sm"
-                          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-emerald-400"
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <EditableTagChips
+              kind="confluences"
+              accent="emerald"
+              label="Confluencje / warunki wejścia"
+              icon={ListChecks}
+              options={confluenceOptions}
+              selected={form.confluences}
+              onToggle={(tag) => toggleInArray("confluences", tag)}
+              onOptionsChange={(confluences) => persistTagLists({ confluences })}
+              onSelectedChange={(confluences) => setForm((f) => ({ ...f, confluences }))}
+            />
 
-            {/* Bledy / czego unikac */}
-            <div>
-              <Label className="text-xs flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-rose-500" /> Błędy w zagraniu
-              </Label>
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {MISTAKES.map((m) => {
-                  const active = form.mistakes.includes(m);
-                  return (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => toggleInArray("mistakes", m)}
-                      className={`px-2.5 py-1 rounded-full text-xs border transition ${
-                        active
-                          ? "bg-rose-600 border-rose-600 text-white shadow-sm"
-                          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-rose-400"
-                      }`}
-                    >
-                      {m}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <EditableTagChips
+              kind="mistakes"
+              accent="rose"
+              label="Błędy w zagraniu"
+              icon={AlertTriangle}
+              options={mistakeOptions}
+              selected={form.mistakes}
+              onToggle={(tag) => toggleInArray("mistakes", tag)}
+              onOptionsChange={(mistakes) => persistTagLists({ mistakes })}
+              onSelectedChange={(mistakes) => setForm((f) => ({ ...f, mistakes }))}
+            />
 
             {/* Ocena jakosci zagrania + emocje */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

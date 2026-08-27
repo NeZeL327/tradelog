@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, TrendingUp, AlertCircle, Wallet, Activity, X, ChevronDown, Clock } from "lucide-react";
+import { Brain, TrendingUp, AlertCircle, Wallet, Activity, X, ChevronDown, Clock, ListChecks, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, ComposedChart } from "recharts";
 import { ExportButton } from "../components/ExportButton";
@@ -14,6 +14,7 @@ import { ImportButton } from "../components/ImportButton";
 import { useLanguage } from "@/components/LanguageProvider";
 import { normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
 import { getTradeEntryMinutes } from "@/lib/userSettings";
+import { aggregateTagPerformance } from "@/lib/tradeTags";
 
 const decidedWinRate = (wins, losses) => {
   const decided = wins + losses;
@@ -439,6 +440,30 @@ export default function Analytics() {
   const bestEmotion = emotionPerf.length ? emotionPerf[emotionPerf.length - 1] : null;
   const emotionCoverage = filteredTrades.length > 0
     ? Math.round((tradesWithEmotions.length / filteredTrades.length) * 100)
+    : 0;
+
+  // Warunki wejścia + błędy — z zaznaczonych chipów na trejdach
+  const confluenceAgg = aggregateTagPerformance(filteredTrades, "confluences", {
+    decidedWinRate,
+    getPl: (tr) => getTradeRealizedPL(tr) ?? 0,
+  });
+  const mistakeAgg = aggregateTagPerformance(filteredTrades, "mistakes", {
+    decidedWinRate,
+    getPl: (tr) => getTradeRealizedPL(tr) ?? 0,
+  });
+  const confluencePerf = [...confluenceAgg.rows].sort((a, b) => a.avgPL - b.avgPL);
+  const mistakePerf = [...mistakeAgg.rows].sort((a, b) => a.avgPL - b.avgPL);
+  const confluenceByFreq = confluenceAgg.rows;
+  const mistakeByFreq = mistakeAgg.rows;
+  const bestConfluence = confluencePerf.length ? confluencePerf[confluencePerf.length - 1] : null;
+  const worstConfluence = confluencePerf.length ? confluencePerf[0] : null;
+  const bestMistakeAvoid = mistakePerf.length ? mistakePerf[mistakePerf.length - 1] : null;
+  const costliestMistake = mistakePerf.length ? mistakePerf[0] : null;
+  const confluenceCoverage = filteredTrades.length > 0
+    ? Math.round((confluenceAgg.taggedTrades / filteredTrades.length) * 100)
+    : 0;
+  const mistakeCoverage = filteredTrades.length > 0
+    ? Math.round((mistakeAgg.taggedTrades / filteredTrades.length) * 100)
     : 0;
 
   // === Poziom pewności setupu (1–5⭐) z formularza trejdu ===
@@ -1077,13 +1102,15 @@ export default function Analytics() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 bg-white dark:bg-card shadow-lg">
-            <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
-            <TabsTrigger value="symbols">{t('symbols')}</TabsTrigger>
-            <TabsTrigger value="strategies">{t('strategiesAnalytics')}</TabsTrigger>
-            <TabsTrigger value="accounts">{t('accountsAnalytics')}</TabsTrigger>
-            <TabsTrigger value="time">{t('timeTab')}</TabsTrigger>
-            <TabsTrigger value="psychology">{t('psychology')}</TabsTrigger>
+          <TabsList className="flex w-full h-auto flex-wrap gap-1 p-1 bg-white dark:bg-card shadow-lg md:flex-nowrap md:overflow-x-auto">
+            <TabsTrigger value="overview" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('overview')}</TabsTrigger>
+            <TabsTrigger value="symbols" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('symbols')}</TabsTrigger>
+            <TabsTrigger value="strategies" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('strategiesAnalytics')}</TabsTrigger>
+            <TabsTrigger value="accounts" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('accountsAnalytics')}</TabsTrigger>
+            <TabsTrigger value="time" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('timeTab')}</TabsTrigger>
+            <TabsTrigger value="psychology" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('psychology')}</TabsTrigger>
+            <TabsTrigger value="confluences" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('entryConditionsTab')}</TabsTrigger>
+            <TabsTrigger value="mistakes" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('mistakesTab')}</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -2711,6 +2738,266 @@ export default function Analytics() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="confluences" className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('tagCoverage')}</span>
+                    <ListChecks className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-emerald-900 dark:text-emerald-200">
+                    {confluenceAgg.taggedTrades}<span className="text-base text-emerald-500">/{filteredTrades.length}</span>
+                  </p>
+                  <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">{confluenceCoverage}% {t('entryConditionsCoverageDesc')}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950 dark:to-cyan-950 border border-sky-200 dark:border-sky-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-sky-700 dark:text-sky-300">{t('mostFrequentTag')}</span>
+                    <Activity className="w-4 h-4 text-sky-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-sky-900 dark:text-sky-200 truncate" title={confluenceByFreq[0]?.tag}>
+                    {confluenceByFreq[0]?.tag || "—"}
+                  </p>
+                  <p className="text-[11px] text-sky-600/80 dark:text-sky-400/80">
+                    {confluenceByFreq[0] ? `${confluenceByFreq[0].trades} ${t('trades')}` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('weakestCondition')}</span>
+                    <AlertCircle className="w-4 h-4 text-rose-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200 truncate" title={worstConfluence?.tag}>
+                    {worstConfluence && worstConfluence.avgPL < 0 ? worstConfluence.tag : "—"}
+                  </p>
+                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                    {worstConfluence && worstConfluence.avgPL < 0 ? `${worstConfluence.avgPL} ${t('perTrade')}` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('strongestCondition')}</span>
+                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-emerald-900 dark:text-emerald-200 truncate" title={bestConfluence?.tag}>
+                    {bestConfluence && bestConfluence.avgPL > 0 ? bestConfluence.tag : "—"}
+                  </p>
+                  <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
+                    {bestConfluence && bestConfluence.avgPL > 0 ? `+${bestConfluence.avgPL} ${t('perTrade')}` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {confluencePerf.length === 0 ? (
+              <Card className="shadow-md">
+                <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
+                  <ListChecks className="w-10 h-10 text-emerald-400" />
+                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noEntryConditionData')}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="shadow-md">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('conditionVsResult')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('conditionVsResultDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="overflow-hidden p-4">
+                    <ResponsiveContainer width="100%" height={Math.max(320, confluencePerf.length * 44)}>
+                      <BarChart data={confluencePerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis type="number" stroke="#64748b" />
+                        <YAxis type="category" dataKey="tag" stroke="#64748b" width={140} tick={{ fontSize: 11 }} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "8px", color: "#e2e8f0" }}
+                          itemStyle={{ color: "#e2e8f0" }}
+                          labelStyle={{ color: "#f1f5f9" }}
+                        />
+                        <Legend />
+                        <Bar dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
+                          {confluencePerf.map((e, i) => (
+                            <Cell key={i} fill={e.avgPL >= 0 ? "#22c55e" : "#ef4444"} />
+                          ))}
+                        </Bar>
+                        <Bar dataKey="winRate" name={`${t("winRate")} (%)`} fill="#10b981" radius={[0, 6, 6, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-md overflow-hidden">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('conditionTableTitle')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('conditionTableDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="p-0 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-700 bg-muted/30 text-xs text-muted-foreground">
+                          <th className="text-left py-2 px-3 font-medium">{t('entryConditionsTab')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('trades')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('winRate')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('avg')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('total')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {confluenceByFreq.map((row) => (
+                          <tr key={row.tag} className="border-b border-slate-100 dark:border-slate-800">
+                            <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
+                            <td className="py-2 px-3 text-right tabular-nums text-slate-600 dark:text-slate-400">{row.trades}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-green-600" : "text-red-600"}`}>{row.winRate}%</td>
+                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="mistakes" className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-950 dark:to-orange-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('tagCoverage')}</span>
+                    <AlertTriangle className="w-4 h-4 text-rose-500" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-rose-900 dark:text-rose-200">
+                    {mistakeAgg.taggedTrades}<span className="text-base text-rose-500">/{filteredTrades.length}</span>
+                  </p>
+                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">{mistakeCoverage}% {t('mistakesCoverageDesc')}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 border border-amber-200 dark:border-amber-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{t('mostFrequentMistake')}</span>
+                    <Activity className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-amber-900 dark:text-amber-200 truncate" title={mistakeByFreq[0]?.tag}>
+                    {mistakeByFreq[0]?.tag || "—"}
+                  </p>
+                  <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80">
+                    {mistakeByFreq[0] ? `${mistakeByFreq[0].trades}×` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('costliestMistake')}</span>
+                    <AlertCircle className="w-4 h-4 text-rose-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200 truncate" title={costliestMistake?.tag}>
+                    {costliestMistake && costliestMistake.avgPL < 0 ? costliestMistake.tag : "—"}
+                  </p>
+                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                    {costliestMistake && costliestMistake.avgPL < 0
+                      ? `${costliestMistake.avgPL} ${t('perTrade')} · Σ ${costliestMistake.totalPL}`
+                      : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{t('leastHarmfulMistake')}</span>
+                    <TrendingUp className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-200 truncate" title={bestMistakeAvoid?.tag}>
+                    {bestMistakeAvoid?.tag || "—"}
+                  </p>
+                  <p className="text-[11px] text-slate-600/80 dark:text-slate-400/80">
+                    {bestMistakeAvoid ? `${bestMistakeAvoid.avgPL >= 0 ? "+" : ""}${bestMistakeAvoid.avgPL} ${t('perTrade')}` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {mistakePerf.length === 0 ? (
+              <Card className="shadow-md">
+                <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
+                  <AlertTriangle className="w-10 h-10 text-rose-400" />
+                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noMistakeData')}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="shadow-md">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('mistakeVsResult')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('mistakeVsResultDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="overflow-hidden p-4">
+                    <ResponsiveContainer width="100%" height={Math.max(320, mistakePerf.length * 44)}>
+                      <BarChart data={mistakePerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis type="number" stroke="#64748b" />
+                        <YAxis type="category" dataKey="tag" stroke="#64748b" width={140} tick={{ fontSize: 11 }} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "8px", color: "#e2e8f0" }}
+                          itemStyle={{ color: "#e2e8f0" }}
+                          labelStyle={{ color: "#f1f5f9" }}
+                        />
+                        <Legend />
+                        <Bar dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
+                          {mistakePerf.map((e, i) => (
+                            <Cell key={i} fill={e.avgPL >= 0 ? "#22c55e" : "#ef4444"} />
+                          ))}
+                        </Bar>
+                        <Bar dataKey="winRate" name={`${t("winRate")} (%)`} fill="#f43f5e" radius={[0, 6, 6, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-md overflow-hidden">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('mistakeTableTitle')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('mistakeTableDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="p-0 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-700 bg-muted/30 text-xs text-muted-foreground">
+                          <th className="text-left py-2 px-3 font-medium">{t('mistakesTab')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('trades')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('winRate')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('avg')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('total')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mistakeByFreq.map((row) => (
+                          <tr key={row.tag} className="border-b border-slate-100 dark:border-slate-800">
+                            <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
+                            <td className="py-2 px-3 text-right tabular-nums text-slate-600 dark:text-slate-400">{row.trades}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-green-600" : "text-red-600"}`}>{row.winRate}%</td>
+                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

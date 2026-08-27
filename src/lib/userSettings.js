@@ -20,6 +20,10 @@ export const DEFAULT_USER_SETTINGS = Object.freeze({
   privacy_mode: false,
   start_page: "/Dashboard",
   pnl_view: "money",
+  /** Custom entry-condition chips; null/undefined → DEFAULT_CONFLUENCES */
+  trade_confluences: null,
+  /** Custom mistake chips; null/undefined → DEFAULT_MISTAKES */
+  trade_mistakes: null,
 });
 
 export const TIMEZONE_OPTIONS = Object.freeze([
