@@ -12,6 +12,7 @@ import { Plus, Edit, Trash2, CheckCircle2, Circle, Target } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
+import QuoteLine from "@/components/QuoteLine";
 
 export default function Goals() {
   const { t } = useLanguage();
@@ -80,16 +81,19 @@ export default function Goals() {
             <h1 className="cyber-page-title">{t('financialGoals')}</h1>
             <p className="cyber-page-sub">{t('defineTrackGoals')}</p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingGoal(null);
-              setShowForm(!showForm);
-            }}
-            className="cyber-primary-btn w-full sm:w-auto"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            {t('newGoal')}
-          </Button>
+          <div className="flex gap-3 items-center">
+            <QuoteLine className="hidden lg:flex shrink-0" />
+            <Button
+              onClick={() => {
+                setEditingGoal(null);
+                setShowForm(!showForm);
+              }}
+              className="cyber-primary-btn w-full sm:w-auto"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              {t('newGoal')}
+            </Button>
+          </div>
         </div>
 
         <AnimatePresence>
@@ -114,8 +118,8 @@ export default function Goals() {
         {/* Active Goals */}
         {activeGoals.length > 0 && (
           <div>
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-              <Circle className="w-5 h-5 text-blue-500" />
+            <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Circle className="w-5 h-5 text-primary" />
               {t('activeGoals')} ({activeGoals.length})
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -171,7 +175,7 @@ export default function Goals() {
         )}
 
         {activeGoals.length === 0 && completedGoals.length === 0 && failedGoals.length === 0 && (
-          <Card className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <Card className="border border-border">
             <CardContent className="text-center py-12">
               <Target className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
               <p className="text-slate-600 dark:text-slate-400">{t('noGoalsYet')}</p>
@@ -196,7 +200,7 @@ function GoalForm({ goal, onSubmit, onCancel }) {
     end_date: "",
     status: "active",
     priority: "medium",
-    color: "#3b82f6",
+    color: "#64748b",
     notes: ""
   });
 
@@ -206,7 +210,7 @@ function GoalForm({ goal, onSubmit, onCancel }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+      <Card className="bg-card border border-border">
         <CardHeader>
           <CardTitle className="dark:text-white">{goal ? t('editGoal') : t('newGoal')}</CardTitle>
         </CardHeader>
@@ -348,7 +352,7 @@ function GoalCard({ goal, progress, percentage, completed, onEdit, onDelete }) {
   const { t } = useLanguage();
   
   const priorityColors = {
-    low: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+    low: "bg-muted text-foreground",
     medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
     high: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
   };
@@ -368,7 +372,7 @@ function GoalCard({ goal, progress, percentage, completed, onEdit, onDelete }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      <Card className={`bg-white dark:bg-slate-800 border shadow-lg ${completed ? 'border-green-300 dark:border-green-700' : 'border-slate-200 dark:border-slate-700'}`}>
+      <Card className={`bg-card border ${completed ? 'border-profit/40' : 'border-border'}`}>
         <div className={`h-1.5 bg-gradient-to-r`} style={{ backgroundImage: `linear-gradient(to right, ${goal.color}, ${goal.color}cc)` }} />
         
         <CardHeader className="pb-3">
@@ -395,7 +399,7 @@ function GoalCard({ goal, progress, percentage, completed, onEdit, onDelete }) {
           <div>
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('progress')}</span>
-              <span className="text-sm font-bold text-slate-900 dark:text-white">
+              <span className="text-sm font-bold text-foreground">
                 {progress.current.toFixed(2)} / {progress.target.toFixed(2)} {goal.unit}
               </span>
             </div>
@@ -408,7 +412,7 @@ function GoalCard({ goal, progress, percentage, completed, onEdit, onDelete }) {
                 }}
               />
             </div>
-            <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 inline-block">{percentage.toFixed(0)}%</span>
+            <span className="text-xs text-muted-foreground mt-1 inline-block">{percentage.toFixed(0)}%</span>
           </div>
 
           <div className="flex gap-2 flex-wrap">

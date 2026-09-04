@@ -378,7 +378,7 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
             )}
 
             {preview && !parsing && (
-              <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3 text-sm space-y-1">
+              <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm space-y-1">
                 <p>
                   Wykryty format:{" "}
                   <strong>{BROKER_LABELS[preview.format] || preview.format}</strong>
@@ -400,7 +400,7 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
                   </p>
                 )}
                 {preview.sample && (
-                  <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                  <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground space-y-0.5">
                     <p className="font-medium text-slate-700 dark:text-slate-300">
                       Przykład ({preview.sample.symbol}):
                     </p>
@@ -420,7 +420,7 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
             )}
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0 border-t border-slate-200 dark:border-slate-700 pt-3 mt-2">
+          <DialogFooter className="gap-2 sm:gap-0 border-t border-border pt-3 mt-2">
             <Button type="button" variant="ghost" onClick={() => handleOpenChange(false)}>
               Anuluj
             </Button>

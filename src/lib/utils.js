@@ -1,5 +1,6 @@
 import { clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { CHART } from "./chartTheme"
 
 export function cn(...inputs) {
   return twMerge(clsx(inputs))
@@ -123,20 +124,20 @@ export const tradeOutcomeToneClass = (outcome) => {
 
 export const tradeOutcomeChartColor = (outcome) => {
   const normalized = normalizeTradeOutcome(outcome);
-  if (normalized === "win") return "#22c55e";
-  if (normalized === "loss") return "#f43f5e";
-  if (normalized === "breakeven") return "#f59e0b";
-  return "#64748b";
+  if (normalized === "win") return CHART.profit;
+  if (normalized === "loss") return CHART.loss;
+  if (normalized === "breakeven") return CHART.warning;
+  return CHART.muted;
 };
 
 export const tradePnLBarColor = (value) => {
   const parsed = Number(value) || 0;
-  return parsed >= 0 ? "#22c55e" : "#f43f5e";
+  return parsed >= 0 ? CHART.profit : CHART.loss;
 };
 
 export const directionChartColor = (direction) => {
   const normalized = normalizeDirection(direction);
-  if (normalized === "Long") return "#22c55e";
-  if (normalized === "Short") return "#f43f5e";
-  return "#64748b";
+  if (normalized === "Long") return CHART.long;
+  if (normalized === "Short") return CHART.short;
+  return CHART.muted;
 };

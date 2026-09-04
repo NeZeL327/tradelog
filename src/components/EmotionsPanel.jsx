@@ -208,7 +208,7 @@ function EmotionTag({ active, emoji, label, onClick, readOnly = false, compact =
     if (!active) return null;
     return (
       <span className={cn(
-        "inline-flex items-center rounded-full border bg-violet-600/10 border-violet-500/30 text-foreground",
+        "inline-flex items-center rounded-full border bg-primary/10 border-primary/30 text-foreground",
         compact ? "px-1.5 py-0.5 text-[10px] gap-0.5" : "px-2 py-0.5 text-[11px] gap-1"
       )}>
         <span className={cn("leading-none", compact ? "text-[11px]" : "text-xs")}>{emoji}</span>
@@ -225,8 +225,8 @@ function EmotionTag({ active, emoji, label, onClick, readOnly = false, compact =
         "inline-flex items-center rounded-full border transition min-h-[1.55rem]",
         compact ? "gap-0.5 px-1.5 py-0.5 text-[10px]" : "gap-1 px-2 py-0.5 text-[11px]",
         active
-          ? "bg-violet-600 border-violet-600 text-white shadow-sm"
-          : "bg-background/80 border-border/80 text-muted-foreground hover:border-violet-400 hover:text-violet-700 dark:hover:text-violet-300"
+          ? "bg-primary border-primary text-primary-foreground"
+          : "bg-background/80 border-border/80 text-muted-foreground hover:border-primary/50 hover:text-foreground"
       )}
     >
       <span className={cn("leading-none", compact ? "text-[11px]" : "text-xs")}>{emoji}</span>
@@ -536,10 +536,10 @@ export function EmotionsInlinePanel({
         className
       )}
     >
-      <div className="bg-gradient-to-r from-violet-900 via-violet-800 to-purple-900 text-white border-b border-violet-700/50 flex items-center justify-between shrink-0 px-2.5 py-1.5">
+      <div className="bg-muted/50 border-b border-border flex items-center justify-between shrink-0 px-2.5 py-1.5">
         <div className="min-w-0">
           <h3 className="font-semibold text-[12px] leading-tight">Dziennik emocji</h3>
-          <p className="text-[10px] text-violet-200/85 leading-tight">
+          <p className="text-[10px] text-muted-foreground leading-tight">
             przed · w trakcie · po
           </p>
         </div>
@@ -547,7 +547,7 @@ export function EmotionsInlinePanel({
           <button
             type="button"
             onClick={onClose}
-            className="text-violet-200 hover:bg-white/10 p-1 rounded-md transition shrink-0"
+            className="text-muted-foreground hover:bg-muted p-1 rounded-md transition shrink-0"
             aria-label="Zamknij panel emocji"
           >
             <X className="w-3.5 h-3.5" />
@@ -582,7 +582,7 @@ export default function EmotionsPanel({ open, onOpenChange, value, onChange }) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto bg-white dark:bg-card">
+      <SheetContent side="left" className="w-full sm:max-w-md overflow-y-auto bg-card">
         <SheetHeader>
           <SheetTitle>Dziennik emocji</SheetTitle>
           <SheetDescription>

@@ -97,7 +97,7 @@ export default function CameraCapture({ onCapture, onClose }) {
           <Button
             onClick={capturePhoto}
             disabled={!isCameraReady}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            className=""
           >
             <Camera className="w-4 h-4 mr-2" />
             Capture

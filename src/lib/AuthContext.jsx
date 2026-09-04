@@ -3,11 +3,8 @@ import { auth, db } from '@/lib/firebase';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  signInWithRedirect,
   getRedirectResult,
   signOut,
-  GoogleAuthProvider,
-  OAuthProvider,
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { logger } from '@/lib/logger';
@@ -21,6 +18,14 @@ import {
 import { queryClientInstance } from '@/lib/query-client';
 
 const AuthContext = createContext(undefined);
+
+const SOCIAL_DISABLED_MESSAGE = 'Logowanie społecznościowe jest wyłączone. Użyj e-maila i hasła.';
+
+const isPasswordOnlyUser = (authUser) => {
+  const providers = (authUser?.providerData || []).map((item) => item.providerId);
+  if (!providers.length) return false;
+  return providers.every((id) => id === 'password');
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -77,7 +82,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const rejectSession = async (message) => {
+    try {
+      await signOut(auth);
+    } catch {
+      /* still clear local session */
+    }
+    queryClientInstance.clear();
+    setFirebaseUser(null);
+    setUser(null);
+    setIsAuthenticated(false);
+    setAuthError({
+      type: 'login_error',
+      message: message || SOCIAL_DISABLED_MESSAGE,
+    });
+  };
+
   const applyAuthenticatedUser = async (nextFirebaseUser) => {
+    if (!isPasswordOnlyUser(nextFirebaseUser)) {
+      await rejectSession(SOCIAL_DISABLED_MESSAGE);
+      throw new Error(SOCIAL_DISABLED_MESSAGE);
+    }
+
     queryClientInstance.clear();
     const profile = await ensureProfile(nextFirebaseUser);
     const isNew = Boolean(profile?._isNew);
@@ -123,6 +149,9 @@ export const AuthProvider = ({ children }) => {
 
           await applyAuthenticatedUser(nextFirebaseUser);
         } catch (error) {
+          if (error?.message === SOCIAL_DISABLED_MESSAGE) {
+            return;
+          }
           logger.error('Error initializing auth state', error);
           setAuthError({
             type: 'init_error',
@@ -135,8 +164,14 @@ export const AuthProvider = ({ children }) => {
     };
 
     getRedirectResult(auth)
-      .then((result) => {
+      .then(async (result) => {
         if (result?.user) {
+          if (!isPasswordOnlyUser(result.user)) {
+            await rejectSession(SOCIAL_DISABLED_MESSAGE);
+            setIsLoadingAuth(false);
+            setupAuth();
+            return;
+          }
           applyAuthenticatedUser(result.user)
             .then(({ effective }) => {
               setIsLoadingAuth(false);
@@ -186,35 +221,38 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /** Logowanie Google – przekierowanie (bez popup). Firebase Console: Authentication → Sign-in method → Google → Włącz. */
+  /** Social login stays in the API but is blocked — accounts are email/password only (Firebase Console). */
   const loginWithGoogle = async () => {
-    setAuthError(null);
-    const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
-    return true;
+    setAuthError({ type: 'login_error', message: SOCIAL_DISABLED_MESSAGE });
+    throw new Error(SOCIAL_DISABLED_MESSAGE);
   };
 
-  /** Logowanie Apple – przekierowanie (bez popup). Wymaga konfiguracji Apple w Firebase. */
   const loginWithApple = async () => {
-    setAuthError(null);
-    const provider = new OAuthProvider('apple.com');
-    provider.addScope('email');
-    provider.addScope('name');
-    await signInWithRedirect(auth, provider);
-    return true;
+    setAuthError({ type: 'login_error', message: SOCIAL_DISABLED_MESSAGE });
+    throw new Error(SOCIAL_DISABLED_MESSAGE);
   };
 
   const login = async (email, password) => {
     try {
       setAuthError(null);
-      await signInWithEmailAndPassword(auth, email, password);
+      const normalizedEmail = String(email || '').trim().toLowerCase();
+      if (!normalizedEmail || !password) {
+        throw new Error('Nieprawidłowy email lub hasło');
+      }
+      await signInWithEmailAndPassword(auth, normalizedEmail, password);
       return true;
     } catch (error) {
       const errorCode = error?.code || '';
       const message =
-        errorCode === 'auth/invalid-email'
-          ? 'Nieprawidłowy email'
-          : 'Nieprawidłowy email lub hasło';
+        errorCode === 'auth/too-many-requests'
+          ? 'Zbyt wiele prób. Spróbuj później.'
+          : errorCode === 'auth/user-disabled'
+            ? 'Konto jest zablokowane'
+            : errorCode === 'auth/invalid-email'
+              ? 'Nieprawidłowy email'
+              : error?.message === 'Nieprawidłowy email lub hasło'
+                ? error.message
+                : 'Nieprawidłowy email lub hasło';
       setAuthError({
         type: 'login_error',
         message

@@ -160,8 +160,8 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Account & Strategy */}
-        <div className="md:col-span-2 lg:col-span-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800">
-          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-3">📊 Account & Strategy</h3>
+        <div className="md:col-span-2 lg:col-span-3 p-4 bg-muted/30 rounded-md border border-border">
+          <h3 className="text-lg font-semibold text-foreground mb-3">📊 Account & Strategy</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Trading Account *</Label>
@@ -354,8 +354,8 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
         </div>
 
         {/* Market Conditions */}
-        <div className="md:col-span-2 lg:col-span-3 p-4 bg-purple-50 dark:bg-purple-900/30 rounded-xl border border-purple-200 dark:border-purple-800">
-          <h3 className="text-lg font-semibold text-purple-900 dark:text-purple-100 mb-3">🌍 Market Conditions</h3>
+        <div className="md:col-span-2 lg:col-span-3 p-4 bg-muted/30 rounded-md border border-border">
+          <h3 className="text-lg font-semibold text-foreground mb-3">🌍 Market Conditions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <Label>Market Condition</Label>
@@ -419,8 +419,8 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
         </div>
 
         {/* Trade Setup */}
-        <div className="md:col-span-2 lg:col-span-3 p-4 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
-          <h3 className="text-lg font-semibold text-indigo-900 dark:text-indigo-100 mb-3">🎯 Trade Setup</h3>
+        <div className="md:col-span-2 lg:col-span-3 p-4 bg-card rounded-md border border-border">
+          <h3 className="text-lg font-semibold text-foreground mb-3">🎯 Trade Setup</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Setup Type</Label>
@@ -665,7 +665,7 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
         </div>
 
         {/* General Notes */}
-        <div className="md:col-span-2 lg:col-span-3 p-4 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div className="md:col-span-2 lg:col-span-3 p-4 bg-muted/30 rounded-lg border border-border">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">📝 General Notes</h3>
           <div>
             <Label>Additional Notes</Label>
@@ -686,7 +686,7 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
                   href={formData.screenshot_1}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm text-blue-600 hover:underline dark:text-blue-300"
+                  className="text-sm text-primary hover:underline"
                 >
                   View uploaded screenshot
                 </a>
@@ -697,11 +697,11 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+      <div className="flex justify-end gap-3 pt-4 border-t border-border">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+        <Button type="submit">
           {trade ? "Save Changes" : "Add Trade"}
         </Button>
       </div>

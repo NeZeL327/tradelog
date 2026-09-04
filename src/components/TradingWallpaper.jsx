@@ -22,7 +22,7 @@ export default function TradingWallpaper({ variant = 'candles' }) {
         transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
-        className="absolute -bottom-[20%] -left-[15%] w-[85vmax] h-[85vmax] rounded-full bg-cyan-500/35 blur-[95px]"
+        className="absolute -bottom-[20%] -left-[15%] w-[85vmax] h-[85vmax] rounded-full bg-primary/20 blur-[95px]"
         animate={{
           x: [0, -35, 0],
           y: [0, 30, 0],
@@ -31,7 +31,7 @@ export default function TradingWallpaper({ variant = 'candles' }) {
         transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
-        className="absolute top-1/2 left-1/2 w-[75vmax] h-[75vmax] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/25 blur-[85px]"
+        className="absolute top-1/2 left-1/2 w-[75vmax] h-[75vmax] -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-500/15 blur-[85px]"
         animate={{
           scale: [1, 1.15, 1],
           opacity: [0.7, 1, 0.7],

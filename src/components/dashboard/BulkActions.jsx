@@ -17,8 +17,8 @@ export default function BulkActions({ selectedCount, trips, onAssignTrip, onChan
   if (selectedCount === 0) return null;
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex flex-wrap items-center gap-3">
-      <span className="font-medium text-blue-900">{selectedCount} selected</span>
+    <div className="bg-muted/40 border border-border rounded-md p-4 mb-4 flex flex-wrap items-center gap-3">
+      <span className="font-medium text-foreground">{selectedCount} selected</span>
       
       <Select value={tripId} onValueChange={(v) => { setTripId(v); onAssignTrip(v); }}>
         <SelectTrigger className="w-40 bg-white">

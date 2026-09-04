@@ -19,6 +19,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionLabel, getTradeRealizedPL, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor } from "@/lib/utils";
 import { formatTradeDate, formatTradeClock, getDateFormat, getTradeEntryHour } from "@/lib/userSettings";
+import { CHART, chartTooltipStyle } from "@/lib/chartTheme";
+import QuoteLine from "@/components/QuoteLine";
+import Sparkline from "@/components/Sparkline";
+import { useUserSettings } from "@/hooks/use-user-settings";
 
 // ─── Mini date-range calendar (same as Journal) ──────────────────────────────
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
@@ -65,9 +69,9 @@ function MiniCalendar({ from, to, onSelect }) {
   return (
     <div className="w-[224px] select-none">
       <div className="flex items-center justify-between mb-2">
-        <button type="button" onClick={prevMonth} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"><ChevronLeft className="w-4 h-4" /></button>
+        <button type="button" onClick={prevMonth} className="p-1 rounded hover:bg-muted text-muted-foreground"><ChevronLeft className="w-4 h-4" /></button>
         <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{MONTHS_PL[view.month]} {view.year}</span>
-        <button type="button" onClick={nextMonth} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500"><ChevronRight className="w-4 h-4" /></button>
+        <button type="button" onClick={nextMonth} className="p-1 rounded hover:bg-muted text-muted-foreground"><ChevronRight className="w-4 h-4" /></button>
       </div>
       <div className="grid grid-cols-7 mb-1">
         {DAYS_PL.map(d => <div key={d} className="text-center text-[10px] font-medium text-slate-400 py-0.5">{d}</div>)}
@@ -82,10 +86,10 @@ function MiniCalendar({ from, to, onSelect }) {
           return (
             <button key={i} type="button" onClick={() => handleDay(d)}
               className={["text-xs h-7 w-full rounded transition-colors",
-                isFrom || isTo ? "bg-blue-600 text-white font-semibold" : "",
-                inRange ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-none" : "",
-                isNow && !isFrom && !isTo ? "font-bold text-blue-500 dark:text-blue-400" : "",
-                !isFrom && !isTo && !inRange ? "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" : "",
+                isFrom || isTo ? "bg-primary text-primary-foreground font-semibold" : "",
+                inRange ? "bg-primary/15 text-foreground rounded-none" : "",
+                isNow && !isFrom && !isTo ? "font-bold text-primary" : "",
+                !isFrom && !isTo && !inRange ? "text-foreground hover:bg-muted" : "",
               ].join(" ").trim()}>{d}</button>
           );
         })}
@@ -97,21 +101,13 @@ function MiniCalendar({ from, to, onSelect }) {
 export default function Dashboard() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
+  const { show_weekends: showWeekends } = useUserSettings();
   const navigate = useNavigate();
   const dateFormat = getDateFormat();
   const fmtDate = (d) => formatTradeDate(d, dateFormat);
 
-  // Dark mode observer for recharts colors
-  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
-  useEffect(() => {
-    const obs = new MutationObserver(() =>
-      setIsDark(document.documentElement.classList.contains('dark'))
-    );
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => obs.disconnect();
-  }, []);
-  const gridColor = isDark ? '#334155' : '#e2e8f0';
-  const axisColor = isDark ? '#94a3b8' : '#64748b';
+  const gridColor = CHART.grid;
+  const axisColor = CHART.axis;
   const dashboardFiltersStorageKey = `dashboard_filters_v2_${user?.id || 'guest'}`;
   const dateLocale = language === "pl" ? pl : enUS;
   const dayLocale = language === "pl" ? "pl-PL" : "en-US";
@@ -417,13 +413,15 @@ export default function Dashboard() {
   const dayWins = dayTrades.filter(t => t.outcome === "Win").length;
   const dayDecided = dayTrades.filter(t => t.outcome === "Win" || t.outcome === "Loss").length;
   const dayWinRate = dayDecided > 0 ? ((dayWins / dayDecided) * 100).toFixed(1) : 0;
+  const todayPL = dayTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
   const avgWinLossRatio = Math.abs(Number(avgLoss)) > 0 ? Math.abs(Number(avgWin) / Number(avgLoss)).toFixed(2) : (Number(avgWin) > 0 ? "∞" : "0");
 
-  const plRing = Math.min((Math.abs(totalPL) / 1000) * 100, 100);
   const winRateRing = Math.min(parseFloat(winRate) || 0, 100);
   const pfRing = Math.min((parseFloat(profitFactor) || 0) / 3 * 100, 100);
   const dayWinRing = Math.min(parseFloat(dayWinRate) || 0, 100);
-  const avgWinLossRing = Math.min((parseFloat(avgWinLossRatio) || 0) / 3 * 100, 100);
+  const winAbs = Math.abs(Number(avgWin)) || 0;
+  const lossAbs = Math.abs(Number(avgLoss)) || 0;
+  const winBarPct = winAbs + lossAbs > 0 ? (winAbs / (winAbs + lossAbs)) * 100 : 50;
 
   const dailyPLByDate = {};
   closedTrades.forEach(t => {
@@ -446,6 +444,12 @@ export default function Dashboard() {
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  const visibleCalendarDays = showWeekends === false
+    ? calendarDays.filter((day) => {
+        const weekday = day.getDay();
+        return weekday !== 0 && weekday !== 6;
+      })
+    : calendarDays;
   const tradesByDate = {};
   closedTrades.forEach(trade => {
     const key = toDateKey(trade.date);
@@ -484,7 +488,7 @@ export default function Dashboard() {
     const longCount = closedTrades.filter((tr) => normalizeDirection(tr.direction) === 'Long').length;
     const shortCount = closedTrades.filter((tr) => normalizeDirection(tr.direction) === 'Short').length;
     return [
-      { name: t('longLabel'), value: longCount, color: '#22d3ee' },
+      { name: t('longLabel'), value: longCount, color: CHART.line },
       { name: t('shortLabel'), value: shortCount, color: '#fb923c' },
     ];
   }, [closedTrades, t]);
@@ -854,7 +858,7 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
       </div>
     );
   }
@@ -864,16 +868,27 @@ export default function Dashboard() {
       <div className="w-full mx-auto space-y-6">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex items-start justify-between gap-4 mb-4">
             <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 dark:text-white bordo:text-[#f9d5e5] mb-1 sm:mb-2">{t('dashboard')}</h1>
-              <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 bordo:text-[#d4a5b8]">{t('overviewOfYourTradingPerformance')}</p>
+              <h1 className="text-2xl sm:text-3xl md:text-[2rem] font-bold text-foreground tracking-tight mb-1">{t('dashboard')}</h1>
+              <p className="text-sm text-muted-foreground">{t('overviewOfYourTradingPerformance')}</p>
             </div>
+            <QuoteLine
+              className="hidden lg:flex shrink-0 pt-1"
+              stats={{
+                activeStreakType,
+                activeStreakCount,
+                todayPL,
+                todayTradeCount: dayTrades.length,
+              }}
+            />
+          </div>
+          <div className="flex flex-col gap-3 sm:gap-4">
             <div className="flex items-stretch sm:items-center gap-2 sm:gap-3 md:gap-4 flex-wrap">
               <Button
                 type="button"
                 onClick={() => setShowAddForm(true)}
-                className="h-10 px-3 md:px-4 gap-2 text-sm w-full sm:w-auto shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
+                className="h-10 px-3 md:px-4 gap-2 text-sm w-full sm:w-auto shrink-0 rounded-lg"
                 title={t('addTrade')}
               >
                 <Plus className="w-4 h-4 shrink-0" />
@@ -882,9 +897,9 @@ export default function Dashboard() {
               <div className="relative flex-1 min-w-[min(100%,10.5rem)] sm:flex-none sm:min-w-0" ref={accountDropdownRef}>
                 <button
                   onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
-                  className="relative h-10 w-full sm:w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
+                  className="relative h-10 w-full sm:w-[170px] md:w-[210px] px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
                 >
-                  <Wallet className="absolute left-3 w-4 h-4 text-slate-500" />
+                  <Wallet className="absolute left-3 w-4 h-4 text-muted-foreground" />
                   <span className="truncate text-center w-full px-6">{dashboardAccountLabel || t('allAccounts')}</span>
                   <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
                 </button>
@@ -895,7 +910,7 @@ export default function Dashboard() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardAccounts.includes('all') ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{t('allAccounts')}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${dashboardAccounts.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${dashboardAccounts.includes('all') ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                         {dashboardAccounts.includes('all') && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -913,7 +928,7 @@ export default function Dashboard() {
                         className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                       >
                         <span className="truncate">{acc.name}</span>
-                        <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                        <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                           {isSelected && (
                             <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -929,7 +944,7 @@ export default function Dashboard() {
               </div>
               <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-10 px-3 md:px-4 gap-2 text-sm flex-1 sm:flex-none min-w-[6.5rem]">
+                  <Button variant="outline" size="sm" className="h-10 px-3 md:px-4 gap-2 text-sm flex-1 sm:flex-none min-w-[6.5rem] bg-card border-border">
                     <Filter className="w-4 h-4" />
                     {t('filters')}
                   </Button>
@@ -937,7 +952,7 @@ export default function Dashboard() {
                 <PopoverContent align="start" side="bottom" className="w-[min(420px,calc(100vw-1.5rem))] p-4">
                   <div className="space-y-4">
                     <div>
-                      <div className="text-xs text-slate-500 mb-2">{t('symbol')}</div>
+                      <div className="text-xs text-muted-foreground mb-2">{t('symbol')}</div>
                       <button
                         type="button"
                         className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm text-left"
@@ -951,7 +966,7 @@ export default function Dashboard() {
                           className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterSymbols.includes('all') ? 'bg-accent' : ''}`}
                         >
                           <span>{t('all')}</span>
-                          <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${filterSymbols.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                          <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${filterSymbols.includes('all') ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                             {filterSymbols.includes('all') && (
                               <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -969,7 +984,7 @@ export default function Dashboard() {
                               className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                             >
                               <span>{sym}</span>
-                              <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                              <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                                 {isSelected && (
                                   <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -982,7 +997,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-slate-500 mb-2">{t('direction')}</div>
+                      <div className="text-xs text-muted-foreground mb-2">{t('direction')}</div>
                       <button
                         type="button"
                         className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm text-left"
@@ -996,7 +1011,7 @@ export default function Dashboard() {
                           className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterDirections.includes('all') ? 'bg-accent' : ''}`}
                         >
                           <span>{t('all')}</span>
-                          <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${filterDirections.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                          <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${filterDirections.includes('all') ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                             {filterDirections.includes('all') && (
                               <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1014,7 +1029,7 @@ export default function Dashboard() {
                               className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                             >
                               <span>{directionLabel(dir, t)}</span>
-                              <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                              <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                                 {isSelected && (
                                   <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1027,7 +1042,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div>
-                      <div className="text-xs text-slate-500 mb-2">{t('outcome')}</div>
+                      <div className="text-xs text-muted-foreground mb-2">{t('outcome')}</div>
                       <button
                         type="button"
                         className="w-full h-10 px-3 rounded-md border border-input bg-transparent text-sm text-left"
@@ -1041,7 +1056,7 @@ export default function Dashboard() {
                           className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterOutcomes.includes('all') ? 'bg-accent' : ''}`}
                         >
                           <span>{t('all')}</span>
-                          <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${filterOutcomes.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                          <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${filterOutcomes.includes('all') ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                             {filterOutcomes.includes('all') && (
                               <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1059,7 +1074,7 @@ export default function Dashboard() {
                               className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                             >
                               <span>{out}</span>
-                              <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                              <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                                 {isSelected && (
                                   <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1091,9 +1106,9 @@ export default function Dashboard() {
                     setMonthFilterOpen(false);
                     setDatePickerOpen(false);
                   }}
-                  className="relative h-10 w-full min-w-[min(100%,9rem)] sm:w-[170px] md:w-[210px] px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent flex-1 sm:flex-none"
+                  className="relative h-10 w-full min-w-[min(100%,9rem)] sm:w-[170px] md:w-[210px] px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40 flex-1 sm:flex-none"
                 >
-                  <CalendarDays className="absolute left-3 w-4 h-4 text-slate-500" />
+                  <CalendarDays className="absolute left-3 w-4 h-4 text-muted-foreground" />
                   <span className="truncate text-center w-full px-6">{dashboardRangeLabel || t('allTime')}</span>
                   <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
                 </button>
@@ -1105,7 +1120,7 @@ export default function Dashboard() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardRanges.includes('all') ? 'bg-accent' : ''}`}
                     >
                       <span>{t('allTime')}</span>
-                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('all') ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                         {dashboardRanges.includes('all') && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1119,7 +1134,7 @@ export default function Dashboard() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardRanges.includes('7d') ? 'bg-accent' : ''}`}
                     >
                       <span>{t('last7Days')}</span>
-                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('7d') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('7d') ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                         {dashboardRanges.includes('7d') && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1133,7 +1148,7 @@ export default function Dashboard() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardRanges.includes('30d') ? 'bg-accent' : ''}`}
                     >
                       <span>{t('last30Days')}</span>
-                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('30d') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('30d') ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                         {dashboardRanges.includes('30d') && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1147,7 +1162,7 @@ export default function Dashboard() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${dashboardRanges.includes('90d') ? 'bg-accent' : ''}`}
                     >
                       <span>{t('last90Days')}</span>
-                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('90d') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full border-[3px] ${dashboardRanges.includes('90d') ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                         {dashboardRanges.includes('90d') && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1169,11 +1184,11 @@ export default function Dashboard() {
                   }}
                   className={`relative h-10 flex-1 min-w-[min(100%,9rem)] sm:flex-none sm:min-w-[150px] md:min-w-[180px] px-3 rounded-md border text-sm flex items-center justify-center hover:bg-accent ${
                     selectedMonth
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
-                      : "border-input bg-transparent"
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border bg-card"
                   }`}
                 >
-                  <Calendar className="absolute left-3 w-4 h-4 text-slate-500" />
+                  <Calendar className="absolute left-3 w-4 h-4 text-muted-foreground" />
                   <span className="truncate text-center w-full px-6">
                     {selectedMonth
                       ? monthLabel(selectedMonth, language)
@@ -1190,7 +1205,7 @@ export default function Dashboard() {
                     >
                       <span>{language === "pl" ? "Wszystkie miesiące" : "All months"}</span>
                       {!selectedMonth && (
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full border-[3px] border-blue-600 bg-blue-600">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full border-[3px] border-primary bg-primary">
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
@@ -1198,7 +1213,7 @@ export default function Dashboard() {
                       )}
                     </button>
                     {availableMonths.length === 0 ? (
-                      <p className="px-3 py-2 text-xs text-slate-500">
+                      <p className="px-3 py-2 text-xs text-muted-foreground">
                         {language === "pl" ? "Brak miesięcy z trade'ami" : "No months with trades"}
                       </p>
                     ) : (
@@ -1213,7 +1228,7 @@ export default function Dashboard() {
                           >
                             <span>{monthLabel(ym, language)}</span>
                             {isSelected && (
-                              <span className="flex h-5 w-5 items-center justify-center rounded-full border-[3px] border-blue-600 bg-blue-600">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full border-[3px] border-primary bg-primary">
                                 <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
@@ -1238,8 +1253,8 @@ export default function Dashboard() {
                   }}
                   className={`relative flex items-center justify-center gap-2 px-3 py-2 h-10 w-full sm:w-auto border rounded-md text-sm transition-colors ${
                     dateRange.from
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
-                      : "border-input bg-transparent hover:bg-accent"
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border bg-card hover:bg-muted/40"
                   }`}
                 >
                   <CalendarRange className="w-4 h-4 shrink-0" />
@@ -1253,7 +1268,7 @@ export default function Dashboard() {
                   {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
                 {datePickerOpen && (
-                  <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-50 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-xl p-3">
+                  <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-50 max-w-[calc(100vw-1.5rem)] rounded-lg border border-border bg-popover shadow-md p-3">
                     <MiniCalendar
                       from={dateRange.from}
                       to={dateRange.to}
@@ -1272,11 +1287,11 @@ export default function Dashboard() {
                         </span>
                         <div className="flex gap-2">
                           <button type="button" onClick={() => setDateRange({ from: "", to: "" })}
-                            className="text-[11px] text-slate-400 hover:text-red-500 px-2 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                            className="text-[11px] text-muted-foreground hover:text-red-500 px-2 py-0.5 rounded hover:bg-muted">
                             Wyczyść
                           </button>
                           <button type="button" onClick={() => setDatePickerOpen(false)}
-                            className="text-[11px] text-white bg-blue-600 hover:bg-blue-700 px-3 py-0.5 rounded">
+                            className="text-[11px] text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-0.5 rounded">
                             Zamknij
                           </button>
                         </div>
@@ -1290,19 +1305,19 @@ export default function Dashboard() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+        <div className="dashboard-kpi-row grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           <Card
-            className="ocean-stat-card cursor-pointer hover:shadow-lg transition-all"
+            className="ocean-stat-card cursor-pointer transition-colors"
             onClick={() => setExpandedMetric(expandedMetric === 'pl' ? null : 'pl')}
           >
             <CardContent className="p-4 md:p-5">
               <div className="flex items-center justify-between gap-2 md:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-slate-500 truncate">{t('totalPL')}</p>
-                  <div data-private className={`mt-1.5 text-xl md:text-2xl font-bold ${totalPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">{t('totalPL')}</p>
+                  <div data-private className={`mt-1.5 text-xl md:text-2xl font-bold tabular-nums ${totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
                     {totalPL >= 0 ? '+' : ''}{totalPL.toFixed(2)}
                   </div>
-                  <p className="text-xs text-slate-500 mt-1 truncate">
+                  <p className="text-xs text-muted-foreground mt-1 truncate">
                     {selectedMonth
                       ? monthLabel(selectedMonth, language)
                       : dateRange.from
@@ -1311,68 +1326,73 @@ export default function Dashboard() {
                     {" · "}{totalTrades} {t('trades')}
                   </p>
                 </div>
-                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${totalPL >= 0 ? '#22c55e' : '#f43f5e'} ${plRing}%, #e5e7eb 0)` }} />
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <Sparkline values={dailyPLData.map((d) => d.pl)} />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card
-            className="ocean-stat-card cursor-pointer hover:shadow-lg transition-all"
+            className="ocean-stat-card cursor-pointer transition-colors"
             onClick={() => setExpandedMetric(expandedMetric === 'winrate' ? null : 'winrate')}
           >
             <CardContent className="p-4 md:p-5">
               <div className="flex items-center justify-between gap-2 md:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-slate-500 truncate">{t('winRate')}</p>
-                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{winRate}%</div>
-                  <p className="text-xs text-slate-500 mt-1 truncate">{wins}W / {losses}L{breakeven > 0 ? ` / ${breakeven}BE` : ""}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">{t('winRate')}</p>
+                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-foreground">{winRate}%</div>
+                  <p className="text-xs text-muted-foreground mt-1 truncate">{wins}W / {losses}L{breakeven > 0 ? ` / ${breakeven}BE` : ""}</p>
                 </div>
-                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(#6d4dff ${winRateRing}%, #e5e7eb 0)` }} />
+                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--profit)) ${winRateRing}%, hsl(var(--border)) 0)` }} />
               </div>
             </CardContent>
           </Card>
 
           <Card
-            className="ocean-stat-card cursor-pointer hover:shadow-lg transition-all"
+            className="ocean-stat-card cursor-pointer transition-colors"
             onClick={() => setExpandedMetric(expandedMetric === 'pf' ? null : 'pf')}
           >
             <CardContent className="p-4 md:p-5">
               <div className="flex items-center justify-between gap-2 md:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-slate-500 truncate">{t('profitFactor')}</p>
-                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{profitFactor}</div>
-                  <p className="text-xs text-slate-500 mt-1 truncate">{t('avgWinAvgLoss')}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">{t('profitFactor')}</p>
+                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-foreground">{profitFactor}</div>
+                  <p className="text-xs text-muted-foreground mt-1 truncate">{t('avgWinAvgLoss')}</p>
                 </div>
-                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(#34d399 ${pfRing}%, #e5e7eb 0)` }} />
+                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--profit)) ${pfRing}%, hsl(var(--border)) 0)` }} />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="ocean-stat-card hover:shadow-lg transition-all">
+          <Card className="ocean-stat-card transition-colors">
             <CardContent className="p-4 md:p-5">
               <div className="flex items-center justify-between gap-2 md:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-slate-500 truncate">{t('dayWinRate')}</p>
-                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{dayWinRate}%</div>
-                  <p className="text-xs text-slate-500 mt-1 truncate">{dayWins}/{dayTrades.length} {t('trades')}</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">{t('dayWinRate')}</p>
+                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-foreground">{dayWinRate}%</div>
+                  <p className="text-xs text-muted-foreground mt-1 truncate">{dayWins}/{dayTrades.length} {t('trades')}</p>
                 </div>
-                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(#60a5fa ${dayWinRing}%, #e5e7eb 0)` }} />
+                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--primary)) ${dayWinRing}%, hsl(var(--border)) 0)` }} />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="ocean-stat-card hover:shadow-lg transition-all">
+          <Card className="ocean-stat-card transition-colors">
             <CardContent className="p-4 md:p-5">
               <div className="flex items-center justify-between gap-2 md:gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-slate-500 truncate">{t('avgWinAvgLoss')}</p>
-                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{avgWinLossRatio}</div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">{t('avgWinAvgLoss')}</p>
+                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-foreground">{avgWinLossRatio}</div>
                   <div className="mt-2 flex items-center gap-1.5 text-xs flex-wrap">
-                    <span className="rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-200 px-2 py-0.5 whitespace-nowrap text-[10px] md:text-xs">+{avgWin}</span>
-                    <span className="rounded-full bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-200 px-2 py-0.5 whitespace-nowrap text-[10px] md:text-xs">{avgLoss}</span>
+                    <span className="rounded-full bg-profit/15 text-profit px-2 py-0.5 whitespace-nowrap text-[10px] md:text-xs">+{avgWin}</span>
+                    <span className="rounded-full bg-loss/15 text-loss px-2 py-0.5 whitespace-nowrap text-[10px] md:text-xs">{avgLoss}</span>
                   </div>
                 </div>
-                <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(#a78bfa ${avgWinLossRing}%, #e5e7eb 0)` }} />
+                <div className="flex h-9 w-14 shrink-0 overflow-hidden rounded-md" aria-hidden>
+                  <div className="h-full bg-profit" style={{ width: `${winBarPct}%` }} />
+                  <div className="h-full flex-1 bg-loss" />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1400,14 +1420,7 @@ export default function Dashboard() {
                           <Cell key={`dc-${i}`} fill={e.color} />
                         ))}
                       </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: isDark ? "#0f172a" : "#fff",
-                          border: `1px solid ${isDark ? "rgba(34,211,238,0.35)" : "#cbd5e1"}`,
-                          borderRadius: "6px",
-                          fontSize: "11px",
-                        }}
-                      />
+                      <Tooltip contentStyle={chartTooltipStyle} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -1433,9 +1446,9 @@ export default function Dashboard() {
                         style={{
                           stroke:
                             zellaScore.total >= 80
-                              ? "#22c55e"
+                              ? CHART.profit
                               : zellaScore.total >= 60
-                                ? "#22d3ee"
+                                ? CHART.line
                                 : zellaScore.total >= 40
                                   ? "#f59e0b"
                                   : "#f43f5e",
@@ -1445,13 +1458,13 @@ export default function Dashboard() {
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-xl font-bold text-slate-900 dark:text-white">{zellaScore.total}</span>
-                      <span className="text-[9px] text-slate-500 dark:text-slate-400">/ 100</span>
+                      <span className="text-xl font-bold text-foreground">{zellaScore.total}</span>
+                      <span className="text-[9px] text-muted-foreground">/ 100</span>
                     </div>
                   </div>
                   <div className="flex-1 space-y-1 min-w-0">
                     {zellaScore.metrics.slice(0, 3).map((metric, i) => {
-                      const colors = ["#22d3ee", "#22c55e", "#a78bfa"];
+                      const colors = [CHART.line, CHART.profit, CHART.muted];
                       return (
                         <div key={metric.subject}>
                           <div className="flex justify-between text-[9px] mb-0.5">
@@ -1479,7 +1492,7 @@ export default function Dashboard() {
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">{t("streakDirection")}</p>
+                    <p className="text-[10px] text-muted-foreground">{t("streakDirection")}</p>
                     <p
                       className={`text-xl font-bold ${activeStreakType === "Win" ? "text-emerald-500" : activeStreakType === "Loss" ? "text-rose-500" : "text-slate-700 dark:text-slate-200"}`}
                     >
@@ -1501,9 +1514,9 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-md border border-cyan-500/20 bg-cyan-500/5 p-2">
-                    <p className="text-[10px] text-cyan-700 dark:text-cyan-300">{t("maxWins")}</p>
-                    <p className="text-base font-semibold text-cyan-800 dark:text-cyan-200">{filteredMaxWinStreak}</p>
+                  <div className="rounded-md border border-border bg-muted/40 p-2">
+                    <p className="text-[10px] text-muted-foreground">{t("maxWins")}</p>
+                    <p className="text-base font-semibold tabular-nums">{filteredMaxWinStreak}</p>
                   </div>
                   <div className="rounded-md border border-rose-500/20 bg-rose-500/5 p-2">
                     <p className="text-[10px] text-rose-700 dark:text-rose-300">{t("maxLosses")}</p>
@@ -1526,8 +1539,8 @@ export default function Dashboard() {
                       <AreaChart data={dailyCumulativeData} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
                         <defs>
                           <linearGradient id="plCumFillCyber" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.35} />
-                            <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
+                            <stop offset="5%" stopColor={CHART.line} stopOpacity={0.35} />
+                            <stop offset="95%" stopColor={CHART.line} stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
@@ -1541,18 +1554,11 @@ export default function Dashboard() {
                             (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10)),
                           ]}
                         />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: isDark ? "#0f172a" : "#fff",
-                            border: `1px solid ${isDark ? "#22d3ee44" : "#cbd5e1"}`,
-                            borderRadius: "6px",
-                            fontSize: "11px",
-                          }}
-                        />
+                        <Tooltip contentStyle={chartTooltipStyle} />
                         <Area
                           type="monotone"
                           dataKey="pl"
-                          stroke="#22d3ee"
+                          stroke={CHART.line}
                           fill="url(#plCumFillCyber)"
                           strokeWidth={2}
                           dot={false}
@@ -1565,15 +1571,15 @@ export default function Dashboard() {
             </Card>
 
             <Card
-              className="cyber-panel cursor-pointer hover:border-cyan-500/30 transition-colors"
+              className="cyber-panel cursor-pointer transition-colors"
               onClick={() => setExpandedMetric(expandedMetric === "outcome" ? null : "outcome")}
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="cyber-panel-title text-xs">{t("outcomeDistribution")}</CardTitle>
                 {expandedMetric === "outcome" ? (
-                  <ChevronUp className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                  <ChevronUp className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 ) : (
-                  <ChevronDown className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 )}
               </CardHeader>
               <CardContent className="overflow-hidden p-2 pt-0">
@@ -1596,24 +1602,17 @@ export default function Dashboard() {
                             key={`left-outcome-pie-${index}`}
                             fill={
                               index === 0
-                                ? "#22d3ee"
+                                ? CHART.line
                                 : index === 1
                                   ? "#fb923c"
                                   : "#94a3b8"
                             }
-                            stroke={isDark ? "rgba(15,23,42,0.9)" : "rgba(255,255,255,0.9)"}
+                            stroke="hsl(var(--card))"
                             strokeWidth={1}
                           />
                         ))}
                       </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: isDark ? "#0f172a" : "#fff",
-                          border: `1px solid ${isDark ? "rgba(34,211,238,0.35)" : "#cbd5e1"}`,
-                          borderRadius: "6px",
-                          fontSize: "11px",
-                        }}
-                      />
+                      <Tooltip contentStyle={chartTooltipStyle} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -1639,15 +1638,8 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                         <XAxis dataKey="hour" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} domain={[0, 23]} ticks={[0, 4, 8, 12, 16, 20, 23]} />
                         <YAxis dataKey="pl" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} width={36} />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: isDark ? "#0f172a" : "#fff",
-                            border: `1px solid ${isDark ? "rgba(34,211,238,0.35)" : "#cbd5e1"}`,
-                            borderRadius: "6px",
-                            fontSize: "11px",
-                          }}
-                        />
-                        <Scatter data={tradeTimeData} fill="#22d3ee" clipPath="url(#scatter-clip-cyber-left)">
+                        <Tooltip contentStyle={chartTooltipStyle} />
+                        <Scatter data={tradeTimeData} fill={CHART.line} clipPath="url(#scatter-clip-cyber-left)">
                           {tradeTimeData.map((entry, index) => (
                             <Cell key={`sc-left-${index}`} fill={tradePnLBarColor(entry.pl)} />
                           ))}
@@ -1670,7 +1662,7 @@ export default function Dashboard() {
               <CardHeader className="pb-3">
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <CardTitle className="text-slate-900 dark:text-cyan-100 text-sm md:text-base font-semibold">
+                    <CardTitle className="text-foreground text-sm md:text-base font-semibold">
                       {(() => {
                         const monthYearLabel = format(calendarDate, "LLLL yyyy", { locale: dateLocale });
                         return monthYearLabel.charAt(0).toUpperCase() + monthYearLabel.slice(1);
@@ -1690,7 +1682,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t("account")}:</span>
+                      <span className="text-xs font-semibold text-muted-foreground">{t("account")}:</span>
                       <div className="relative" ref={calendarAccountRef}>
                         <Button
                           variant="outline"
@@ -1711,7 +1703,7 @@ export default function Dashboard() {
                             >
                               <span className="truncate">{t("allAccounts")}</span>
                               <span
-                                className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${dashboardAccounts.includes("all") ? "border-cyan-500 bg-cyan-500" : "border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50"}`}
+                                className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${dashboardAccounts.includes("all") ? "border-primary bg-primary" : "border-border bg-background"}`}
                               >
                                 {dashboardAccounts.includes("all") && (
                                   <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -1737,7 +1729,7 @@ export default function Dashboard() {
                                 >
                                   <span className="truncate">{acc.name}</span>
                                   <span
-                                    className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isActive ? "border-cyan-500 bg-cyan-500" : "border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50"}`}
+                                    className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isActive ? "border-primary bg-primary" : "border-border bg-background"}`}
                                   >
                                     {isActive && (
                                       <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -1757,14 +1749,14 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t("year")}:</span>
+                      <span className="text-xs font-semibold text-muted-foreground">{t("year")}:</span>
                       <div className="relative" ref={yearSelectorRef}>
                         <Button variant="outline" size="sm" className="h-8 px-2 text-xs cyber-btn-outline" onClick={() => setYearSelectorOpen(!yearSelectorOpen)}>
                           {calendarDate.getFullYear()}
                           <ChevronDown className="w-3 h-3 ml-1" />
                         </Button>
                         {yearSelectorOpen && (
-                          <div className="absolute left-0 top-full mt-1 z-50 bg-white dark:bg-card border rounded-md shadow-lg p-1">
+                          <div className="absolute left-0 top-full mt-1 z-50 bg-popover border border-border rounded-md shadow-lg p-1">
                             {[
                               calendarDate.getFullYear() - 2,
                               calendarDate.getFullYear() - 1,
@@ -1805,8 +1797,8 @@ export default function Dashboard() {
                             onClick={() => handleMonthChange(i)}
                             className={`text-center text-[10px] sm:text-xs py-1.5 rounded font-medium transition-colors ${
                               isCurrentMonth
-                                ? "bg-cyan-600 text-white shadow-[0_0_12px_rgba(34,211,238,0.35)]"
-                                : "bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-foreground hover:bg-muted/80"
                             }`}
                           >
                             {monthName}
@@ -1814,13 +1806,16 @@ export default function Dashboard() {
                         );
                       })}
                     </div>
-                    <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-                      {[t("monday"), t("tuesday"), t("wednesday"), t("thursday"), t("friday"), t("saturday"), t("sunday")].map((day) => (
-                        <div key={day} className="text-center text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-cyan-700/80">
+                    <div className={`grid gap-1.5 sm:gap-2 ${showWeekends === false ? "grid-cols-5" : "grid-cols-7"}`}>
+                      {(showWeekends === false
+                        ? [t("monday"), t("tuesday"), t("wednesday"), t("thursday"), t("friday")]
+                        : [t("monday"), t("tuesday"), t("wednesday"), t("thursday"), t("friday"), t("saturday"), t("sunday")]
+                      ).map((day) => (
+                        <div key={day} className="text-center text-[10px] sm:text-xs font-semibold text-muted-foreground">
                           {day}
                         </div>
                       ))}
-                      {calendarDays.map((day, index) => {
+                      {visibleCalendarDays.map((day, index) => {
                         const dateStr = format(day, "yyyy-MM-dd");
                         const dayTrades = tradesByDate[dateStr] || [];
                         const isCurrentMonth = isSameMonth(day, calendarDate);
@@ -1832,7 +1827,7 @@ export default function Dashboard() {
                             key={index}
                             type="button"
                             onClick={() => setSelectedCalendarDate(day)}
-                            className={`mini-calendar-day ${!isCurrentMonth ? "mini-calendar-outside" : ""} ${isTodayDay ? "mini-calendar-today" : ""} ${isSelected ? "ring-2 ring-cyan-500 shadow-[0_0_12px_rgba(34,211,238,0.25)]" : ""}`}
+                            className={`mini-calendar-day ${!isCurrentMonth ? "mini-calendar-outside" : ""} ${isTodayDay ? "mini-calendar-today" : ""} ${isSelected ? "mini-calendar-selected" : ""}`}
                           >
                             <div className="text-xs font-medium">{format(day, "d")}</div>
                             {dayTrades.length > 0 && (
@@ -1847,7 +1842,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="cyber-day-panel rounded-xl p-3 border min-h-[200px]">
-                    <div className="text-xs font-semibold text-slate-600 dark:text-cyan-200/90 mb-2">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2">
                       {selectedCalendarDate ? format(selectedCalendarDate, "PPP", { locale: dateLocale }) : t("selectDay")}
                     </div>
                     <div className="space-y-2 max-h-72 overflow-auto">
@@ -1856,7 +1851,7 @@ export default function Dashboard() {
                           <div className="flex items-center justify-between gap-2 min-h-10">
                             <div className="min-w-0 flex-1">
                               <div className="font-semibold text-slate-800 dark:text-white truncate text-sm">{trade.symbol}</div>
-                              <div className="text-[11px] leading-none mt-1 text-slate-500 dark:text-slate-400">{formatTradeClock(trade, "entry") || trade.open_time || trade.time || "--:--"}</div>
+                              <div className="text-[11px] leading-none mt-1 text-muted-foreground">{formatTradeClock(trade, "entry") || trade.open_time || trade.time || "--:--"}</div>
                             </div>
                             <div className="flex items-center self-center gap-2.5 shrink-0">
                               <span
@@ -1870,7 +1865,7 @@ export default function Dashboard() {
                                 size="icon"
                                 variant="ghost"
                                 onClick={() => handleViewTrade(trade)}
-                                className="h-6 w-6 p-0 self-center text-cyan-500 hover:text-cyan-300 hover:bg-slate-800/80"
+                                className="h-6 w-6 p-0 self-center text-muted-foreground hover:text-foreground hover:bg-accent"
                                 aria-label="Podgląd transakcji"
                               >
                                 <Eye className="w-3.5 h-3.5" />
@@ -1880,7 +1875,7 @@ export default function Dashboard() {
                         </div>
                       ))}
                       {(!selectedCalendarDate || (tradesByDate[format(selectedCalendarDate, "yyyy-MM-dd")] || []).length === 0) && (
-                        <div className="text-xs text-slate-500 dark:text-slate-400">{t("noTradesThisDay")}</div>
+                        <div className="text-xs text-muted-foreground">{t("noTradesThisDay")}</div>
                       )}
                     </div>
                   </div>
@@ -1902,17 +1897,10 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
                         <XAxis dataKey="label" stroke={axisColor} tick={{ fontSize: 10, fill: axisColor }} />
                         <YAxis stroke={axisColor} tick={{ fontSize: 10, fill: axisColor }} width={44} />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: isDark ? "#0f172a" : "#fff",
-                            border: `1px solid ${isDark ? "#22d3ee44" : "#cbd5e1"}`,
-                            borderRadius: "6px",
-                            fontSize: "11px",
-                          }}
-                        />
+                        <Tooltip contentStyle={chartTooltipStyle} />
                         <Legend wrapperStyle={{ fontSize: "10px" }} />
-                        <Bar dataKey="winPl" stackId="m" fill="#22d3ee" name={t("wins")} radius={[0, 0, 0, 0]} />
-                        <Bar dataKey="lossPl" stackId="m" fill="#64748b" name={t("losses")} radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="winPl" stackId="m" fill={CHART.line} name={t("wins")} radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="lossPl" stackId="m" fill={CHART.loss} name={t("losses")} radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -1979,17 +1967,8 @@ export default function Dashboard() {
                           width={48}
                           domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]}
                         />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: isDark ? "#0f172a" : "#fff",
-                            border: `1px solid ${isDark ? "rgba(34,211,238,0.35)" : "#cbd5e1"}`,
-                            borderRadius: "8px",
-                            color: isDark ? "#e2e8f0" : "#1e293b",
-                          }}
-                          itemStyle={{ color: isDark ? "#e2e8f0" : "#1e293b" }}
-                          labelStyle={{ color: isDark ? "#f1f5f9" : "#0f172a" }}
-                        />
-                        <Line type="monotone" dataKey="pl" stroke="#22d3ee" strokeWidth={2} dot={{ fill: "#22d3ee", r: 3 }} />
+                        <Tooltip contentStyle={chartTooltipStyle} />
+                        <Line type="monotone" dataKey="pl" stroke={CHART.line} strokeWidth={2} dot={{ fill: CHART.line, r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -2026,13 +2005,13 @@ export default function Dashboard() {
               <Card className="cyber-stat-tile cyber-stat-count">
                 <CardHeader className="pb-1 pt-4 px-4">
                   <CardTitle className="cyber-stat-label flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                     {t("totalTradesLabel")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-0 pb-4 px-4">
                   <div className="text-2xl font-bold tabular-nums cyber-stat-value-cyan">{totalTrades}</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
+                  <div className="text-[11px] text-muted-foreground mt-1.5">
                     {wins}
                     {t("winsShort")} / {losses}
                     {t("lossesShort")} / {breakeven}
@@ -2061,7 +2040,7 @@ export default function Dashboard() {
                 <div
                   className="cyber-gauge-ring"
                   style={{
-                    background: `conic-gradient(#a78bfa ${pfGauge}%, hsl(var(--border)) 0)`,
+                    background: `conic-gradient(hsl(var(--primary)) ${pfGauge}%, hsl(var(--border)) 0)`,
                   }}
                 />
                 <div className="cyber-gauge-label">
@@ -2096,7 +2075,7 @@ export default function Dashboard() {
                       >
                         <span>{t('allTime')}</span>
                         <span
-                          className={`flex h-4 w-4 items-center justify-center rounded-full border-[2px] ${dashboardRanges.includes("all") ? "border-cyan-500 bg-cyan-500" : "border-slate-400"}`}
+                          className={`flex h-4 w-4 items-center justify-center rounded-full border-[2px] ${dashboardRanges.includes("all") ? "border-primary bg-primary" : "border-border"}`}
                         >
                           {dashboardRanges.includes("all") && (
                             <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -2119,7 +2098,7 @@ export default function Dashboard() {
                       >
                         <span>7d</span>
                         <span
-                          className={`flex h-4 w-4 items-center justify-center rounded-full border-[2px] ${dashboardRanges.includes("7d") ? "border-cyan-500 bg-cyan-500" : "border-slate-400"}`}
+                          className={`flex h-4 w-4 items-center justify-center rounded-full border-[2px] ${dashboardRanges.includes("7d") ? "border-primary bg-primary" : "border-border"}`}
                         >
                           {dashboardRanges.includes("7d") && (
                             <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -2142,7 +2121,7 @@ export default function Dashboard() {
                       >
                         <span>30d</span>
                         <span
-                          className={`flex h-4 w-4 items-center justify-center rounded-full border-[2px] ${dashboardRanges.includes("30d") ? "border-cyan-500 bg-cyan-500" : "border-slate-400"}`}
+                          className={`flex h-4 w-4 items-center justify-center rounded-full border-[2px] ${dashboardRanges.includes("30d") ? "border-primary bg-primary" : "border-border"}`}
                         >
                           {dashboardRanges.includes("30d") && (
                             <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -2165,7 +2144,7 @@ export default function Dashboard() {
                       >
                         <span>90d</span>
                         <span
-                          className={`flex h-4 w-4 items-center justify-center rounded-full border-[2px] ${dashboardRanges.includes("90d") ? "border-cyan-500 bg-cyan-500" : "border-slate-400"}`}
+                          className={`flex h-4 w-4 items-center justify-center rounded-full border-[2px] ${dashboardRanges.includes("90d") ? "border-primary bg-primary" : "border-border"}`}
                         >
                           {dashboardRanges.includes("90d") && (
                             <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -2189,14 +2168,7 @@ export default function Dashboard() {
                       <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                       <XAxis dataKey="date" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} tickFormatter={(v) => v.slice(5)} />
                       <YAxis stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} width={36} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: isDark ? "#0f172a" : "#fff",
-                          border: `1px solid ${isDark ? "#22d3ee44" : "#cbd5e1"}`,
-                          borderRadius: "6px",
-                          fontSize: "11px",
-                        }}
-                      />
+                      <Tooltip contentStyle={chartTooltipStyle} />
                       <Bar dataKey="pl" radius={[4, 4, 0, 0]}>
                         {dailyPLData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={tradePnLBarColor(entry.pl)} />
@@ -2231,7 +2203,7 @@ export default function Dashboard() {
                       >
                         <span className="truncate">{t("allAccounts")}</span>
                         <span
-                          className={`ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-[2px] ${dashboardAccounts.includes("all") ? "border-cyan-500 bg-cyan-500" : "border-slate-400"}`}
+                          className={`ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-[2px] ${dashboardAccounts.includes("all") ? "border-primary bg-primary" : "border-border"}`}
                         >
                           {dashboardAccounts.includes("all") && (
                             <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -2257,7 +2229,7 @@ export default function Dashboard() {
                           >
                             <span className="truncate">{acc.name}</span>
                             <span
-                              className={`ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-[2px] ${isActive ? "border-cyan-500 bg-cyan-500" : "border-slate-400"}`}
+                              className={`ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-[2px] ${isActive ? "border-primary bg-primary" : "border-border"}`}
                             >
                               {isActive && (
                                 <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -2291,7 +2263,7 @@ export default function Dashboard() {
                       {recentTradesTable.map((trade) => (
                         <tr key={trade.id} className="cyber-table-row border-b">
                           <td className="px-2 py-1.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">{fmtDate(trade.date) || "-"}</td>
-                          <td className="px-2 py-1.5 font-medium text-slate-900 dark:text-white">{trade.symbol || "-"}</td>
+                          <td className="px-2 py-1.5 font-medium text-foreground">{trade.symbol || "-"}</td>
                           <td
                             className={`px-2 py-1.5 font-semibold text-right ${(getTradeRealizedPL(trade) ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"}`}
                           >
@@ -2304,10 +2276,10 @@ export default function Dashboard() {
                               size="icon"
                               variant="ghost"
                               onClick={() => handleViewTrade(trade)}
-                              className="h-6 w-6 hover:bg-cyan-500/10"
+                              className="h-6 w-6 hover:bg-accent"
                               title={t("viewDetails") || "View"}
                             >
-                              <Eye className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                              <Eye className="w-3 h-3 text-muted-foreground" />
                             </Button>
                           </td>
                         </tr>
@@ -2343,7 +2315,7 @@ export default function Dashboard() {
                         >
                           <span className="truncate">{t("allAccounts")}</span>
                           <span
-                            className={`ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-[2px] ${accountBalanceAccount === "all" ? "border-cyan-500 bg-cyan-500" : "border-slate-400"}`}
+                            className={`ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-[2px] ${accountBalanceAccount === "all" ? "border-primary bg-primary" : "border-border"}`}
                           >
                             {accountBalanceAccount === "all" && (
                               <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -2370,7 +2342,7 @@ export default function Dashboard() {
                             >
                               <span className="truncate">{acc.name}</span>
                               <span
-                                className={`ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-[2px] ${isActive ? "border-cyan-500 bg-cyan-500" : "border-slate-400"}`}
+                                className={`ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-[2px] ${isActive ? "border-primary bg-primary" : "border-border"}`}
                               >
                                 {isActive && (
                                   <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -2405,15 +2377,8 @@ export default function Dashboard() {
                           (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10)),
                         ]}
                       />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: isDark ? "#0f172a" : "#fff",
-                          border: `1px solid ${isDark ? "#22d3ee44" : "#cbd5e1"}`,
-                          borderRadius: "6px",
-                          fontSize: "11px",
-                        }}
-                      />
-                      <Line type="monotone" dataKey="pl" stroke="#22d3ee" strokeWidth={2} dot={false} />
+                      <Tooltip contentStyle={chartTooltipStyle} />
+                      <Line type="monotone" dataKey="pl" stroke={CHART.line} strokeWidth={2} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -2440,14 +2405,7 @@ export default function Dashboard() {
                       <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                       <XAxis dataKey="trade" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} />
                       <YAxis stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} width={36} />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: isDark ? "#0f172a" : "#fff",
-                          border: `1px solid ${isDark ? "#22d3ee44" : "#cbd5e1"}`,
-                          borderRadius: "6px",
-                          fontSize: "11px",
-                        }}
-                      />
+                      <Tooltip contentStyle={chartTooltipStyle} />
                       <Area
                         type="monotone"
                         dataKey="drawdown"
@@ -2468,9 +2426,9 @@ export default function Dashboard() {
         <AnimatePresence>
           {expandedMetric === 'pl' && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-              <Card className="bg-white dark:bg-muted bordo:bg-[#1f1018] shadow-xl border border-blue-200 dark:border-slate-700 bordo:border-[#8b2347]">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-blue-700 dark:text-blue-400 bordo:text-[#d97597]">{t('detailedPLAnalysis')}</CardTitle>
+                  <CardTitle>{t('detailedPLAnalysis')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2484,8 +2442,8 @@ export default function Dashboard() {
                       <p className="text-xl font-bold text-red-600">{losingTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0).toFixed(2)}</p>
                       <p className="text-xs text-red-600 mt-1">{losingTrades.length} {t('losses')}</p>
                     </div>
-                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                      <p className="text-xs text-blue-700 mb-1">{t('plByWeekday')}</p>
+                    <div className="bg-muted/40 p-3 rounded-md border border-border">
+                      <p className="text-xs text-muted-foreground mb-1">{t('plByWeekday')}</p>
                       <div className="space-y-1 mt-2">
                         {Object.entries(dayPL).map(([day, pl]) => (
                           <div key={day} className="flex justify-between text-xs">
@@ -2498,16 +2456,16 @@ export default function Dashboard() {
                       </div>
                     </div>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <p className="text-xs text-slate-700 mb-2 font-semibold">{t('plBySymbol')}</p>
+                  <div className="bg-muted/30 p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-2 font-semibold">{t('plBySymbol')}</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       {Object.entries(symbolPL).map(([symbol, data]) => (
-                        <div key={symbol} className="bg-white p-2 rounded border border-slate-200">
-                          <p className="text-xs font-semibold text-slate-900">{symbol}</p>
+                        <div key={symbol} className="bg-card p-2 rounded border border-border">
+                          <p className="text-xs font-semibold text-foreground">{symbol}</p>
                           <p className={`text-sm font-bold ${data.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {data.pl >= 0 ? '+' : ''}{data.pl.toFixed(0)}
                           </p>
-                          <p className="text-[10px] text-slate-500">{data.wins}/{data.total} ({((data.wins/data.total)*100).toFixed(0)}%)</p>
+                          <p className="text-[10px] text-muted-foreground">{data.wins}/{data.total} ({((data.wins/data.total)*100).toFixed(0)}%)</p>
                         </div>
                       ))}
                     </div>
@@ -2519,9 +2477,9 @@ export default function Dashboard() {
 
           {expandedMetric === 'winrate' && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-              <Card className="bg-white dark:bg-muted bordo:bg-[#1f1018] shadow-xl border border-blue-200 dark:border-slate-700 bordo:border-[#8b2347]">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-blue-700 dark:text-blue-400 bordo:text-[#d97597]">{t('detailedWinRateAnalysis')}</CardTitle>
+                  <CardTitle>{t('detailedWinRateAnalysis')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2535,22 +2493,22 @@ export default function Dashboard() {
                       <p className="text-2xl font-bold text-red-600">{losses}</p>
                       <p className="text-xs text-red-600 mt-1">{(100 - winRate).toFixed(1)}% {t('ofAll')}</p>
                     </div>
-                    <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                      <p className="text-xs text-purple-700 mb-1">{t('streaks')}</p>
+                    <div className="bg-muted/40 p-3 rounded-md border border-border">
+                      <p className="text-xs text-muted-foreground mb-1">{t('streaks')}</p>
                       <div className="space-y-1">
                         <p className="text-sm text-green-600 font-semibold">{t('maxWins')}: {maxWinStreak}</p>
                         <p className="text-sm text-red-600 font-semibold">{t('maxLosses')}: {maxLossStreak}</p>
                       </div>
                     </div>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <p className="text-xs text-slate-700 mb-2 font-semibold">{t('winRateBySymbol')}</p>
+                  <div className="bg-muted/30 p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-2 font-semibold">{t('winRateBySymbol')}</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       {Object.entries(symbolPL).map(([symbol, data]) => (
-                        <div key={symbol} className="bg-white p-2 rounded border border-slate-200">
-                          <p className="text-xs font-semibold text-slate-900">{symbol}</p>
-                          <p className="text-lg font-bold text-blue-600">{((data.wins/data.total)*100).toFixed(0)}%</p>
-                          <p className="text-[10px] text-slate-500">{data.wins}{t('winsShort')} / {data.total - data.wins}{t('lossesShort')}</p>
+                        <div key={symbol} className="bg-card p-2 rounded border border-border">
+                          <p className="text-xs font-semibold text-foreground">{symbol}</p>
+                          <p className="text-lg font-bold text-foreground">{((data.wins/data.total)*100).toFixed(0)}%</p>
+                          <p className="text-[10px] text-muted-foreground">{data.wins}{t('winsShort')} / {data.total - data.wins}{t('lossesShort')}</p>
                         </div>
                       ))}
                     </div>
@@ -2562,9 +2520,9 @@ export default function Dashboard() {
 
           {expandedMetric === 'avgpl' && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-              <Card className="bg-white dark:bg-muted bordo:bg-[#1f1018] shadow-xl border border-blue-200 dark:border-slate-700 bordo:border-[#8b2347]">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-blue-700 dark:text-blue-400 bordo:text-[#d97597]">{t('detailedAvgPLAnalysis')}</CardTitle>
+                  <CardTitle>{t('detailedAvgPLAnalysis')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -2576,9 +2534,9 @@ export default function Dashboard() {
                       <p className="text-xs text-red-700 mb-1">{t('avgLossShort')}</p>
                       <p className="text-xl font-bold text-red-600">{avgLoss}</p>
                     </div>
-                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                      <p className="text-xs text-blue-700 mb-1">{t('medianWin')}</p>
-                      <p className="text-xl font-bold text-blue-600">
+                    <div className="bg-muted/40 p-3 rounded-md border border-border">
+                      <p className="text-xs text-muted-foreground mb-1">{t('medianWin')}</p>
+                      <p className="text-xl font-bold text-foreground">
                         +{(() => { const m = winningTrades.sort((a,b) => (getTradeRealizedPL(a) ?? 0) - (getTradeRealizedPL(b) ?? 0))[Math.floor(winningTrades.length/2)]; return (getTradeRealizedPL(m) ?? 0).toFixed(2); })()}
                       </p>
                     </div>
@@ -2589,22 +2547,22 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <p className="text-xs text-slate-700 mb-2 font-semibold">{t('avgPLByDirection')}</p>
+                  <div className="bg-muted/30 p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-2 font-semibold">{t('avgPLByDirection')}</p>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-white p-3 rounded border border-slate-200">
-                        <p className="text-xs text-slate-600 mb-1">{t('longLabel')}</p>
+                      <div className="bg-card p-3 rounded border border-border">
+                        <p className="text-xs text-muted-foreground mb-1">{t('longLabel')}</p>
                         <p className={`text-lg font-bold ${(longTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / longTrades.length) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {((longTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / longTrades.length) || 0).toFixed(2)}
                         </p>
-                        <p className="text-[10px] text-slate-500">{longTrades.length} {t('trades')}</p>
+                        <p className="text-[10px] text-muted-foreground">{longTrades.length} {t('trades')}</p>
                       </div>
-                      <div className="bg-white p-3 rounded border border-slate-200">
-                        <p className="text-xs text-slate-600 mb-1">{t('shortLabel')}</p>
+                      <div className="bg-card p-3 rounded border border-border">
+                        <p className="text-xs text-muted-foreground mb-1">{t('shortLabel')}</p>
                         <p className={`text-lg font-bold ${(shortTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / shortTrades.length) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {((shortTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / shortTrades.length) || 0).toFixed(2)}
                         </p>
-                        <p className="text-[10px] text-slate-500">{shortTrades.length} {t('trades')}</p>
+                        <p className="text-[10px] text-muted-foreground">{shortTrades.length} {t('trades')}</p>
                       </div>
                     </div>
                   </div>
@@ -2615,9 +2573,9 @@ export default function Dashboard() {
 
           {expandedMetric === 'pf' && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-              <Card className="bg-white dark:bg-muted bordo:bg-[#1f1018] shadow-xl border border-blue-200 dark:border-slate-700 bordo:border-[#8b2347]">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-blue-700 dark:text-blue-400 bordo:text-[#d97597]">{t('detailedProfitFactorAnalysis')}</CardTitle>
+                  <CardTitle>{t('detailedProfitFactorAnalysis')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2631,21 +2589,21 @@ export default function Dashboard() {
                       <p className="text-xl font-bold text-red-600">{(avgLoss * losses).toFixed(2)}</p>
                       <p className="text-xs text-red-600 mt-1">{t('from')} {losses} {t('losses')}</p>
                     </div>
-                    <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
-                      <p className="text-xs text-purple-700 mb-1">{t('profitFactor')}</p>
-                      <p className="text-xl font-bold text-purple-600">{profitFactor}</p>
-                      <p className="text-xs text-purple-600 mt-1">
+                    <div className="bg-muted/40 p-3 rounded-md border border-border">
+                      <p className="text-xs text-muted-foreground mb-1">{t('profitFactor')}</p>
+                      <p className="text-xl font-bold text-foreground">{profitFactor}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
                         {profitFactor >= 2 ? t('pfExcellent') : profitFactor >= 1.5 ? t('pfGood') : profitFactor >= 1 ? t('pfAcceptable') : t('pfNeedsImprovement')}
                       </p>
                     </div>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <p className="text-xs text-slate-700 mb-2 font-semibold">{t('tradeEfficiency')}</p>
+                  <div className="bg-muted/30 p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-2 font-semibold">{t('tradeEfficiency')}</p>
                     <div className="w-full overflow-hidden">
                       <ResponsiveContainer width="100%" height={200}>
                         <BarChart data={[
-                          { name: t('avgWinShort'), value: parseFloat(avgWin), fill: '#22c55e' },
-                          { name: t('avgLossShort'), value: Math.abs(parseFloat(avgLoss)), fill: '#f43f5e' }
+                          { name: t('avgWinShort'), value: parseFloat(avgWin), fill: CHART.profit },
+                          { name: t('avgLossShort'), value: Math.abs(parseFloat(avgLoss)), fill: CHART.loss }
                         ]} margin={{ top: 10, right: 20, left: 5, bottom: 5 }}>
                           <defs>
                             <clipPath id="trade-efficiency-clip">
@@ -2671,9 +2629,9 @@ export default function Dashboard() {
         <AnimatePresence>
           {expandedMetric === 'outcome' && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-              <Card className="bg-white dark:bg-muted bordo:bg-[#1f1018] shadow-xl border border-blue-200 dark:border-slate-700 bordo:border-[#8b2347]">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-blue-700 dark:text-blue-400 bordo:text-[#d97597]">{t('detailedOutcomeAnalysis')}</CardTitle>
+                  <CardTitle>{t('detailedOutcomeAnalysis')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2687,17 +2645,17 @@ export default function Dashboard() {
                       </div>
                     ))}
                   </div>
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <p className="text-xs text-slate-700 mb-2 font-semibold">{t('distributionByTimeframe')}</p>
+                  <div className="bg-muted/30 p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-2 font-semibold">{t('distributionByTimeframe')}</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                       {['M5', 'M15', 'M30', 'H1', 'H4', 'D1'].map(tf => {
                         const tfTrades = trades.filter(t => t.timeframe === tf);
                         const tfWins = tfTrades.filter(t => t.outcome === 'Win').length;
                         return tfTrades.length > 0 ? (
-                          <div key={tf} className="bg-white p-2 rounded border border-slate-200">
-                            <p className="text-xs font-semibold text-slate-900">{tf}</p>
-                            <p className="text-sm font-bold text-blue-600">{((tfWins/tfTrades.length)*100).toFixed(0)}%</p>
-                            <p className="text-[10px] text-slate-500">{tfWins}/{tfTrades.length}</p>
+                          <div key={tf} className="bg-card p-2 rounded border border-border">
+                            <p className="text-xs font-semibold text-foreground">{tf}</p>
+                            <p className="text-sm font-bold text-foreground">{((tfWins/tfTrades.length)*100).toFixed(0)}%</p>
+                            <p className="text-[10px] text-muted-foreground">{tfWins}/{tfTrades.length}</p>
                           </div>
                         ) : null;
                       })}
@@ -2716,14 +2674,14 @@ export default function Dashboard() {
               <CardHeader className="pb-2 pt-5 px-4">
                 <div className="flex justify-between items-start gap-2">
                   <CardTitle className="cyber-panel-title text-xs flex items-center gap-2 font-semibold">
-                    <TrendingUp className="w-3.5 h-3.5 text-lime-600 dark:text-cyan-400 shrink-0" />
+                    <TrendingUp className="w-3.5 h-3.5 text-profit shrink-0" />
                     {t("bestTrade")}
                   </CardTitle>
                   <Button
                     size="icon"
                     variant="ghost"
                     onClick={() => handleViewTrade(bestTrade)}
-                    className="h-8 w-8 shrink-0 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-500"
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-accent hover:text-foreground"
                     aria-label={t("viewDetails")}
                   >
                     <Eye className="w-4 h-4" />
@@ -2732,17 +2690,17 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-2 px-4 pb-4 pt-0">
                 <div className="flex justify-between items-baseline gap-3">
-                  <span className="text-lg font-bold text-slate-900 dark:text-white truncate">{bestTrade.symbol}</span>
+                  <span className="text-lg font-bold text-foreground truncate">{bestTrade.symbol}</span>
                   <span className="text-lg font-bold tabular-nums cyber-trade-pl-best shrink-0">
                     +{(getTradeRealizedPL(bestTrade) ?? 0).toFixed(2)}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                <p className="text-[11px] text-muted-foreground leading-snug">
                   {bestTrade.date}
                   {bestTrade.strategy ? ` • ${bestTrade.strategy}` : ""}
                 </p>
                 {bestTrade.notes && (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 border-t border-slate-200/60 dark:border-cyan-500/15 pt-2">
+                  <p className="text-xs text-muted-foreground mt-2 line-clamp-2 border-t border-border pt-2">
                     {bestTrade.notes.slice(0, 100)}
                     {bestTrade.notes.length > 100 ? "…" : ""}
                   </p>
@@ -2761,7 +2719,7 @@ export default function Dashboard() {
                     size="icon"
                     variant="ghost"
                     onClick={() => handleViewTrade(worstTrade)}
-                    className="h-8 w-8 shrink-0 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-500"
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-accent hover:text-foreground"
                     aria-label={t("viewDetails")}
                   >
                     <Eye className="w-4 h-4" />
@@ -2770,17 +2728,17 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-2 px-4 pb-4 pt-0">
                 <div className="flex justify-between items-baseline gap-3">
-                  <span className="text-lg font-bold text-slate-900 dark:text-white truncate">{worstTrade.symbol}</span>
+                  <span className="text-lg font-bold text-foreground truncate">{worstTrade.symbol}</span>
                   <span className="text-lg font-bold tabular-nums cyber-trade-pl-worst shrink-0">
                     {(getTradeRealizedPL(worstTrade) ?? 0).toFixed(2)}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                <p className="text-[11px] text-muted-foreground leading-snug">
                   {worstTrade.date}
                   {worstTrade.strategy ? ` • ${worstTrade.strategy}` : ""}
                 </p>
                 {worstTrade.lessons_learned && (
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 line-clamp-2 border-t border-slate-200/60 dark:border-cyan-500/15 pt-2">
+                  <p className="text-xs text-muted-foreground mt-2 line-clamp-2 border-t border-border pt-2">
                     {worstTrade.lessons_learned.slice(0, 100)}
                     {worstTrade.lessons_learned.length > 100 ? "…" : ""}
                   </p>
@@ -2793,11 +2751,11 @@ export default function Dashboard() {
         {/* Add Trade Dialog */}
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
           <DialogContent
-            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0"
+            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-card text-card-foreground p-0"
             {...preventDialogDismissProps}
             onEscapeKeyDown={(event) => event.preventDefault()}
           >
-            <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
+            <div className="sticky top-0 z-10 bg-card px-4 py-3 pr-12 border-b border-border">
               <DialogTitle>{t('addTrade')}</DialogTitle>
             </div>
             <div className="p-4">
@@ -2816,10 +2774,10 @@ export default function Dashboard() {
         {/* Edit Trade Dialog */}
         <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
           <DialogContent
-            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0"
+            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-card text-card-foreground p-0"
             {...preventDialogDismissProps}
           >
-            <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
+            <div className="sticky top-0 z-10 bg-card px-4 py-3 pr-12 border-b border-border">
               <DialogTitle>Edit Trade</DialogTitle>
             </div>
             <div className="p-4">
@@ -2841,11 +2799,11 @@ export default function Dashboard() {
 
         {/* Trade Detail Dialog */}
         <Dialog open={!!selectedTrade} onOpenChange={() => setSelectedTrade(null)}>
-          <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-700">
-            <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 text-white px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-              <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
+          <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-card text-card-foreground border-border">
+            <DialogHeader className="sticky top-0 z-10 bg-card text-foreground px-6 py-4 border-b border-border">
+              <DialogTitle className="text-foreground text-xl font-bold">Trade Details</DialogTitle>
             </DialogHeader>
-            <div className="p-6 bg-white dark:bg-card">
+            <div className="p-6 bg-card">
               {selectedTrade && (
                 <TradeDetailView
                   trade={selectedTrade}

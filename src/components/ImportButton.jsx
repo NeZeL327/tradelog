@@ -225,7 +225,7 @@ export function ImportButton({ onImportSuccess, accounts, strategies }) {
                 </>
               ) : (
                 <>
-                  <CheckCircle className="w-5 h-5 text-blue-500" />
+                  <CheckCircle className="w-5 h-5 text-primary" />
                   Potwierdzenie importu
                 </>
               )}
@@ -258,7 +258,6 @@ export function ImportButton({ onImportSuccess, accounts, strategies }) {
               <AlertDialogAction
                 onClick={handleImport}
                 disabled={isImporting}
-                className="bg-blue-600 hover:bg-blue-700"
               >
                 {isImporting ? (
                   <>

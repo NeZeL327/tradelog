@@ -13,14 +13,14 @@ export default function GoalsPreview({ goals = [], trades = [] }) {
     if (activeGoals.length === 0) return null;
 
     return (
-      <Card className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-950 dark:to-blue-950 border border-purple-200 dark:border-purple-800 shadow-lg">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-slate-900 dark:text-white flex items-center gap-2">
-            <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+          <CardTitle className="text-foreground flex items-center gap-2">
+            <Target className="w-5 h-5 text-muted-foreground" />
             Cele finansowe
           </CardTitle>
           <Link to={createPageUrl("Goals")}>
-            <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-700 hover:bg-purple-100">
+            <Button variant="ghost" size="sm">
               Zarządzaj <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           </Link>
@@ -34,7 +34,7 @@ export default function GoalsPreview({ goals = [], trades = [] }) {
             return (
               <div key={goal.id} className="space-y-1.5">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="font-medium text-slate-900 dark:text-white">{goal.title}</span>
+                  <span className="font-medium text-foreground">{goal.title}</span>
                   <span className="text-xs text-slate-600 dark:text-slate-400">
                     {current.toFixed(1)}/{target} {goal.unit}
                   </span>
@@ -44,7 +44,7 @@ export default function GoalsPreview({ goals = [], trades = [] }) {
                     className="h-2 rounded-full transition-all duration-500"
                     style={{ 
                       width: `${percentage}%`,
-                      backgroundColor: goal.color || '#8b5cf6'
+                      backgroundColor: goal.color || '#9FE870'
                     }}
                   />
                 </div>

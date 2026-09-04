@@ -199,15 +199,15 @@ export function ExportButton({ trades, accounts, strategies, analytics, type = "
       </DropdownMenu>
 
       <AlertDialog open={noDataDialogOpen} onOpenChange={setNoDataDialogOpen}>
-        <AlertDialogContent className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-slate-900 dark:text-white">Brak danych</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
+            <AlertDialogTitle>Brak danych</AlertDialogTitle>
+            <AlertDialogDescription>
               Brak danych do eksportu.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction className="bg-blue-600 hover:bg-blue-700 text-white">OK</AlertDialogAction>
+            <AlertDialogAction>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

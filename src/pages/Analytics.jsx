@@ -15,6 +15,8 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
 import { getTradeEntryMinutes } from "@/lib/userSettings";
 import { aggregateTagPerformance } from "@/lib/tradeTags";
+import { CHART, chartTooltipStyle } from "@/lib/chartTheme";
+import QuoteLine from "@/components/QuoteLine";
 
 const decidedWinRate = (wins, losses) => {
   const decided = wins + losses;
@@ -632,12 +634,12 @@ export default function Analytics() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
       </div>
     );
   }
 
-  const COLORS = ['#3b82f6', '#22c55e', '#8b5cf6', '#f59e0b', '#f43f5e', '#06b6d4', '#ec4899', '#14b8a6'];
+  const COLORS = [CHART.line, CHART.profit, CHART.accent, CHART.warning, CHART.loss, CHART.muted, CHART.line, CHART.profit];
 
   const outcomeCounts = {
     wins: filteredTrades.filter(t => t.outcome === 'Win').length,
@@ -652,19 +654,19 @@ export default function Analytics() {
       name: t('wins'),
       count: outcomeCounts.wins,
       rate: outcomeTotal ? (outcomeCounts.wins / outcomeTotal) * 100 : 0,
-      fill: '#22c55e'
+      fill: CHART.profit
     },
     {
       name: t('breakeven'),
       count: outcomeCounts.breakeven,
       rate: outcomeTotal ? (outcomeCounts.breakeven / outcomeTotal) * 100 : 0,
-      fill: '#f59e0b'
+      fill: CHART.warning
     },
     {
       name: t('losses'),
       count: outcomeCounts.losses,
       rate: outcomeTotal ? (outcomeCounts.losses / outcomeTotal) * 100 : 0,
-      fill: '#f43f5e'
+      fill: CHART.loss
     }
   ];
 
@@ -692,6 +694,7 @@ export default function Analytics() {
           </div>
           
           <div className="flex gap-3 items-center">
+            <QuoteLine className="hidden lg:flex shrink-0" />
             <ImportButton 
               onImportSuccess={() => window.location.reload()} 
               accounts={accounts} 
@@ -725,11 +728,11 @@ export default function Analytics() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 items-end">
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('account')}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('account')}</span>
             <div className="relative" ref={accountDropdownRef}>
               <button
                 onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
               >
                 <span className="truncate text-center w-full pr-5">{selectedAccountsLabel || t('allAccounts')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
@@ -744,7 +747,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('allAccounts')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -764,7 +767,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{acc.name}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -781,11 +784,11 @@ export default function Analytics() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('symbol')}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('symbol')}</span>
             <div className="relative" ref={symbolDropdownRef}>
               <button
                 onClick={() => setSymbolDropdownOpen(!symbolDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
               >
                 <span className="truncate text-center w-full pr-5">{selectedSymbolsLabel || t('all')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
@@ -800,7 +803,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -820,7 +823,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{sym}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -837,11 +840,11 @@ export default function Analytics() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('strategy')}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('strategy')}</span>
             <div className="relative" ref={strategyDropdownRef}>
               <button
                 onClick={() => setStrategyDropdownOpen(!strategyDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
               >
                 <span className="truncate text-center w-full pr-5">{selectedStrategiesLabel || t('all')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
@@ -853,7 +856,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes('all') ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes('all') ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                       {filterStrategies.includes('all') && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -868,7 +871,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes(String(strategy.id)) ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{strategy.name}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes(String(strategy.id)) ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes(String(strategy.id)) ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                         {filterStrategies.includes(String(strategy.id)) && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -883,11 +886,11 @@ export default function Analytics() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('direction')}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('direction')}</span>
             <div className="relative" ref={directionDropdownRef}>
               <button
                 onClick={() => setDirectionDropdownOpen(!directionDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
               >
                 <span className="truncate text-center w-full pr-5">{selectedDirectionsLabel || t('all')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
@@ -902,7 +905,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -922,7 +925,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{dir}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -939,11 +942,11 @@ export default function Analytics() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('outcome')}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('outcome')}</span>
             <div className="relative" ref={outcomeDropdownRef}>
               <button
                 onClick={() => setOutcomeDropdownOpen(!outcomeDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
               >
                 <span className="truncate text-center w-full pr-5">{selectedOutcomesLabel || t('all')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
@@ -958,7 +961,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -978,7 +981,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{tradeOutcomeDisplay(out)}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -995,11 +998,11 @@ export default function Analytics() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('timeframe')}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('timeframe')}</span>
             <div className="relative" ref={timeframeDropdownRef}>
               <button
                 onClick={() => setTimeframeDropdownOpen(!timeframeDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-md border border-input bg-transparent text-sm flex items-center justify-center hover:bg-accent"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
               >
                 <span className="truncate text-center w-full pr-5">{selectedTimeframesLabel || t('all')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
@@ -1014,7 +1017,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1034,7 +1037,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{tf}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -1051,7 +1054,7 @@ export default function Analytics() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center opacity-0">{t('reset')}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center opacity-0">{t('reset')}</span>
             <Button
               variant="outline"
               className="h-10 w-full border-rose-300 text-rose-700 hover:bg-rose-50 hover:border-rose-400"
@@ -1072,29 +1075,29 @@ export default function Analytics() {
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <Card className="border-emerald-200/70 dark:border-emerald-900/50 bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-950/30 dark:to-card shadow-sm">
+          <Card>
             <CardContent className="p-4 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{t('wins')}</p>
               <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{outcomeCounts.wins}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {outcomeTotal ? `${((outcomeCounts.wins / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
               </p>
             </CardContent>
           </Card>
-          <Card className="border-amber-200/70 dark:border-amber-900/50 bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-950/30 dark:to-card shadow-sm">
+          <Card>
             <CardContent className="p-4 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">BE</p>
               <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">{outcomeCounts.breakeven}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {outcomeTotal ? `${((outcomeCounts.breakeven / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
               </p>
             </CardContent>
           </Card>
-          <Card className="border-rose-200/70 dark:border-rose-900/50 bg-gradient-to-br from-rose-50/80 to-white dark:from-rose-950/30 dark:to-card shadow-sm">
+          <Card>
             <CardContent className="p-4 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">{t('losses')}</p>
               <p className="text-3xl font-bold text-rose-600 dark:text-rose-400 mt-1">{outcomeCounts.losses}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {outcomeTotal ? `${((outcomeCounts.losses / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
               </p>
             </CardContent>
@@ -1102,7 +1105,7 @@ export default function Analytics() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="flex w-full h-auto flex-wrap gap-1 p-1 bg-white dark:bg-card shadow-lg md:flex-nowrap md:overflow-x-auto">
+          <TabsList className="flex w-full h-auto flex-wrap gap-1 p-1 bg-muted/40 md:flex-nowrap md:overflow-x-auto">
             <TabsTrigger value="overview" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('overview')}</TabsTrigger>
             <TabsTrigger value="symbols" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('symbols')}</TabsTrigger>
             <TabsTrigger value="strategies" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('strategiesAnalytics')}</TabsTrigger>
@@ -1117,20 +1120,20 @@ export default function Analytics() {
           <TabsContent value="overview" className="space-y-6">
             {/* Outcome + Direction Analysis */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-gradient-to-br from-white via-white to-slate-50 dark:from-card dark:via-card dark:to-card shadow-xl border border-slate-200 dark:border-border">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{t('outcomeDistribution')}</CardTitle>
+                  <CardTitle>{t('outcomeDistribution')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 overflow-hidden p-4">
                   <div className="grid grid-cols-3 gap-3">
                     {outcomeChartData.map((entry) => (
                       <div
                         key={entry.name}
-                        className="rounded-xl border border-slate-200/60 bg-white/70 dark:bg-slate-500/10 dark:border-slate-500/20 p-3"
+                        className="rounded-lg border border-border bg-muted/30 p-3"
                       >
-                        <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">{entry.name}</p>
-                        <p className="text-2xl font-semibold text-slate-900 dark:text-white">{entry.count}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">{entry.rate.toFixed(0)}%</p>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">{entry.name}</p>
+                        <p className="text-2xl font-semibold text-foreground">{entry.count}</p>
+                        <p className="text-xs text-muted-foreground">{entry.rate.toFixed(0)}%</p>
                       </div>
                     ))}
                   </div>
@@ -1138,13 +1141,13 @@ export default function Analytics() {
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="96%" height={320}>
                       <ComposedChart data={outcomeChartData} margin={{ top: 50, right: 50, left: 30, bottom: 70 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="name" stroke="#64748b" />
-                        <YAxis yAxisId="left" stroke="#64748b" allowDecimals={false} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" tickFormatter={(value) => `${value}%`} width={70} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <XAxis dataKey="name" stroke={CHART.axis} />
+                        <YAxis yAxisId="left" stroke={CHART.axis} allowDecimals={false} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                        <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} tickFormatter={(value) => `${value}%`} width={70} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                          itemStyle={{ color: '#e2e8f0' }}
+                          contentStyle={chartTooltipStyle}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: '#f1f5f9' }}
                           formatter={(value, name) => [
                             name === 'rate' ? `${Number(value).toFixed(1)}%` : value,
@@ -1156,12 +1159,12 @@ export default function Analytics() {
                             <Cell key={entry.name} fill={entry.fill} />
                           ))}
                         </Bar>
-                        <Line type="monotone" dataKey="rate" yAxisId="right" stroke="#38bdf8" strokeWidth={2} dot={{ r: 4, fill: '#38bdf8' }} />
+                        <Line type="monotone" dataKey="rate" yAxisId="right" stroke={CHART.line} strokeWidth={2} dot={{ r: 4, fill: CHART.line }} />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-card/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
+                  <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
                     {outcomeTop
                       ? `${t('insightOutcomeMost')} ${outcomeTop.name}`
                       : t('insightOutcomeEmpty')}
@@ -1169,22 +1172,22 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-white via-white to-slate-50 dark:from-card dark:via-card dark:to-card shadow-xl border border-slate-200 dark:border-border">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{t('directionDistribution')}</CardTitle>
+                  <CardTitle>{t('directionDistribution')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 overflow-hidden p-4">
                   <div className="grid grid-cols-2 gap-3">
                     {directionEdgeData.map((entry) => (
                       <div
                         key={entry.direction}
-                        className="rounded-xl border border-slate-200/60 bg-white/70 dark:bg-slate-500/10 dark:border-slate-500/20 p-3"
+                        className="rounded-lg border border-border bg-muted/30 p-3"
                       >
-                        <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">{entry.direction}</p>
-                        <p className="text-2xl font-semibold text-slate-900 dark:text-white">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">{entry.direction}</p>
+                        <p className="text-2xl font-semibold text-foreground">
                           {entry.netPL >= 0 ? '+' : ''}{entry.netPL.toFixed(2)}
                         </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <p className="text-xs text-muted-foreground">
                           {t('winRate')}: {entry.winRate}%
                         </p>
                       </div>
@@ -1194,12 +1197,12 @@ export default function Analytics() {
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="96%" height={320}>
                       <BarChart data={directionEdgeData} layout="vertical" margin={{ top: 50, right: 60, left: 90, bottom: 50 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis type="number" stroke="#64748b" domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
-                        <YAxis type="category" dataKey="direction" stroke="#64748b" width={80} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <XAxis type="number" stroke={CHART.axis} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
+                        <YAxis type="category" dataKey="direction" stroke={CHART.axis} width={80} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                          itemStyle={{ color: '#e2e8f0' }}
+                          contentStyle={chartTooltipStyle}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: '#f1f5f9' }}
                           formatter={(value) => [Number(value).toFixed(2), t('netPL')]}
                         />
@@ -1212,7 +1215,7 @@ export default function Analytics() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-card/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
+                  <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
                     {directionTop
                       ? `${t('insightDirectionBest')} ${directionTop.direction} · ${directionTop.winRate}% ${t('winRate')}`
                       : t('insightDirectionEmpty')}
@@ -1222,9 +1225,9 @@ export default function Analytics() {
             </div>
 
             {/* Equity Curve */}
-            <Card className="shadow-md overflow-hidden">
+            <Card className="overflow-hidden">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 dark:text-white">
+                <CardTitle className="flex items-center gap-2">
                   <Activity className="w-5 h-5" />
                   {t('equityCurve')}
                 </CardTitle>
@@ -1235,19 +1238,19 @@ export default function Analytics() {
                     <AreaChart data={equityCurve} margin={{ top: 50, right: 50, left: 30, bottom: 80 }}>
                       <defs>
                         <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                          <stop offset="5%" stopColor={CHART.line} stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor={CHART.line} stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="trade" stroke="#64748b" tickMargin={10} height={65} />
-                      <YAxis stroke="#64748b" width={75} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1))]} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                      <XAxis dataKey="trade" stroke={CHART.axis} tickMargin={10} height={65} />
+                      <YAxis stroke={CHART.axis} width={75} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1))]} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                        itemStyle={{ color: '#e2e8f0' }}
+                        contentStyle={chartTooltipStyle}
+                        itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                         labelStyle={{ color: '#f1f5f9' }}
                       />
-                      <Area type="monotone" dataKey="equity" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorEquity)" />
+                      <Area type="monotone" dataKey="equity" stroke={CHART.line} strokeWidth={2} fillOpacity={1} fill="url(#colorEquity)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -1255,10 +1258,10 @@ export default function Analytics() {
             </Card>
 
             {/* Period Performance */}
-            <Card className="shadow-md overflow-hidden">
+            <Card className="overflow-hidden">
               <CardHeader>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <CardTitle className="dark:text-white">
+                  <CardTitle>
                     {t('results')} {timePeriod === "daily" ? (t('daily') || 'Daily') : timePeriod === "weekly" ? t('weekly') : timePeriod === "monthly" ? t('monthly') : t('yearly')}
                   </CardTitle>
                   <Select value={timePeriod} onValueChange={setTimePeriod}>
@@ -1276,42 +1279,42 @@ export default function Analytics() {
               </CardHeader>
               <CardContent className="overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-                  <div className="rounded-xl border border-slate-200/60 bg-white/80 dark:bg-slate-500/10 dark:border-slate-500/20 p-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">{t('bestPeriod')}</p>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  <div className="rounded-lg border border-border bg-muted/30 p-3">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('bestPeriod')}</p>
+                    <p className="text-sm font-semibold text-foreground">
                       {bestPeriod ? bestPeriod.period : '--'}
                     </p>
                     <p className={`text-xs ${bestPeriod && Number(bestPeriod.pl) >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
                       {bestPeriod ? `${bestPeriod.pl >= 0 ? '+' : ''}${bestPeriod.pl.toFixed(2)}` : '--'}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-slate-200/60 bg-white/80 dark:bg-slate-500/10 dark:border-slate-500/20 p-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">{t('maxWinRate')}</p>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  <div className="rounded-lg border border-border bg-muted/30 p-3">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('maxWinRate')}</p>
+                    <p className="text-sm font-semibold text-foreground">
                       {bestWinRatePeriod ? `${bestWinRatePeriod.winRate}%` : '--'}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-muted-foreground">
                       {bestWinRatePeriod ? bestWinRatePeriod.period : '--'}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-slate-200/60 bg-white/80 dark:bg-slate-500/10 dark:border-slate-500/20 p-3">
-                    <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-300">{t('totalPeriods')}</p>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{periodData.length}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('results')}</p>
+                  <div className="rounded-lg border border-border bg-muted/30 p-3">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('totalPeriods')}</p>
+                    <p className="text-sm font-semibold text-foreground">{periodData.length}</p>
+                    <p className="text-xs text-muted-foreground">{t('results')}</p>
                   </div>
                 </div>
                 <div className="w-full overflow-hidden px-6 py-2 pb-4">
                   <ResponsiveContainer width="96%" height={400}>
                     <BarChart data={periodData} margin={{ top: 50, right: 50, left: 30, bottom: timePeriod === "weekly" ? 120 : 80 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="period" stroke="#64748b" angle={timePeriod === "weekly" ? -45 : 0} textAnchor={timePeriod === "weekly" ? "end" : "middle"} height={timePeriod === "weekly" ? 105 : 55} tickMargin={10} />
-                      <YAxis stroke="#64748b" width={75} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                      <XAxis dataKey="period" stroke={CHART.axis} angle={timePeriod === "weekly" ? -45 : 0} textAnchor={timePeriod === "weekly" ? "end" : "middle"} height={timePeriod === "weekly" ? 105 : 55} tickMargin={10} />
+                      <YAxis stroke={CHART.axis} width={75} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                        itemStyle={{ color: '#e2e8f0' }}
+                        contentStyle={chartTooltipStyle}
+                        itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                         labelStyle={{ color: '#f1f5f9' }}
                       />
-                      <Bar dataKey="pl" fill="#3b82f6" name="P&L" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="pl" fill={CHART.line} name="P&L" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1320,20 +1323,20 @@ export default function Analytics() {
 
             {/* Direction & Timeframe */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="shadow-md">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{t('longVsShort')}</CardTitle>
+                  <CardTitle>{t('longVsShort')}</CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-hidden p-4">
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={directionData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="direction" stroke="#64748b" />
-                        <YAxis stroke="#64748b" width={60} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <XAxis dataKey="direction" stroke={CHART.axis} />
+                        <YAxis stroke={CHART.axis} width={60} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                          itemStyle={{ color: '#e2e8f0' }}
+                          contentStyle={chartTooltipStyle}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: '#f1f5f9' }}
                         />
                         <Legend />
@@ -1342,32 +1345,32 @@ export default function Analytics() {
                             <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
                           ))}
                         </Bar>
-                        <Bar dataKey="avgPL" fill="#f59e0b" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" fill={CHART.warning} name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-md">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{t('timeframeAnalysis')}</CardTitle>
+                  <CardTitle>{t('timeframeAnalysis')}</CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-hidden p-4">
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={timeframeData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="timeframe" stroke="#64748b" />
-                        <YAxis stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <XAxis dataKey="timeframe" stroke={CHART.axis} />
+                        <YAxis stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                          itemStyle={{ color: '#e2e8f0' }}
+                          contentStyle={chartTooltipStyle}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: '#f1f5f9' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" fill="#8b5cf6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="trades" fill="#f59e0b" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1377,26 +1380,26 @@ export default function Analytics() {
 
             {/* Session Analysis */}
             {sessionData.length > 0 && (
-              <Card className="shadow-md">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{t('sessionsAnalysis')}</CardTitle>
+                  <CardTitle>{t('sessionsAnalysis')}</CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-hidden p-4">
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="100%" height={350}>
                       <BarChart data={sessionData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="session" stroke="#64748b" />
-                        <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <XAxis dataKey="session" stroke={CHART.axis} />
+                        <YAxis yAxisId="left" stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                        <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                          itemStyle={{ color: '#e2e8f0' }}
+                          contentStyle={chartTooltipStyle}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: '#f1f5f9' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" yAxisId="left" fill="#06b6d4" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="avgPL" yAxisId="right" fill="#ec4899" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" yAxisId="right" fill={CHART.muted} name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1407,26 +1410,26 @@ export default function Analytics() {
 
           {/* Symbols Tab */}
           <TabsContent value="symbols" className="space-y-6">
-            <Card className="shadow-md">
+            <Card>
               <CardHeader>
-                <CardTitle className="dark:text-white">{t('top10Symbols')}</CardTitle>
+                <CardTitle>{t('top10Symbols')}</CardTitle>
               </CardHeader>
               <CardContent className="overflow-hidden p-4">
                 <div className="w-full overflow-hidden px-4 py-2">
                   <ResponsiveContainer width="100%" height={450}>
                     <BarChart data={symbolData} layout="vertical" margin={{ top: 30, right: 35, left: 95, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis xAxisId="bottom" type="number" stroke="#64748b" domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
-                        <XAxis xAxisId="top" orientation="top" type="number" stroke="#64748b" domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                        <YAxis dataKey="symbol" type="category" stroke="#64748b" width={90} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <XAxis xAxisId="bottom" type="number" stroke={CHART.axis} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                        <XAxis xAxisId="top" orientation="top" type="number" stroke={CHART.axis} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                        <YAxis dataKey="symbol" type="category" stroke={CHART.axis} width={90} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                          itemStyle={{ color: '#e2e8f0' }}
+                          contentStyle={chartTooltipStyle}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: '#f1f5f9' }}
                         />
                         <Legend />
-                        <Bar dataKey="totalPL" xAxisId="bottom" fill="#22c55e" name={t('totalPLLabel')} radius={[0, 8, 8, 0]} />
-                        <Bar dataKey="winRate" xAxisId="top" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[0, 8, 8, 0]} />
+                        <Bar dataKey="totalPL" xAxisId="bottom" fill={CHART.profit} name={t('totalPLLabel')} radius={[0, 8, 8, 0]} />
+                        <Bar dataKey="winRate" xAxisId="top" fill={CHART.line} name={`${t('winRate')} (%)`} radius={[0, 8, 8, 0]} />
                       </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1437,34 +1440,34 @@ export default function Analytics() {
               {symbolData.map((symbol) => (
                 <Card 
                   key={symbol.symbol} 
-                  className={`shadow-md border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
-                    selectedSymbol === symbol.symbol ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-border'
+                  className={`border cursor-pointer transition-colors ${
+                    selectedSymbol === symbol.symbol ? 'border-primary ring-1 ring-primary/40' : 'border-border'
                   }`}
                   onClick={() => setSelectedSymbol(symbol.symbol)}
                 >
                   <CardHeader>
-                    <CardTitle className="text-lg dark:text-white">{symbol.symbol}</CardTitle>
+                    <CardTitle className="text-lg">{symbol.symbol}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">{t('winRate')}:</span>
-                      <span className="font-bold text-blue-600 dark:text-blue-400">{symbol.winRate}%</span>
+                      <span className="text-sm text-muted-foreground">{t('winRate')}:</span>
+                      <span className="font-bold text-foreground">{symbol.winRate}%</span>
                       </div>
                       <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">{t('avgPLLabel')}:</span>
+                      <span className="text-sm text-muted-foreground">{t('avgPLLabel')}:</span>
                       <span className={`font-bold ${symbol.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {symbol.avgPL > 0 ? '+' : ''}{symbol.avgPL.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">{t('totalPLLabel')}:</span>
+                      <span className="text-sm text-muted-foreground">{t('totalPLLabel')}:</span>
                       <span className={`font-bold ${symbol.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {symbol.totalPL > 0 ? '+' : ''}{symbol.totalPL.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">{t('trades')}:</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{symbol.trades}</span>
+                      <span className="text-sm text-muted-foreground">{t('trades')}:</span>
+                      <span className="font-bold text-foreground">{symbol.trades}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -1473,17 +1476,17 @@ export default function Analytics() {
 
             {/* Detailed Symbol Analysis */}
             {selectedSymbol && (
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 shadow-2xl border-2 border-blue-300 dark:border-blue-700">
+              <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-2xl text-blue-900 dark:text-blue-300">
+                    <CardTitle className="text-2xl text-foreground">
                       {t('detailedAnalysisSymbol')}: {selectedSymbol}
                     </CardTitle>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => setSelectedSymbol(null)}
-                      className="text-slate-500 hover:text-slate-700"
+                      className="text-muted-foreground hover:text-foreground"
                     >
                       <X className="w-5 h-5" />
                     </Button>
@@ -1588,7 +1591,7 @@ export default function Analytics() {
                       <>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {/* Account Breakdown */}
-                          <Card className="bg-white">
+                          <Card>
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2">
                                 <Wallet className="w-4 h-4" />
@@ -1598,13 +1601,13 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2">
                                 {accountBreakdownData.map(item => (
-                                  <div key={item.name} className="flex justify-between items-center p-2 bg-slate-50 rounded-lg">
+                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted/30 rounded-lg">
                                     <div>
-                                      <p className="font-semibold text-sm text-slate-900">{item.name}</p>
+                                      <p className="font-semibold text-sm text-foreground">{item.name}</p>
                                       <p className="text-xs text-slate-600">{item.trades} transakcji</p>
                                     </div>
                                     <div className="text-right">
-                                      <p className="font-semibold text-sm text-blue-600">{item.winRate}%</p>
+                                      <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
                                       <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
@@ -1618,7 +1621,7 @@ export default function Analytics() {
                           {/* Strategy Breakdown */}
                           <Card>
                             <CardHeader>
-                              <CardTitle className="text-base flex items-center gap-2 dark:text-white">
+                              <CardTitle className="text-base flex items-center gap-2">
                                 <Brain className="w-4 h-4" />
                                 {t('byStrategies')}
                               </CardTitle>
@@ -1626,13 +1629,13 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2">
                                 {strategyBreakdownData.map(item => (
-                                  <div key={item.name} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-muted rounded-lg">
+                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted/30 rounded-lg">
                                     <div>
-                                      <p className="font-semibold text-sm text-slate-900 dark:text-white">{item.name}</p>
-                                      <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} transakcji</p>
+                                      <p className="font-semibold text-sm text-foreground">{item.name}</p>
+                                      <p className="text-xs text-muted-foreground">{item.trades} transakcji</p>
                                     </div>
                                     <div className="text-right">
-                                      <p className="font-semibold text-sm text-blue-600 dark:text-blue-400">{item.winRate}%</p>
+                                      <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
                                       <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
@@ -1646,7 +1649,7 @@ export default function Analytics() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {/* Direction Breakdown */}
-                          <Card className="bg-white">
+                          <Card>
                             <CardHeader>
                               <CardTitle className="text-base">{t('longVsShort')}</CardTitle>
                             </CardHeader>
@@ -1654,12 +1657,12 @@ export default function Analytics() {
                               <div className="w-full overflow-hidden px-2 py-1">
                                 <ResponsiveContainer width="100%" height={230}>
                                   <BarChart data={directionBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                    <XAxis dataKey="direction" stroke="#64748b" />
-                                    <YAxis stroke="#64748b" width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                                    <XAxis dataKey="direction" stroke={CHART.axis} />
+                                    <YAxis stroke={CHART.axis} width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
                                     <Tooltip
-                                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                                      itemStyle={{ color: '#e2e8f0' }}
+                                      contentStyle={chartTooltipStyle}
+                                      itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                                       labelStyle={{ color: '#f1f5f9' }}
                                     />
                                     <Legend />
@@ -1668,7 +1671,7 @@ export default function Analytics() {
                                         <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
                                       ))}
                                     </Bar>
-                                    <Bar dataKey="trades" fill="#94a3b8" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill={CHART.muted} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1676,7 +1679,7 @@ export default function Analytics() {
                           </Card>
 
                           {/* Timeframe Breakdown */}
-                          <Card className="bg-white">
+                          <Card>
                             <CardHeader>
                               <CardTitle className="text-base">{t('byTimeframe')}</CardTitle>
                             </CardHeader>
@@ -1684,17 +1687,17 @@ export default function Analytics() {
                               <div className="w-full overflow-hidden px-2 py-1">
                                 <ResponsiveContainer width="100%" height={230}>
                                   <BarChart data={timeframeBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                    <XAxis dataKey="timeframe" stroke="#64748b" />
-                                    <YAxis stroke="#64748b" width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                                    <XAxis dataKey="timeframe" stroke={CHART.axis} />
+                                    <YAxis stroke={CHART.axis} width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
                                     <Tooltip
-                                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                                      itemStyle={{ color: '#e2e8f0' }}
+                                      contentStyle={chartTooltipStyle}
+                                      itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                                       labelStyle={{ color: '#f1f5f9' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill="#8b5cf6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                                    <Bar dataKey="trades" fill="#f59e0b" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1705,7 +1708,7 @@ export default function Analytics() {
                         {/* Best and Worst Trades */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {bestTrade && (
-                            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200">
+                            <Card>
                               <CardHeader>
                                 <CardTitle className="text-base text-green-900 flex items-center gap-2">
                                   <TrendingUp className="w-4 h-4" />
@@ -1714,21 +1717,21 @@ export default function Analytics() {
                               </CardHeader>
                               <CardContent className="space-y-2">
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600">{t('date')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('date')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{bestTrade.date}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('direction')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('direction')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{normalizeDirection(bestTrade.direction)}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('profitLoss')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-green-600 dark:text-green-400">
                                     {(() => { const pl = getTradeRealizedPL(bestTrade) ?? 0; return `${pl >= 0 ? '+' : ''}${pl.toFixed(2)}`; })()}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('setup')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('setup')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{bestTrade.setup_quality}</span>
                                 </div>
                               </CardContent>
@@ -1736,7 +1739,7 @@ export default function Analytics() {
                           )}
 
                           {worstTrade && (getTradeRealizedPL(worstTrade) ?? 0) < 0 && (
-                            <Card className="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950 border border-red-200 dark:border-red-800">
+                            <Card>
                               <CardHeader>
                                 <CardTitle className="text-base text-red-900 dark:text-red-300 flex items-center gap-2">
                                   <AlertCircle className="w-4 h-4" />
@@ -1745,21 +1748,21 @@ export default function Analytics() {
                               </CardHeader>
                               <CardContent className="space-y-2">
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('date')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('date')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{worstTrade.date}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('direction')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('direction')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{normalizeDirection(worstTrade.direction)}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('profitLoss')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-red-600 dark:text-red-400">
                                     {(getTradeRealizedPL(worstTrade) ?? 0).toFixed(2)}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('setup')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('setup')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{worstTrade.setup_quality}</span>
                                 </div>
                               </CardContent>
@@ -1776,27 +1779,27 @@ export default function Analytics() {
 
           {/* Strategies Tab */}
           <TabsContent value="strategies" className="space-y-6">
-            <Card className="shadow-md">
+            <Card>
               <CardHeader>
-                <CardTitle className="dark:text-white">{t('strategiesComparison')}</CardTitle>
+                <CardTitle>{t('strategiesComparison')}</CardTitle>
               </CardHeader>
               <CardContent className="overflow-hidden p-4">
                 <div className="w-full overflow-hidden px-4 py-2">
                   <ResponsiveContainer width="100%" height={450}>
                     <BarChart data={strategyData} margin={{ top: 30, right: 35, left: 20, bottom: 100 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="name" stroke="#64748b" angle={-45} textAnchor="end" height={95} />
-                      <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                      <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                      <XAxis dataKey="name" stroke={CHART.axis} angle={-45} textAnchor="end" height={95} />
+                      <YAxis yAxisId="left" stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                      <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                        itemStyle={{ color: '#e2e8f0' }}
+                        contentStyle={chartTooltipStyle}
+                        itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                         labelStyle={{ color: '#f1f5f9' }}
                       />
                       <Legend />
-                      <Bar dataKey="winRate" yAxisId="left" fill="#3b82f6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="avgPL" yAxisId="right" fill="#22c55e" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="trades" yAxisId="left" fill="#8b5cf6" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="avgPL" yAxisId="right" fill={CHART.profit} name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="trades" yAxisId="left" fill={CHART.muted} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1807,36 +1810,36 @@ export default function Analytics() {
               {strategyData.map((strategy) => (
                 <Card 
                   key={strategy.name} 
-                  className={`shadow-md border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
-                    selectedStrategy === strategy.name ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-border'
+                  className={`border cursor-pointer transition-colors ${
+                    selectedStrategy === strategy.name ? 'border-primary ring-1 ring-primary/40' : 'border-border'
                   }`}
                   onClick={() => setSelectedStrategy(strategy.name)}
                 >
                   <CardHeader>
-                    <CardTitle className="text-lg dark:text-white">{strategy.name}</CardTitle>
+                    <CardTitle className="text-lg">{strategy.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg text-center">
-                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{strategy.winRate}%</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">{t('winRate')}</p>
+                      <div className="p-3 bg-muted/40 rounded-md text-center">
+                        <p className="text-2xl font-bold text-foreground">{strategy.winRate}%</p>
+                        <p className="text-xs text-muted-foreground">{t('winRate')}</p>
                       </div>
                       <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg text-center">
                         <p className={`text-2xl font-bold ${strategy.avgPL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                           {strategy.avgPL > 0 ? '+' : ''}{strategy.avgPL.toFixed(2)}
                         </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">{t('avgPLLabel')}</p>
+                        <p className="text-xs text-muted-foreground">{t('avgPLLabel')}</p>
                         </div>
                         </div>
-                        <div className="flex justify-between p-3 bg-slate-50 dark:bg-card rounded-lg">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">{t('totalPLLabel')}:</span>
+                        <div className="flex justify-between p-3 bg-muted/30 rounded-lg">
+                        <span className="text-sm text-muted-foreground">{t('totalPLLabel')}:</span>
                       <span className={`font-bold ${strategy.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {strategy.totalPL > 0 ? '+' : ''}{strategy.totalPL.toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex justify-between p-3 bg-slate-50 dark:bg-card rounded-lg">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">{t('trades')}:</span>
-                      <span className="font-bold text-slate-900 dark:text-white">{strategy.trades}</span>
+                    <div className="flex justify-between p-3 bg-muted/30 rounded-lg">
+                      <span className="text-sm text-muted-foreground">{t('trades')}:</span>
+                      <span className="font-bold text-foreground">{strategy.trades}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -1845,17 +1848,17 @@ export default function Analytics() {
 
             {/* Detailed Strategy Analysis */}
             {selectedStrategy && (
-              <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950 dark:to-indigo-950 shadow-2xl border-2 border-purple-300 dark:border-purple-700">
+              <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                    <CardTitle className="text-2xl text-purple-900 dark:text-purple-300">
+                    <CardTitle className="text-2xl text-foreground">
                       {t('detailedAnalysisSymbol')}: {selectedStrategy}
                     </CardTitle>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => setSelectedStrategy(null)}
-                      className="text-slate-500 hover:text-slate-700"
+                      className="text-muted-foreground hover:text-foreground"
                     >
                       <X className="w-5 h-5" />
                     </Button>
@@ -1961,7 +1964,7 @@ export default function Analytics() {
                       <>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {/* Account Breakdown */}
-                          <Card className="bg-white">
+                          <Card>
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2">
                                 <Wallet className="w-4 h-4" />
@@ -1971,13 +1974,13 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2">
                                 {accountBreakdownData.map(item => (
-                                  <div key={item.name} className="flex justify-between items-center p-2 bg-slate-50 rounded-lg">
+                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted/30 rounded-lg">
                                     <div>
-                                      <p className="font-semibold text-sm text-slate-900">{item.name}</p>
+                                      <p className="font-semibold text-sm text-foreground">{item.name}</p>
                                       <p className="text-xs text-slate-600">{item.trades} transakcji</p>
                                     </div>
                                     <div className="text-right">
-                                      <p className="font-semibold text-sm text-blue-600">{item.winRate}%</p>
+                                      <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
                                       <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
@@ -1991,7 +1994,7 @@ export default function Analytics() {
                           {/* Symbol Breakdown */}
                           <Card>
                             <CardHeader>
-                              <CardTitle className="text-base flex items-center gap-2 dark:text-white">
+                              <CardTitle className="text-base flex items-center gap-2">
                                 <TrendingUp className="w-4 h-4" />
                                 {t('bySymbols')}
                               </CardTitle>
@@ -1999,13 +2002,13 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2 max-h-64 overflow-y-auto">
                               {symbolBreakdownData.map(item => (
-                               <div key={item.symbol} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-muted rounded-lg">
+                               <div key={item.symbol} className="flex justify-between items-center p-2 bg-muted/30 rounded-lg">
                                  <div>
-                                   <p className="font-semibold text-sm text-slate-900 dark:text-white">{item.symbol}</p>
-                                   <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} {t('trades')}</p>
+                                   <p className="font-semibold text-sm text-foreground">{item.symbol}</p>
+                                   <p className="text-xs text-muted-foreground">{item.trades} {t('trades')}</p>
                                     </div>
                                     <div className="text-right">
-                                      <p className="font-semibold text-sm text-blue-600 dark:text-blue-400">{item.winRate}%</p>
+                                      <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
                                       <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
@@ -2019,7 +2022,7 @@ export default function Analytics() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {/* Direction Breakdown */}
-                          <Card className="bg-white">
+                          <Card>
                             <CardHeader>
                               <CardTitle className="text-base">{t('longVsShort')}</CardTitle>
                             </CardHeader>
@@ -2027,12 +2030,12 @@ export default function Analytics() {
                               <div className="w-full overflow-hidden px-2 py-1">
                                 <ResponsiveContainer width="100%" height={230}>
                                   <BarChart data={directionBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                    <XAxis dataKey="direction" stroke="#64748b" />
-                                    <YAxis stroke="#64748b" width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                                    <XAxis dataKey="direction" stroke={CHART.axis} />
+                                    <YAxis stroke={CHART.axis} width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
                                     <Tooltip
-                                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                                      itemStyle={{ color: '#e2e8f0' }}
+                                      contentStyle={chartTooltipStyle}
+                                      itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                                       labelStyle={{ color: '#f1f5f9' }}
                                     />
                                     <Legend />
@@ -2041,7 +2044,7 @@ export default function Analytics() {
                                         <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
                                       ))}
                                     </Bar>
-                                    <Bar dataKey="trades" fill="#94a3b8" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill={CHART.muted} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -2049,7 +2052,7 @@ export default function Analytics() {
                           </Card>
 
                           {/* Timeframe Breakdown */}
-                          <Card className="bg-white">
+                          <Card>
                             <CardHeader>
                               <CardTitle className="text-base">{t('byTimeframe')}</CardTitle>
                             </CardHeader>
@@ -2057,17 +2060,17 @@ export default function Analytics() {
                               <div className="w-full overflow-hidden px-2 py-1">
                                 <ResponsiveContainer width="100%" height={230}>
                                   <BarChart data={timeframeBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                                    <XAxis dataKey="timeframe" stroke="#64748b" />
-                                    <YAxis stroke="#64748b" width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                                    <XAxis dataKey="timeframe" stroke={CHART.axis} />
+                                    <YAxis stroke={CHART.axis} width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
                                     <Tooltip
-                                      contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                                      itemStyle={{ color: '#e2e8f0' }}
+                                      contentStyle={chartTooltipStyle}
+                                      itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                                       labelStyle={{ color: '#f1f5f9' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill="#8b5cf6" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                                    <Bar dataKey="trades" fill="#f59e0b" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -2078,7 +2081,7 @@ export default function Analytics() {
                         {/* Best and Worst Trades */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {bestTrade && (
-                            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border border-green-200 dark:border-green-800">
+                            <Card>
                               <CardHeader>
                                 <CardTitle className="text-base text-green-900 dark:text-green-300 flex items-center gap-2">
                                   <TrendingUp className="w-4 h-4" />
@@ -2087,19 +2090,19 @@ export default function Analytics() {
                               </CardHeader>
                               <CardContent className="space-y-2">
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('date')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('date')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{bestTrade.date}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('symbol')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('symbol')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{bestTrade.symbol}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('direction')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('direction')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{bestTrade.direction}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('profitLoss')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-green-600 dark:text-green-400">
                                     {(() => { const pl = getTradeRealizedPL(bestTrade) ?? 0; return `${pl >= 0 ? '+' : ''}${pl.toFixed(2)}`; })()}
                                   </span>
@@ -2109,7 +2112,7 @@ export default function Analytics() {
                           )}
 
                           {worstTrade && (getTradeRealizedPL(worstTrade) ?? 0) < 0 && (
-                            <Card className="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950 border border-red-200 dark:border-red-800">
+                            <Card>
                               <CardHeader>
                                 <CardTitle className="text-base text-red-900 dark:text-red-300 flex items-center gap-2">
                                   <AlertCircle className="w-4 h-4" />
@@ -2118,19 +2121,19 @@ export default function Analytics() {
                               </CardHeader>
                               <CardContent className="space-y-2">
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('date')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('date')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{worstTrade.date}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('symbol')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('symbol')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{worstTrade.symbol}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('direction')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('direction')}:</span>
                                   <span className="text-sm font-semibold dark:text-slate-200">{worstTrade.direction}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('profitLoss')}:</span>
+                                  <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-red-600 dark:text-red-400">
                                     {(getTradeRealizedPL(worstTrade) ?? 0).toFixed(2)}
                                   </span>
@@ -2151,9 +2154,9 @@ export default function Analytics() {
           <TabsContent value="accounts" className="space-y-6">
             {/* Account Type Distribution */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="shadow-md">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="dark:text-white">Rozkład typów kont</CardTitle>
+                  <CardTitle>Rozkład typów kont</CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-hidden p-4">
                   <div className="w-full overflow-hidden">
@@ -2161,10 +2164,10 @@ export default function Analytics() {
                       <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
                         <Pie
                           data={[
-                            { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: '#22c55e' },
-                            { name: 'Demo', value: accounts.filter(a => a.account_type === 'Demo').length, fill: '#3b82f6' },
-                            { name: 'Challenge', value: accounts.filter(a => a.account_type === 'Challenge').length, fill: '#8b5cf6' },
-                            { name: 'Funded', value: accounts.filter(a => a.account_type === 'Funded').length, fill: '#f59e0b' }
+                            { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: CHART.profit },
+                            { name: 'Demo', value: accounts.filter(a => a.account_type === 'Demo').length, fill: CHART.muted },
+                            { name: 'Challenge', value: accounts.filter(a => a.account_type === 'Challenge').length, fill: CHART.accent },
+                            { name: 'Funded', value: accounts.filter(a => a.account_type === 'Funded').length, fill: CHART.warning }
                           ].filter(item => item.value > 0)}
                           cx="50%"
                           cy="50%"
@@ -2174,17 +2177,17 @@ export default function Analytics() {
                           dataKey="value"
                         >
                           {[
-                            { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: '#22c55e' },
-                            { name: 'Demo', value: accounts.filter(a => a.account_type === 'Demo').length, fill: '#3b82f6' },
-                            { name: 'Challenge', value: accounts.filter(a => a.account_type === 'Challenge').length, fill: '#8b5cf6' },
-                            { name: 'Funded', value: accounts.filter(a => a.account_type === 'Funded').length, fill: '#f59e0b' }
+                            { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: CHART.profit },
+                            { name: 'Demo', value: accounts.filter(a => a.account_type === 'Demo').length, fill: CHART.muted },
+                            { name: 'Challenge', value: accounts.filter(a => a.account_type === 'Challenge').length, fill: CHART.accent },
+                            { name: 'Funded', value: accounts.filter(a => a.account_type === 'Funded').length, fill: CHART.warning }
                           ].filter(item => item.value > 0).map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                          itemStyle={{ color: '#e2e8f0' }}
+                          contentStyle={chartTooltipStyle}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: '#f1f5f9' }}
                         />
                       </PieChart>
@@ -2193,28 +2196,28 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-md">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="dark:text-white">Status kont</CardTitle>
+                  <CardTitle>Status kont</CardTitle>
                 </CardHeader>
                 <CardContent className="overflow-hidden p-4">
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="100%" height={340}>
                       <BarChart data={[
-                        { status: 'Aktywne', count: accounts.filter(a => a.status === 'Active').length, fill: '#22c55e' },
-                        { status: 'Nieaktywne', count: accounts.filter(a => a.status === 'Inactive').length, fill: '#64748b' },
-                        { status: 'Zawieszone', count: accounts.filter(a => a.status === 'Suspended').length, fill: '#f59e0b' },
-                        { status: 'Zamknięte', count: accounts.filter(a => a.status === 'Closed').length, fill: '#f43f5e' }
+                        { status: 'Aktywne', count: accounts.filter(a => a.status === 'Active').length, fill: CHART.profit },
+                        { status: 'Nieaktywne', count: accounts.filter(a => a.status === 'Inactive').length, fill: CHART.muted },
+                        { status: 'Zawieszone', count: accounts.filter(a => a.status === 'Suspended').length, fill: CHART.warning },
+                        { status: 'Zamknięte', count: accounts.filter(a => a.status === 'Closed').length, fill: CHART.loss }
                       ].filter(item => item.count > 0)} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="status" stroke="#64748b" />
-                        <YAxis stroke="#64748b" width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.2)]} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <XAxis dataKey="status" stroke={CHART.axis} />
+                        <YAxis stroke={CHART.axis} width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.2)]} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                          itemStyle={{ color: '#e2e8f0' }}
+                          contentStyle={chartTooltipStyle}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: '#f1f5f9' }}
                         />
-                        <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="count" fill={CHART.line} radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -2222,27 +2225,27 @@ export default function Analytics() {
               </Card>
             </div>
 
-            <Card className="shadow-md">
+            <Card>
               <CardHeader>
-                <CardTitle className="dark:text-white">{t('accountsComparison')}</CardTitle>
+                <CardTitle>{t('accountsComparison')}</CardTitle>
               </CardHeader>
               <CardContent className="overflow-hidden p-4">
                 <div className="w-full overflow-hidden px-4 py-2">
                   <ResponsiveContainer width="100%" height={390}>
                     <BarChart data={accountData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="name" stroke="#64748b" />
-                      <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                      <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                      <XAxis dataKey="name" stroke={CHART.axis} />
+                      <YAxis yAxisId="left" stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                      <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                       <Tooltip
-                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                        itemStyle={{ color: '#e2e8f0' }}
+                        contentStyle={chartTooltipStyle}
+                        itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                         labelStyle={{ color: '#f1f5f9' }}
                       />
                       <Legend />
-                      <Bar dataKey="winRate" yAxisId="left" fill="#3b82f6" name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="roi" yAxisId="right" fill="#22c55e" name={t('roi')} radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="trades" yAxisId="left" fill="#8b5cf6" name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name="Win Rate (%)" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="roi" yAxisId="right" fill={CHART.profit} name={t('roi')} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="trades" yAxisId="left" fill={CHART.muted} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -2251,36 +2254,36 @@ export default function Analytics() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {accountData.map((account) => (
-                <Card key={account.name} className="bg-gradient-to-br from-white to-slate-50 dark:from-card dark:to-background shadow-xl border border-slate-200 dark:border-border">
+                <Card key={account.name}>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 dark:text-white">
-                      <Wallet className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <CardTitle className="flex items-center gap-2">
+                      <Wallet className="w-5 h-5 text-foreground" />
                       {account.name}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-blue-100 dark:bg-blue-950 rounded-lg text-center">
-                        <p className="text-xl font-bold text-blue-700 dark:text-blue-400">{account.winRate}%</p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">{t('winRate')}</p>
+                      <div className="p-3 bg-muted/40 rounded-md text-center">
+                        <p className="text-xl font-bold text-foreground">{account.winRate}%</p>
+                        <p className="text-xs text-muted-foreground">{t('winRate')}</p>
                       </div>
                       <div className="p-3 bg-green-100 dark:bg-green-950 rounded-lg text-center">
                         <p className={`text-xl font-bold ${account.roi >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
                           {account.roi > 0 ? '+' : ''}{account.roi.toFixed(2)}%
                         </p>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">{t('roi')}</p>
+                        <p className="text-xs text-muted-foreground">{t('roi')}</p>
                       </div>
                     </div>
                     <div className="p-3 bg-slate-100 dark:bg-card rounded-lg">
                       <div className="flex justify-between mb-1">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">{t('totalPLLabel')}:</span>
+                        <span className="text-sm text-muted-foreground">{t('totalPLLabel')}:</span>
                         <span className={`font-bold ${account.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {account.totalPL > 0 ? '+' : ''}{account.totalPL.toFixed(2)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">{t('trades')}:</span>
-                        <span className="font-bold text-slate-900 dark:text-white">{account.trades}</span>
+                        <span className="text-sm text-muted-foreground">{t('trades')}:</span>
+                        <span className="font-bold text-foreground">{account.trades}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -2292,29 +2295,29 @@ export default function Analytics() {
           {/* Psychology Tab */}
           <TabsContent value="time" className="space-y-6">
             {tradesWithTime === 0 ? (
-              <Card className="shadow-md">
+              <Card>
                 <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
-                  <Clock className="w-10 h-10 text-cyan-400" />
-                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noTimeData')}</p>
+                  <Clock className="w-10 h-10 text-muted-foreground" />
+                  <p className="max-w-md text-sm text-muted-foreground">{t('noTimeData')}</p>
                 </CardContent>
               </Card>
             ) : (
               <>
                 {/* KPI czasu */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Card className="bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950 dark:to-sky-950 border border-cyan-200 dark:border-cyan-800 shadow-lg">
+                  <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-cyan-700 dark:text-cyan-300">{t('tradesWithTime')}</span>
-                        <Clock className="w-4 h-4 text-cyan-500" />
+                        <span className="text-xs font-medium text-muted-foreground">{t('tradesWithTime')}</span>
+                        <Clock className="w-4 h-4 text-muted-foreground" />
                       </div>
-                      <p className="mt-2 text-2xl font-bold text-cyan-900 dark:text-cyan-200">
-                        {tradesWithTime}<span className="text-base text-cyan-500">/{filteredTrades.length}</span>
+                      <p className="mt-2 text-2xl font-bold tabular-nums text-foreground">
+                        {tradesWithTime}<span className="text-base text-muted-foreground">/{filteredTrades.length}</span>
                       </p>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+                  <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('bestSlot')}</span>
@@ -2327,7 +2330,7 @@ export default function Analytics() {
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+                  <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('worstSlot')}</span>
@@ -2340,14 +2343,14 @@ export default function Analytics() {
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 border border-indigo-200 dark:border-indigo-800 shadow-lg">
+                  <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">{t('bestHour')}</span>
-                        <Activity className="w-4 h-4 text-indigo-500" />
+                        <span className="text-xs font-medium text-muted-foreground">{t('bestHour')}</span>
+                        <Activity className="w-4 h-4 text-muted-foreground" />
                       </div>
-                      <p className="mt-2 text-2xl font-bold text-indigo-900 dark:text-indigo-200">{bestHour ? bestHour.hour : '—'}</p>
-                      <p className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80">
+                      <p className="mt-2 text-2xl font-bold text-foreground">{bestHour ? bestHour.hour : '—'}</p>
+                      <p className="text-[11px] text-muted-foreground">
                         {bestHour ? `${bestHour.winRate}% · ${bestHour.trades} ${t('trades')}` : t('noData')}
                       </p>
                     </CardContent>
@@ -2355,10 +2358,10 @@ export default function Analytics() {
                 </div>
 
                 {/* Wg godziny */}
-                <Card className="shadow-md">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="dark:text-white">{t('byHourTitle')}</CardTitle>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('byHourDesc')}</p>
+                    <CardTitle>{t('byHourTitle')}</CardTitle>
+                    <p className="text-xs text-muted-foreground">{t('byHourDesc')}</p>
                   </CardHeader>
                   <CardContent className="overflow-hidden p-4">
                     <div className="w-full overflow-hidden px-2 py-2">
@@ -2366,22 +2369,22 @@ export default function Analytics() {
                         <ComposedChart data={hourData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
                           <defs>
                             <linearGradient id="hourPLGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
-                              <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                              <stop offset="5%" stopColor={CHART.profit} stopOpacity={0.25} />
+                              <stop offset="95%" stopColor={CHART.profit} stopOpacity={0} />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="hour" stroke="#64748b" />
-                          <YAxis yAxisId="left" stroke="#06b6d4" width={50} domain={[0, 100]} />
-                          <YAxis yAxisId="right" orientation="right" stroke="#22c55e" width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                          <XAxis dataKey="hour" stroke={CHART.axis} />
+                          <YAxis yAxisId="left" stroke={CHART.line} width={50} domain={[0, 100]} />
+                          <YAxis yAxisId="right" orientation="right" stroke={CHART.profit} width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                           <Tooltip
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                            itemStyle={{ color: '#e2e8f0' }}
+                            contentStyle={chartTooltipStyle}
+                            itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                             labelStyle={{ color: '#f1f5f9' }}
                           />
                           <Legend />
-                          <Area yAxisId="right" type="monotone" dataKey="avgPL" name={t('avgPLLabel')} stroke="#22c55e" strokeWidth={2.5} fill="url(#hourPLGradient)" dot={{ r: 3, fill: '#22c55e' }} activeDot={{ r: 5 }} />
-                          <Line yAxisId="left" type="monotone" dataKey="winRate" name={`${t('winRate')} (%)`} stroke="#06b6d4" strokeWidth={2.5} dot={{ r: 3, fill: '#06b6d4' }} activeDot={{ r: 5 }} />
+                          <Area yAxisId="right" type="monotone" dataKey="avgPL" name={t('avgPLLabel')} stroke={CHART.profit} strokeWidth={2.5} fill="url(#hourPLGradient)" dot={{ r: 3, fill: CHART.profit }} activeDot={{ r: 5 }} />
+                          <Line yAxisId="left" type="monotone" dataKey="winRate" name={`${t('winRate')} (%)`} stroke={CHART.line} strokeWidth={2.5} dot={{ r: 2, fill: CHART.line }} activeDot={{ r: 4 }} />
                         </ComposedChart>
                       </ResponsiveContainer>
                     </div>
@@ -2389,21 +2392,21 @@ export default function Analytics() {
                 </Card>
 
                 {/* Wg przedziału 15-minutowego */}
-                <Card className="shadow-md">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="dark:text-white">{t('bySlotTitle')}</CardTitle>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('bySlotDesc')}</p>
+                    <CardTitle>{t('bySlotTitle')}</CardTitle>
+                    <p className="text-xs text-muted-foreground">{t('bySlotDesc')}</p>
                   </CardHeader>
                   <CardContent className="overflow-hidden p-4">
                     <div className="w-full overflow-x-auto py-2">
                       <ResponsiveContainer width="100%" height={Math.max(320, timeSlotData.length * 30)} minWidth={320}>
                         <BarChart data={timeSlotData} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis type="number" stroke="#64748b" />
-                          <YAxis type="category" dataKey="slot" stroke="#64748b" width={110} tick={{ fontSize: 11 }} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                          <XAxis type="number" stroke={CHART.axis} />
+                          <YAxis type="category" dataKey="slot" stroke={CHART.axis} width={110} tick={{ fontSize: 11 }} />
                           <Tooltip
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                            itemStyle={{ color: '#e2e8f0' }}
+                            contentStyle={chartTooltipStyle}
+                            itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                             labelStyle={{ color: '#f1f5f9' }}
                           />
                           <Legend />
@@ -2412,7 +2415,7 @@ export default function Analytics() {
                               <Cell key={i} fill={d.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
                             ))}
                           </Bar>
-                          <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill="#06b6d4" radius={[0, 6, 6, 0]} />
+                          <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill={CHART.line} radius={[0, 6, 6, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -2420,7 +2423,7 @@ export default function Analytics() {
                     <div className="mt-4 overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                          <tr className="border-b border-border text-muted-foreground">
                             <th className="text-left py-2 px-2">{t('timeSlot')}</th>
                             <th className="text-right py-2 px-2">{t('trades')}</th>
                             <th className="text-right py-2 px-2">{t('winRate')}</th>
@@ -2432,7 +2435,7 @@ export default function Analytics() {
                           {timeSlotData.map((s) => (
                             <tr key={s.slotStart} className="border-b border-slate-100 dark:border-slate-800">
                               <td className="py-1.5 px-2 font-medium text-slate-800 dark:text-slate-200">{s.slot}</td>
-                              <td className="py-1.5 px-2 text-right text-slate-600 dark:text-slate-400">{s.trades}</td>
+                              <td className="py-1.5 px-2 text-right text-muted-foreground">{s.trades}</td>
                               <td className={`py-1.5 px-2 text-right font-semibold ${s.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{s.winRate}%</td>
                               <td className={`py-1.5 px-2 text-right ${s.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{s.avgPL >= 0 ? '+' : ''}{s.avgPL}</td>
                               <td className={`py-1.5 px-2 text-right font-semibold ${s.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{s.totalPL >= 0 ? '+' : ''}{s.totalPL}</td>
@@ -2450,33 +2453,33 @@ export default function Analytics() {
           <TabsContent value="psychology" className="space-y-6">
             {/* Tiltometr — kluczowe wskaźniki psychologiczne */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 border border-indigo-200 dark:border-indigo-800 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">{t('emotionControl')}</span>
-                    <Brain className="w-4 h-4 text-indigo-500" />
+                    <span className="text-xs font-medium text-muted-foreground">{t('emotionControl')}</span>
+                    <Brain className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-indigo-900 dark:text-indigo-200">
+                  <p className="mt-2 text-2xl font-bold text-foreground">
                     {avgEmotionRating > 0 ? `${avgEmotionRating}/5` : '—'}
                   </p>
-                  <p className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80">{t('emotionControlDesc')}</p>
+                  <p className="text-[11px] text-muted-foreground">{t('emotionControlDesc')}</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950 dark:to-cyan-950 border border-sky-200 dark:border-sky-800 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-sky-700 dark:text-sky-300">{t('emotionCoverage')}</span>
-                    <Activity className="w-4 h-4 text-sky-500" />
+                    <span className="text-xs font-medium text-muted-foreground">{t('emotionCoverage')}</span>
+                    <Activity className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-sky-900 dark:text-sky-200">
-                    {tradesWithEmotions.length}<span className="text-base text-sky-500">/{filteredTrades.length}</span>
+                  <p className="mt-2 text-2xl font-bold text-foreground">
+                    {tradesWithEmotions.length}<span className="text-base text-muted-foreground">/{filteredTrades.length}</span>
                   </p>
-                  <p className="text-[11px] text-sky-600/80 dark:text-sky-400/80">{emotionCoverage}% {t('emotionCoverageDesc')}</p>
+                  <p className="text-[11px] text-muted-foreground">{emotionCoverage}% {t('emotionCoverageDesc')}</p>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('costliestEmotion')}</span>
@@ -2491,7 +2494,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('bestEmotionLabel')}</span>
@@ -2508,31 +2511,31 @@ export default function Analytics() {
             </div>
 
             {tradesWithEmotions.length === 0 ? (
-              <Card className="shadow-md">
+              <Card>
                 <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
-                  <Brain className="w-10 h-10 text-purple-400" />
-                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noEmotionData')}</p>
+                  <Brain className="w-10 h-10 text-muted-foreground" />
+                  <p className="max-w-md text-sm text-muted-foreground">{t('noEmotionData')}</p>
                 </CardContent>
               </Card>
             ) : (
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Emocje a wynik */}
-                  <Card className="shadow-md">
+                  <Card>
                     <CardHeader>
-                      <CardTitle className="dark:text-white">{t('emotionVsResult')}</CardTitle>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('emotionVsResultDesc')}</p>
+                      <CardTitle>{t('emotionVsResult')}</CardTitle>
+                      <p className="text-xs text-muted-foreground">{t('emotionVsResultDesc')}</p>
                     </CardHeader>
                     <CardContent className="overflow-hidden p-4">
                       <div className="w-full overflow-hidden px-2 py-2">
                         <ResponsiveContainer width="100%" height={Math.max(320, emotionPerf.length * 46)}>
                           <BarChart data={emotionPerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis type="number" stroke="#64748b" />
-                            <YAxis type="category" dataKey="tag" stroke="#64748b" width={150} tick={{ fontSize: 11 }} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                            <XAxis type="number" stroke={CHART.axis} />
+                            <YAxis type="category" dataKey="tag" stroke={CHART.axis} width={150} tick={{ fontSize: 11 }} />
                             <Tooltip
-                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                              itemStyle={{ color: '#e2e8f0' }}
+                              contentStyle={chartTooltipStyle}
+                              itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                               labelStyle={{ color: '#f1f5f9' }}
                             />
                             <Legend />
@@ -2541,7 +2544,7 @@ export default function Analytics() {
                                 <Cell key={i} fill={e.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
                               ))}
                             </Bar>
-                            <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill="#8b5cf6" radius={[0, 6, 6, 0]} />
+                            <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill={CHART.muted} radius={[0, 6, 6, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -2549,27 +2552,27 @@ export default function Analytics() {
                   </Card>
 
                   {/* Ocena wg etapu: wygrane vs przegrane */}
-                  <Card className="shadow-md">
+                  <Card>
                     <CardHeader>
-                      <CardTitle className="dark:text-white">{t('ratingByOutcomeTitle')}</CardTitle>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('ratingByOutcomeDesc')}</p>
+                      <CardTitle>{t('ratingByOutcomeTitle')}</CardTitle>
+                      <p className="text-xs text-muted-foreground">{t('ratingByOutcomeDesc')}</p>
                     </CardHeader>
                     <CardContent className="overflow-hidden p-4">
                       <div className="w-full overflow-hidden px-2 py-2">
                         <ResponsiveContainer width="100%" height={340}>
                           <BarChart data={stageRatingByOutcome} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="stage" stroke="#64748b" />
-                            <YAxis stroke="#64748b" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} width={40} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                            <XAxis dataKey="stage" stroke={CHART.axis} />
+                            <YAxis stroke={CHART.axis} domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} width={40} />
                             <Tooltip
-                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                              itemStyle={{ color: '#e2e8f0' }}
+                              contentStyle={chartTooltipStyle}
+                              itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                               labelStyle={{ color: '#f1f5f9' }}
                             />
                             <Legend />
-                            <Bar dataKey="win" name={t('ratingWin')} fill="#22c55e" radius={[6, 6, 0, 0]} />
-                            <Bar dataKey="breakeven" name={t('ratingBreakeven')} fill="#f59e0b" radius={[6, 6, 0, 0]} />
-                            <Bar dataKey="loss" name={t('ratingLoss')} fill="#ef4444" radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="win" name={t('ratingWin')} fill={CHART.profit} radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="breakeven" name={t('ratingBreakeven')} fill={CHART.warning} radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="loss" name={t('ratingLoss')} fill={CHART.loss} radius={[6, 6, 0, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -2579,10 +2582,10 @@ export default function Analytics() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Tiltometr w czasie */}
-                  <Card className="shadow-md">
+                  <Card>
                     <CardHeader>
-                      <CardTitle className="dark:text-white">{t('tiltMeterTitle')}</CardTitle>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('tiltMeterDesc')}</p>
+                      <CardTitle>{t('tiltMeterTitle')}</CardTitle>
+                      <p className="text-xs text-muted-foreground">{t('tiltMeterDesc')}</p>
                     </CardHeader>
                     <CardContent className="overflow-hidden p-4">
                       <div className="w-full overflow-hidden px-2 py-2">
@@ -2590,19 +2593,19 @@ export default function Analytics() {
                           <AreaChart data={tiltOverTime} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
                             <defs>
                               <linearGradient id="tiltGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.5} />
-                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                                <stop offset="5%" stopColor={CHART.muted} stopOpacity={0.5} />
+                                <stop offset="95%" stopColor={CHART.muted} stopOpacity={0} />
                               </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="idx" stroke="#64748b" />
-                            <YAxis stroke="#64748b" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} width={40} />
+                            <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                            <XAxis dataKey="idx" stroke={CHART.axis} />
+                            <YAxis stroke={CHART.axis} domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} width={40} />
                             <Tooltip
-                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                              itemStyle={{ color: '#e2e8f0' }}
+                              contentStyle={chartTooltipStyle}
+                              itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                               labelStyle={{ color: '#f1f5f9' }}
                             />
-                            <Area type="monotone" dataKey="rating" name={t('emotionRatingShort')} stroke="#8b5cf6" strokeWidth={2} fill="url(#tiltGradient)" />
+                            <Area type="monotone" dataKey="rating" name={t('emotionRatingShort')} stroke={CHART.muted} strokeWidth={2} fill="url(#tiltGradient)" />
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>
@@ -2610,23 +2613,23 @@ export default function Analytics() {
                   </Card>
 
                   {/* Najczęstsze emocje wg etapu */}
-                  <Card className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950 dark:to-purple-950 border border-pink-200 dark:border-pink-800 shadow-xl">
+                  <Card>
                     <CardHeader>
-                      <CardTitle className="text-purple-900 dark:text-purple-300">{t('topEmotionsTitle')}</CardTitle>
+                      <CardTitle className="text-foreground">{t('topEmotionsTitle')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {topTagsByStage.map((stage) => (
                         <div key={stage.stage}>
-                          <p className="text-xs font-semibold uppercase tracking-wide text-purple-700/80 dark:text-purple-300/80 mb-2">{stage.stage}</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">{stage.stage}</p>
                           {stage.items.length === 0 ? (
-                            <p className="text-xs text-slate-500 dark:text-slate-400 pl-1">{t('noData')}</p>
+                            <p className="text-xs text-muted-foreground pl-1">{t('noData')}</p>
                           ) : (
                             <div className="space-y-1.5">
                               {stage.items.map((it) => (
-                                <div key={it.tag} className="flex justify-between items-center px-3 py-1.5 bg-white/70 dark:bg-muted/70 rounded-lg">
+                                <div key={it.tag} className="flex justify-between items-center px-3 py-1.5 bg-muted/30 rounded-lg">
                                   <span className="text-sm text-slate-800 dark:text-slate-200 truncate">{it.tag}</span>
                                   <span className="flex items-center gap-3 shrink-0">
-                                    <span className="text-xs text-slate-500 dark:text-slate-400">×{it.total}</span>
+                                    <span className="text-xs text-muted-foreground">×{it.total}</span>
                                     <span className={`text-xs font-semibold ${it.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{it.winRate}%</span>
                                   </span>
                                 </div>
@@ -2643,31 +2646,31 @@ export default function Analytics() {
 
             {/* Pewność setupu a wynik */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2 shadow-md">
+              <Card className="lg:col-span-2">
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{t('confidenceVsResultTitle')}</CardTitle>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('confidenceVsResultDesc')}</p>
+                  <CardTitle>{t('confidenceVsResultTitle')}</CardTitle>
+                  <p className="text-xs text-muted-foreground">{t('confidenceVsResultDesc')}</p>
                 </CardHeader>
                 <CardContent className="overflow-hidden p-4">
                   {!hasConfidenceData ? (
-                    <div className="h-[320px] flex items-center justify-center text-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 px-6">
+                    <div className="h-[320px] flex items-center justify-center text-center rounded-lg border border-dashed border-border text-muted-foreground px-6">
                       {t('noConfidenceData')}
                     </div>
                   ) : (
                     <div className="w-full overflow-hidden px-2 py-2">
                       <ResponsiveContainer width="100%" height={320}>
                         <BarChart data={confidenceData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="level" stroke="#64748b" />
-                          <YAxis yAxisId="left" stroke="#64748b" width={50} domain={[0, 100]} />
-                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                          <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                          <XAxis dataKey="level" stroke={CHART.axis} />
+                          <YAxis yAxisId="left" stroke={CHART.axis} width={50} domain={[0, 100]} />
+                          <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                           <Tooltip
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                            itemStyle={{ color: '#e2e8f0' }}
+                            contentStyle={chartTooltipStyle}
+                            itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                             labelStyle={{ color: '#f1f5f9' }}
                           />
                           <Legend />
-                          <Bar dataKey="winRate" yAxisId="left" fill="#f59e0b" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
                           <Bar dataKey="avgPL" yAxisId="right" name={t('avgPLLabel')} radius={[8, 8, 0, 0]}>
                             {confidenceData.map((d, i) => (
                               <Cell key={i} fill={d.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
@@ -2680,7 +2683,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 border border-amber-200 dark:border-amber-800 shadow-xl">
+              <Card>
                 <CardHeader>
                   <CardTitle className="text-amber-900 dark:text-amber-300 flex items-center justify-between">
                     <span>{t('avgConfidence')}</span>
@@ -2692,10 +2695,10 @@ export default function Analytics() {
                     <p className="text-xs text-amber-700 dark:text-amber-300">{t('noConfidenceData')}</p>
                   ) : (
                     confidenceData.filter((d) => d.trades > 0).map((d) => (
-                      <div key={d.level} className="flex justify-between items-center px-3 py-2 bg-white/70 dark:bg-muted/70 rounded-lg">
+                      <div key={d.level} className="flex justify-between items-center px-3 py-2 bg-muted/30 rounded-lg">
                         <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{d.level}</span>
                         <span className="flex items-center gap-3 shrink-0">
-                          <span className="text-xs text-slate-500 dark:text-slate-400">×{d.trades}</span>
+                          <span className="text-xs text-muted-foreground">×{d.trades}</span>
                           <span className={`text-xs font-semibold ${d.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{d.winRate}%</span>
                           <span className={`text-xs font-semibold ${d.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{d.avgPL >= 0 ? '+' : ''}{d.avgPL}</span>
                         </span>
@@ -2707,31 +2710,31 @@ export default function Analytics() {
             </div>
 
             {/* Jakość setupu (uzupełniająco) */}
-            <Card className="shadow-md">
+            <Card>
               <CardHeader>
-                <CardTitle className="dark:text-white">{t('setupQuality')}</CardTitle>
+                <CardTitle>{t('setupQuality')}</CardTitle>
               </CardHeader>
               <CardContent className="overflow-hidden p-4">
                 {setupData.length === 0 ? (
-                  <div className="h-[300px] flex items-center justify-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                  <div className="h-[300px] flex items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground">
                     {t('noData')}
                   </div>
                 ) : (
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={setupData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis dataKey="quality" stroke="#64748b" />
-                        <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <XAxis dataKey="quality" stroke={CHART.axis} />
+                        <YAxis yAxisId="left" stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                        <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                          itemStyle={{ color: '#e2e8f0' }}
+                          contentStyle={chartTooltipStyle}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: '#f1f5f9' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" yAxisId="left" fill="#f59e0b" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="avgPL" yAxisId="right" fill="#22c55e" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" yAxisId="right" fill={CHART.profit} name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -2742,7 +2745,7 @@ export default function Analytics() {
 
           <TabsContent value="confluences" className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('tagCoverage')}</span>
@@ -2754,21 +2757,21 @@ export default function Analytics() {
                   <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">{confluenceCoverage}% {t('entryConditionsCoverageDesc')}</p>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950 dark:to-cyan-950 border border-sky-200 dark:border-sky-800 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-sky-700 dark:text-sky-300">{t('mostFrequentTag')}</span>
-                    <Activity className="w-4 h-4 text-sky-500" />
+                    <span className="text-xs font-medium text-muted-foreground">{t('mostFrequentTag')}</span>
+                    <Activity className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-sky-900 dark:text-sky-200 truncate" title={confluenceByFreq[0]?.tag}>
+                  <p className="mt-2 text-lg font-bold text-foreground truncate" title={confluenceByFreq[0]?.tag}>
                     {confluenceByFreq[0]?.tag || "—"}
                   </p>
-                  <p className="text-[11px] text-sky-600/80 dark:text-sky-400/80">
+                  <p className="text-[11px] text-muted-foreground">
                     {confluenceByFreq[0] ? `${confluenceByFreq[0].trades} ${t('trades')}` : t('noData')}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('weakestCondition')}</span>
@@ -2782,7 +2785,7 @@ export default function Analytics() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('strongestCondition')}</span>
@@ -2799,51 +2802,51 @@ export default function Analytics() {
             </div>
 
             {confluencePerf.length === 0 ? (
-              <Card className="shadow-md">
+              <Card>
                 <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
                   <ListChecks className="w-10 h-10 text-emerald-400" />
-                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noEntryConditionData')}</p>
+                  <p className="max-w-md text-sm text-muted-foreground">{t('noEntryConditionData')}</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="shadow-md">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="dark:text-white">{t('conditionVsResult')}</CardTitle>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('conditionVsResultDesc')}</p>
+                    <CardTitle>{t('conditionVsResult')}</CardTitle>
+                    <p className="text-xs text-muted-foreground">{t('conditionVsResultDesc')}</p>
                   </CardHeader>
                   <CardContent className="overflow-hidden p-4">
                     <ResponsiveContainer width="100%" height={Math.max(320, confluencePerf.length * 44)}>
                       <BarChart data={confluencePerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis type="number" stroke="#64748b" />
-                        <YAxis type="category" dataKey="tag" stroke="#64748b" width={140} tick={{ fontSize: 11 }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <XAxis type="number" stroke={CHART.axis} />
+                        <YAxis type="category" dataKey="tag" stroke={CHART.axis} width={140} tick={{ fontSize: 11 }} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "8px", color: "#e2e8f0" }}
-                          itemStyle={{ color: "#e2e8f0" }}
+                          contentStyle={chartTooltipStyle}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: "#f1f5f9" }}
                         />
                         <Legend />
                         <Bar dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
                           {confluencePerf.map((e, i) => (
-                            <Cell key={i} fill={e.avgPL >= 0 ? "#22c55e" : "#ef4444"} />
+                            <Cell key={i} fill={e.avgPL >= 0 ? CHART.profit : CHART.loss} />
                           ))}
                         </Bar>
-                        <Bar dataKey="winRate" name={`${t("winRate")} (%)`} fill="#10b981" radius={[0, 6, 6, 0]} />
+                        <Bar dataKey="winRate" name={`${t("winRate")} (%)`} fill={CHART.profit} radius={[0, 6, 6, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
 
-                <Card className="shadow-md overflow-hidden">
+                <Card className="overflow-hidden">
                   <CardHeader>
-                    <CardTitle className="dark:text-white">{t('conditionTableTitle')}</CardTitle>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('conditionTableDesc')}</p>
+                    <CardTitle>{t('conditionTableTitle')}</CardTitle>
+                    <p className="text-xs text-muted-foreground">{t('conditionTableDesc')}</p>
                   </CardHeader>
                   <CardContent className="p-0 overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-700 bg-muted/30 text-xs text-muted-foreground">
+                        <tr className="border-b border-border bg-muted/30 text-xs text-muted-foreground">
                           <th className="text-left py-2 px-3 font-medium">{t('entryConditionsTab')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('trades')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('winRate')}</th>
@@ -2855,7 +2858,7 @@ export default function Analytics() {
                         {confluenceByFreq.map((row) => (
                           <tr key={row.tag} className="border-b border-slate-100 dark:border-slate-800">
                             <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
-                            <td className="py-2 px-3 text-right tabular-nums text-slate-600 dark:text-slate-400">{row.trades}</td>
+                            <td className="py-2 px-3 text-right tabular-nums text-muted-foreground">{row.trades}</td>
                             <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-green-600" : "text-red-600"}`}>{row.winRate}%</td>
                             <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
                             <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
@@ -2871,7 +2874,7 @@ export default function Analytics() {
 
           <TabsContent value="mistakes" className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-950 dark:to-orange-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('tagCoverage')}</span>
@@ -2883,7 +2886,7 @@ export default function Analytics() {
                   <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">{mistakeCoverage}% {t('mistakesCoverageDesc')}</p>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 border border-amber-200 dark:border-amber-800 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{t('mostFrequentMistake')}</span>
@@ -2897,7 +2900,7 @@ export default function Analytics() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('costliestMistake')}</span>
@@ -2913,13 +2916,13 @@ export default function Analytics() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg">
+              <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{t('leastHarmfulMistake')}</span>
                     <TrendingUp className="w-4 h-4 text-slate-500" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-200 truncate" title={bestMistakeAvoid?.tag}>
+                  <p className="mt-2 text-lg font-bold text-foreground truncate" title={bestMistakeAvoid?.tag}>
                     {bestMistakeAvoid?.tag || "—"}
                   </p>
                   <p className="text-[11px] text-slate-600/80 dark:text-slate-400/80">
@@ -2930,51 +2933,51 @@ export default function Analytics() {
             </div>
 
             {mistakePerf.length === 0 ? (
-              <Card className="shadow-md">
+              <Card>
                 <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
                   <AlertTriangle className="w-10 h-10 text-rose-400" />
-                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noMistakeData')}</p>
+                  <p className="max-w-md text-sm text-muted-foreground">{t('noMistakeData')}</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="shadow-md">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="dark:text-white">{t('mistakeVsResult')}</CardTitle>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('mistakeVsResultDesc')}</p>
+                    <CardTitle>{t('mistakeVsResult')}</CardTitle>
+                    <p className="text-xs text-muted-foreground">{t('mistakeVsResultDesc')}</p>
                   </CardHeader>
                   <CardContent className="overflow-hidden p-4">
                     <ResponsiveContainer width="100%" height={Math.max(320, mistakePerf.length * 44)}>
                       <BarChart data={mistakePerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                        <XAxis type="number" stroke="#64748b" />
-                        <YAxis type="category" dataKey="tag" stroke="#64748b" width={140} tick={{ fontSize: 11 }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <XAxis type="number" stroke={CHART.axis} />
+                        <YAxis type="category" dataKey="tag" stroke={CHART.axis} width={140} tick={{ fontSize: 11 }} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "8px", color: "#e2e8f0" }}
-                          itemStyle={{ color: "#e2e8f0" }}
+                          contentStyle={chartTooltipStyle}
+                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: "#f1f5f9" }}
                         />
                         <Legend />
                         <Bar dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
                           {mistakePerf.map((e, i) => (
-                            <Cell key={i} fill={e.avgPL >= 0 ? "#22c55e" : "#ef4444"} />
+                            <Cell key={i} fill={e.avgPL >= 0 ? CHART.profit : CHART.loss} />
                           ))}
                         </Bar>
-                        <Bar dataKey="winRate" name={`${t("winRate")} (%)`} fill="#f43f5e" radius={[0, 6, 6, 0]} />
+                        <Bar dataKey="winRate" name={`${t("winRate")} (%)`} fill={CHART.loss} radius={[0, 6, 6, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
 
-                <Card className="shadow-md overflow-hidden">
+                <Card className="overflow-hidden">
                   <CardHeader>
-                    <CardTitle className="dark:text-white">{t('mistakeTableTitle')}</CardTitle>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('mistakeTableDesc')}</p>
+                    <CardTitle>{t('mistakeTableTitle')}</CardTitle>
+                    <p className="text-xs text-muted-foreground">{t('mistakeTableDesc')}</p>
                   </CardHeader>
                   <CardContent className="p-0 overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-700 bg-muted/30 text-xs text-muted-foreground">
+                        <tr className="border-b border-border bg-muted/30 text-xs text-muted-foreground">
                           <th className="text-left py-2 px-3 font-medium">{t('mistakesTab')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('trades')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('winRate')}</th>
@@ -2986,7 +2989,7 @@ export default function Analytics() {
                         {mistakeByFreq.map((row) => (
                           <tr key={row.tag} className="border-b border-slate-100 dark:border-slate-800">
                             <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
-                            <td className="py-2 px-3 text-right tabular-nums text-slate-600 dark:text-slate-400">{row.trades}</td>
+                            <td className="py-2 px-3 text-right tabular-nums text-muted-foreground">{row.trades}</td>
                             <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-green-600" : "text-red-600"}`}>{row.winRate}%</td>
                             <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
                             <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>

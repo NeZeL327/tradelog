@@ -137,7 +137,7 @@ export default function ExpenseEditDialog({ expense, trips = [], open, onOpenCha
             </div>
           </div>
 
-          <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600">
+          <Button type="submit" className="w-full">
             <Save className="w-4 h-4 mr-2" />
             Save Changes
           </Button>

@@ -43,12 +43,11 @@ export default function ExpenseTable({ expenses, isLoading, onSelectExpense, onE
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-200">
+            <TableRow className="bg-muted/40 border-b border-border">
               <TableHead className="w-10">
                 <Checkbox 
-                  checked={allSelected} 
+                  checked={allSelected ? true : someSelected ? "indeterminate" : false} 
                   onCheckedChange={toggleAll}
-                  className={someSelected ? "data-[state=checked]:bg-blue-600" : ""}
                 />
               </TableHead>
               <TableHead className="font-semibold">Vendor</TableHead>
@@ -86,7 +85,7 @@ export default function ExpenseTable({ expenses, isLoading, onSelectExpense, onE
               expenses.map((expense) => (
                 <TableRow 
                   key={expense.id}
-                  className={`cursor-pointer hover:bg-blue-50/50 transition-colors ${selectedIds.includes(expense.id) ? 'bg-blue-50' : ''}`}
+                  className={`cursor-pointer hover:bg-muted/50 transition-colors ${selectedIds.includes(expense.id) ? 'bg-primary/10' : ''}`}
                   onClick={() => onSelectExpense(expense)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
@@ -112,7 +111,7 @@ export default function ExpenseTable({ expenses, isLoading, onSelectExpense, onE
                   </TableCell>
                   <TableCell>
                     {expense.trip_id ? (
-                      <span className="flex items-center gap-1 text-sm text-blue-600">
+                      <span className="flex items-center gap-1 text-sm text-muted-foreground">
                         <Briefcase className="w-3 h-3" />
                         {getTripName(expense.trip_id) || 'Trip'}
                       </span>
@@ -146,7 +145,7 @@ export default function ExpenseTable({ expenses, isLoading, onSelectExpense, onE
                             onViewReceipt?.(expense.receipt_url);
                           }}
                         >
-                          <Image className="w-4 h-4 text-blue-600" />
+                          <Image className="w-4 h-4 text-muted-foreground" />
                         </Button>
                       )}
                       <Button

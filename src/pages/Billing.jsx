@@ -19,8 +19,8 @@ import { useDataExport } from "@/hooks/use-data-export";
 const priceId = import.meta.env.VITE_STRIPE_PRICE_ID;
 
 const STATUS_CONFIG = {
-  active:     { label: "Aktywna",      color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-sky-300 border-emerald-300 dark:border-emerald-700", dot: "bg-lime-400", icon: CheckCircle2 },
-  trialing:   { label: "Trial",        color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-sky-300 border-emerald-300 dark:border-emerald-700", dot: "bg-emerald-400", icon: CheckCircle2 },
+  active:     { label: "Aktywna",      color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700", dot: "bg-lime-400", icon: CheckCircle2 },
+  trialing:   { label: "Trial",        color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700", dot: "bg-emerald-400", icon: CheckCircle2 },
   past_due:   { label: "Zaległa",      color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-300 dark:border-amber-700",             dot: "bg-amber-500",   icon: AlertTriangle },
   canceled:   { label: "Anulowana",    color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-red-500",     icon: XCircle },
   incomplete: { label: "Niekompletna", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-red-500",     icon: XCircle },
@@ -57,10 +57,10 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white dark:bg-card rounded-xl shadow-2xl border border-slate-200 dark:border-white/8 w-full max-w-3xl max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+      <div className="bg-card rounded-xl shadow-lg border border-border w-full max-w-3xl max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <Eye className="h-4 w-4 text-blue-500" />
+            <Eye className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold text-slate-900 dark:text-white">Podgląd importu</span>
             <Badge variant="secondary" className="text-xs">{FORMAT_LABELS[preview.format] || preview.format}</Badge>
           </div>
@@ -68,16 +68,16 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
         </div>
 
         <div className="p-4 space-y-3 overflow-auto flex-1">
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-xs text-blue-700 dark:text-blue-300">
+          <div className="flex items-center gap-2 p-3 rounded-md bg-muted/40 border border-border text-xs text-muted-foreground">
             <Info className="h-3.5 w-3.5 shrink-0" />
             Znaleziono <strong>{preview.rows.length}</strong> transakcji w pliku &nbsp;
             <span className="font-mono">{preview.file?.name}</span>.
             Poniżej pierwsze 5 wierszy.
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-xs">
-              <thead className="bg-slate-50 dark:bg-muted/50">
+              <thead className="bg-muted/30">
                 <tr>
                   {cols.map((c) => (
                     <th key={c} className="px-2 py-1.5 text-left font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
@@ -88,7 +88,7 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
               </thead>
               <tbody>
                 {visibleRows.map((row, i) => (
-                  <tr key={i} className="border-t border-slate-100 dark:border-slate-800">
+                  <tr key={i} className="border-t border-border">
                     {cols.map((c) => (
                       <td key={c} className="px-2 py-1.5 text-slate-700 dark:text-slate-300">
                         {row[c] || <span className="text-slate-400">—</span>}
@@ -104,12 +104,12 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
           )}
         </div>
 
-        <div className="flex gap-2 p-4 border-t border-slate-200 dark:border-slate-700">
+        <div className="flex gap-2 p-4 border-t border-border">
           <Button variant="outline" onClick={onCancel} className="flex-1" disabled={isImporting}>Anuluj</Button>
           <Button
             onClick={onConfirm}
             disabled={isImporting || preview.rows.length === 0}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2"
+            className="flex-1 gap-2"
           >
             <Upload className="h-4 w-4" />
             {isImporting ? "Importowanie…" : `Importuj ${preview.rows.length} transakcji`}
@@ -223,7 +223,7 @@ export default function Billing() {
         )}>
           <div className="flex items-center gap-3">
             {isPremium
-              ? <CheckCircle2 className="h-6 w-6 text-sky-500 shrink-0" />
+              ? <CheckCircle2 className="h-6 w-6 text-profit shrink-0" />
               : <XCircle className="h-6 w-6 text-red-500 shrink-0" />
             }
             <div>
@@ -231,17 +231,17 @@ export default function Billing() {
                 {isPremium ? "Subskrypcja aktywna" : "Brak aktywnej subskrypcji"}
               </p>
               {isPremium && currentPeriodEnd && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Odnawia się: {currentPeriodEnd.toLocaleDateString("pl-PL")}
                 </p>
               )}
               {subscription.status === "trialing" && trialEndsAt && (
-                <p className="text-xs text-sky-600 dark:text-sky-400 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Trial kończy się za {trialDaysLeft} dni ({trialEndsAt.toLocaleDateString("pl-PL")})
                 </p>
               )}
               {!isPremium && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Aktywuj subskrypcję aby odblokować wszystkie funkcje
                 </p>
               )}
@@ -251,25 +251,25 @@ export default function Billing() {
         </div>
 
         {/* Plan card */}
-        <Card className={cn("border-2 shadow-md", isPremium ? "border-blue-500/50 dark:border-emerald-600/50" : "border-slate-200 dark:border-slate-700")}>
+        <Card className={cn("border shadow-none", isPremium ? "border-primary/50" : "border-border")}>
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
-                  <CreditCard className="h-6 w-6 text-white" />
+                <div className="w-12 h-12 rounded-md bg-primary flex items-center justify-center shrink-0">
+                  <CreditCard className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">AiKeepTrade Pro</CardTitle>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">{t("billingPlanDesc")}</p>
+                  <p className="text-sm text-muted-foreground">{t("billingPlanDesc")}</p>
                 </div>
               </div>
               <div className="text-right">
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-bold text-slate-900 dark:text-white">$9.9</span>
-                  <span className="text-sm text-slate-500 dark:text-slate-400">/ {t("billingPerMonth")}</span>
+                  <span className="text-sm text-muted-foreground">/ {t("billingPerMonth")}</span>
                 </div>
                 {trialEligible && !isPremium && (
-                  <Badge className="mt-1 bg-blue-500 hover:bg-emerald-600 text-white text-xs">14 dni gratis</Badge>
+                  <Badge className="mt-1 bg-primary hover:bg-primary/90 text-primary-foreground text-xs">14 dni gratis</Badge>
                 )}
               </div>
             </div>
@@ -277,8 +277,8 @@ export default function Billing() {
           <CardContent className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {FEATURES.map(({ icon: Icon, label }) => (
-                <div key={label} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-50 dark:bg-muted/50">
-                  <Icon className="h-4 w-4 text-sky-500 mt-0.5 shrink-0" />
+                <div key={label} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/30">
+                  <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                   <span className="text-xs text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
                 </div>
               ))}
@@ -287,8 +287,8 @@ export default function Billing() {
               {isPremium ? (
                 <>
                   <div className="flex items-center justify-center gap-2 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
-                    <CheckCircle2 className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                    <span className="text-sm font-medium text-emerald-700 dark:text-sky-300">{t("billingActive")}</span>
+                    <CheckCircle2 className="h-4 w-4 text-profit" />
+                    <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{t("billingActive")}</span>
                   </div>
                   <Button variant="outline" onClick={handleManage} disabled={!user || isLoading} className="w-full gap-2">
                     <ExternalLink className="h-4 w-4" />
@@ -307,7 +307,7 @@ export default function Billing() {
                         <CreditCard className="h-4 w-4" />
                         {t("billingSubscribeNow")}
                       </Button>
-                      <p className="text-center text-xs text-slate-400 dark:text-slate-500">{t("billingTrialOnlyNew")}</p>
+                      <p className="text-center text-xs text-muted-foreground">{t("billingTrialOnlyNew")}</p>
                     </>
                   ) : (
                     <Button onClick={() => handleSubscribe(0)} disabled={isLoading} className="w-full h-12 text-base font-semibold fx-cta gap-2">
@@ -322,7 +322,7 @@ export default function Billing() {
         </Card>
 
         {/* Status details */}
-        <Card className="border-slate-200 dark:border-slate-700">
+        <Card className="border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Clock className="h-4 w-4 text-slate-400" />
@@ -331,7 +331,7 @@ export default function Billing() {
           </CardHeader>
           <CardContent className="space-y-2">
             {subscription.status === "trialing" && trialEndsAt && (
-              <div className="flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2.5 text-xs text-emerald-700 dark:text-sky-300">
+              <div className="flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2.5 text-xs text-emerald-700 dark:text-emerald-300">
                 <Clock className="h-3.5 w-3.5 shrink-0" />
                 {t("billingTrialEndsOn")} {trialEndsAt.toLocaleDateString("pl-PL")}
                 {trialDaysLeft !== null && ` (${trialDaysLeft} dni)`}
@@ -343,7 +343,7 @@ export default function Billing() {
                 {t("billingTrialEnded")}
               </div>
             )}
-            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
               <span>{isLoading ? t("billingLoading") : `Status: ${statusKey}`}</span>
               {subscription.customerId && (
                 <span className="font-mono text-[10px] opacity-60">{subscription.customerId.slice(0, 14)}…</span>
@@ -353,7 +353,7 @@ export default function Billing() {
         </Card>
 
         {/* ─── Export Card ─────────────────────────────────────────────────── */}
-        <Card className="border-slate-200 dark:border-slate-700">
+        <Card className="border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Download className="h-4 w-4 text-slate-400" />
@@ -370,16 +370,16 @@ export default function Billing() {
               <button
                 disabled={!user || isExportingCSV}
                 onClick={() => exportTradesCSV(user?.id)}
-                className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 dark:border-white/8 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
               >
-                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
-                  <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center shrink-0">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">
                     {isExportingCSV ? "Eksportowanie…" : "Eksport CSV"}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">Transakcje — gotowe do re-importu lub Excela</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Transakcje — gotowe do re-importu lub Excela</p>
                 </div>
               </button>
 
@@ -387,22 +387,22 @@ export default function Billing() {
               <button
                 disabled={!user || isExporting}
                 onClick={() => exportAllData(user?.id)}
-                className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 dark:border-white/8 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-muted/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
               >
                 <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
-                  <FileJson className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                  <FileJson className="h-4 w-4 text-profit" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900 dark:text-white">
                     {isExporting ? "Pobieranie…" : "Kopia zapasowa (JSON)"}
                   </p>
-                  <p className="text-xs text-slate-500 mt-0.5">Wszystkie dane: transakcje, notatki, konta…</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Wszystkie dane: transakcje, notatki, konta…</p>
                 </div>
               </button>
             </div>
 
             {/* Auto-backup info */}
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-sky-400">
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-300">
               <RefreshCw className="h-3.5 w-3.5 shrink-0" />
               Backup automatyczny — Firestore synchronizuje dane w czasie rzeczywistym
             </div>
@@ -410,7 +410,7 @@ export default function Billing() {
         </Card>
 
         {/* ─── Import Card ─────────────────────────────────────────────────── */}
-        <Card className="border-slate-200 dark:border-slate-700">
+        <Card className="border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Upload className="h-4 w-4 text-slate-400" />
@@ -426,7 +426,7 @@ export default function Billing() {
             {/* Supported formats badges */}
             <div className="flex flex-wrap gap-1.5">
               {Object.entries(FORMAT_LABELS).map(([key, label]) => (
-                <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-muted text-xs text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-muted text-xs text-slate-600 dark:text-slate-400 border border-border">
                   <FileUp className="h-3 w-3" />
                   {label}
                 </span>
@@ -442,12 +442,12 @@ export default function Billing() {
               className={cn(
                 "border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
                 dragOver
-                  ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20"
-                  : "border-slate-200 dark:border-white/8 hover:border-blue-300 hover:bg-slate-50 dark:hover:bg-muted/50"
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:border-primary/40 hover:bg-muted/50"
               )}
             >
-              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-                <FileUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                <FileUp className="h-5 w-5 text-muted-foreground" />
               </div>
               <div className="text-center">
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -467,8 +467,8 @@ export default function Billing() {
 
             {/* Format info */}
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Wymagane kolumny (własny format):</p>
-              <div className="p-3 rounded-lg bg-slate-50 dark:bg-muted/50 border border-slate-200 dark:border-slate-700">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Wymagane kolumny (własny format):</p>
+              <div className="p-3 rounded-lg bg-muted/30 border border-border">
                 <code className="text-[11px] text-slate-600 dark:text-slate-400 break-all">
                   date, symbol, direction, quantity, entry_price, exit_price, profit_loss
                 </code>
@@ -482,7 +482,7 @@ export default function Billing() {
         </Card>
 
         {/* ─── Import History Card ─────────────────────────────────────────── */}
-        <Card className="border-slate-200 dark:border-slate-700">
+        <Card className="border-border">
           <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowHistory((p) => !p)}>
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -507,16 +507,16 @@ export default function Billing() {
               ) : (
                 <div className="space-y-2">
                   {importHistory.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-white/8 bg-slate-50/50 dark:bg-muted/30 text-xs">
+                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30 text-xs">
                       <div className="space-y-0.5">
                         <p className="font-medium text-slate-800 dark:text-slate-200">
                           {FORMAT_LABELS[item.format] || item.format}
                           <span className="ml-2 font-mono text-slate-400">{item.fileName}</span>
                         </p>
-                        <p className="text-slate-500">{formatHistoryDate(item.importedAt)}</p>
+                        <p className="text-muted-foreground">{formatHistoryDate(item.importedAt)}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-3">
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-sky-300">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
                           ✓ {item.successRows}
                         </span>
                         {item.errorRows > 0 && (

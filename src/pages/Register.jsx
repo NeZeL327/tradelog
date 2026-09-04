@@ -160,35 +160,35 @@ export default function Register() {
         <div className="hero-vignette" />
         <div className="parallax-layer parallax-layer-fast">
           <motion.div
-            className="absolute -top-40 -right-40 w-96 h-96 bg-blue-400/12 rounded-full blur-3xl"
+            className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
             animate={{ scale: [1, 1.25, 1], opacity: [0.2, 0.4, 0.2] }}
             transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
         <div className="parallax-layer">
           <motion.div
-            className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500/12 rounded-full blur-3xl"
+            className="absolute -bottom-40 -left-40 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
             animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.2, 0.3] }}
             transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
         <div className="parallax-layer parallax-layer-slow">
           <motion.div
-            className="absolute top-1/3 -left-10 w-40 h-40 bg-blue-500/15 rounded-full blur-2xl"
+            className="absolute top-1/3 -left-10 w-40 h-40 bg-primary/12 rounded-full blur-2xl"
             animate={{ y: [0, -18, 0], opacity: [0.25, 0.5, 0.25] }}
             transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
         <div className="parallax-layer">
           <motion.div
-            className="absolute top-20 right-1/3 w-52 h-52 border border-blue-400/15 rounded-full"
+            className="absolute top-20 right-1/3 w-52 h-52 border border-white/10 rounded-full"
             animate={{ rotate: 360 }}
             transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
           />
         </div>
         <div className="parallax-layer parallax-layer-fast">
           <motion.div
-            className="absolute bottom-16 left-1/4 w-40 h-40 border border-blue-500/20 rounded-full"
+            className="absolute bottom-16 left-1/4 w-40 h-40 border border-white/10 rounded-full"
             animate={{ rotate: -360 }}
             transition={{ duration: 36, repeat: Infinity, ease: 'linear' }}
           />
@@ -213,8 +213,8 @@ export default function Register() {
           <h1 className="hero-title premium-title text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight fx-brand-text mb-3">
             AiKeepTrade
           </h1>
-          <p className="premium-subtitle text-lg text-slate-200 mb-2">{t('registerHeroSubtitle')}</p>
-          <p className="text-slate-400 text-sm max-w-md md:max-w-lg">{t('registerHeroDescription')}</p>
+          <p className="premium-subtitle text-lg text-white/80 mb-2">{t('registerHeroSubtitle')}</p>
+          <p className="text-white/55 text-sm max-w-md md:max-w-lg">{t('registerHeroDescription')}</p>
           <div className="hero-signal mt-6 mx-auto md:mx-0" />
 
           <div className="mt-8 grid grid-cols-3 gap-3 max-w-sm md:max-w-md mx-auto md:mx-0">
@@ -256,7 +256,7 @@ export default function Register() {
           <Card className="hero-card fx-card-dark">
             <CardHeader className="text-center space-y-2">
               <CardTitle className="text-2xl font-bold text-white">{t('registerTitle')}</CardTitle>
-              <CardDescription className="text-slate-400">{t('registerSubtitle')}</CardDescription>
+              <CardDescription className="text-white/55">{t('registerSubtitle')}</CardDescription>
             </CardHeader>
 
             <CardContent>
@@ -273,9 +273,9 @@ export default function Register() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-slate-200">{t('registerFullNameLabel')}</Label>
+                  <Label htmlFor="fullName" className="text-white/80">{t('registerFullNameLabel')}</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <User className="absolute left-3 top-3 h-4 w-4 text-white/40" />
                     <Input
                       id="fullName"
                       name="fullName"
@@ -290,12 +290,12 @@ export default function Register() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="displayName" className="text-slate-200 flex items-center gap-2">
+                  <Label htmlFor="displayName" className="text-white/80 flex items-center gap-2">
                     Nazwa wyświetlana
-                    <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wider">opcjonalnie</span>
+                    <span className="text-[10px] font-normal text-white/40 uppercase tracking-wider">opcjonalnie</span>
                   </Label>
                   <div className="relative">
-                    <AtSign className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <AtSign className="absolute left-3 top-3 h-4 w-4 text-white/40" />
                     <Input
                       id="displayName"
                       name="displayName"
@@ -308,13 +308,13 @@ export default function Register() {
                       maxLength={32}
                     />
                   </div>
-                  <p className="text-xs text-slate-500">Jeśli podasz, będzie używana w aplikacji zamiast imienia i nazwiska.</p>
+                  <p className="text-xs text-white/40">Jeśli podasz, będzie używana w aplikacji zamiast imienia i nazwiska.</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-slate-200">{t('registerEmailLabel')}</Label>
+                  <Label htmlFor="email" className="text-white/80">{t('registerEmailLabel')}</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-white/40" />
                     <Input
                       id="email"
                       name="email"
@@ -330,9 +330,9 @@ export default function Register() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-slate-200">{t('registerPasswordLabel')}</Label>
+                  <Label htmlFor="password" className="text-white/80">{t('registerPasswordLabel')}</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-white/40" />
                     <Input
                       id="password"
                       name="password"
@@ -345,13 +345,13 @@ export default function Register() {
                       disabled={isLoading}
                     />
                   </div>
-                  <p className="text-xs text-slate-500">{t('registerPasswordHint')}</p>
+                  <p className="text-xs text-white/40">{t('registerPasswordHint')}</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-slate-200">{t('registerConfirmPasswordLabel')}</Label>
+                  <Label htmlFor="confirmPassword" className="text-white/80">{t('registerConfirmPasswordLabel')}</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-white/40" />
                     <Input
                       id="confirmPassword"
                       name="confirmPassword"
@@ -376,16 +376,16 @@ export default function Register() {
                       if (error) setError('');
                     }}
                     disabled={isLoading}
-                    className="mt-1 border-white/15 data-[state=checked]:bg-blue-500 data-[state=checked]:border-lime-400 data-[state=checked]:text-[#0a0d13]"
+                    className="mt-1 border-white/15 data-[state=checked]:bg-primary data-[state=checked]:border-primary data-[state=checked]:text-primary-foreground"
                   />
                   <Label
                     htmlFor="acceptTerms"
-                    className="text-sm text-slate-300 leading-relaxed cursor-pointer"
+                    className="text-sm text-white/75 leading-relaxed cursor-pointer"
                   >
                     {t('registerAcceptTerms') || 'I accept the'}{' '}
                     <Link
                       to="/terms"
-                      className="text-sky-300 hover:text-sky-200 underline"
+                      className="text-primary hover:text-primary/80 underline"
                       target="_blank"
                     >
                       {t('termsOfService') || 'Terms of Service'}
@@ -393,7 +393,7 @@ export default function Register() {
                     {' '}{t('and') || 'and'}{' '}
                     <Link
                       to="/privacy"
-                      className="text-sky-300 hover:text-sky-200 underline"
+                      className="text-primary hover:text-primary/80 underline"
                       target="_blank"
                     >
                       {t('privacyPolicy') || 'Privacy Policy'}
@@ -401,9 +401,9 @@ export default function Register() {
                   </Label>
                 </div>
 
-                <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-sky-200">
+                <div className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-xs text-primary">
                   <span className="font-semibold">{t('pricing14DayTrial')}</span>
-                  <span className="text-sky-300"> • {t('pricingNoCreditCard')}</span>
+                  <span> • {t('pricingNoCreditCard')}</span>
                 </div>
 
                 <Button
@@ -426,11 +426,11 @@ export default function Register() {
               </form>
 
               <div className="mt-6 text-center">
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-white/55">
                   {t('registerHaveAccount')}{' '}
                   <button
                     onClick={() => navigate('/Login')}
-                    className="text-sky-300 hover:text-sky-200 font-medium"
+                    className="text-primary hover:text-primary/80 font-medium"
                   >
                     {t('registerLoginLink')}
                   </button>

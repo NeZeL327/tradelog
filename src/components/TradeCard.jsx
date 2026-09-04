@@ -60,12 +60,12 @@ export default function TradeCard({ trade, onEdit = null }) {
   const outcomeDisplay = outcomeRaw && /[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż]/.test(outcomeRaw) ? outcomeRaw : "-";
 
   return (
-    <Card className={`hover:shadow-xl transition-all duration-300 ${bgColor} dark:bg-card dark:border-slate-700 border`}>
+    <Card className={`hover:border-primary/30 transition-colors ${bgColor} dark:bg-card dark:border-border border`}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{trade.symbol}</h3>
+              <h3 className="text-2xl font-bold text-foreground">{trade.symbol}</h3>
               <Badge className={directionBadgeClass(trade.direction)}>
                 {directionText}
               </Badge>
@@ -76,7 +76,7 @@ export default function TradeCard({ trade, onEdit = null }) {
               )}
             </div>
             
-            <div className="flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-400">
+            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
                 {formatTradeDate(trade.date, dateFormat)}
@@ -105,8 +105,8 @@ export default function TradeCard({ trade, onEdit = null }) {
 
       <CardContent className="space-y-4">
         {/* Quick Summary */}
-        <div className="p-4 rounded-xl bg-gradient-to-r from-slate-50 via-white to-slate-50 dark:from-slate-800 dark:via-slate-900 dark:to-slate-800 border dark:border-slate-700">
-          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-3">{t('quickSummary')}</p>
+        <div className="p-4 rounded-xl bg-muted/30 border border-border">
+          <p className="text-xs font-semibold text-foreground mb-3">{t('quickSummary')}</p>
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline">{t('symbol')}: {trade.symbol || '-'}</Badge>
             <Badge variant="outline">{t('lotSize')}: {trade.position_size || '-'}</Badge>
@@ -119,48 +119,48 @@ export default function TradeCard({ trade, onEdit = null }) {
 
         {/* Symbol Analysis */}
         {trade.symbolStats && (
-          <div className="p-4 rounded-xl bg-white/70 dark:bg-slate-800/50 border dark:border-slate-700">
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-3">{t('symbolAnalysis')}</p>
+          <div className="p-4 rounded-xl bg-muted/30 border border-border">
+            <p className="text-xs font-semibold text-foreground mb-3">{t('symbolAnalysis')}</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('tradesCount')}</p>
-                <p className="font-semibold text-slate-900 dark:text-white">{trade.symbolStats.total}</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('tradesCount')}</p>
+                <p className="font-semibold text-foreground">{trade.symbolStats.total}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('winRateLabel')}</p>
-                <p className="font-semibold text-slate-900 dark:text-white">{trade.symbolStats.winRate}%</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('winRateLabel')}</p>
+                <p className="font-semibold text-foreground">{trade.symbolStats.winRate}%</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('totalPL')}</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('totalPL')}</p>
                 <p className={`font-semibold ${parseFloat(trade.symbolStats.totalPL) >= 0 ? 'text-emerald-600 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-300'}`}>
                   {parseFloat(trade.symbolStats.totalPL) >= 0 ? '+' : ''}{trade.symbolStats.totalPL}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('avgPLLabel')}</p>
-                <p className="font-semibold text-slate-900 dark:text-white">{trade.symbolStats.avgPL}</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('avgPLLabel')}</p>
+                <p className="font-semibold text-foreground">{trade.symbolStats.avgPL}</p>
               </div>
             </div>
           </div>
         )}
         {/* Meta Info */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl dark:border dark:border-slate-700">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-xl border border-border">
           <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('statusLabel')}</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('statusLabel')}</p>
             <Badge className={`${tradeStatusBadgeClass(trade.status)} truncate max-w-full`} title={tradeStatusDisplay(trade.status)}>
               {tradeStatusDisplay(trade.status)}
             </Badge>
           </div>
           <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('account')}</p>
-            <p className="font-semibold text-slate-900 dark:text-white truncate" title={accountDisplay}>{accountDisplay}</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('account')}</p>
+            <p className="font-semibold text-foreground truncate" title={accountDisplay}>{accountDisplay}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('strategy')}</p>
-            <p className="font-semibold text-slate-900 dark:text-white truncate" title={strategyDisplay}>{strategyDisplay}</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('strategy')}</p>
+            <p className="font-semibold text-foreground truncate" title={strategyDisplay}>{strategyDisplay}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('outcome')}</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('outcome')}</p>
             <Badge variant="outline" className={`truncate max-w-full ${tradeOutcomeBadgeClass(outcomeDisplay)}`} title={outcomeDisplay}>
               {outcomeDisplay}
             </Badge>
@@ -168,47 +168,47 @@ export default function TradeCard({ trade, onEdit = null }) {
         </div>
 
         {/* Price Info */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl dark:border dark:border-slate-700">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-xl border border-border">
           <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('entryPrice')}</p>
-            <p className="font-semibold text-slate-900 dark:text-white">{trade.entry_price}</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('entryPrice')}</p>
+            <p className="font-semibold text-foreground">{trade.entry_price}</p>
           </div>
           {trade.exit_price && (
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('exit')}</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{trade.exit_price}</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('exit')}</p>
+              <p className="font-semibold text-foreground">{trade.exit_price}</p>
             </div>
           )}
           {trade.stop_loss_pips != null && (
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('stopLossPips')}</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('stopLossPips')}</p>
               <p className="font-semibold text-rose-600 dark:text-rose-300">{trade.stop_loss_pips}</p>
             </div>
           )}
           {trade.take_profit_pips != null && (
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('takeProfitPips')}</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('takeProfitPips')}</p>
               <p className="font-semibold text-amber-600 dark:text-amber-300">{trade.take_profit_pips}</p>
             </div>
           )}
           {trade.remaining_size != null && (
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('remainingSize')}</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{trade.remaining_size}</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('remainingSize')}</p>
+              <p className="font-semibold text-foreground">{trade.remaining_size}</p>
             </div>
           )}
           {trade.breakeven_moved && (
             <div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('breakevenMoved')}</p>
-              <p className="font-semibold text-slate-900 dark:text-white">{trade.breakeven_price || '-'}</p>
+              <p className="text-xs text-muted-foreground mb-1">{t('breakevenMoved')}</p>
+              <p className="font-semibold text-foreground">{trade.breakeven_price || '-'}</p>
             </div>
           )}
         </div>
 
         {/* Partial Closures */}
         {Array.isArray(trade.scale_outs) && trade.scale_outs.length > 0 && (
-          <div className="p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl dark:border dark:border-slate-700">
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Częściowe zamknięcia pozycji</p>
+          <div className="p-4 bg-muted/30 rounded-xl border border-border">
+            <p className="text-xs font-semibold text-foreground mb-2">Częściowe zamknięcia pozycji</p>
             <div className="space-y-2 text-sm">
               {trade.scale_outs.map((scaleOut, index) => {
                 const partialPnl = getScaleOutPnl(scaleOut);
@@ -219,12 +219,12 @@ export default function TradeCard({ trade, onEdit = null }) {
                       {t('size')}: {scaleOut.size || '-'} | {t('price')}: {scaleOut.price || '-'}
                     </span>
                     <span className="ml-2 text-sm">
-                      | Kwota zamknięcia: <span className={`font-semibold ${partialPnl === null ? 'text-slate-500 dark:text-slate-400' : partialPnl >= 0 ? 'text-amber-600 dark:text-amber-300' : 'text-rose-600 dark:text-rose-300'}`}>
+                      | Kwota zamknięcia: <span className={`font-semibold ${partialPnl === null ? 'text-muted-foreground' : partialPnl >= 0 ? 'text-amber-600 dark:text-amber-300' : 'text-rose-600 dark:text-rose-300'}`}>
                         {partialPnl === null ? '-' : `${partialPnl.toFixed(2)}$`}
                       </span>
                     </span>
                   </div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                  <span className="text-xs text-muted-foreground">
                     {scaleOut.time || scaleOut.reason || ''}
                   </span>
                 </div>
@@ -235,7 +235,7 @@ export default function TradeCard({ trade, onEdit = null }) {
 
         {/* P&L */}
         {trade.profit_loss != null && (
-          <div className={`p-4 rounded-xl ${isWin ? 'bg-green-100 dark:bg-green-900/20' : isLoss ? 'bg-red-100 dark:bg-red-900/20' : 'bg-slate-100 dark:bg-slate-800'}`}>
+          <div className={`p-4 rounded-xl ${isWin ? 'bg-green-100 dark:bg-green-900/20' : isLoss ? 'bg-red-100 dark:bg-red-900/20' : 'bg-muted'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {isWin ? (
@@ -243,9 +243,9 @@ export default function TradeCard({ trade, onEdit = null }) {
                 ) : isLoss ? (
                   <TrendingDown className="w-6 h-6 text-red-600 dark:text-red-400" />
                 ) : (
-                  <Target className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+                  <Target className="w-6 h-6 text-muted-foreground" />
                 )}
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('profitLoss')}</span>
+                <span className="text-sm font-medium text-foreground">{t('profitLoss')}</span>
               </div>
               <div className="text-right">
                 <p className={`text-2xl font-bold ${plColor}`}>
@@ -264,7 +264,7 @@ export default function TradeCard({ trade, onEdit = null }) {
         {/* Strategy & Quality */}
         <div className="flex flex-wrap gap-2">
           {(trade.strategyName || trade.strategy) && (
-            <Badge className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+            <Badge className="bg-muted text-foreground">
               {trade.strategyName || trade.strategy}
             </Badge>
           )}
@@ -279,7 +279,7 @@ export default function TradeCard({ trade, onEdit = null }) {
             </Badge>
           )}
           {trade.risk_reward_ratio && (
-            <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+            <Badge className="bg-muted text-foreground">
               R:R {parseFloat(trade.risk_reward_ratio).toFixed(2)}
             </Badge>
           )}
@@ -287,9 +287,9 @@ export default function TradeCard({ trade, onEdit = null }) {
 
         {/* Notes */}
         {trade.notes && (
-          <div className="p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl border dark:border-slate-700">
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">{t('notes')}</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{trade.notes}</p>
+          <div className="p-4 bg-muted/30 rounded-xl border border-border">
+            <p className="text-xs font-semibold text-foreground mb-2">{t('notes')}</p>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{trade.notes}</p>
           </div>
         )}
 
@@ -300,7 +300,7 @@ export default function TradeCard({ trade, onEdit = null }) {
           trade.screenshot_3
         ].filter(Boolean).length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">{t('screenshots')}</p>
+            <p className="text-xs font-semibold text-foreground mb-2">{t('screenshots')}</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               {[trade.screenshot_1, trade.screenshot_2, trade.screenshot_3]
                 .filter(Boolean)
@@ -323,7 +323,7 @@ export default function TradeCard({ trade, onEdit = null }) {
         {/* Charts */}
         {trade.chart_screenshots && trade.chart_screenshots.filter(s => s).length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Wykresy</p>
+            <p className="text-xs font-semibold text-foreground mb-2">Wykresy</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               {trade.chart_screenshots.filter(s => s).map((screenshot, index) => (
                 <img 
@@ -354,8 +354,8 @@ export default function TradeCard({ trade, onEdit = null }) {
 
         {/* Emotional State */}
         {trade.emotional_state && (
-          <div className="text-xs text-slate-500 dark:text-slate-400">
-            Stan emocjonalny: <span className="font-medium text-slate-700 dark:text-slate-300">{trade.emotional_state}</span>
+          <div className="text-xs text-muted-foreground">
+            Stan emocjonalny: <span className="font-medium text-foreground">{trade.emotional_state}</span>
           </div>
         )}
         <ImageViewer open={viewerOpen} onOpenChange={setViewerOpen} imageUrl={viewerImage} />

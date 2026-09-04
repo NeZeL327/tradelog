@@ -16,6 +16,7 @@ import { Plus, Edit, Trash, Wallet, Power } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { AccountImportButton } from "@/components/AccountImportExport";
+import QuoteLine from "@/components/QuoteLine";
 
 export default function Accounts() {
   const { user } = useAuth();
@@ -155,8 +156,9 @@ export default function Accounts() {
             <p className="cyber-page-sub text-sm">Zarządzaj swoimi kontami handlowymi</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
+            <QuoteLine className="hidden lg:flex shrink-0" />
             <Select value={accountVisibilityFilter} onValueChange={setAccountVisibilityFilter}>
-              <SelectTrigger className="w-[190px] bg-white dark:bg-muted">
+              <SelectTrigger className="w-[190px] bg-card border-border">
                 <SelectValue placeholder="Filtr kont" />
               </SelectTrigger>
               <SelectContent>
@@ -202,7 +204,7 @@ export default function Accounts() {
 
         {accounts.length === 0 ? (
           <div className="text-center py-12 px-4">
-            <Wallet className="w-16 h-16 text-slate-400 dark:text-slate-500 mx-auto mb-4" />
+            <Wallet className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-2">Brak kont handlowych</h3>
             <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">Rozpocznij od dodania pierwszego konta tradingowego.</p>
             <Dialog open={showForm} onOpenChange={(open) => {
@@ -229,7 +231,7 @@ export default function Accounts() {
           </div>
         ) : visibleAccounts.length === 0 ? (
           <div className="text-center py-12 px-4">
-            <Wallet className="w-16 h-16 text-slate-400 dark:text-slate-500 mx-auto mb-4" />
+            <Wallet className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-2">Brak kont w tym filtrze</h3>
             <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">Zmień filtr na „Pokaż wszystkie” lub aktywuj konto przełącznikiem.</p>
           </div>
@@ -283,8 +285,8 @@ export default function Accounts() {
 function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onToggleActive }) {
   const accountTypeColors = {
     Live: "#10b981",
-    Demo: "#3b82f6",
-    Challenge: "#8b5cf6",
+    Demo: "#64748b",
+    Challenge: "#9FE870",
     Funded: "#f59e0b"
   };
   const initialBalance = parseFloat(account.initial_balance) || 0;
@@ -304,8 +306,14 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
   const winningTrades = accountTrades.filter((trade) => trade.outcome === "Win").length;
   const losingTrades = accountTrades.filter((trade) => trade.outcome === "Loss").length;
   const winRate = totalTrades > 0 ? ((winningTrades / totalTrades) * 100).toFixed(1) : 0;
-  const avgWin = 0; // TODO: obliczyć średni zysk
-  const avgLoss = 0; // TODO: obliczyć średnią stratę
+  const winPLs = accountTrades
+    .filter((trade) => trade.outcome === "Win")
+    .map((trade) => getTradeRealizedPL(trade) ?? 0);
+  const lossPLs = accountTrades
+    .filter((trade) => trade.outcome === "Loss")
+    .map((trade) => getTradeRealizedPL(trade) ?? 0);
+  const avgWin = winPLs.length ? winPLs.reduce((sum, pl) => sum + pl, 0) / winPLs.length : 0;
+  const avgLoss = lossPLs.length ? lossPLs.reduce((sum, pl) => sum + pl, 0) / lossPLs.length : 0;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -328,11 +336,11 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
   };
 
   const getAccountTypeColor = () => {
-    return "border-l-4 bg-white/80 dark:bg-card/80 backdrop-blur border border-slate-200/60 dark:border-border shadow-lg hover:shadow-xl";
+    return "border-l-4 bg-card border border-border hover:border-primary/30";
   };
 
   const getAccountDividerColor = () => {
-    return 'border-slate-200/60 dark:border-border';
+    return 'border-border';
   };
 
   const getAccountTypeBadge = () => {
@@ -341,9 +349,9 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
       case 'Live':
         return <Badge className={`${baseClasses} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`}>Live</Badge>;
       case 'Demo':
-        return <Badge className={`${baseClasses} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`}>Demo</Badge>;
+        return <Badge className={`${baseClasses} bg-muted text-foreground`}>Demo</Badge>;
       case 'Challenge':
-        return <Badge className={`${baseClasses} bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200`}>Challenge</Badge>;
+        return <Badge className={`${baseClasses} bg-primary/15 text-primary`}>Challenge</Badge>;
       case 'Funded':
         return <Badge className={`${baseClasses} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200`}>Funded</Badge>;
       default:
@@ -352,7 +360,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
   };
 
   return (
-    <Card className={`transition-all duration-200 ${getAccountTypeColor()} hover:shadow-xl ${isAccountActive ? '' : 'opacity-75'}`} style={{ borderLeftColor: accentColor }}>
+    <Card className={`transition-colors duration-200 ${getAccountTypeColor()} ${isAccountActive ? '' : 'opacity-75'}`} style={{ borderLeftColor: accentColor }}>
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
           <div className="flex-1 min-w-0">
@@ -371,7 +379,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             </div>
           </div>
           <div className="flex gap-1 flex-shrink-0">
-            <div className="flex items-center gap-1 px-1.5 border rounded-md bg-white/70 dark:bg-card/50">
+            <div className="flex items-center gap-1 px-1.5 border rounded-md bg-muted/30">
               <Power className={`w-3 h-3 shrink-0 ${isAccountActive ? 'text-green-600' : 'text-slate-400'}`} />
               <button
                 type="button"
@@ -423,18 +431,30 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
 
         {/* Statystyki */}
         <div className={`pt-3 border-t ${getAccountDividerColor()}`}>
-          <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
             <div className="text-center sm:text-left">
-              <span className="text-slate-500 dark:text-slate-500 block">Transakcje</span>
+              <span className="text-muted-foreground block">Transakcje</span>
               <div className="font-semibold mt-0.5">{totalTrades}</div>
             </div>
             <div className="text-center sm:text-left">
-              <span className="text-slate-500 dark:text-slate-500 block">Win Rate</span>
+              <span className="text-muted-foreground block">Win Rate</span>
               <div className="font-semibold mt-0.5 text-green-600 dark:text-green-400">{winRate}%</div>
             </div>
             <div className="text-center sm:text-left">
-              <span className="text-slate-500 dark:text-slate-500 block">W/L Ratio</span>
+              <span className="text-muted-foreground block">W/L Ratio</span>
               <div className="font-semibold mt-0.5">{winningTrades}:{losingTrades}</div>
+            </div>
+            <div className="text-center sm:text-left">
+              <span className="text-muted-foreground block">Śr. zysk</span>
+              <div className="font-semibold mt-0.5 text-green-600 dark:text-green-400">
+                {avgWin >= 0 ? "+" : ""}{avgWin.toFixed(2)} {account.currency}
+              </div>
+            </div>
+            <div className="text-center sm:text-left">
+              <span className="text-muted-foreground block">Śr. strata</span>
+              <div className="font-semibold mt-0.5 text-red-600 dark:text-red-400">
+                {avgLoss.toFixed(2)} {account.currency}
+              </div>
             </div>
           </div>
         </div>
@@ -444,19 +464,19 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             <div className="grid grid-cols-3 gap-2 text-xs space-y-2">
               {account.max_daily_loss_percent && (
                 <div className="text-center sm:text-left">
-                  <span className="text-slate-500 dark:text-slate-500 block">Max strata</span>
+                  <span className="text-muted-foreground block">Max strata</span>
                   <div className="font-semibold mt-0.5">{account.max_daily_loss_percent}%</div>
                 </div>
               )}
               {account.max_account_loss && (
                 <div className="text-center sm:text-left">
-                  <span className="text-slate-500 dark:text-slate-500 block">Limit konta</span>
+                  <span className="text-muted-foreground block">Limit konta</span>
                   <div className="font-semibold mt-0.5">{account.max_account_loss}%</div>
                 </div>
               )}
               {account.profit_target && (
                 <div className="text-center sm:text-left">
-                  <span className="text-slate-500 dark:text-slate-500 block">Cel zysku</span>
+                  <span className="text-muted-foreground block">Cel zysku</span>
                   <div className="font-semibold mt-0.5 text-green-600 dark:text-green-400">{account.profit_target}</div>
                 </div>
               )}
@@ -477,8 +497,8 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
 function AccountForm({ account, onSubmit, onCancel, isLoading }) {
   const accountTypeColors = {
     Live: "#10b981",
-    Demo: "#3b82f6",
-    Challenge: "#8b5cf6",
+    Demo: "#64748b",
+    Challenge: "#9FE870",
     Funded: "#f59e0b"
   };
   const [formData, setFormData] = useState(account || {
@@ -577,7 +597,7 @@ function AccountForm({ account, onSubmit, onCancel, isLoading }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      <Card className="bg-white dark:bg-muted shadow-xl border border-slate-200 dark:border-slate-700">
+      <Card className="bg-card border border-border">
         <CardHeader>
           <CardTitle className="dark:text-white">{account ? "Edytuj konto" : "Nowe konto"}</CardTitle>
         </CardHeader>
@@ -734,7 +754,7 @@ function AccountForm({ account, onSubmit, onCancel, isLoading }) {
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading}>
                 {isLoading ? (account ? 'Aktualizowanie...' : 'Dodawanie...') : (account ? 'Zapisz zmiany' : 'Dodaj konto')}
               </Button>
               <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>

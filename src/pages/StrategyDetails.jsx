@@ -9,6 +9,8 @@ import { ArrowLeft, TrendingUp, Target, Award, Star, AlertCircle } from "lucide-
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
 import { getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
+import { CHART, chartTooltipStyle } from "@/lib/chartTheme";
+import QuoteLine from "@/components/QuoteLine";
 
 export default function StrategyDetails() {
   const { id } = useParams();
@@ -134,47 +136,48 @@ export default function StrategyDetails() {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="cyber-page-title">{strategy.name}</h1>
             <p className="cyber-page-sub">{strategy.category}</p>
           </div>
+          <QuoteLine className="hidden lg:flex shrink-0" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Statystyki */}
-          <Card className="shadow-md">
+          <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <TrendingUp className="w-8 h-8 mx-auto text-blue-600 dark:text-blue-400 mb-2" />
-                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{winRate}%</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Win Rate</p>
+                <TrendingUp className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-3xl font-bold text-foreground">{winRate}%</p>
+                <p className="text-sm text-muted-foreground">Win Rate</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-md">
+          <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <Award className="w-8 h-8 mx-auto text-purple-600 dark:text-purple-400 mb-2" />
-                <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{strategyTrades.length}</p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Transakcji</p>
+                <Award className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-3xl font-bold text-foreground">{strategyTrades.length}</p>
+                <p className="text-sm text-muted-foreground">Transakcji</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className={`shadow-md`}>
+          <Card>
             <CardContent className="pt-6">
               <div className="text-center">
                 <Target className="w-8 h-8 mx-auto mb-2" style={{ color: totalPL >= 0 ? '#10b981' : '#ef4444' }} />
                 <p className={`text-3xl font-bold ${totalPL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {totalPL > 0 ? '+' : ''}{totalPL.toFixed(2)}
                 </p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Łączny P&L</p>
+                <p className="text-sm text-muted-foreground">Łączny P&L</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-md">
+          <Card>
             <CardContent className="pt-6">
               <div className="text-center">
                 <Star className="w-8 h-8 mx-auto text-amber-500 mb-2" />
@@ -188,23 +191,23 @@ export default function StrategyDetails() {
                     />
                   ))}
                 </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Ocena</p>
+                <p className="text-sm text-muted-foreground">Ocena</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card className="text-center p-6 shadow-md">
-            <div className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Wygrane</div>
+          <Card className="text-center p-6">
+            <div className="text-sm font-semibold text-muted-foreground mb-2">Wygrane</div>
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">{wins}</p>
           </Card>
-          <Card className="text-center p-6 shadow-md">
-            <div className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Przegrane</div>
+          <Card className="text-center p-6">
+            <div className="text-sm font-semibold text-muted-foreground mb-2">Przegrane</div>
             <p className="text-2xl font-bold text-red-600 dark:text-red-400">{losses}</p>
           </Card>
-          <Card className="text-center p-6 shadow-md">
-            <div className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-2">Średni P&L</div>
+          <Card className="text-center p-6">
+            <div className="text-sm font-semibold text-muted-foreground mb-2">Średni P&L</div>
             <p className={`text-2xl font-bold ${avgPL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {parseFloat(avgPL) > 0 ? '+' : ''}{avgPL}
             </p>
@@ -214,66 +217,66 @@ export default function StrategyDetails() {
         {/* Setup i wskaźniki */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {strategy.setup_description && (
-            <Card className="shadow-md">
+            <Card>
               <CardHeader>
-                <CardTitle className="dark:text-white">Setup handlowy</CardTitle>
+                <CardTitle>Setup handlowy</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm">{strategy.setup_description}</p>
+                <p className="text-foreground whitespace-pre-wrap text-sm">{strategy.setup_description}</p>
               </CardContent>
             </Card>
           )}
 
           {strategy.entry_indicators && (
-            <Card className="shadow-md">
+            <Card>
               <CardHeader>
-                <CardTitle className="dark:text-white">Wskaźniki wejścia</CardTitle>
+                <CardTitle>Wskaźniki wejścia</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm">{strategy.entry_indicators}</p>
+                <p className="text-foreground whitespace-pre-wrap text-sm">{strategy.entry_indicators}</p>
               </CardContent>
             </Card>
           )}
 
           {strategy.exit_indicators && (
-            <Card className="shadow-md">
+            <Card>
               <CardHeader>
-                <CardTitle className="dark:text-white">Wskaźniki wyjścia</CardTitle>
+                <CardTitle>Wskaźniki wyjścia</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm">{strategy.exit_indicators}</p>
+                <p className="text-foreground whitespace-pre-wrap text-sm">{strategy.exit_indicators}</p>
               </CardContent>
             </Card>
           )}
 
           {strategy.risk_management && (
-            <Card className="shadow-md">
+            <Card>
               <CardHeader>
-                <CardTitle className="dark:text-white">Zarządzanie ryzykiem</CardTitle>
+                <CardTitle>Zarządzanie ryzykiem</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {strategy.risk_management.max_risk_percent && (
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Max ryzyko na transakcję</p>
-                    <p className="text-lg font-bold text-slate-900 dark:text-white">{strategy.risk_management.max_risk_percent}%</p>
+                    <p className="text-xs font-semibold text-muted-foreground">Max ryzyko na transakcję</p>
+                    <p className="text-lg font-bold text-foreground">{strategy.risk_management.max_risk_percent}%</p>
                   </div>
                 )}
                 {strategy.risk_management.position_size_method && (
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Rozmiar pozycji</p>
-                    <p className="text-sm text-slate-700 dark:text-slate-300">{strategy.risk_management.position_size_method}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">Rozmiar pozycji</p>
+                    <p className="text-sm text-foreground">{strategy.risk_management.position_size_method}</p>
                   </div>
                 )}
                 {strategy.risk_management.stop_loss_method && (
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Stop Loss</p>
-                    <p className="text-sm text-slate-700 dark:text-slate-300">{strategy.risk_management.stop_loss_method}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">Stop Loss</p>
+                    <p className="text-sm text-foreground">{strategy.risk_management.stop_loss_method}</p>
                   </div>
                 )}
                 {strategy.risk_management.take_profit_method && (
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Take Profit</p>
-                    <p className="text-sm text-slate-700 dark:text-slate-300">{strategy.risk_management.take_profit_method}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">Take Profit</p>
+                    <p className="text-sm text-foreground">{strategy.risk_management.take_profit_method}</p>
                   </div>
                 )}
               </CardContent>
@@ -284,35 +287,32 @@ export default function StrategyDetails() {
         {/* Wykresy wydajności */}
         {strategyTrades.length > 0 && (
           <>
-            <Card className="shadow-md">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-slate-900 dark:text-cyan-100">Kumulacyjny P&L</CardTitle>
+                <CardTitle className="text-foreground">Kumulacyjny P&L</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={cumulativePL}>
                     <defs>
                       <linearGradient id="colorCum" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.35} />
-                        <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
+                        <stop offset="5%" stopColor={CHART.line} stopOpacity={0.35} />
+                        <stop offset="95%" stopColor={CHART.line} stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: '8px' }}
-                      formatter={(value) => value.toFixed(2)}
-                    />
-                    <Area type="monotone" dataKey="cumulative" stroke="#22d3ee" fillOpacity={1} fill="url(#colorCum)" />
+                    <Tooltip contentStyle={chartTooltipStyle} formatter={(value) => value.toFixed(2)} />
+                    <Area type="monotone" dataKey="cumulative" stroke={CHART.line} fillOpacity={1} fill="url(#colorCum)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            <Card className="shadow-md">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-slate-900 dark:text-cyan-100">Wydajność miesięczna</CardTitle>
+                <CardTitle className="text-foreground">Wydajność miesięczna</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -320,10 +320,10 @@ export default function StrategyDetails() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
-                    <Tooltip contentStyle={{ borderRadius: '8px' }} />
+                    <Tooltip contentStyle={chartTooltipStyle} />
                     <Legend />
-                    <Bar dataKey="pl" fill="#22d3ee" name="P&L" />
-                    <Bar dataKey="trades" fill="#a855f7" name="Transakcje" />
+                    <Bar dataKey="pl" fill={CHART.profit} name="P&L" />
+                    <Bar dataKey="trades" fill={CHART.line} name="Transakcje" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -333,12 +333,12 @@ export default function StrategyDetails() {
 
         {/* Komentarz */}
         {strategy.comments && (
-          <Card className="border-l-4 border-cyan-500 dark:border-cyan-400 bg-cyan-50/80 dark:bg-cyan-950/25 shadow-md">
+          <Card className="border-l-2 border-primary bg-card">
             <CardHeader>
-              <CardTitle className="text-slate-900 dark:text-cyan-100 text-lg">Opinia o strategii</CardTitle>
+              <CardTitle className="text-foreground text-lg">Opinia o strategii</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{strategy.comments}</p>
+              <p className="text-foreground whitespace-pre-wrap">{strategy.comments}</p>
             </CardContent>
           </Card>
         )}

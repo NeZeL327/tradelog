@@ -268,7 +268,7 @@ export default function Cookies() {
                       : 'If you have questions about the use of cookies in Trade Journal, contact us:'}
                   </p>
                   <p className="mt-2">
-                    Email: <a href="mailto:privacy@tradejournal.app" className="text-blue-500 hover:underline">privacy@tradejournal.app</a>
+                    Email: <a href="mailto:privacy@tradejournal.app" className="text-primary hover:underline">privacy@tradejournal.app</a>
                   </p>
                   <p className="mt-3">
                     {isPolish
@@ -276,7 +276,7 @@ export default function Cookies() {
                       : 'More information about cookies can be found at:'}
                   </p>
                   <p>
-                    <a href="https://www.allaboutcookies.org" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                    <a href="https://www.allaboutcookies.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                       www.allaboutcookies.org
                     </a>
                   </p>

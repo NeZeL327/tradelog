@@ -34,11 +34,11 @@ const ACCENTS = {
     icon: "text-rose-500",
   },
   violet: {
-    active: "bg-violet-600 border-violet-600 text-white shadow-sm",
-    idle: "bg-background/80 border-border/80 text-muted-foreground hover:border-violet-400 hover:text-violet-700 dark:hover:text-violet-300",
-    manage: "border-violet-400/60 bg-violet-500/10",
-    section: "bg-violet-500/[0.04] dark:bg-violet-400/[0.06] border-violet-500/20",
-    icon: "text-violet-600",
+    active: "bg-primary border-primary text-primary-foreground",
+    idle: "bg-background/80 border-border/80 text-muted-foreground hover:border-primary/50 hover:text-foreground",
+    manage: "border-primary/60 bg-primary/10",
+    section: "bg-muted/40 border-border",
+    icon: "text-muted-foreground",
   },
 };
 

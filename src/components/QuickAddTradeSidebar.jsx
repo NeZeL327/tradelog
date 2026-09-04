@@ -36,14 +36,14 @@ export default function QuickAddTradeSidebar() {
       <div className="fixed right-3 top-20 z-40 pointer-events-none">
         <div
           className={cn(
-            "pointer-events-auto rounded-xl border border-slate-200 bg-white/95 shadow-xl backdrop-blur-sm dark:border-slate-700 dark:bg-card/95 transition-all",
+            "pointer-events-auto rounded-xl border border-border bg-card/95 shadow-lg backdrop-blur-sm transition-all",
             collapsed ? "w-12" : "w-12"
           )}
         >
           <div className="flex flex-col items-center gap-0 p-2">
             <Button
               onClick={() => setShowAddForm(true)}
-              className="h-10 w-10 rounded-xl border border-emerald-200/50 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 text-white shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl dark:border-slate-500/60"
+              className="h-10 w-10 rounded-md bg-primary text-primary-foreground"
               title="Szybko dodaj trade"
             >
               <span className="text-sm font-black tracking-wide">T</span>
@@ -63,11 +63,11 @@ export default function QuickAddTradeSidebar() {
 
       <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
         <DialogContent
-          className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+          className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-card text-card-foreground"
           {...preventDialogDismissProps}
           onEscapeKeyDown={(event) => event.preventDefault()}
         >
-          <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
+          <div className="sticky top-0 z-10 bg-card px-4 py-3 pr-12 border-b border-border">
             <DialogTitle>Dodaj nowy trade</DialogTitle>
           </div>
           <div className="p-4">

@@ -278,7 +278,7 @@ function CompactAPlusBody() {
                       <label
                         className={cn(
                           "flex items-center gap-1.5 rounded-md px-1 py-0.5 cursor-pointer text-[11px] leading-tight",
-                          checked ? "bg-violet-500/10" : "hover:bg-muted/50"
+                          checked ? "bg-primary/10" : "hover:bg-muted/50"
                         )}
                       >
                         <Checkbox
@@ -390,7 +390,7 @@ function CompactM1Body() {
               key={opt.id}
               className={cn(
                 "flex items-center gap-1.5 rounded-md px-1 py-0.5 cursor-pointer text-[11px] leading-tight",
-                checked ? "bg-cyan-500/10" : "hover:bg-muted/50"
+                checked ? "bg-primary/10" : "hover:bg-muted/50"
               )}
             >
               <Checkbox
@@ -399,7 +399,7 @@ function CompactM1Body() {
                 className="h-3 w-3"
               />
               <span className="flex-1 min-w-0">
-                <span className="font-semibold text-cyan-700 dark:text-cyan-300">{opt.code}</span>
+                <span className="font-semibold text-foreground">{opt.code}</span>
                 <span className="text-slate-700 dark:text-slate-300"> — {opt.label}</span>
               </span>
               <span className={cn("tabular-nums text-[9px] shrink-0", pointsToneClass(opt.points))}>
@@ -579,9 +579,7 @@ export default function FloatingCalculator() {
         className={cn(
           "flex items-center gap-1.5 px-2 py-1.5 border-b border-border/70 select-none shrink-0",
           !inPip && "cursor-grab active:cursor-grabbing",
-          ui.kind === "m1"
-            ? "bg-cyan-50/80 dark:bg-cyan-950/40"
-            : "bg-violet-50/80 dark:bg-violet-950/40"
+          "bg-muted/40"
         )}
         onPointerDown={(e) => {
           if (inPip) return;
@@ -598,9 +596,9 @@ export default function FloatingCalculator() {
       >
         {!inPip && <GripHorizontal className="w-4 h-4 text-muted-foreground shrink-0" />}
         {ui.kind === "m1" ? (
-          <Crosshair className="w-3.5 h-3.5 text-cyan-600 shrink-0" />
+          <Crosshair className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         ) : (
-          <Calculator className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+          <Calculator className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
         )}
         <span className="text-[11px] font-semibold truncate flex-1">
           {ui.kind === "m1" ? "M1 MASTERY" : "Konfiguracja A+"}
@@ -623,14 +621,14 @@ export default function FloatingCalculator() {
               type="button"
               variant="ghost"
               size="icon"
-              className="h-7 w-7 bg-violet-100 hover:bg-violet-200 dark:bg-violet-950 dark:hover:bg-violet-900"
+              className="h-7 w-7"
               title={inPip ? "Zamknij Picture-in-Picture" : "Picture-in-Picture — okno nad innymi aplikacjami"}
               onClick={() => {
                 if (inPip) closePip();
                 else openPip();
               }}
             >
-              <PictureInPicture2 className={cn("w-3.5 h-3.5 text-violet-700 dark:text-violet-300", inPip && "text-violet-600")} />
+              <PictureInPicture2 className={cn("w-3.5 h-3.5", inPip && "text-primary")} />
             </Button>
           )}
           {!inPip && (
@@ -676,16 +674,16 @@ export default function FloatingCalculator() {
       {(inPip || !ui.minimized) && (
         <>
           {!inPip && (
-            <div className="px-2 py-1.5 border-b border-violet-200/70 bg-violet-50/90 dark:bg-violet-950/40 dark:border-violet-800 shrink-0 space-y-1.5">
-              <p className="text-[10px] leading-snug text-violet-900 dark:text-violet-100">
-                <strong>Picture-in-Picture:</strong> fioletowa ikona{" "}
+            <div className="px-2 py-1.5 border-b border-border bg-muted/30 shrink-0 space-y-1.5">
+              <p className="text-[10px] leading-snug text-muted-foreground">
+                <strong>Picture-in-Picture:</strong> ikona{" "}
                 <PictureInPicture2 className="inline w-3 h-3" /> w belce — okno unosi się nad TradingView.
               </p>
               {pipSupported && (
                 <Button
                   type="button"
                   size="sm"
-                  className="h-7 w-full text-[11px] gap-1.5 bg-violet-600 hover:bg-violet-700"
+                  className="h-7 w-full text-[11px] gap-1.5"
                   onClick={() => openPip()}
                 >
                   <PictureInPicture2 className="w-3.5 h-3.5" />
@@ -710,7 +708,7 @@ export default function FloatingCalculator() {
               className={cn(
                 "flex-1 rounded-md px-2 py-0.5 text-[10px] font-medium transition",
                 ui.kind === "aplus"
-                  ? "bg-violet-600 text-white"
+                  ? "bg-primary text-primary-foreground"
                   : "hover:bg-muted text-muted-foreground"
               )}
               onClick={() => persist({ kind: "aplus" })}
@@ -722,7 +720,7 @@ export default function FloatingCalculator() {
               className={cn(
                 "flex-1 rounded-md px-2 py-0.5 text-[10px] font-medium transition",
                 ui.kind === "m1"
-                  ? "bg-cyan-600 text-white"
+                  ? "bg-primary text-primary-foreground"
                   : "hover:bg-muted text-muted-foreground"
               )}
               onClick={() => persist({ kind: "m1" })}
@@ -775,7 +773,7 @@ export default function FloatingCalculator() {
               title="Otwórz kalkulator"
               aria-label="Otwórz kalkulator"
             >
-              <Calculator className="w-5 h-5 text-violet-500" />
+              <Calculator className="w-5 h-5 text-muted-foreground" />
             </button>
           )}
 

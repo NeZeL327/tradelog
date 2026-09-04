@@ -6,6 +6,9 @@ import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
+import { createExpense, getExpenses, uploadUserFile } from "@/lib/localStorage";
 
 const EXPENSE_SCHEMA = {
   "type": "object",
@@ -69,6 +72,7 @@ const EXPENSE_SCHEMA = {
 
 export default function BulkUpload() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [files, setFiles] = useState([]);
   const [processing, setProcessing] = useState(false);
   const [results, setResults] = useState([]);
@@ -152,18 +156,65 @@ export default function BulkUpload() {
   };
 
   const checkForDuplicates = async (expenseData) => {
-    // Note: Duplicate checking requires database configuration
-    return false;
+    try {
+      const existing = await getExpenses(user?.id);
+      return existing.some((item) =>
+        item.vendor === expenseData.vendor &&
+        Number(item.amount) === Number(expenseData.amount) &&
+        item.date === expenseData.date
+      );
+    } catch (error) {
+      console.error("Duplicate check error:", error);
+      return false;
+    }
   };
 
   const processFiles = async () => {
+    if (!user?.id) {
+      toast.error("Zaloguj się, aby wgrać pliki.");
+      return;
+    }
     setProcessing(true);
     setDuplicatesCount(0);
-    
-    // Note: Bulk receipt processing requires additional configuration
-    alert("Bulk receipt processing feature is currently not available. Please enter expense details manually.");
-    
-    setProcessing(false);
+
+    try {
+      for (let index = 0; index < files.length; index += 1) {
+        setCurrentIndex(index);
+        setResults((prev) => prev.map((item, i) => (i === index ? { status: "processing" } : item)));
+        const selectedFile = files[index];
+        try {
+          const receipt_url = await uploadUserFile(user.id, selectedFile, "receipts");
+          const expenseData = {
+            vendor: selectedFile.name.replace(/\.[^.]+$/, ""),
+            amount: 0,
+            currency: "USD",
+            date: new Date().toISOString().split("T")[0],
+            category: "Other",
+            description: selectedFile.name,
+            receipt_url,
+          };
+          const isDuplicate = await checkForDuplicates(expenseData);
+          if (isDuplicate) {
+            setDuplicatesCount((count) => count + 1);
+            setResults((prev) => prev.map((item, i) => (i === index ? { status: "duplicate" } : item)));
+            continue;
+          }
+          await createExpense(user.id, expenseData);
+          setResults((prev) => prev.map((item, i) => (i === index ? { status: "success" } : item)));
+        } catch (error) {
+          console.error("Bulk upload file error:", error);
+          setResults((prev) => prev.map((item, i) => (
+            i === index ? { status: "error", error: error.message || "Upload failed" } : item
+          )));
+        }
+      }
+      toast.success("Przesyłanie zakończone.");
+    } catch (error) {
+      console.error("Bulk upload error:", error);
+      toast.error("Nie udało się przetworzyć plików.");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const isComplete = results.length > 0 && results.every(r => r.status === 'success' || r.status === 'error' || r.status === 'duplicate');
@@ -191,8 +242,8 @@ export default function BulkUpload() {
         <Card
           className={`border-2 border-dashed transition-all duration-200 cursor-pointer p-16 ${
             dragActive 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-slate-300 hover:border-blue-400 bg-gradient-to-br from-slate-50 to-white'
+              ? 'border-primary bg-primary/10' 
+              : 'border-border hover:border-primary/40 bg-card'
           }`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -209,8 +260,8 @@ export default function BulkUpload() {
             className="hidden"
           />
           <div className="flex flex-col items-center justify-center text-center px-4 sm:px-0">
-            <div className="w-20 sm:w-24 h-20 sm:h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-4 sm:mb-6 shadow-lg shadow-blue-500/30">
-              <Upload className="w-10 sm:w-12 h-10 sm:h-12 text-white" />
+            <div className="w-20 sm:w-24 h-20 sm:h-24 bg-muted rounded-full flex items-center justify-center mb-4 sm:mb-6">
+              <Upload className="w-10 sm:w-12 h-10 sm:h-12 text-muted-foreground" />
             </div>
             <h3 className="text-lg sm:text-xl font-semibold text-slate-900 mb-2">
               {dragActive ? 'Drop files here' : 'Drop files here or click to upload'}
@@ -218,7 +269,7 @@ export default function BulkUpload() {
             <p className="text-sm text-slate-600 mb-4">Support for JPG, JPEG, PNG and PDF files</p>
             <Button 
               type="button"
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-base h-12"
+              className="text-base h-12"
               onClick={(e) => {
                 e.stopPropagation();
                 fileInputRef.current?.click();
@@ -230,9 +281,9 @@ export default function BulkUpload() {
         </Card>
       ) : (
         <>
-          <Card className="border-0 shadow-lg bg-white/90 backdrop-blur-sm p-6">
+          <Card className="border border-border bg-card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-900">
+              <h3 className="font-semibold text-foreground">
                 Selected Files ({files.length})
               </h3>
               {!processing && !isComplete && (
@@ -256,16 +307,16 @@ export default function BulkUpload() {
                 <div
                   key={index}
                   className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
-                    results[index]?.status === 'processing' ? 'border-blue-500 bg-blue-50' :
+                    results[index]?.status === 'processing' ? 'border-primary bg-primary/10' :
                     results[index]?.status === 'success' ? 'border-emerald-500 bg-emerald-50' :
                     results[index]?.status === 'duplicate' ? 'border-amber-500 bg-amber-50' :
                     results[index]?.status === 'error' ? 'border-red-500 bg-red-50' :
-                    'border-slate-200 bg-slate-50'
+                    'border-border bg-muted/30'
                   }`}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900 text-sm truncate">{file.name}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="font-medium text-foreground text-sm truncate">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">
                       {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type || 'Unknown type'}
                     </p>
                     {results[index]?.status === 'error' && (
@@ -278,7 +329,7 @@ export default function BulkUpload() {
                   
                   <div className="flex items-center gap-2 ml-4">
                     {results[index]?.status === 'processing' && (
-                      <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                      <Loader2 className="w-5 h-5 text-primary animate-spin" />
                     )}
                     {results[index]?.status === 'success' && (
                       <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -316,7 +367,7 @@ export default function BulkUpload() {
             )}
 
             {isComplete && (
-              <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <div className="mt-4 p-4 bg-muted/40 rounded-md border border-border">
                 <p className="text-sm font-medium text-slate-900 mb-2">Processing Complete!</p>
                 <p className="text-sm text-slate-600">
                   ✓ {successCount} successful
@@ -331,7 +382,7 @@ export default function BulkUpload() {
             {!processing && !isComplete && (
               <Button
                 onClick={processFiles}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                className="flex-1"
                 disabled={files.length === 0}
               >
                 Process All Receipts
@@ -363,8 +414,8 @@ export default function BulkUpload() {
         </>
       )}
 
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <p className="text-sm text-blue-900">
+      <div className="bg-muted/40 border border-border rounded-md p-4">
+        <p className="text-sm text-foreground">
           <strong>Note:</strong> Bulk processing may take several minutes. Duplicate receipts (same vendor, amount, and date) will be automatically detected and skipped.
         </p>
       </div>

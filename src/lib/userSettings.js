@@ -16,7 +16,7 @@ export const DEFAULT_USER_SETTINGS = Object.freeze({
   time_format: "24h", // "24h" | "12h"
   show_session_clocks: true,
   notifications_enabled: true,
-  show_weekends: false,
+  show_weekends: true,
   privacy_mode: false,
   start_page: "/Dashboard",
   pnl_view: "money",

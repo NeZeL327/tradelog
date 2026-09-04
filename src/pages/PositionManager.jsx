@@ -132,7 +132,7 @@ export default function PositionManager() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-background dark:to-background p-2 sm:p-3">
+    <div className="min-h-screen bg-background p-2 sm:p-3">
       {/* Notification */}
       {notification && (
         <div
@@ -170,7 +170,7 @@ export default function PositionManager() {
           {/* Left: Entry Setup */}
           <div className="lg:col-span-2 space-y-6">
             {/* Direction + Entry */}
-            <div className={`${getStatusColor()} border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4`}>
+            <div className={`${getStatusColor()} border border-border rounded-xl p-6 space-y-4`}>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                 {isActive ? `${direction} pozycja aktywna` : "1. Nowa pozycja"}
               </h2>
@@ -182,7 +182,7 @@ export default function PositionManager() {
                   className={`px-6 py-2 rounded-lg font-semibold border transition ${
                     direction === "Long"
                       ? "bg-emerald-600 text-white border-emerald-600"
-                      : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300"
+                      : "bg-background border-border text-muted-foreground"
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   📈 Long
@@ -193,7 +193,7 @@ export default function PositionManager() {
                   className={`px-6 py-2 rounded-lg font-semibold border transition ${
                     direction === "Short"
                       ? "bg-rose-600 text-white border-rose-600"
-                      : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300"
+                      : "bg-background border-border text-muted-foreground"
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   📉 Short
@@ -209,7 +209,7 @@ export default function PositionManager() {
                     onChange={(e) => setEntryPrice(e.target.value)}
                     disabled={isActive}
                     placeholder="0.0000"
-                    className="w-full h-10 rounded-lg border border-slate-300 dark:border-slate-600 px-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white disabled:opacity-50"
+                    className="w-full h-10 rounded-lg border border-border px-3 bg-background text-foreground disabled:opacity-50"
                   />
                 </div>
                 <div>
@@ -220,7 +220,7 @@ export default function PositionManager() {
                     onChange={(e) => setPositionSize(e.target.value)}
                     disabled={isActive}
                     placeholder="1.0"
-                    className="w-full h-10 rounded-lg border border-slate-300 dark:border-slate-600 px-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white disabled:opacity-50"
+                    className="w-full h-10 rounded-lg border border-border px-3 bg-background text-foreground disabled:opacity-50"
                   />
                 </div>
                 <div>
@@ -231,7 +231,7 @@ export default function PositionManager() {
                     onChange={(e) => setSlPrice(e.target.value)}
                     disabled={isActive}
                     placeholder="0.0000"
-                    className="w-full h-10 rounded-lg border border-rose-300 dark:border-rose-600 px-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white disabled:opacity-50"
+                    className="w-full h-10 rounded-lg border border-rose-300 dark:border-rose-600 px-3 bg-background text-foreground disabled:opacity-50"
                   />
                 </div>
                 <div>
@@ -242,7 +242,7 @@ export default function PositionManager() {
                     onChange={(e) => setTpPrice(e.target.value)}
                     disabled={isActive}
                     placeholder="0.0000"
-                    className="w-full h-10 rounded-lg border border-emerald-300 dark:border-emerald-600 px-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white disabled:opacity-50"
+                    className="w-full h-10 rounded-lg border border-emerald-300 dark:border-emerald-600 px-3 bg-background text-foreground disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -250,7 +250,7 @@ export default function PositionManager() {
               <button
                 onClick={handleSetEntry}
                 disabled={isActive}
-                className="w-full py-3 rounded-lg bg-slate-900 text-white font-bold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition dark:bg-slate-900 dark:hover:bg-slate-800"
+                className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
                 {isActive ? "✓ Pozycja aktywna" : "➕ Ustaw pozycję"}
               </button>
@@ -258,11 +258,11 @@ export default function PositionManager() {
 
             {/* Close Partial */}
             {isActive && (
-              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4">
+              <div className="bg-card border border-border rounded-xl p-6 space-y-4">
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">2. Zamknij część pozycji</h2>
 
                 {closePercentDialog ? (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-300 dark:border-blue-700 rounded-lg p-4 space-y-3">
+                  <div className="bg-muted/40 border border-border rounded-md p-4 space-y-3">
                     <p className="font-semibold text-slate-900 dark:text-white">
                       Zamykasz {closePercentDialog}% ({(remainingSize * closePercentDialog / 100).toFixed(2)} lots)
                     </p>
@@ -272,7 +272,7 @@ export default function PositionManager() {
                       onChange={(e) => setDialogPrice(e.target.value)}
                       placeholder="Exit price"
                       autoFocus
-                      className="w-full h-10 rounded-lg border border-blue-300 dark:border-blue-600 px-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                      className="w-full h-10 rounded-md border border-border px-3 bg-background text-foreground"
                     />
                     <div className="flex gap-2">
                       <button
@@ -283,7 +283,7 @@ export default function PositionManager() {
                       </button>
                       <button
                         onClick={() => setClosePercentDialog(null)}
-                        className="flex-1 py-2 rounded-lg border border-slate-300 dark:border-slate-600 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-900 dark:text-white"
+                        className="flex-1 py-2 rounded-lg border border-border font-bold hover:bg-muted text-foreground"
                       >
                         ❌ Anuluj
                       </button>
@@ -298,7 +298,7 @@ export default function PositionManager() {
                         className={`py-3 rounded-lg font-bold border transition ${
                           percent === 100
                             ? "bg-rose-600 text-white border-rose-600 hover:bg-rose-700"
-                            : "bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-600"
+                            : "bg-background border-border text-foreground hover:bg-muted"
                         }`}
                       >
                         {percent}%
@@ -311,13 +311,13 @@ export default function PositionManager() {
 
             {/* Closed Trades */}
             {closedTrades.length > 0 && (
-              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-3">
+              <div className="bg-card border border-border rounded-xl p-6 space-y-3">
                 <h3 className="font-bold text-slate-900 dark:text-white">📋 Historia zamknięć</h3>
                 <div className="space-y-2">
                   {closedTrades.map((trade) => (
                     <div
                       key={trade.id}
-                      className="flex justify-between items-center p-3 bg-slate-100 dark:bg-slate-900 rounded-lg"
+                      className="flex justify-between items-center p-3 bg-muted/40 rounded-lg"
                     >
                       <div className="text-sm">
                         <p className="font-semibold text-slate-900 dark:text-white">
@@ -340,7 +340,7 @@ export default function PositionManager() {
             {isActive && (
               <>
                 {/* Remaining Size */}
-                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+                <div className="bg-card border border-border rounded-xl p-4">
                   <p className="text-xs text-slate-600 dark:text-slate-400">Pozostało</p>
                   <p className="text-3xl font-bold text-slate-900 dark:text-white">
                     {remainingSize.toFixed(2)}
@@ -351,14 +351,14 @@ export default function PositionManager() {
                 </div>
 
                 {/* Current Price */}
-                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+                <div className="bg-card border border-border rounded-xl p-4">
                   <label className="text-xs text-slate-600 dark:text-slate-400">Cena bieżąca</label>
                   <input
                     type="number"
                     value={currentPrice}
                     onChange={(e) => setCurrentPrice(e.target.value)}
                     placeholder="0.0000"
-                    className="w-full mt-2 h-10 rounded-lg border border-slate-300 dark:border-slate-600 px-3 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                    className="w-full mt-2 h-10 rounded-lg border border-border px-3 bg-background text-foreground"
                   />
                 </div>
 
@@ -376,15 +376,15 @@ export default function PositionManager() {
 
                 {/* Unrealized PnL */}
                 {currentUnrealizedPnL !== null && (
-                  <div className={`${currentUnrealizedPnL >= 0 ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700" : "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700"} border rounded-xl p-4`}>
-                    <p className={`text-xs ${currentUnrealizedPnL >= 0 ? "text-blue-700 dark:text-blue-400" : "text-orange-700 dark:text-orange-400"}`}>
+                  <div className={`${currentUnrealizedPnL >= 0 ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800" : "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800"} border rounded-md p-4`}>
+                    <p className={`text-xs ${currentUnrealizedPnL >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"}`}>
                       Niezrealizowany P&L
                     </p>
                     <p
                       className={`text-2xl font-bold ${
                         currentUnrealizedPnL >= 0
-                          ? "text-blue-600 dark:text-blue-400"
-                          : "text-orange-600 dark:text-orange-400"
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-rose-600 dark:text-rose-400"
                       }`}
                     >
                       {currentUnrealizedPnL > 0 ? "+" : ""}{currentUnrealizedPnL.toFixed(2)}
@@ -419,8 +419,8 @@ export default function PositionManager() {
             )}
 
             {!isActive && (
-              <div className="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl p-6 text-center">
-                <p className="text-slate-600 dark:text-slate-400 text-sm">
+              <div className="bg-muted/30 border border-border rounded-xl p-6 text-center">
+                <p className="text-muted-foreground text-sm">
                   👈 Wpisz parametry i kliknij "Ustaw pozycję" aby zacząć
                 </p>
               </div>

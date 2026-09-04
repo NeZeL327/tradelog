@@ -249,7 +249,7 @@ export const createTradingAccount = (userId, accountData) => {
       accountData.max_monthly_loss_amount || null,
       accountData.status || 'Aktywne',
       accountData.notes || null,
-      accountData.color || '#3b82f6',
+      accountData.color || '#64748b',
       accountData.profit_target || null,
       accountData.max_drawdown || null
     );

@@ -72,7 +72,7 @@ export default function Features() {
               >
                 {t('features') || 'Funkcje'}
               </h1>
-              <p className="text-slate-300 text-base sm:text-lg max-w-xl leading-relaxed px-2">
+              <p className="text-white/70 text-base sm:text-lg max-w-xl leading-relaxed px-2">
                 Wszystko, czego potrzebujesz do prowadzenia dziennika handlowego — w jednym miejscu.
               </p>
             </div>
@@ -85,7 +85,7 @@ export default function Features() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mb-20"
           >
-            <h2 className="text-2xl font-semibold text-slate-100 text-center mb-8">
+            <h2 className="text-2xl font-semibold text-white text-center mb-8">
               Główne narzędzia
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
@@ -101,11 +101,11 @@ export default function Features() {
                   >
                     <motion.div whileHover={v.hover} className="h-full">
                       <LiveCard variant="main" className="h-full">
-                        <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-white/8 hover:border-blue-500/50 h-full overflow-hidden shadow-lg group">
+                        <Card className="feature-card-live feature-card-live-main bg-black/40 border-white/8 hover:border-primary/50 h-full overflow-hidden shadow-none group">
                           <CardContent className="p-6 relative">
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                            <div className="absolute inset-0 rounded-md bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                             <motion.div
-                              className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400/60 to-transparent"
+                              className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/60 to-transparent"
                               initial={{ scaleX: 0 }}
                               animate={{ scaleX: 1 }}
                               transition={{ duration: 0.6, delay: 0.5 + index * 0.1 }}
@@ -117,10 +117,10 @@ export default function Features() {
                               className="mb-4"
                               iconAnimation={v.icon}
                             />
-                            <h3 className="relative text-xl font-semibold text-slate-100 mb-2">
+                            <h3 className="relative text-xl font-semibold text-white mb-2">
                               {feature.title}
                             </h3>
-                            <p className="relative text-slate-300">{feature.description}</p>
+                            <p className="relative text-white/70">{feature.description}</p>
                           </CardContent>
                         </Card>
                       </LiveCard>
@@ -138,7 +138,7 @@ export default function Features() {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="mb-16"
           >
-            <h2 className="text-2xl font-semibold text-slate-100 text-center mb-8">
+            <h2 className="text-2xl font-semibold text-white text-center mb-8">
               Co jeszcze oferujemy
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
@@ -154,19 +154,19 @@ export default function Features() {
                   >
                     <motion.div whileHover={v.hover} className="h-full">
                       <LiveCard variant="more" className="h-full">
-                        <Card className="feature-card-live feature-card-live-more bg-slate-800/70 border-white/8 hover:border-primary/50 h-full overflow-hidden shadow-lg group">
+                        <Card className="feature-card-live feature-card-live-more bg-black/35 border-white/8 hover:border-primary/50 h-full overflow-hidden shadow-lg group">
                           <CardContent className="p-6 relative">
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-blue-400/8 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                            <div className="absolute inset-0 rounded-md bg-gradient-to-b from-primary/8 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                             <AnimatedFeatureIcon
                               icon={Icon}
                               variant="more"
                               className="mb-4"
                               iconAnimation={v.icon}
                             />
-                            <h3 className="relative text-lg font-semibold text-slate-100 mb-2">
+                            <h3 className="relative text-lg font-semibold text-white mb-2">
                               {feature.title}
                             </h3>
-                            <p className="relative text-slate-400 text-sm">{feature.description}</p>
+                            <p className="relative text-white/55 text-sm">{feature.description}</p>
                           </CardContent>
                         </Card>
                       </LiveCard>
@@ -185,17 +185,17 @@ export default function Features() {
             className="text-center"
           >
             <LiveCard variant="main" className="max-w-2xl mx-auto">
-            <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-blue-500/40 max-w-2xl mx-auto">
+            <Card className="feature-card-live feature-card-live-main bg-black/40 border-primary/40 max-w-2xl mx-auto">
               <CardContent className="p-8">
-                <h2 className="text-2xl font-bold text-slate-100 mb-3">
+                <h2 className="text-2xl font-bold text-white mb-3">
                   Gotowy na start?
                 </h2>
-                <p className="text-slate-400 mb-6">
+                <p className="text-white/55 mb-6">
                   Załóż konto i korzystaj ze wszystkich funkcji. Bez karty kredytowej.
                 </p>
                 <a
                   href={createPageUrl('Register')}
-                  className="inline-flex items-center gap-2 rounded-xl fx-cta px-6 py-3 text-lg font-semibold text-white shadow-lg   transition-colors"
+                  className="inline-flex items-center gap-2 rounded-xl fx-cta px-6 py-3 text-lg font-semibold"
                 >
                   {t('pricingGetStarted') || 'Zacznij za darmo'}
                   <ArrowRight className="w-5 h-5" />

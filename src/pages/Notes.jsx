@@ -14,7 +14,7 @@ import {
   Link2, ImagePlus, Table2, Highlighter,
   Pin, PinOff, Trash2, Plus, Search, FolderOpen, FileText,
   ChevronRight, MoreHorizontal, Check, X, Download, Upload,
-  Clock, BookOpen, Copy, Clipboard, Undo2, Redo2
+  Clock, BookOpen, Copy, Clipboard, Undo2, Redo2, Bell
 } from "lucide-react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -54,6 +54,7 @@ import {
   writeBatch
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { fromLocalDateTimeInput, requestNotificationPermission, toLocalDateTimeInput } from "@/lib/reminders";
 
 const userCol = (userId, name) => collection(db, "users", String(userId), name);
 
@@ -172,6 +173,8 @@ const buildEmptyNote = (sectionId, notebookId) => ({
   pinnedToSidebar: false,
   visibilityScope: "all",
   visibleOnPages: [],
+  reminderAt: "",
+  reminderSentAt: "",
   createdAt: serverTimestamp(),
   updatedAt: serverTimestamp()
 });
@@ -581,12 +584,12 @@ export default function Notes() {
   };
 
   return (
-    <div className="h-[min(720px,calc(100vh-8rem))] flex flex-col overflow-hidden rounded-xl border border-cyan-500/15 dark:border-cyan-500/25 bg-transparent dashboard-surface">
+    <div className="h-[min(720px,calc(100vh-8rem))] flex flex-col overflow-hidden rounded-md border border-border bg-transparent dashboard-surface">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-cyan-500/15 dark:border-cyan-500/25 bg-card/95 dark:bg-[hsl(222_40%_8%_/_0.92)] backdrop-blur-sm shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-          <h1 className="text-lg font-semibold text-slate-900 dark:text-cyan-100">Notatki</h1>
+          <BookOpen className="h-5 w-5 text-muted-foreground" />
+          <h1 className="text-lg font-semibold text-foreground">Notatki</h1>
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 animate-pulse">⚠ W budowie — możliwe błędy</span>
           <Badge variant="secondary" className="text-xs">{notes.length}</Badge>
         </div>
@@ -644,13 +647,13 @@ export default function Notes() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* ── LEFT SIDEBAR ── */}
-        <aside className="w-[260px] shrink-0 border-r border-cyan-500/15 dark:border-cyan-500/20 bg-card/90 dark:bg-[hsl(222_42%_9%_/_0.85)] flex flex-col overflow-hidden">
+        <aside className="w-[260px] shrink-0 border-r border-border bg-card flex flex-col overflow-hidden">
           {/* Search */}
-          <div className="p-3 border-b border-slate-100 dark:border-border">
+          <div className="p-3 border-b border-border">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <Input
-                className="pl-8 h-8 text-xs bg-slate-50 dark:bg-card border-slate-200 dark:border-slate-700"
+                className="pl-8 h-8 text-xs bg-muted/30 border-border"
                 placeholder="Szukaj notatek..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -660,9 +663,9 @@ export default function Notes() {
 
           {/* Tag filter */}
           {allTags.length > 0 && (
-            <div className="px-3 py-2 border-b border-slate-100 dark:border-border flex flex-wrap gap-1">
+            <div className="px-3 py-2 border-b border-border flex flex-wrap gap-1">
               <button
-                className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors", !activeTagFilter ? "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300")}
+                className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors", !activeTagFilter ? "bg-primary/15 text-primary" : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300")}
                 onClick={() => setActiveTagFilter(null)}
               >
                 Wszystkie
@@ -693,7 +696,7 @@ export default function Notes() {
                   <div
                     className={cn(
                       "group flex items-center gap-1 px-2 py-1.5 mx-1 rounded-md cursor-pointer select-none",
-                      isActive ? "bg-violet-50 dark:bg-violet-950/30" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      isActive ? "bg-primary/10" : "hover:bg-muted/50"
                     )}
                     onClick={() => {
                       setActiveFolderId(folder.id);
@@ -701,7 +704,7 @@ export default function Notes() {
                     }}
                   >
                     <ChevronRight className={cn("h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform", isExpanded && "rotate-90")} />
-                    <FolderOpen className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-violet-500" : "text-slate-400")} />
+                    <FolderOpen className={cn("h-3.5 w-3.5 shrink-0", isActive ? "text-primary" : "text-slate-400")} />
 
                     {isEditing ? (
                       <input
@@ -718,7 +721,7 @@ export default function Notes() {
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
-                      <span className={cn("flex-1 text-xs font-medium truncate", isActive ? "text-violet-700 dark:text-violet-300" : "text-slate-700 dark:text-slate-300")}>
+                      <span className={cn("flex-1 text-xs font-medium truncate", isActive ? "text-primary" : "text-slate-700 dark:text-slate-300")}>
                         {folder.name || "Folder"}
                       </span>
                     )}
@@ -728,7 +731,7 @@ export default function Notes() {
                     {/* Folder actions */}
                     <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
                       <button
-                        className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
+                        className="p-0.5 rounded hover:bg-muted"
                         title="Nowa notatka"
                         onClick={() => handleCreateNote(folder.id)}
                       >
@@ -736,7 +739,7 @@ export default function Notes() {
                       </button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700">
+                          <button className="p-0.5 rounded hover:bg-muted">
                             <MoreHorizontal className="h-3 w-3 text-slate-500" />
                           </button>
                         </DropdownMenuTrigger>
@@ -758,7 +761,7 @@ export default function Notes() {
                     <div className="ml-5 mr-1 mt-0.5 space-y-0.5 mb-1">
                       {folderNotes.length === 0 ? (
                         <button
-                          className="w-full text-left px-2 py-1.5 text-xs text-slate-400 dark:text-slate-500 rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 border border-dashed border-slate-200 dark:border-slate-700"
+                          className="w-full text-left px-2 py-1.5 text-xs text-muted-foreground rounded hover:bg-muted/40 border border-dashed border-border"
                           onClick={() => handleCreateNote(folder.id)}
                         >
                           + Dodaj notatkę
@@ -772,14 +775,14 @@ export default function Notes() {
                               className={cn(
                                 "group flex items-start gap-1.5 px-2 py-1.5 rounded-md cursor-pointer",
                                 isSelected
-                                  ? "bg-violet-100 dark:bg-violet-950/50"
-                                  : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                                  ? "bg-primary/15"
+                                  : "hover:bg-muted/40"
                               )}
                               onClick={() => { setActiveFolderId(folder.id); setSelectedNoteId(note.id); }}
                             >
-                              <FileText className={cn("h-3.5 w-3.5 shrink-0 mt-0.5", isSelected ? "text-violet-500" : "text-slate-400")} />
+                              <FileText className={cn("h-3.5 w-3.5 shrink-0 mt-0.5", isSelected ? "text-primary" : "text-slate-400")} />
                               <div className="flex-1 min-w-0">
-                                <div className={cn("text-xs font-medium truncate leading-tight", isSelected ? "text-violet-700 dark:text-violet-300" : "text-slate-700 dark:text-slate-300")}>
+                                <div className={cn("text-xs font-medium truncate leading-tight", isSelected ? "text-primary" : "text-slate-700 dark:text-slate-300")}>
                                   {note.pinned && <Pin className="inline h-2.5 w-2.5 text-amber-500 mr-1" />}
                                   {note.title || "Bez tytułu"}
                                 </div>
@@ -793,7 +796,7 @@ export default function Notes() {
                               <div className="opacity-0 group-hover:opacity-100 shrink-0" onClick={(e) => e.stopPropagation()}>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <button className="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700">
+                                    <button className="p-0.5 rounded hover:bg-muted">
                                       <MoreHorizontal className="h-3 w-3 text-slate-400" />
                                     </button>
                                   </DropdownMenuTrigger>
@@ -808,7 +811,7 @@ export default function Notes() {
                                       <DropdownMenuSubContent className="w-40 text-xs">
                                         {folders.filter((f) => f.id !== note.sectionId).map((f) => (
                                           <DropdownMenuItem key={f.id} onClick={() => handleMoveNote(note.id, f.id)}>
-                                            <FolderOpen className="h-3.5 w-3.5 mr-2 text-violet-400" />  
+                                            <FolderOpen className="h-3.5 w-3.5 mr-2 text-muted-foreground" />  
                                             {f.name}
                                           </DropdownMenuItem>
                                         ))}
@@ -859,7 +862,7 @@ export default function Notes() {
                 </div>
               ) : (
                 <button
-                  className="w-full flex items-center gap-1.5 px-2 py-1.5 text-xs text-slate-500 dark:text-slate-400 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
+                  className="w-full flex items-center gap-1.5 px-2 py-1.5 text-xs text-muted-foreground rounded-md hover:bg-muted/40 transition-colors"
                   onClick={() => setShowNewFolderInput(true)}
                 >
                   <Plus className="h-3 w-3" />
@@ -871,11 +874,11 @@ export default function Notes() {
         </aside>
 
         {/* ── EDITOR PANEL ── */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-background">
+        <main className="flex-1 flex flex-col overflow-hidden bg-background">
           {!selectedNote ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-              <div className="w-16 h-16 rounded-2xl bg-violet-50 dark:bg-violet-950/30 flex items-center justify-center mb-4">
-                <FileText className="h-8 w-8 text-violet-400" />
+              <div className="w-16 h-16 rounded-md bg-muted flex items-center justify-center mb-4">
+                <FileText className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-base font-medium text-slate-700 dark:text-slate-300 mb-1">Wybierz notatkę</h3>
               <p className="text-sm text-slate-400 max-w-xs">
@@ -891,11 +894,11 @@ export default function Notes() {
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Note header */}
-              <div className="px-6 pt-5 pb-3 border-b border-slate-100 dark:border-border shrink-0">
+              <div className="px-6 pt-5 pb-3 border-b border-border shrink-0">
                 {/* Title */}
                 <input
                   ref={titleInputRef}
-                  className="w-full bg-transparent text-2xl font-bold text-slate-900 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-600 outline-none mb-3"
+                  className="w-full bg-transparent text-2xl font-bold text-foreground placeholder:text-muted-foreground outline-none mb-3"
                   placeholder="Tytuł notatki..."
                   value={titleDraft}
                   maxLength={TITLE_MAX}
@@ -905,6 +908,30 @@ export default function Notes() {
                     updateNote(selectedNote.id, { title: v });
                   }}
                 />
+
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Bell className="h-3.5 w-3.5" />
+                    {t("notesReminder") || "Przypomnienie"}
+                    <input
+                      type="datetime-local"
+                      className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground"
+                      value={toLocalDateTimeInput(selectedNote.reminderAt)}
+                      onChange={async (e) => {
+                        const reminderAt = fromLocalDateTimeInput(e.target.value);
+                        if (reminderAt) {
+                          const permission = await requestNotificationPermission();
+                          if (permission !== "granted") {
+                            toast.info(t("notesReminderPermission"));
+                          } else {
+                            toast.success(t("notesReminderSet"));
+                          }
+                        }
+                        updateNote(selectedNote.id, { reminderAt, reminderSentAt: "" });
+                      }}
+                    />
+                  </label>
+                </div>
 
                 {/* Tags row */}
                 <div className="flex flex-wrap items-center gap-1.5 mb-2">
@@ -936,7 +963,7 @@ export default function Notes() {
                     </div>
                   ) : (
                     <button
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-slate-400 border border-dashed border-slate-300 dark:border-slate-700 hover:border-violet-400 hover:text-violet-500 transition-colors"
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-muted-foreground border border-dashed border-border hover:border-primary hover:text-primary transition-colors"
                       onClick={() => setShowTagInput(true)}
                     >
                       <Plus className="h-2.5 w-2.5" />
@@ -969,7 +996,7 @@ export default function Notes() {
                 </div>
 
                 {/* Toolbar */}
-                <div className="flex flex-wrap items-center gap-0.5 bg-slate-50 dark:bg-card/60 rounded-lg p-1 border border-slate-200 dark:border-border">
+                <div className="flex flex-wrap items-center gap-0.5 bg-muted/30 rounded-lg p-1 border border-border">
                   {/* Format text */}
                   {[
                     { icon: Bold, title: "Pogrubienie (Ctrl+B)", action: () => editor?.chain().focus().toggleBold().run(), isActive: editor?.isActive('bold') },
@@ -978,13 +1005,13 @@ export default function Notes() {
                     { icon: Strikethrough, title: "Przekreślenie", action: () => editor?.chain().focus().toggleStrike().run(), isActive: editor?.isActive('strike') },
                   ].map((item) => (
                     <button key={item.title} type="button" title={item.title}
-                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-muted text-foreground" : "hover:bg-muted text-muted-foreground hover:text-foreground")}
                       onMouseDown={(e) => e.preventDefault()} onClick={item.action}>
                       <item.icon className="h-3.5 w-3.5" />
                     </button>
                   ))}
 
-                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                  <div className="w-px h-5 bg-border mx-0.5" />
 
                   {/* Headings */}
                   {[
@@ -993,13 +1020,13 @@ export default function Notes() {
                     { icon: Heading3, title: "Nagłówek 3", action: () => editor?.chain().focus().toggleHeading({ level: 3 }).run(), isActive: editor?.isActive('heading', { level: 3 }) },
                   ].map((item) => (
                     <button key={item.title} type="button" title={item.title}
-                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-muted text-foreground" : "hover:bg-muted text-muted-foreground hover:text-foreground")}
                       onMouseDown={(e) => e.preventDefault()} onClick={item.action}>
                       <item.icon className="h-3.5 w-3.5" />
                     </button>
                   ))}
 
-                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                  <div className="w-px h-5 bg-border mx-0.5" />
 
                   {/* Lists + Quote */}
                   {[
@@ -1008,13 +1035,13 @@ export default function Notes() {
                     { icon: Quote, title: "Cytat", action: () => editor?.chain().focus().toggleBlockquote().run(), isActive: editor?.isActive('blockquote') },
                   ].map((item) => (
                     <button key={item.title} type="button" title={item.title}
-                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-muted text-foreground" : "hover:bg-muted text-muted-foreground hover:text-foreground")}
                       onMouseDown={(e) => e.preventDefault()} onClick={item.action}>
                       <item.icon className="h-3.5 w-3.5" />
                     </button>
                   ))}
 
-                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                  <div className="w-px h-5 bg-border mx-0.5" />
 
                   {/* Text align */}
                   {[
@@ -1023,19 +1050,19 @@ export default function Notes() {
                     { icon: AlignRight, title: "Wyrównaj do prawej", action: () => editor?.chain().focus().setTextAlign('right').run(), isActive: editor?.isActive({ textAlign: 'right' }) },
                   ].map((item) => (
                     <button key={item.title} type="button" title={item.title}
-                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                      className={cn("p-1.5 rounded transition-colors", item.isActive ? "bg-muted text-foreground" : "hover:bg-muted text-muted-foreground hover:text-foreground")}
                       onMouseDown={(e) => e.preventDefault()} onClick={item.action}>
                       <item.icon className="h-3.5 w-3.5" />
                     </button>
                   ))}
 
-                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                  <div className="w-px h-5 bg-border mx-0.5" />
 
                   {/* Highlight color picker */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button type="button" title="Zaznacz kolorem"
-                        className={cn("p-1.5 rounded transition-colors", editor?.isActive('highlight') ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                        className={cn("p-1.5 rounded transition-colors", editor?.isActive('highlight') ? "bg-muted text-foreground" : "hover:bg-muted text-muted-foreground hover:text-foreground")}
                         onMouseDown={(e) => e.preventDefault()}>
                         <Highlighter className="h-3.5 w-3.5" />
                       </button>
@@ -1049,12 +1076,12 @@ export default function Notes() {
                       ].map(({ color, label }) => (
                         <button key={color} title={label} onMouseDown={(e) => e.preventDefault()}
                           onClick={() => editor?.chain().focus().toggleHighlight({ color }).run()}
-                          className="w-6 h-6 rounded border border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform"
+                          className="w-6 h-6 rounded border border-border hover:scale-110 transition-transform"
                           style={{ backgroundColor: color }} />
                       ))}
                       <button title="Usuń highlight" onMouseDown={(e) => e.preventDefault()}
                         onClick={() => editor?.chain().focus().unsetHighlight().run()}
-                        className="w-6 h-6 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 hover:scale-110 transition-transform flex items-center justify-center">
+                        className="w-6 h-6 rounded border border-border bg-background hover:opacity-90 transition-opacity flex items-center justify-center">
                         <X className="h-3 w-3 text-slate-500" />
                       </button>
                     </DropdownMenuContent>
@@ -1063,7 +1090,7 @@ export default function Notes() {
                   {/* Link */}
                   <div className="relative flex items-center">
                     <button type="button" title="Wstaw link"
-                      className={cn("p-1.5 rounded transition-colors", editor?.isActive('link') ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                      className={cn("p-1.5 rounded transition-colors", editor?.isActive('link') ? "bg-muted text-foreground" : "hover:bg-muted text-muted-foreground hover:text-foreground")}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => {
                         setLinkUrl(editor?.getAttributes('link').href || '');
@@ -1072,17 +1099,17 @@ export default function Notes() {
                       <Link2 className="h-3.5 w-3.5" />
                     </button>
                     {showLinkInput && (
-                      <div className="absolute top-8 left-0 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-2 flex gap-1 min-w-[220px]">
+                      <div className="absolute top-8 left-0 z-50 bg-popover text-popover-foreground border border-border rounded-lg shadow-lg p-2 flex gap-1 min-w-[220px]">
                         <input
                           autoFocus
-                          className="flex-1 text-xs px-2 py-1 rounded border border-slate-200 dark:border-slate-700 bg-transparent outline-none text-slate-900 dark:text-slate-100"
+                          className="flex-1 text-xs px-2 py-1 rounded border border-border bg-transparent outline-none text-foreground"
                           placeholder="https://..."
                           value={linkUrl}
                           onChange={(e) => setLinkUrl(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleSetLink(); if (e.key === 'Escape') setShowLinkInput(false); }}
                         />
-                        <button className="px-2 py-1 text-xs bg-violet-600 text-white rounded hover:bg-violet-700" onClick={handleSetLink}>OK</button>
-                        <button className="px-2 py-1 text-xs rounded hover:bg-slate-100 dark:hover:bg-slate-700" onClick={() => setShowLinkInput(false)}><X className="h-3 w-3" /></button>
+                        <button className="px-2 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90" onClick={handleSetLink}>OK</button>
+                        <button className="px-2 py-1 text-xs rounded hover:bg-muted" onClick={() => setShowLinkInput(false)}><X className="h-3 w-3" /></button>
                       </div>
                     )}
                   </div>
@@ -1090,7 +1117,7 @@ export default function Notes() {
                   {/* Image upload */}
                   <button type="button" title={isUploadingImage ? "Wgrywanie..." : "Wstaw obrazek"}
                     disabled={isUploadingImage}
-                    className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors disabled:opacity-50"
+                    className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => imageInputRef.current?.click()}>
                     <ImagePlus className="h-3.5 w-3.5" />
@@ -1102,7 +1129,7 @@ export default function Notes() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button type="button" title="Tabela"
-                        className={cn("p-1.5 rounded transition-colors", editor?.isActive('table') ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100" : "hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100")}
+                        className={cn("p-1.5 rounded transition-colors", editor?.isActive('table') ? "bg-muted text-foreground" : "hover:bg-muted text-muted-foreground hover:text-foreground")}
                         onMouseDown={(e) => e.preventDefault()}>
                         <Table2 className="h-3.5 w-3.5" />
                       </button>
@@ -1124,7 +1151,7 @@ export default function Notes() {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                  <div className="w-px h-5 bg-border mx-0.5" />
 
                   {/* Undo / Redo */}
                   {[
@@ -1132,19 +1159,19 @@ export default function Notes() {
                     { icon: Redo2, title: "Ponów (Ctrl+Y)", action: () => editor?.chain().focus().redo().run() },
                   ].map((item) => (
                     <button key={item.title} type="button" title={item.title}
-                      className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+                      className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                       onMouseDown={(e) => e.preventDefault()} onClick={item.action}>
                       <item.icon className="h-3.5 w-3.5" />
                     </button>
                   ))}
 
-                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+                  <div className="w-px h-5 bg-border mx-0.5" />
 
                   {/* Templates dropdown */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button type="button" title="Wstaw szablon"
-                        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors text-[11px] font-medium">
+                        className="flex items-center gap-1 px-2 py-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors text-[11px] font-medium">
                         <Clipboard className="h-3.5 w-3.5" />
                         Szablon
                       </button>
@@ -1187,7 +1214,7 @@ export default function Notes() {
         .tiptap-notes-editor .ProseMirror ul { list-style: disc; padding-left: 1.25rem; margin: 0.5rem 0; }
         .tiptap-notes-editor .ProseMirror ol { list-style: decimal; padding-left: 1.25rem; margin: 0.5rem 0; }
         .tiptap-notes-editor .ProseMirror blockquote {
-          border-left: 4px solid #8b5cf6;
+          border-left: 4px solid hsl(var(--primary));
           padding-left: 1rem;
           font-style: italic;
           color: #64748b;
@@ -1207,11 +1234,11 @@ export default function Notes() {
         }
         /* Links */
         .tiptap-notes-editor .ProseMirror .tiptap-link {
-          color: #7c3aed;
+          color: hsl(var(--primary));
           text-decoration: underline;
           cursor: pointer;
         }
-        .dark .tiptap-notes-editor .ProseMirror .tiptap-link { color: #a78bfa; }
+        .dark .tiptap-notes-editor .ProseMirror .tiptap-link { color: hsl(var(--primary)); }
         /* Images */
         .tiptap-notes-editor .ProseMirror .tiptap-image {
           max-width: 100%;
@@ -1221,7 +1248,7 @@ export default function Notes() {
           display: block;
         }
         .tiptap-notes-editor .ProseMirror img.tiptap-image.ProseMirror-selectednode {
-          outline: 2px solid #8b5cf6;
+          outline: 2px solid hsl(var(--primary));
         }
         /* Tables */
         .tiptap-notes-editor .ProseMirror table {
@@ -1233,7 +1260,7 @@ export default function Notes() {
         }
         .tiptap-notes-editor .ProseMirror table td,
         .tiptap-notes-editor .ProseMirror table th {
-          border: 1px solid #e2e8f0;
+          border: 1px solid hsl(var(--border));
           padding: 0.4rem 0.75rem;
           min-width: 60px;
           vertical-align: top;
@@ -1248,23 +1275,19 @@ export default function Notes() {
           top: 0;
           bottom: 0;
           width: 4px;
-          background-color: #6366f1;
+          background-color: hsl(var(--primary));
           cursor: col-resize;
           pointer-events: none;
         }
         .tiptap-notes-editor .ProseMirror.resize-cursor {
           cursor: col-resize;
         }
-        .dark .tiptap-notes-editor .ProseMirror table td,
-        .dark .tiptap-notes-editor .ProseMirror table th { border-color: #334155; }
         .tiptap-notes-editor .ProseMirror table th {
-          background: #f8fafc;
+          background: hsl(var(--muted) / 0.45);
           font-weight: 600;
           text-align: left;
         }
-        .dark .tiptap-notes-editor .ProseMirror table th { background: #1e293b; }
-        .tiptap-notes-editor .ProseMirror table .selectedCell { background: #ede9fe; }
-        .dark .tiptap-notes-editor .ProseMirror table .selectedCell { background: #3b0764; }
+        .tiptap-notes-editor .ProseMirror table .selectedCell { background: hsl(var(--primary) / 0.12); }
       `}</style>
     </div>
   );

@@ -9,7 +9,9 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { CheckSquare, ChevronDown, Pin, Plus, Trash2 } from "lucide-react";
+import { CheckSquare, ChevronDown, Pin, Plus, Trash2, Bell } from "lucide-react";
+import QuoteLine from "@/components/QuoteLine";
+import { fromLocalDateTimeInput, requestNotificationPermission, toLocalDateTimeInput } from "@/lib/reminders";
 
 const createId = () => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -193,12 +195,13 @@ export default function Checklist() {
             <p className="cyber-page-sub">Tworz boxy checklist i przypinaj pojedynczo do prawego panelu.</p>
           </div>
           <div className="flex items-center gap-2">
+            <QuoteLine className="hidden lg:flex shrink-0" />
             <Badge variant="secondary">{items.length} box</Badge>
             <Badge variant="secondary">{completedTasks}/{totalTasks} zadan</Badge>
           </div>
         </div>
 
-        <Card className="shadow-md">
+        <Card>
           <CardContent className="pt-6">
             <div className="flex gap-2">
               <Input
@@ -220,7 +223,7 @@ export default function Checklist() {
         </Card>
 
         {items.length === 0 && (
-          <Card className="shadow-md">
+          <Card>
             <CardContent className="py-12 text-center text-slate-500">
               <CheckSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
               Brak checklist. Dodaj pierwszy box.
@@ -235,7 +238,7 @@ export default function Checklist() {
             const doneCount = tasks.filter((task) => Boolean(task.done)).length;
 
             return (
-              <Card key={card.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <Card key={card.id} className="border border-border">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1 space-y-2">
@@ -246,13 +249,34 @@ export default function Checklist() {
                         placeholder="Tytul boxa"
                       />
                       <div className="text-xs text-slate-500">{doneCount}/{tasks.length} zadan wykonanych</div>
+                      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Bell className="h-3 w-3" />
+                        {t("notesReminder") || "Przypomnienie"}
+                        <input
+                          type="datetime-local"
+                          className="h-7 rounded-md border border-border bg-background px-2 text-xs text-foreground"
+                          value={toLocalDateTimeInput(card.reminderAt)}
+                          onChange={async (event) => {
+                            const reminderAt = fromLocalDateTimeInput(event.target.value);
+                            if (reminderAt) {
+                              const permission = await requestNotificationPermission();
+                              if (permission !== "granted") {
+                                toast.info(t("notesReminderPermission"));
+                              } else {
+                                toast.success(t("notesReminderSet"));
+                              }
+                            }
+                            void updateCard(card.id, { reminderAt, reminderSentAt: "" });
+                          }}
+                        />
+                      </label>
                     </div>
                     <div className="flex items-center gap-1">
                       <input
                         type="color"
                         value={card.sidebarColor || DEFAULT_SIDEBAR_COLOR}
                         onChange={(event) => void updateCard(card.id, { sidebarColor: event.target.value })}
-                        className="h-8 w-8 cursor-pointer rounded border border-slate-300 bg-white p-0.5 dark:border-slate-600"
+                        className="h-8 w-8 cursor-pointer rounded border border-border bg-background p-0.5"
                         title="Kolor okienka po prawej"
                         aria-label="Kolor okienka po prawej"
                       />
@@ -288,7 +312,7 @@ export default function Checklist() {
                     <div className="space-y-2 max-h-56 overflow-auto">
                       {tasks.length === 0 && <div className="text-sm text-slate-500">Brak punktow.</div>}
                       {tasks.map((task) => (
-                        <div key={task.id} className="flex items-center gap-2 rounded-md border border-slate-200 dark:border-slate-700 px-2 py-1.5">
+                        <div key={task.id} className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5">
                           <input
                             type="checkbox"
                             checked={Boolean(task.done)}

@@ -34,7 +34,7 @@ export default function ExpenseDetails({ expense, trips = [], onEdit }) {
       <CardHeader className="border-b border-slate-200">
         <CardTitle className="flex items-center justify-between text-lg">
           <span className="flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-blue-600" />
+            <Receipt className="w-5 h-5 text-muted-foreground" />
             Expense Details
           </span>
           <Button variant="ghost" size="icon" onClick={onEdit}>
@@ -135,7 +135,7 @@ export default function ExpenseDetails({ expense, trips = [], onEdit }) {
             href={expense.receipt_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md transition-colors font-medium"
           >
             <ExternalLink className="w-4 h-4" />
             View Receipt

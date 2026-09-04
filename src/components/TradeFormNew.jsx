@@ -109,7 +109,7 @@ function ScreenshotField({
             />
             <div className="absolute inset-0 bg-black/20 pointer-events-none" />
             {pending && (
-              <div className="absolute bottom-1 left-1 right-1 text-center text-[10px] font-medium text-white bg-blue-600/90 rounded px-1 py-0.5 pointer-events-none">
+              <div className="absolute bottom-1 left-1 right-1 text-center text-[10px] font-medium text-primary-foreground bg-primary/90 rounded px-1 py-0.5 pointer-events-none">
                 Zapisze po „Zapisz”
               </div>
             )}
@@ -759,7 +759,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
       </div>
     );
   }
@@ -801,7 +801,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
           )}
         >
           {!embedded && (
-            <CardHeader className="border-b border-border/70 py-2.5 px-3 sm:px-4 bg-gradient-to-r from-primary/10 via-violet-500/5 to-transparent">
+            <CardHeader className="border-b border-border/70 py-2.5 px-3 sm:px-4">
               <div className="flex justify-between items-center gap-2">
                 <CardTitle className="text-sm font-semibold tracking-tight">
                   {trade?.id ? t("editTrade") : t("addTrade")}
@@ -827,8 +827,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
             )}
 
             <form onSubmit={handleSubmit} className="space-y-3">
-              <div className={cn(sectionClass, "bg-sky-500/[0.04] dark:bg-sky-400/[0.06] border-sky-500/15")}>
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-700/80 dark:text-sky-300/90">Setup</p>
+              <div className={sectionClass}>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Setup</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 <div>
                   <Label className={labelClass}>{t("date")} *</Label>
@@ -947,8 +947,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
               {/* Poziomy cen */}
               {formData.status !== "Planned" && formData.status !== "Missed" && (
-                <div className={cn(sectionClass, "bg-violet-500/[0.05] dark:bg-violet-400/[0.07] border-violet-500/20")}>
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-700/80 dark:text-violet-300/90">Poziomy cen</p>
+                <div className={sectionClass}>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Poziomy cen</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <div>
                       <Label className={labelClass}>{t("entryPrice")} *</Label>
@@ -986,7 +986,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                     </div>
                   </div>
                   {calculateRR() && (
-                    <p className="text-xs text-cyan-700 dark:text-cyan-300">
+                    <p className="text-xs text-muted-foreground">
                       Planowany RR: <span className="font-semibold tabular-nums">1 : {calculateRR()}</span>
                     </p>
                   )}
@@ -1226,12 +1226,12 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                   className={cn(
                     "rounded-xl border p-2.5 transition flex items-center justify-between gap-2 text-left",
                     emotionsOpen
-                      ? "border-violet-400 dark:border-violet-600 bg-violet-100 dark:bg-violet-950/50"
-                      : "border-violet-300/50 dark:border-violet-800/50 bg-violet-500/[0.07] hover:border-violet-400"
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/50"
                   )}
                 >
                   <span className="flex items-center gap-2 min-w-0">
-                    <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-violet-600 text-white shrink-0">
+                    <span className="flex items-center justify-center w-7 h-7 rounded-md bg-primary text-primary-foreground shrink-0">
                       <Brain className="w-3.5 h-3.5" />
                     </span>
                     <span>
@@ -1239,7 +1239,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                       <span className="block text-[10px] text-muted-foreground">przed · w trakcie · po</span>
                     </span>
                   </span>
-                  <span className="text-[10px] font-semibold text-violet-700 dark:text-violet-300 bg-background/90 rounded-full px-1.5 py-0.5 shrink-0">
+                  <span className="text-[10px] font-semibold text-foreground bg-background/90 rounded-full px-1.5 py-0.5 shrink-0">
                     {countFilledEmotionStages(formData.emotions)}/3
                   </span>
                 </button>

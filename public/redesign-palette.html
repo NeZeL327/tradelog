@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AIKeepTrade — palety</title>
+  <style>
+    :root, [data-theme="signal"] {
+      --shell: hsl(160 10% 4%);
+      --bg: hsl(160 8% 7%);
+      --surface: hsl(160 7% 11%);
+      --text: hsl(70 20% 95%);
+      --muted: hsl(160 6% 58%);
+      --border: hsl(160 8% 18% / 0.75);
+      --accent: hsl(72 88% 53%);
+      --accent-fg: hsl(160 10% 6%);
+      --profit: hsl(158 52% 40%);
+      --loss: hsl(4 78% 58%);
+    }
+    [data-theme="graphite"] {
+      --shell: hsl(240 6% 5%);
+      --bg: hsl(240 5% 8%);
+      --surface: hsl(240 5% 10%);
+      --text: hsl(40 8% 92%);
+      --muted: hsl(240 5% 58%);
+      --border: hsl(240 5% 16% / 0.7);
+      --accent: hsl(32 38% 52%);
+      --accent-fg: hsl(40 8% 96%);
+      --profit: hsl(152 42% 46%);
+      --loss: hsl(4 62% 58%);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--shell);
+      color: var(--text);
+      font: 14px/1.45 Inter, Segoe UI, system-ui, sans-serif;
+      padding: 32px 28px 48px;
+    }
+    h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.03em; margin: 0 0 6px; }
+    .sub { color: var(--muted); margin: 0 0 20px; font-size: 13px; max-width: 52rem; }
+    .switch { display: flex; gap: 8px; margin-bottom: 28px; }
+    .switch button {
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .switch button[aria-pressed="true"] {
+      background: var(--accent);
+      color: var(--accent-fg);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .swatch { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--surface); }
+    .chip { height: 76px; }
+    .meta { padding: 10px 12px 12px; }
+    .name { font-size: 12px; font-weight: 600; }
+    .val { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .preview {
+      margin-top: 32px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      min-height: 300px;
+    }
+    .side { background: var(--shell); padding: 16px 12px; border-right: 1px solid var(--border); }
+    .brand { font-weight: 700; letter-spacing: -0.03em; margin: 0 8px 18px; }
+    .nav { color: var(--muted); font-size: 13px; padding: 8px 10px; border-radius: 4px; }
+    .nav.active {
+      color: var(--accent);
+      background: hsl(0 0% 100% / 0.03);
+      box-shadow: inset 2px 0 0 var(--accent);
+    }
+    .main { background: var(--bg); padding: 20px; }
+    .kpis {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+    }
+    .kpi { padding: 16px; }
+    .kpi + .kpi { border-left: 1px solid var(--border); }
+    .lbl { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .num { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 6px; }
+    .profit { color: var(--profit); }
+    .row { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+    .cta {
+      background: var(--accent);
+      color: var(--accent-fg);
+      border: 0;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font: 600 13px Inter, sans-serif;
+    }
+    .pill { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 999px; }
+    .pill.win { color: var(--profit); background: color-mix(in srgb, var(--profit) 16%, transparent); }
+    .pill.loss { color: var(--loss); background: color-mix(in srgb, var(--loss) 16%, transparent); }
+  </style>
+</head>
+<body data-theme="signal">
+  <h1 id="title">Noir Signal</h1>
+  <p class="sub" id="desc">Ciemny carbon + volt limonka. Accent jest ostry i zapada w pamięć, ale pojawia się tylko na aktywnym menu i przycisku. P&amp;L zostaje zielony / czerwony.</p>
+  <div class="switch">
+    <button type="button" id="btn-signal" aria-pressed="true">Noir Signal</button>
+    <button type="button" id="btn-graphite" aria-pressed="false">Graphite Ledger</button>
+  </div>
+
+  <div class="grid">
+    <div class="swatch"><div class="chip" style="background:var(--shell)"></div><div class="meta"><div class="name">Shell</div><div class="val">tło / sidebar</div></div></div>
+    <div class="swatch"><div class="chip" style="background:var(--bg)"></div><div class="meta"><div class="name">Background</div><div class="val">treść</div></div></div>
+    <div class="swatch"><div class="chip" style="background:var(--surface)"></div><div class="meta"><div class="name">Surface</div><div class="val">panele</div></div></div>
+    <div class="swatch"><div class="chip" style="background:var(--text)"></div><div class="meta"><div class="name">Text</div><div class="val">główny tekst</div></div></div>
+    <div class="swatch"><div class="chip" style="background:var(--muted)"></div><div class="meta"><div class="name">Muted</div><div class="val">labelki</div></div></div>
+    <div class="swatch"><div class="chip" style="background:var(--accent)"></div><div class="meta"><div class="name">Accent</div><div class="val">selected / CTA</div></div></div>
+    <div class="swatch"><div class="chip" style="background:var(--profit)"></div><div class="meta"><div class="name">Profit</div><div class="val">zysk</div></div></div>
+    <div class="swatch"><div class="chip" style="background:var(--loss)"></div><div class="meta"><div class="name">Loss</div><div class="val">strata</div></div></div>
+  </div>
+
+  <div class="preview">
+    <div class="side">
+      <div class="brand">AIKeepTrade</div>
+      <div class="nav">Dashboard</div>
+      <div class="nav active">Dziennik</div>
+      <div class="nav">Kalendarz</div>
+      <div class="nav">Analityka</div>
+    </div>
+    <div class="main">
+      <div class="kpis">
+        <div class="kpi"><div class="lbl">Całkowity P&amp;L</div><div class="num profit">+2 480.00</div></div>
+        <div class="kpi"><div class="lbl">Win Rate</div><div class="num">61.2%</div></div>
+        <div class="kpi"><div class="lbl">Profit Factor</div><div class="num">1.86</div></div>
+      </div>
+      <div class="row">
+        <button class="cta" type="button">Dodaj transakcję</button>
+        <span class="pill win">WIN</span>
+        <span class="pill loss">LOSS</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const body = document.body;
+    const title = document.getElementById("title");
+    const desc = document.getElementById("desc");
+    const signal = document.getElementById("btn-signal");
+    const graphite = document.getElementById("btn-graphite");
+    function setTheme(name) {
+      body.setAttribute("data-theme", name);
+      const isSignal = name === "signal";
+      signal.setAttribute("aria-pressed", String(isSignal));
+      graphite.setAttribute("aria-pressed", String(!isSignal));
+      title.textContent = isSignal ? "Noir Signal" : "Graphite Ledger";
+      desc.textContent = isSignal
+        ? "Ciemny carbon + volt limonka. Accent jest ostry i zapada w pamięć, ale pojawia się tylko na aktywnym menu i przycisku. P&L zostaje zielony / czerwony."
+        : "Spokojny grafit + stonowane złoto. Bardziej luksusowy i cichy. Mniej „wpadający w oko”, bardziej bankowy.";
+    }
+    signal.onclick = () => setTheme("signal");
+    graphite.onclick = () => setTheme("graphite");
+  </script>
+</body>
+</html>

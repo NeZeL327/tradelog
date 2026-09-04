@@ -25,7 +25,7 @@ export default function AnimatedPublicBackground() {
         transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
-        className="absolute -bottom-32 -left-20 w-[30rem] h-[30rem] rounded-full bg-cyan-500/30 blur-[80px]"
+        className="absolute -bottom-32 -left-20 w-[30rem] h-[30rem] rounded-full bg-primary/20 blur-[80px]"
         animate={{
           x: [0, -24, 0],
           y: [0, 24, 0],

@@ -28,8 +28,8 @@ export default function Privacy() {
               </Button>
             </Link>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-md bg-primary flex items-center justify-center">
+                <Shield className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold">
@@ -74,7 +74,7 @@ export default function Privacy() {
                     {isPolish ? 'Dane kontaktowe:' : 'Contact details:'}
                   </p>
                   <p className="ml-4">
-                    Email: <a href="mailto:privacy@tradejournal.app" className="text-blue-500 hover:underline">privacy@tradejournal.app</a>
+                    Email: <a href="mailto:privacy@tradejournal.app" className="text-primary hover:underline">privacy@tradejournal.app</a>
                   </p>
                 </div>
               </section>
@@ -225,7 +225,7 @@ export default function Privacy() {
                     {isPolish
                       ? 'Aby skorzystać ze swoich praw, skontaktuj się z nami: '
                       : 'To exercise your rights, contact us: '}
-                    <a href="mailto:privacy@tradejournal.app" className="text-blue-500 hover:underline">privacy@tradejournal.app</a>
+                    <a href="mailto:privacy@tradejournal.app" className="text-primary hover:underline">privacy@tradejournal.app</a>
                   </p>
                 </div>
               </section>
@@ -275,7 +275,7 @@ export default function Privacy() {
                 </p>
                 <div className="mt-2 space-y-1">
                   <p className="text-muted-foreground">
-                    Email: <a href="mailto:privacy@tradejournal.app" className="text-blue-500 hover:underline">privacy@tradejournal.app</a>
+                    Email: <a href="mailto:privacy@tradejournal.app" className="text-primary hover:underline">privacy@tradejournal.app</a>
                   </p>
                   <p className="text-muted-foreground">
                     {isPolish ? 'Odpowiemy na Twoje zapytanie w ciągu 30 dni.' : 'We will respond to your inquiry within 30 days.'}

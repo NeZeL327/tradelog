@@ -21,8 +21,8 @@ export default function AnimatedFeatureIcon({
       className={`
         relative rounded-2xl flex items-center justify-center
         ${isMain
-          ? 'bg-gradient-to-br from-emerald-500/15 to-cyan-500/15 border border-emerald-400/15 shadow-[0_0_16px_-6px_rgba(16,185,129,0.15)]'
-          : 'bg-slate-800/60 border border-slate-600/40'
+          ? 'bg-primary/10 border border-primary/20'
+          : 'bg-muted/60 border border-border'
         }
         ${sizeClasses}
         ${className}
@@ -32,9 +32,7 @@ export default function AnimatedFeatureIcon({
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{
         scale: 1.05,
-        boxShadow: isMain
-          ? '0 0 22px -6px rgba(16, 185, 129, 0.25), 0 0 0 1px rgba(16, 185, 129, 0.15)'
-          : '0 0 20px -6px rgba(59, 130, 246, 0.2)',
+        boxShadow: 'none',
         transition: { duration: 0.2 },
       }}
       whileTap={{ scale: 0.98 }}
@@ -52,7 +50,7 @@ export default function AnimatedFeatureIcon({
         }
       >
         <Icon
-          className={`${isMain ? 'text-emerald-400' : 'text-sky-400'} ${iconSizeClasses} ${iconClassName}`}
+          className={`${isMain ? 'text-primary' : 'text-muted-foreground'} ${iconSizeClasses} ${iconClassName}`}
           strokeWidth={1.6}
         />
       </motion.div>

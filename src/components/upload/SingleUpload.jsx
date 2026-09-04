@@ -5,6 +5,9 @@ import { Camera, Upload, Loader2, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
+import { createExpense, getExpenses, getTrips, uploadUserFile } from "@/lib/localStorage";
 
 import CameraCapture from "./CameraCapture";
 import ExpensePreview from "./ExpensePreview";
@@ -71,6 +74,7 @@ const EXPENSE_SCHEMA = {
 
 export default function SingleUpload() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [file, setFile] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -79,15 +83,24 @@ export default function SingleUpload() {
   const [duplicateWarning, setDuplicateWarning] = useState(null);
   const fileInputRef = useRef(null);
 
-  const { data: trips } = useQuery({
-    queryKey: ['trips'],
-    queryFn: () => [],
-    initialData: [],
+  const { data: trips = [] } = useQuery({
+    queryKey: ['trips', user?.id],
+    queryFn: () => getTrips(user.id),
+    enabled: !!user?.id,
   });
 
   const checkForDuplicates = async (expenseData) => {
-    // Simplified duplicate check - in real app this would check against database
-    return false;
+    try {
+      const existing = await getExpenses(user?.id);
+      return existing.some((item) =>
+        item.vendor === expenseData.vendor &&
+        Number(item.amount) === Number(expenseData.amount) &&
+        item.date === expenseData.date
+      );
+    } catch (error) {
+      console.error("Duplicate check error:", error);
+      return false;
+    }
   };
 
   const handleFileSelect = (e) => {
@@ -103,19 +116,32 @@ export default function SingleUpload() {
   };
 
   const processFile = async (selectedFile) => {
+    if (!user?.id) {
+      toast.error("Zaloguj się, aby wgrać plik.");
+      return;
+    }
     setFile(selectedFile);
     setProcessing(true);
-    setProgress(0);
+    setProgress(20);
     setDuplicateWarning(null);
 
     try {
-      // Note: Receipt scanning feature requires additional configuration
-      // For now, this feature is disabled
-      alert("Receipt scanning feature is currently not available. Please enter expense details manually.");
-      resetUpload();
+      const receipt_url = await uploadUserFile(user.id, selectedFile, "receipts");
+      setProgress(100);
+      setExtractedData({
+        vendor: "",
+        amount: 0,
+        currency: "USD",
+        date: new Date().toISOString().split("T")[0],
+        category: "Other",
+        description: selectedFile.name,
+        receipt_url,
+        items: [],
+        tax: 0,
+      });
     } catch (error) {
       console.error("Error processing receipt:", error);
-      alert("Error processing receipt. Please try again.");
+      toast.error("Nie udało się wgrać pliku. Spróbuj ponownie.");
       resetUpload();
     } finally {
       setProcessing(false);
@@ -123,13 +149,21 @@ export default function SingleUpload() {
   };
 
   const handleSave = async (expenseData) => {
+    if (!user?.id) {
+      toast.error("Zaloguj się, aby zapisać.");
+      return;
+    }
     try {
-      // Note: Expense saving requires database configuration
-      alert("Expense saving feature is currently not available.");
+      const isDuplicate = await checkForDuplicates(expenseData);
+      if (isDuplicate) {
+        setDuplicateWarning("Podobny wpis już istnieje (ten sam sprzedawca, kwota i data).");
+      }
+      await createExpense(user.id, expenseData);
+      toast.success("Zapisano.");
       navigate(createPageUrl("Dashboard"));
     } catch (error) {
       console.error("Error saving expense:", error);
-      alert("Error saving expense. Please try again.");
+      toast.error("Nie udało się zapisać. Spróbuj ponownie.");
     }
   };
 
@@ -168,14 +202,14 @@ export default function SingleUpload() {
         </div>
 
         {processing ? (
-          <Card className="border-2 border-dashed border-blue-300 bg-blue-50/50 p-6 sm:p-12">
+          <Card className="border-2 border-dashed border-border bg-muted/30 p-6 sm:p-12">
             <div className="flex flex-col items-center justify-center">
-              <Loader2 className="w-12 sm:w-16 h-12 sm:h-16 text-blue-600 animate-spin mb-4" />
+              <Loader2 className="w-12 sm:w-16 h-12 sm:h-16 text-primary animate-spin mb-4" />
               <p className="text-base sm:text-lg font-medium text-slate-900 mb-2 text-center">Processing Receipt...</p>
               <p className="text-sm text-slate-600 mb-4 text-center">AI is extracting data from your receipt</p>
               <div className="w-48 sm:w-64 h-2 bg-slate-200 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300"
+                  className="h-full bg-primary transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -185,12 +219,12 @@ export default function SingleUpload() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <Card 
-              className="border-2 border-dashed border-slate-300 hover:border-blue-400 transition-all duration-200 cursor-pointer p-6 sm:p-8 bg-gradient-to-br from-slate-50 to-white"
+              className="border-2 border-dashed border-border hover:border-primary/50 transition-all duration-200 cursor-pointer p-6 sm:p-8 bg-card"
               onClick={() => setShowCamera(true)}
             >
               <div className="flex flex-col items-center justify-center text-center">
-                <div className="w-16 sm:w-20 h-16 sm:h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-3 sm:mb-4 shadow-lg shadow-blue-500/30">
-                  <Camera className="w-8 sm:w-10 h-8 sm:h-10 text-white" />
+                <div className="w-16 sm:w-20 h-16 sm:h-20 bg-muted rounded-full flex items-center justify-center mb-3 sm:mb-4">
+                  <Camera className="w-8 sm:w-10 h-8 sm:h-10 text-muted-foreground" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-2">Take Photo</h3>
                 <p className="text-sm text-slate-600">Use your camera to capture the receipt</p>
@@ -198,7 +232,7 @@ export default function SingleUpload() {
             </Card>
 
             <Card 
-              className="border-2 border-dashed border-slate-300 hover:border-blue-400 transition-all duration-200 cursor-pointer p-6 sm:p-8 bg-gradient-to-br from-slate-50 to-white"
+              className="border-2 border-dashed border-border hover:border-primary/50 transition-all duration-200 cursor-pointer p-6 sm:p-8 bg-card"
               onClick={() => fileInputRef.current?.click()}
             >
               <input
@@ -209,8 +243,8 @@ export default function SingleUpload() {
                 className="hidden"
               />
               <div className="flex flex-col items-center justify-center text-center">
-                <div className="w-16 sm:w-20 h-16 sm:h-20 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mb-3 sm:mb-4 shadow-lg shadow-emerald-500/30">
-                  <Upload className="w-8 sm:w-10 h-8 sm:h-10 text-white" />
+                <div className="w-16 sm:w-20 h-16 sm:h-20 bg-muted rounded-full flex items-center justify-center mb-3 sm:mb-4">
+                  <Upload className="w-8 sm:w-10 h-8 sm:h-10 text-muted-foreground" />
                 </div>
                 <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-2">Upload File</h3>
                 <p className="text-sm text-slate-600">Choose an image or PDF from your device</p>
@@ -219,8 +253,8 @@ export default function SingleUpload() {
           </div>
         )}
 
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <p className="text-sm text-blue-900">
+        <div className="bg-muted/40 border border-border rounded-md p-4">
+          <p className="text-sm text-foreground">
             <strong>Tip:</strong> For best results, ensure the receipt is well-lit and all text is clearly visible.
           </p>
         </div>

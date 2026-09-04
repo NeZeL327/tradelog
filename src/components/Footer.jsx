@@ -8,15 +8,15 @@ export default function Footer({ variant = 'default' }) {
   const isApp = variant === 'app';
 
   const linkClassName = isHero
-    ? 'inline-flex items-center text-sm text-slate-400 transition-all duration-200 hover:text-slate-100 hover:translate-x-1'
+    ? 'inline-flex items-center text-sm text-white/55 transition-colors duration-200 hover:text-white'
     : isApp
-      ? 'inline-flex items-center text-sm text-slate-500 dark:text-slate-400 transition-all duration-200 hover:text-slate-800 dark:hover:text-slate-100 hover:translate-x-1'
+      ? 'inline-flex items-center text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground'
     : 'inline-flex items-center text-sm text-muted-foreground transition-all duration-200 hover:text-foreground hover:translate-x-1';
 
   const footerClassName = isHero
-    ? 'mt-auto w-full border-t border-blue-500/10 bg-gradient-to-b from-[#070a14]/95 via-[#060912]/95 to-[#050810] backdrop-blur supports-[backdrop-filter]:bg-[#060912]/90'
+    ? 'mt-auto w-full border-t border-white/8 bg-[#070a14]/95 backdrop-blur supports-[backdrop-filter]:bg-[#060912]/90'
     : isApp
-      ? 'mt-auto w-full border-t border-slate-200/70 dark:border-white/10 bg-gradient-to-r from-slate-50/95 via-blue-50/85 to-slate-50/95 dark:from-background/95 dark:via-background/90 dark:to-background/95 backdrop-blur supports-[backdrop-filter]:dark:bg-background/80'
+      ? 'mt-auto w-full border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:dark:bg-background/80'
       : 'mt-auto w-full border-t border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80';
   
   return (
@@ -31,16 +31,16 @@ export default function Footer({ variant = 'default' }) {
                 height="36"
                 className="h-9 w-9 object-contain"
               />
-              <span className={isHero ? 'text-lg font-bold tracking-tight text-white' : isApp ? 'text-lg font-bold tracking-tight text-slate-800 dark:text-white' : 'text-lg font-bold tracking-tight text-foreground'}>AiKeepTrade</span>
+              <span className={isHero ? 'text-lg font-bold tracking-tight text-white' : isApp ? 'text-lg font-bold tracking-tight text-foreground' : 'text-lg font-bold tracking-tight text-foreground'}>AiKeepTrade</span>
             </div>
-            <p className={isHero ? 'max-w-xs text-sm leading-relaxed text-slate-400' : isApp ? 'max-w-xs text-sm leading-relaxed text-slate-500 dark:text-slate-400' : 'max-w-xs text-sm leading-relaxed text-muted-foreground'}>
+            <p className={isHero ? 'max-w-xs text-sm leading-relaxed text-white/55' : isApp ? 'max-w-xs text-sm leading-relaxed text-muted-foreground' : 'max-w-xs text-sm leading-relaxed text-muted-foreground'}>
               {t('footerTagline') || 'Professional trading journal for serious traders'}
             </p>
-            <p className={isHero ? 'text-xs text-slate-500' : isApp ? 'text-xs text-slate-500/90 dark:text-slate-500' : 'text-xs text-muted-foreground/80'}>© 2026 AiKeepTrade App</p>
+            <p className={isHero ? 'text-xs text-white/40' : isApp ? 'text-xs text-muted-foreground/80' : 'text-xs text-muted-foreground/80'}>© 2026 AiKeepTrade App</p>
           </div>
 
           <div className="space-y-4">
-            <h3 className={isHero ? 'text-sm font-semibold tracking-wide text-slate-100' : isApp ? 'text-sm font-semibold tracking-wide text-slate-800 dark:text-slate-100' : 'text-sm font-semibold tracking-wide text-foreground'}>{t('footerNavigation') || 'Navigation'}</h3>
+            <h3 className={isHero ? 'text-sm font-semibold tracking-wide text-white' : isApp ? 'text-sm font-semibold tracking-wide text-foreground' : 'text-sm font-semibold tracking-wide text-foreground'}>{t('footerNavigation') || 'Navigation'}</h3>
             <ul className="space-y-2.5">
               <li>
                 <Link to="/about" className={linkClassName}>
@@ -56,7 +56,7 @@ export default function Footer({ variant = 'default' }) {
           </div>
 
           <div className="space-y-4">
-            <h3 className={isHero ? 'text-sm font-semibold tracking-wide text-slate-100' : isApp ? 'text-sm font-semibold tracking-wide text-slate-800 dark:text-slate-100' : 'text-sm font-semibold tracking-wide text-foreground'}>{t('footerAccount') || 'Account'}</h3>
+            <h3 className={isHero ? 'text-sm font-semibold tracking-wide text-white' : isApp ? 'text-sm font-semibold tracking-wide text-foreground' : 'text-sm font-semibold tracking-wide text-foreground'}>{t('footerAccount') || 'Account'}</h3>
             <ul className="space-y-2.5">
               <li>
                 <Link to={createPageUrl("Login")} className={linkClassName}>
@@ -72,7 +72,7 @@ export default function Footer({ variant = 'default' }) {
           </div>
 
           <div className="space-y-4">
-            <h3 className={isHero ? 'text-sm font-semibold tracking-wide text-slate-100' : isApp ? 'text-sm font-semibold tracking-wide text-slate-800 dark:text-slate-100' : 'text-sm font-semibold tracking-wide text-foreground'}>{t('footerLegal') || 'Legal'}</h3>
+            <h3 className={isHero ? 'text-sm font-semibold tracking-wide text-white' : isApp ? 'text-sm font-semibold tracking-wide text-foreground' : 'text-sm font-semibold tracking-wide text-foreground'}>{t('footerLegal') || 'Legal'}</h3>
             <ul className="space-y-2.5">
               <li>
                 <Link to="/terms" className={linkClassName}>

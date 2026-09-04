@@ -152,15 +152,15 @@ export default function PinnedChecklistPanels() {
           >
             {!collapsed && (
               <div
-                className="mr-14 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl backdrop-blur-sm dark:border-slate-600 dark:bg-slate-700 transition-[transform,box-shadow,opacity] duration-300"
+                className="mr-14 overflow-hidden rounded-xl border border-border bg-card shadow-lg backdrop-blur-sm transition-[transform,box-shadow,opacity] duration-300"
                 style={{ borderColor }}
               >
-                <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 dark:border-slate-700" style={{ backgroundColor: containerBg || undefined }}>
+                <div className="flex items-center justify-between border-b border-border px-3 py-2" style={{ backgroundColor: containerBg || undefined }}>
                   <div className="flex min-w-0 items-center gap-2 px-1">
                     <div
                       className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/40 text-[13px] font-black text-white shadow-sm"
                       style={{
-                        background: `linear-gradient(135deg, ${buttonBg || note.sidebarColor || "#60a5fa"} 0%, ${note.sidebarColor || "#3b82f6"} 100%)`
+                        background: `linear-gradient(135deg, ${buttonBg || note.sidebarColor || "#64748b"} 0%, ${note.sidebarColor || "#64748b"} 100%)`
                       }}
                     >
                       C
@@ -173,7 +173,7 @@ export default function PinnedChecklistPanels() {
                 </div>
                 <div className="p-3" style={{ backgroundColor: contentBg || undefined }}>
                   {tasks.length === 0 ? (
-                    <div className="rounded-md border border-dashed border-slate-300 px-3 py-4 text-center text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                    <div className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
                       Brak punktów w checkliście
                     </div>
                   ) : (
@@ -181,7 +181,7 @@ export default function PinnedChecklistPanels() {
                       {tasks.map((item) => (
                         <label
                           key={item.id}
-                          className="flex min-h-[58px] items-center gap-3 rounded-md border border-slate-200 bg-white/85 px-3 py-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300"
+          className="flex min-h-[58px] items-center gap-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-foreground"
                         >
                           <input
                             type="checkbox"
@@ -203,7 +203,7 @@ export default function PinnedChecklistPanels() {
               size="icon"
               className="absolute right-0 top-3 h-10 w-10 rounded-xl border border-white/30 text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl"
               style={{
-                background: `linear-gradient(135deg, ${buttonBg || note.sidebarColor || "#60a5fa"} 0%, ${note.sidebarColor || "#3b82f6"} 100%)`
+                background: `linear-gradient(135deg, ${buttonBg || note.sidebarColor || "#64748b"} 0%, ${note.sidebarColor || "#64748b"} 100%)`
               }}
               onClick={() => togglePanel(note.id)}
               aria-label={collapsed ? "Rozwiń checklistę" : "Zwiń checklistę"}

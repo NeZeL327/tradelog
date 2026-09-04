@@ -42,7 +42,7 @@ const LayoutWrapper = ({ children, currentPageName }) => {
 };
 
 const PageShell = ({ children }) => (
-  <div style={{ width: "100%", maxWidth: "100%" }}>
+  <div style={{ width: "100%", maxWidth: "100%", minHeight: "100%" }}>
     {children}
   </div>
 );

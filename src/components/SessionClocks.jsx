@@ -2,10 +2,20 @@ import { useEffect, useState } from "react";
 import { loadLocalUserSettings } from "@/lib/userSettings";
 
 const CLOCKS = [
-  { id: "pl", label: "PL", zone: "Europe/Warsaw", title: "Polska (Warszawa)" },
-  { id: "ny", label: "NY", zone: "America/New_York", title: "Nowy Jork (NY session)" },
+  { id: "ldn", label: "LDN", zone: "Europe/London", title: "London session" },
+  { id: "ny", label: "NY", zone: "America/New_York", title: "New York session" },
   { id: "asia", label: "ASIA", zone: "Asia/Tokyo", title: "Asia / Tokyo session" },
 ];
+
+function zoneHour(now, timeZone) {
+  try {
+    return Number(
+      new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", hour12: false }).format(now)
+    );
+  } catch {
+    return -1;
+  }
+}
 
 function formatTime(date, timeZone, use12h) {
   try {
@@ -13,12 +23,19 @@ function formatTime(date, timeZone, use12h) {
       timeZone,
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
       hour12: use12h,
     }).format(date);
   } catch {
-    return "--:--:--";
+    return "--:--";
   }
+}
+
+function isSessionOpen(now, zone) {
+  const hour = zoneHour(now, zone);
+  if (hour < 0) return false;
+  if (zone === "Europe/London") return hour >= 8 && hour < 17;
+  if (zone === "America/New_York") return hour >= 9 && hour < 16;
+  return hour >= 0 && hour < 9;
 }
 
 export default function SessionClocks() {
@@ -57,23 +74,32 @@ export default function SessionClocks() {
 
   return (
     <div
-      className="hidden sm:flex items-center gap-1.5 md:gap-2 mr-1"
+      className="hidden sm:flex items-stretch overflow-hidden rounded-lg border border-border/70 bg-background/30 mr-1"
       aria-label="Godziny sesji tradingowych"
     >
-      {CLOCKS.map((clock) => (
-        <div
-          key={clock.id}
-          title={clock.title}
-          className="flex flex-col items-center leading-none px-2 md:px-2.5 py-1.5 rounded-md border border-border/60 bg-muted/40 min-w-[5rem]"
-        >
-          <span className="text-[10px] md:text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {clock.label}
-          </span>
-          <span className="text-sm md:text-[15px] font-mono font-semibold tabular-nums text-foreground mt-1">
-            {formatTime(now, clock.zone, prefs.use12h)}
-          </span>
-        </div>
-      ))}
+      {CLOCKS.map((clock) => {
+        const open = isSessionOpen(now, clock.zone);
+        return (
+          <div
+            key={clock.id}
+            title={clock.title}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 border-r border-border/80 last:border-r-0 min-w-[4.75rem]"
+          >
+            <span
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${open ? "bg-primary" : "bg-muted-foreground/40"}`}
+              aria-hidden
+            />
+            <div className="flex flex-col leading-none">
+              <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                {clock.label}
+              </span>
+              <span className="text-[12px] font-medium tabular-nums text-foreground mt-0.5">
+                {formatTime(now, clock.zone, prefs.use12h)}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

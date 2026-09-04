@@ -80,10 +80,10 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="space-y-8 mb-16"
           >
-            <Card className="bg-slate-950/75 border-white/8 backdrop-blur-sm">
-              <CardContent className="p-8 space-y-6 text-slate-200 leading-relaxed">
+            <Card className="bg-black/40 border-white/10 backdrop-blur-sm">
+              <CardContent className="p-8 space-y-6 text-white/80 leading-relaxed">
                 <div className="flex items-center gap-3 mb-4">
-                  <Code className="w-8 h-8 text-sky-400" />
+                  <Code className="w-8 h-8 text-primary" />
                   <h2 className="text-3xl font-bold text-foreground">Niezwykła Historia Powstania</h2>
                 </div>
                 
@@ -99,8 +99,8 @@ export default function About() {
                   fiction? A jednak to prawda!
                 </p>
 
-                <div className="bg-blue-500/10 border-l-4 border-lime-400/80 p-6 rounded-r-lg">
-                  <p className="text-lg font-semibold text-sky-600 dark:text-sky-300 mb-2">
+                <div className="bg-muted/40 border-l-2 border-primary p-6 rounded-r-md">
+                  <p className="text-lg font-semibold text-foreground mb-2">
                     Sekret? Współpraca z AI! 🤖✨
                   </p>
                   <p className="text-base">
@@ -136,8 +136,8 @@ export default function About() {
                   AI rozumiało, tłumaczyło wizję na kod i pomagało debugować problemy.
                 </p>
 
-                <div className="bg-slate-900/60 p-6 rounded-lg border border-slate-700">
-                  <p className="text-lg font-semibold text-blue-400 mb-3">
+                <div className="bg-black/40 p-6 rounded-lg border border-white/10">
+                  <p className="text-lg font-semibold text-foreground mb-3">
                     Co to oznacza dla Ciebie? 🚀
                   </p>
                   <p className="text-base">
@@ -153,7 +153,7 @@ export default function About() {
                   Musisz tylko wiedzieć, czego chcesz, i potrafić o to poprosić.
                 </p>
 
-                <p className="text-lg font-bold text-sky-600 dark:text-sky-300">
+                <p className="text-lg font-bold text-foreground">
                   Witaj w przyszłości, gdzie AI jest Twoim współprogramistą, a wyobraźnia jedynym ograniczeniem! 🌟
                 </p>
               </CardContent>
@@ -167,7 +167,7 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.6 }}
             className="mb-16"
           >
-            <h2 className="text-3xl font-bold text-slate-100 text-center mb-8">
+            <h2 className="text-3xl font-bold text-white text-center mb-8">
               Co oferuje AiKeepTrade?
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
@@ -179,15 +179,15 @@ export default function About() {
                   transition={{ duration: 0.35, delay: 0.72 + index * 0.06 }}
                   whileHover={{ y: -3 }}
                 >
-                <Card className="fx-card-dark border-white/8 hover:border-blue-500/40 transition-all duration-200">
+                <Card className="fx-card-dark border-white/8 hover:border-primary/40 transition-all duration-200">
                   <CardContent className="p-6">
-                    <div className="w-12 h-12 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4">
-                      <div className="text-sky-400">
+                    <div className="w-12 h-12 rounded-md bg-muted/50 border border-white/10 flex items-center justify-center mb-4">
+                      <div className="text-primary">
                         {feature.icon}
                       </div>
                     </div>
-                    <h3 className="text-xl font-semibold text-slate-100 mb-2">{feature.title}</h3>
-                    <p className="text-slate-300">{feature.description}</p>
+                    <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
+                    <p className="text-white/70">{feature.description}</p>
                   </CardContent>
                 </Card>
                 </motion.div>
@@ -202,32 +202,35 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.8 }}
             className="mb-16"
           >
-            <h2 className="text-3xl font-bold text-slate-100 text-center mb-8">
+            <h2 className="text-3xl font-bold text-white text-center mb-8">
               Zajrzyj do środka
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Screenshot placeholders */}
+              <a href="/features" className="block">
               <Card className="fx-card-dark border-white/8 overflow-hidden">
                 <CardContent className="p-0">
                   <div className="aspect-video bg-gradient-to-br from-slate-900/80 to-slate-950/80 flex items-center justify-center">
                     <div className="text-center">
-                      <TrendingUp className="w-16 h-16 text-sky-400 mx-auto mb-4" />
-                      <p className="text-slate-300">Dashboard z analityką</p>
+                      <TrendingUp className="w-16 h-16 text-primary mx-auto mb-4" />
+                      <p className="text-white/70">Dashboard z analityką</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+              </a>
 
+              <a href="/register" className="block">
               <Card className="fx-card-dark border-white/8 overflow-hidden">
                 <CardContent className="p-0">
                   <div className="aspect-video bg-gradient-to-br from-slate-900/80 to-slate-950/80 flex items-center justify-center">
                     <div className="text-center">
-                      <Target className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                      <p className="text-slate-300">Dziennik transakcji</p>
+                      <Target className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-white/70">Dziennik transakcji</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+              </a>
             </div>
           </motion.div>
 
@@ -238,23 +241,23 @@ export default function About() {
             transition={{ duration: 0.6, delay: 1 }}
             className="text-center"
           >
-            <Card className="fx-card-dark border-blue-500/40">
+            <Card className="fx-card-dark border-primary/40">
               <CardContent className="p-12">
-                <Rocket className="w-16 h-16 text-sky-400 mx-auto mb-4" />
-                <h2 className="text-3xl font-bold text-slate-100 mb-4">
+                <Rocket className="w-16 h-16 text-primary mx-auto mb-4" />
+                <h2 className="text-3xl font-bold text-white mb-4">
                   Gotowy, by zacząć swoją podróż?
                 </h2>
-                <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
+                <p className="text-white/70 mb-6 max-w-2xl mx-auto">
                   Dołącz do społeczności traderów, którzy już korzystają z AiKeepTrade. 
                   Zacznij śledzić swoje transakcje, analizować strategie i rozwijaj się jako trader!
                 </p>
                 <div className="flex gap-4 justify-center">
-                  <a href="/register" className="px-6 py-3 fx-cta rounded-lg text-white font-semibold transition-all duration-200 hover:-translate-y-0.5">
+                  <a href="/register" className="px-6 py-3 fx-cta rounded-lg font-semibold transition-colors duration-200">
                     Zarejestruj się za darmo
                   </a>
                   <a
                     href="/contact"
-                    className="px-6 py-3 rounded-lg border border-blue-500/50 text-sky-200 font-semibold transition-all duration-200 hover:bg-blue-500/10 hover:-translate-y-0.5"
+                    className="px-6 py-3 rounded-lg border border-white/15 text-white/80 font-semibold transition-colors duration-200 hover:bg-white/5"
                   >
                     Skontaktuj się z nami
                   </a>

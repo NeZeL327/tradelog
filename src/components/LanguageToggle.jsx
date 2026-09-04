@@ -14,8 +14,8 @@ export default function LanguageToggle({ className = "", variant = "light" }) {
   return (
     <div
       className={cn(
-        "inline-flex h-8 items-center rounded-md border p-0.5 shadow-sm overflow-hidden",
-        isDark ? "border-slate-700/70 bg-slate-900/70" : "border-input bg-background",
+        "inline-flex h-8 items-center rounded-md border p-0.5 overflow-hidden",
+        isDark ? "border-border bg-background" : "border-input bg-background",
         className
       )}
       role="group"
@@ -34,13 +34,11 @@ export default function LanguageToggle({ className = "", variant = "light" }) {
             }}
             className={cn(
               "h-7 rounded-sm px-2 text-xs font-semibold",
-              isDark
-                ? "text-slate-200 hover:text-white"
+                isDark
+                ? "text-white/70 hover:text-white"
                 : "text-muted-foreground hover:text-foreground",
               isActive
-                ? isDark
-                  ? "bg-slate-800 text-white"
-                  : "bg-accent text-foreground"
+                ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
                 : null
             )}
             aria-pressed={isActive}

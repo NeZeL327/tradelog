@@ -15,6 +15,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "@/components/LanguageProvider";
 import { cn, getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
+import { CHART } from "@/lib/chartTheme";
+import QuoteLine from "@/components/QuoteLine";
 
 export default function Strategies() {
   const { t } = useLanguage();
@@ -105,16 +107,19 @@ export default function Strategies() {
             <h1 className="cyber-page-title">{t('tradingStrategies')}</h1>
             <p className="cyber-page-sub">{t('manageAnalyzeStrategies')}</p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingStrategy(null);
-              setShowForm(!showForm);
-            }}
-            className="cyber-primary-btn w-full sm:w-auto"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            {t('addStrategy')}
-          </Button>
+          <div className="flex gap-3 items-center">
+            <QuoteLine className="hidden lg:flex shrink-0" />
+            <Button
+              onClick={() => {
+                setEditingStrategy(null);
+                setShowForm(!showForm);
+              }}
+              className="cyber-primary-btn w-full sm:w-auto"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              {t('addStrategy')}
+            </Button>
+          </div>
         </div>
 
         <AnimatePresence>
@@ -148,8 +153,8 @@ export default function Strategies() {
           return (
             <Card className="shadow-md">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-cyan-100">
-                  <TrendingUp className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                <CardTitle className="flex items-center gap-2 text-foreground">
+                  <TrendingUp className="w-5 h-5 text-muted-foreground" />
                   {t('strategiesComparison')}
                 </CardTitle>
               </CardHeader>
@@ -161,9 +166,9 @@ export default function Strategies() {
                     <YAxis domain={[yMin, yMax]} stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <Tooltip contentStyle={{ borderRadius: '8px' }} />
                     <Legend />
-                    <Bar dataKey="winRate" fill="#3b82f6" name="Win Rate (%)" />
-                    <Bar dataKey="avgPL" fill="#10b981" name="Średni P&L" />
-                    <Bar dataKey="trades" fill="#8b5cf6" name="Liczba transakcji" />
+                    <Bar dataKey="winRate" fill={CHART.line} name="Win Rate (%)" />
+                    <Bar dataKey="avgPL" fill={CHART.profit} name="Średni P&L" />
+                    <Bar dataKey="trades" fill={CHART.accent} name="Liczba transakcji" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -220,7 +225,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
     category: "Trend Following",
     status: "Aktywna",
     notes: "",
-    color: "#3b82f6",
+    color: "#64748b",
     setup_description: "",
     entry_indicators: "",
     exit_indicators: "",
@@ -363,7 +368,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 {formData.timeframes.map((tf, idx) => (
-                  <Badge key={idx} className="bg-blue-100 text-blue-700">
+                  <Badge key={idx} className="bg-muted text-foreground">
                     {tf}
                     <button
                       type="button"
@@ -390,7 +395,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 {formData.instruments.map((inst, idx) => (
-                  <Badge key={idx} className="bg-purple-100 text-purple-700">
+                  <Badge key={idx} className="bg-muted text-foreground">
                     {inst}
                     <button
                       type="button"
@@ -435,7 +440,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
             </div>
 
             <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Zarządzanie ryzykiem</h3>
+              <h3 className="font-semibold text-foreground mb-4">Zarządzanie ryzykiem</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Max ryzyko na transakcję (%)</Label>
@@ -490,7 +495,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
             </div>
 
             <div className="border-t pt-4 mt-4">
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Ocena i komentarze</h3>
+              <h3 className="font-semibold text-foreground mb-4">Ocena i komentarze</h3>
               <div className="space-y-4">
                 <div>
                   <Label>Ocena strategii (0-5 gwiazdek)</Label>
@@ -550,7 +555,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
 }
 
 function StrategyCard({ strategy, stats, onEdit, onDelete }) {
-  const accent = strategy.color || "#6366f1";
+  const accent = strategy.color || "#64748b";
   const statusStyles = {
     Aktywna: "bg-emerald-500/12 text-emerald-800 dark:text-emerald-200 border-emerald-500/25",
     Testowa: "bg-amber-500/12 text-amber-900 dark:text-amber-200 border-amber-500/25",
@@ -560,11 +565,9 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
   return (
     <Card
       className={cn(
-        "relative h-full overflow-hidden rounded-2xl border border-slate-200/90 dark:border-border",
-        "bg-gradient-to-b from-white to-slate-50/90 dark:from-card dark:to-card/90",
-        "shadow-xl shadow-slate-900/[0.06] dark:shadow-black/40",
-        "transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-primary/35",
-        "ring-1 ring-slate-900/[0.04] dark:ring-white/[0.06]"
+        "relative h-full overflow-hidden rounded-xl border border-border",
+        "bg-card",
+        "transition-colors duration-200 hover:border-primary/35",
       )}
     >
       {/* Top accent bar + soft glow */}
@@ -646,12 +649,12 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
       <CardContent className="relative z-[2] space-y-4 pt-5">
         {stats && stats.trades > 0 && (
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <div className="rounded-xl border border-blue-200/70 bg-gradient-to-b from-blue-50/90 to-blue-50/40 p-3 text-center shadow-sm dark:border-blue-500/20 dark:from-blue-950/50 dark:to-blue-950/20">
-              <Target className="mx-auto mb-1 h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <p className="text-lg font-bold tabular-nums text-blue-600 dark:text-blue-300">{stats.winRate}%</p>
+            <div className="rounded-md border border-border bg-card p-3 text-center">
+              <Target className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
+              <p className="text-lg font-bold tabular-nums text-foreground">{stats.winRate}%</p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Win Rate</p>
             </div>
-            <div className="rounded-xl border border-emerald-200/70 bg-gradient-to-b from-emerald-50/90 to-emerald-50/40 p-3 text-center shadow-sm dark:border-emerald-500/20 dark:from-emerald-950/50 dark:to-emerald-950/20">
+            <div className="rounded-md border border-border bg-card p-3 text-center">
               <TrendingUp className="mx-auto mb-1 h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               <p
                 className={cn(
@@ -666,9 +669,9 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
               </p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Średni P&amp;L</p>
             </div>
-            <div className="rounded-xl border border-violet-200/70 bg-gradient-to-b from-violet-50/90 to-violet-50/40 p-3 text-center shadow-sm dark:border-violet-500/20 dark:from-violet-950/50 dark:to-violet-950/20">
-              <Award className="mx-auto mb-1 h-5 w-5 text-violet-600 dark:text-violet-400" />
-              <p className="text-lg font-bold tabular-nums text-violet-600 dark:text-violet-300">{stats.trades}</p>
+            <div className="rounded-md border border-border bg-card p-3 text-center">
+              <Award className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
+              <p className="text-lg font-bold tabular-nums text-foreground">{stats.trades}</p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Transakcje</p>
             </div>
           </div>
@@ -731,7 +734,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
               <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Instrumenty</p>
               <div className="flex flex-wrap gap-1.5">
                 {strategy.instruments.map((inst, idx) => (
-                  <Badge key={idx} className="rounded-md border-0 bg-violet-500/15 font-normal text-violet-800 dark:text-violet-200">
+                  <Badge key={idx} className="rounded-md border-0 bg-muted font-normal text-foreground">
                     {inst}
                   </Badge>
                 ))}

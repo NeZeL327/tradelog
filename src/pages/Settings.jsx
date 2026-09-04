@@ -19,6 +19,7 @@ import {
   saveLocalUserSettings,
   TIMEZONE_OPTIONS,
 } from "@/lib/userSettings";
+import { requestNotificationPermission } from "@/lib/reminders";
 import { AVATAR_PRESETS, getAvatarPreset, getUserInitials } from "@/lib/avatars";
 
 export default function Settings() {
@@ -304,7 +305,7 @@ export default function Settings() {
         <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-6">
           <div className="space-y-6 xl:order-2">
             {activeSection === 'profile' && (
-              <Card className="shadow-md">
+              <Card className="border-border">
                 <CardHeader>
                   <CardTitle>{t.profile}</CardTitle>
                   <CardDescription>
@@ -315,7 +316,7 @@ export default function Settings() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Preview */}
-                  <div className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                  <div className="flex items-center gap-4 p-4 rounded-lg border border-border bg-muted/30">
                     {(() => {
                       const preset = getAvatarPreset(settings.avatar);
                       const previewUser = { ...user, displayName: settings.displayName, fullName: settings.fullName };
@@ -329,7 +330,7 @@ export default function Settings() {
                             <p className="text-base font-semibold text-slate-900 dark:text-slate-100 truncate">
                               {settings.displayName?.trim() || settings.fullName?.trim() || user?.email}
                             </p>
-                            <p className="text-sm text-slate-500 truncate">{user?.email}</p>
+                            <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
                           </div>
                         </>
                       );
@@ -350,7 +351,7 @@ export default function Settings() {
                   <div>
                     <Label htmlFor="displayName" className="flex items-center gap-2">
                       {settings.language === 'pl' ? "Nazwa wyświetlana" : "Display name"}
-                      <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wider">
+                      <span className="text-[10px] font-normal text-muted-foreground uppercase tracking-wider">
                         {settings.language === 'pl' ? "opcjonalnie" : "optional"}
                       </span>
                     </Label>
@@ -361,7 +362,7 @@ export default function Settings() {
                       placeholder={settings.language === 'pl' ? "np. TraderPro, Nick" : "e.g. TraderPro, Nick"}
                       maxLength={32}
                     />
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {settings.language === 'pl'
                         ? "Jeśli ustawisz, będzie używana w aplikacji zamiast imienia i nazwiska."
                         : "If set, it will be used in the app instead of full name."}
@@ -370,8 +371,8 @@ export default function Settings() {
 
                   <div>
                     <Label>{t.email}</Label>
-                    <Input value={user?.email || ""} disabled className="bg-slate-50 dark:bg-slate-800/60 dark:border-slate-700 dark:text-slate-100" />
-                    <p className="text-xs text-slate-500 mt-1">
+                    <Input value={user?.email || ""} disabled className="bg-muted/40 dark:text-foreground" />
+                    <p className="text-xs text-muted-foreground mt-1">
                       {settings.language === 'pl' ? "Email nie może być zmieniony" : "Email cannot be changed"}
                     </p>
                   </div>
@@ -381,7 +382,7 @@ export default function Settings() {
                     <Label>
                       {settings.language === 'pl' ? "Awatar" : "Avatar"}
                     </Label>
-                    <p className="text-xs text-slate-500 mt-1 mb-3">
+                    <p className="text-xs text-muted-foreground mt-1 mb-3">
                       {settings.language === 'pl'
                         ? "Wybierz jeden z gotowych motywów. Pierwsza opcja pokazuje Twoje inicjały."
                         : "Pick one of the presets. The first option shows your initials."}
@@ -398,8 +399,8 @@ export default function Settings() {
                             onClick={() => setSettings({ ...settings, avatar: preset.id })}
                             className={`relative group aspect-square rounded-xl flex flex-col items-center justify-center gap-1 text-white font-semibold shadow-sm transition-all duration-200 bg-gradient-to-br ${preset.gradient} ${
                               active
-                                ? "ring-4 ring-blue-500 ring-offset-2 ring-offset-background scale-[1.03]"
-                                : "hover:-translate-y-0.5 hover:shadow-md ring-1 ring-black/5 dark:ring-white/10"
+                                ? "ring-4 ring-primary ring-offset-2 ring-offset-background scale-[1.03]"
+                                : "hover:ring-1 ring-1 ring-black/5 dark:ring-white/10"
                             }`}
                             aria-pressed={active}
                             title={preset.label}
@@ -411,7 +412,7 @@ export default function Settings() {
                             )}
                             <span className="text-[10px] font-medium opacity-90">{preset.label}</span>
                             {active && (
-                              <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white text-blue-600 flex items-center justify-center shadow">
+                              <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
                                 <Check className="w-3 h-3" />
                               </span>
                             )}
@@ -425,7 +426,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'preferences' && (
-              <Card className="shadow-md">
+              <Card className="border-border">
                 <CardHeader>
                   <CardTitle>{t.preferences}</CardTitle>
                   <CardDescription>Personalizuj wygląd i język aplikacji</CardDescription>
@@ -532,7 +533,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'trading' && (
-              <Card className="shadow-md">
+              <Card className="border-border">
                 <CardHeader>
                   <CardTitle>{t.trading}</CardTitle>
                   <CardDescription>Ustawienia domyślne dla nowych transakcji</CardDescription>
@@ -562,7 +563,7 @@ export default function Settings() {
                       onChange={(e) => setSettings({ ...settings, default_risk_per_trade: parseFloat(e.target.value) })}
                       placeholder="1.0"
                     />
-                    <p className="text-xs text-slate-500 mt-1">Sugerowane: 1-2%</p>
+                    <p className="text-xs text-muted-foreground mt-1">Sugerowane: 1-2%</p>
                   </div>
                   <div>
                     <Label>{t.maxDailyLoss}</Label>
@@ -573,14 +574,14 @@ export default function Settings() {
                       onChange={(e) => setSettings({ ...settings, default_max_daily_loss: parseFloat(e.target.value) })}
                       placeholder="5.0"
                     />
-                    <p className="text-xs text-slate-500 mt-1">Sugerowane: 3-5%</p>
+                    <p className="text-xs text-muted-foreground mt-1">Sugerowane: 3-5%</p>
                   </div>
                 </CardContent>
               </Card>
             )}
 
             {activeSection === 'notifications' && (
-              <Card className="shadow-md">
+              <Card className="border-border">
                 <CardHeader>
                   <CardTitle>{t.notifications}</CardTitle>
                   <CardDescription>Kontroluj powiadomienia i alerty</CardDescription>
@@ -589,20 +590,30 @@ export default function Settings() {
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>{t.enableNotifications}</Label>
-                      <p className="text-sm text-slate-500">Otrzymuj powiadomienia o ważnych wydarzeniach</p>
+                      <p className="text-sm text-muted-foreground">Otrzymuj powiadomienia o ważnych wydarzeniach</p>
                     </div>
                     <Switch
-                      checked={settings.notifications_enabled !== undefined ? settings.notifications_enabled : true}
-                      onCheckedChange={(checked) => setSettings({ ...settings, notifications_enabled: checked })}
+                      checked={settings.notifications_enabled !== false}
+                      onCheckedChange={async (checked) => {
+                        if (checked) {
+                          const permission = await requestNotificationPermission();
+                          if (permission === "denied") {
+                            toast.info(settings.language === "pl"
+                              ? "Przeglądarka zablokowała powiadomienia. Włącz je w ustawieniach witryny."
+                              : "The browser blocked notifications. Enable them in site settings.");
+                          }
+                        }
+                        setSettings({ ...settings, notifications_enabled: checked });
+                      }}
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>{t.showWeekends}</Label>
-                      <p className="text-sm text-slate-500">Wyświetlaj weekendy w widoku kalendarza</p>
+                      <p className="text-sm text-muted-foreground">Wyświetlaj weekendy w widoku kalendarza</p>
                     </div>
                     <Switch
-                      checked={settings.show_weekends !== undefined ? settings.show_weekends : false}
+                      checked={settings.show_weekends !== false}
                       onCheckedChange={(checked) => setSettings({ ...settings, show_weekends: checked })}
                     />
                   </div>
@@ -611,7 +622,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'privacy' && (
-              <Card className="shadow-md">
+              <Card className="border-border">
                 <CardHeader>
                   <CardTitle>{t.privacy}</CardTitle>
                   <CardDescription>
@@ -624,7 +635,7 @@ export default function Settings() {
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>{t.privacyMode}</Label>
-                      <p className="text-sm text-slate-500">{t.privacyModeDesc}</p>
+                      <p className="text-sm text-muted-foreground">{t.privacyModeDesc}</p>
                     </div>
                     <Switch
                       checked={!!settings.privacy_mode}
@@ -649,7 +660,7 @@ export default function Settings() {
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {settings.language === 'pl'
                         ? "Strona otwierana po zalogowaniu"
                         : "Page opened after login"}
@@ -673,7 +684,7 @@ export default function Settings() {
             )}
 
             {activeSection === 'trash' && (
-              <Card className="shadow-md">
+              <Card className="border-border">
                 <CardHeader>
                   <CardTitle>{t.trash}</CardTitle>
                   <CardDescription>
@@ -682,7 +693,7 @@ export default function Settings() {
                 </CardHeader>
                 <CardContent>
                   {deletedTrades.length === 0 ? (
-                    <div className="text-sm text-slate-500">{t.emptyTrash}</div>
+                    <div className="text-sm text-muted-foreground">{t.emptyTrash}</div>
                   ) : (
                     <div className="space-y-3">
                       {deletedTrades.map((trade) => {
@@ -690,13 +701,13 @@ export default function Settings() {
                         return (
                           <div
                             key={trade.id}
-                            className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700"
+                            className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-3 rounded-lg border border-border"
                           >
                             <div className="min-w-0">
                               <div className="font-semibold text-slate-900 dark:text-slate-100">
                                 {trade.symbol || '-'} • {trade.date || '-'}
                               </div>
-                              <div className="text-xs text-slate-500 mt-1">
+                              <div className="text-xs text-muted-foreground mt-1">
                                 Konto: {getAccountName(trade.account_id)}
                               </div>
                             </div>
@@ -745,7 +756,7 @@ export default function Settings() {
             )}
           </div>
 
-          <Card className="h-fit shadow-md xl:sticky xl:top-6 xl:order-1">
+          <Card className="h-fit border-border xl:sticky xl:top-6 xl:order-1">
             <CardHeader>
               <CardTitle className="text-base">Sekcje</CardTitle>
               <CardDescription>Wybierz, co chcesz edytować</CardDescription>

@@ -75,7 +75,7 @@ export default function Pricing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-sky-300 text-xs font-semibold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
               {t('pricing14DayTrial') || '14 dni za darmo'}
             </div>
@@ -83,10 +83,10 @@ export default function Pricing() {
             <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-white mb-5 tracking-tight leading-[1.1]">
               {t('pricingTitle')}
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-3 px-2">
+            <p className="text-base sm:text-lg md:text-xl text-white/75 max-w-2xl mx-auto mb-3 px-2">
               {t('pricingSubtitle')}
             </p>
-            <p className="text-sm sm:text-base text-sky-300/80 max-w-xl mx-auto px-2">
+            <p className="text-sm sm:text-base text-white/55 max-w-xl mx-auto px-2">
               {t('pricingNoCreditCard') || 'Bez karty kredytowej. Anuluj w każdej chwili.'}
             </p>
           </motion.div>
@@ -98,11 +98,11 @@ export default function Pricing() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="max-w-xl mx-auto mt-10 mb-16"
           >
-            <Card className="relative overflow-hidden border-2 border-blue-500/40 bg-gradient-to-b from-slate-900/95 via-slate-900/85 to-slate-950/95 backdrop-blur-md shadow-[0_20px_60px_-15px_rgba(59,130,246,0.45)]">
+            <Card className="relative overflow-hidden border border-primary/40 bg-card/95 backdrop-blur-md shadow-none">
 
               {/* Top ribbon */}
-              <div className="absolute top-0 inset-x-0 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 text-center py-2">
-                <span className="text-xs font-bold uppercase tracking-[0.2em] text-white drop-shadow-sm">
+              <div className="absolute top-0 inset-x-0 bg-primary text-center py-2">
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary-foreground">
                   Najpopularniejszy plan • 14 dni gratis
                 </span>
               </div>
@@ -111,11 +111,11 @@ export default function Pricing() {
 
                 {/* Plan name */}
                 <div className="text-center pt-2">
-                  <div className="inline-flex h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 items-center justify-center mb-3 shadow-lg shadow-blue-500/30">
-                    <Zap className="w-7 h-7 text-white" />
+                  <div className="inline-flex h-14 w-14 rounded-md bg-primary items-center justify-center mb-3">
+                    <Zap className="w-7 h-7 text-primary-foreground" />
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-bold text-white">AiKeepTrade Pro</h2>
-                  <p className="text-slate-400 text-sm sm:text-base mt-1">
+                  <p className="text-white/55 text-sm sm:text-base mt-1">
                     {t('pricingPlanDesc')}
                   </p>
                 </div>
@@ -140,11 +140,11 @@ export default function Pricing() {
                 {/* Price */}
                 <div className="text-center pt-2 pb-4 border-y border-white/5 py-5">
                   <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-2xl text-slate-400 align-top">$</span>
+                    <span className="text-2xl text-white/55 align-top">$</span>
                     <span className="text-5xl sm:text-6xl font-extrabold text-white tracking-tight">9.90</span>
-                    <span className="text-lg text-slate-400 ml-1">/ {t('pricingPerMonth') || 'mies.'}</span>
+                    <span className="text-lg text-white/55 ml-1">/ {t('pricingPerMonth') || 'mies.'}</span>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-2">
+                  <p className="text-xs sm:text-sm text-white/40 mt-2">
                     Po zakończeniu okresu próbnego — pełna kontrola nad subskrypcją
                   </p>
                 </div>
@@ -159,7 +159,7 @@ export default function Pricing() {
                     t('pricingInclude5'),
                     t('pricingInclude6'),
                   ].filter(Boolean).map((label, i) => (
-                    <div key={i} className="flex items-start gap-3 text-slate-200 text-sm sm:text-base">
+                    <div key={i} className="flex items-start gap-3 text-white/85 text-sm sm:text-base">
                       <span className="shrink-0 mt-0.5 h-5 w-5 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
                         <Check className="w-3 h-3 text-emerald-400" strokeWidth={3} />
                       </span>
@@ -174,7 +174,7 @@ export default function Pricing() {
                     onClick={handleStartTrial}
                     disabled={loading}
                     size="lg"
-                    className="hero-cta-pulse w-full h-14 rounded-xl fx-cta text-base sm:text-lg font-bold shadow-xl shadow-blue-500/30 disabled:opacity-70 group"
+                    className="w-full h-14 rounded-xl fx-cta text-base sm:text-lg font-bold disabled:opacity-70 group"
                   >
                     {loading ? (
                       <span className="inline-flex items-center gap-2">
@@ -191,12 +191,12 @@ export default function Pricing() {
                   </Button>
 
                   {/* Trust row */}
-                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-slate-400">
-                    <span className="inline-flex items-center gap-1.5"><Lock className="w-3 h-3 text-sky-400" /> Płatność przez Stripe</span>
-                    <span className="text-slate-600 hidden sm:inline">•</span>
-                    <span className="inline-flex items-center gap-1.5"><CreditCard className="w-3 h-3 text-sky-400" /> Karta dopiero po triale</span>
-                    <span className="text-slate-600 hidden sm:inline">•</span>
-                    <span className="inline-flex items-center gap-1.5"><X className="w-3 h-3 text-sky-400" /> Anuluj w każdej chwili</span>
+                  <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-white/55">
+                    <span className="inline-flex items-center gap-1.5"><Lock className="w-3 h-3 text-muted-foreground" /> Płatność przez Stripe</span>
+                    <span className="text-white/25 hidden sm:inline">•</span>
+                    <span className="inline-flex items-center gap-1.5"><CreditCard className="w-3 h-3 text-muted-foreground" /> Karta dopiero po triale</span>
+                    <span className="text-white/25 hidden sm:inline">•</span>
+                    <span className="inline-flex items-center gap-1.5"><X className="w-3 h-3 text-muted-foreground" /> Anuluj w każdej chwili</span>
                   </div>
                 </div>
 
@@ -214,7 +214,7 @@ export default function Pricing() {
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3">
               {t('pricingWhyChoose')}
             </h2>
-            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto mb-10 px-2">
+            <p className="text-white/55 text-base sm:text-lg max-w-2xl mx-auto mb-10 px-2">
               {t('pricingCTADesc')}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
@@ -227,13 +227,13 @@ export default function Pricing() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.5 + index * 0.08 }}
                   >
-                    <Card className="bg-slate-900/60 backdrop-blur-sm border-slate-700/50 h-full hover:border-blue-500/50 hover:bg-slate-900/80 transition-all group">
+                    <Card className="bg-black/40 backdrop-blur-sm border-white/10 h-full hover:border-primary/40 hover:bg-black/50 transition-all group">
                       <CardContent className="p-5 sm:p-6 text-left">
-                        <div className="w-11 h-11 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
-                          <Icon className="w-5 h-5 text-blue-400" />
+                        <div className="w-11 h-11 rounded-md bg-muted/60 border border-white/10 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
+                          <Icon className="w-5 h-5 text-primary" />
                         </div>
                         <h3 className="text-base sm:text-lg font-semibold text-white mb-2">{feature.title}</h3>
-                        <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">{feature.desc}</p>
+                        <p className="text-white/55 text-xs sm:text-sm leading-relaxed">{feature.desc}</p>
                       </CardContent>
                     </Card>
                   </motion.div>
@@ -251,19 +251,19 @@ export default function Pricing() {
           >
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
               <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4 text-left">
-                <Shield className="w-5 h-5 text-sky-400 mb-2" />
+                <Shield className="w-5 h-5 text-muted-foreground mb-2" />
                 <p className="text-sm font-semibold text-white mb-1">Bezpieczna płatność</p>
-                <p className="text-xs text-slate-400">Przetwarzane przez Stripe — TLS i PCI-DSS</p>
+                <p className="text-xs text-white/55">Przetwarzane przez Stripe — TLS i PCI-DSS</p>
               </div>
               <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4 text-left">
-                <Clock className="w-5 h-5 text-sky-400 mb-2" />
+                <Clock className="w-5 h-5 text-muted-foreground mb-2" />
                 <p className="text-sm font-semibold text-white mb-1">14 dni testu</p>
-                <p className="text-xs text-slate-400">Pełna funkcjonalność, bez kompromisów</p>
+                <p className="text-xs text-white/55">Pełna funkcjonalność, bez kompromisów</p>
               </div>
               <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4 text-left">
-                <X className="w-5 h-5 text-sky-400 mb-2" />
+                <X className="w-5 h-5 text-muted-foreground mb-2" />
                 <p className="text-sm font-semibold text-white mb-1">Anuluj kiedy chcesz</p>
-                <p className="text-xs text-slate-400">Jednym kliknięciem w ustawieniach</p>
+                <p className="text-xs text-white/55">Jednym kliknięciem w ustawieniach</p>
               </div>
             </div>
 
@@ -271,7 +271,7 @@ export default function Pricing() {
               onClick={handleStartTrial}
               disabled={loading}
               size="lg"
-              className="hero-cta-pulse h-12 rounded-xl px-8 fx-cta text-base font-bold shadow-lg group"
+              className="h-12 rounded-xl px-8 fx-cta text-base font-bold group"
             >
               <span className="inline-flex items-center gap-2">
                 {isAuthenticated ? 'Aktywuj subskrypcję teraz' : (t('pricingGetStarted') || 'Rozpocznij za darmo')}

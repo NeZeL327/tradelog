@@ -38,6 +38,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import QuoteLine from "@/components/QuoteLine";
 import { toast } from "sonner";
 import {
   ChevronDown,
@@ -311,6 +312,7 @@ export default function ProcessReview() {
             Weekly review po tagach — co nie zagrało, co poprawić. Bez screenów i bez wycieku strategii.
           </p>
         </div>
+        <QuoteLine className="hidden lg:flex shrink-0" />
       </div>
 
       {/* Control bar — TradeZella / Edgewonk style toolbar */}

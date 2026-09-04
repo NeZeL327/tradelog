@@ -52,7 +52,7 @@ export default function MobileTabBar() {
                 className="flex flex-col items-center justify-center -mt-3"
                 aria-label={item.label}
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <Plus className="w-6 h-6" strokeWidth={2.5} />
                 </span>
               </button>

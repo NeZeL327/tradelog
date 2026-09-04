@@ -16,7 +16,7 @@ const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) 
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "relative flex h-9 w-full items-center justify-center whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 [&>span]:w-full [&>span]:text-center [&>span]:pr-5",
+      "relative flex h-9 w-full items-center justify-center whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 [&>span]:w-full [&>span]:text-center [&>span]:pr-5",
       className
     )}
     {...props}>
@@ -108,9 +108,9 @@ const SelectItem = React.forwardRef(({ className, children, ...props }, ref) => 
     )}
     {...props}>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-    <span className="flex h-5 w-5 items-center justify-center rounded-full border-[3px] border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50 group-data-[state=checked]:border-blue-600 group-data-[state=checked]:bg-blue-600">
+    <span className="flex h-5 w-5 items-center justify-center rounded-full border-[3px] border-border bg-background group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-3.5 w-3.5 text-white" />
+        <Check className="h-3.5 w-3.5 text-primary-foreground" />
       </SelectPrimitive.ItemIndicator>
     </span>
   </SelectPrimitive.Item>

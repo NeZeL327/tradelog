@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { toast } from 'sonner';
+
+const CONTACT_EMAIL = 'kontakt@aikeeptrade.pl';
 
 export default function Contact() {
   const { t } = useLanguage();
@@ -21,9 +24,12 @@ export default function Contact() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // TODO: Implement actual form submission
-    alert('Dziękujemy za wiadomość! Skontaktujemy się wkrótce.');
+    const subject = encodeURIComponent(formData.subject || 'Wiadomość z AIKeepTrade');
+    const body = encodeURIComponent(
+      `Imię: ${formData.name}\nEmail: ${formData.email}\n\n${formData.message}`
+    );
+    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+    toast.success('Otwieram program pocztowy…');
   };
 
   return (
@@ -41,7 +47,7 @@ export default function Contact() {
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold fx-brand-text mb-4">
               Skontaktuj się z nami
             </h1>
-            <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto px-2">
+            <p className="text-white/55 text-base sm:text-lg max-w-2xl mx-auto px-2">
               Masz pytania? Chętnie pomożemy! Napisz do nas lub skorzystaj z poniższych danych kontaktowych.
             </p>
           </motion.div>
@@ -54,78 +60,91 @@ export default function Contact() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="space-y-6"
             >
-              <Card className="bg-slate-900/50 border-slate-800">
+              <Card className="bg-black/40 border-white/10">
                 <CardHeader>
-                  <CardTitle className="text-2xl text-slate-100">Informacje kontaktowe</CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardTitle className="text-2xl text-white">Informacje kontaktowe</CardTitle>
+                  <CardDescription className="text-white/55">
                     Skontaktuj się z nami w dogodny dla Ciebie sposób
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Email */}
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-6 h-6 text-blue-400" />
+                    <div className="w-12 h-12 rounded-md bg-muted/50 flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-6 h-6 text-muted-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-100 mb-1">Email</h3>
-                      <p className="text-slate-400">kontakt@aikeeptrade.pl</p>
-                      <p className="text-slate-400">support@aikeeptrade.pl</p>
+                      <h3 className="font-semibold text-white mb-1">Email</h3>
+                      <p className="text-white/55">
+                        <a href="mailto:kontakt@aikeeptrade.pl" className="hover:text-white">kontakt@aikeeptrade.pl</a>
+                      </p>
+                      <p className="text-white/55">
+                        <a href="mailto:support@aikeeptrade.pl" className="hover:text-white">support@aikeeptrade.pl</a>
+                      </p>
                     </div>
                   </div>
 
                   {/* Phone */}
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                      <Phone className="w-6 h-6 text-sky-400" />
+                    <div className="w-12 h-12 rounded-md bg-muted/50 flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-6 h-6 text-muted-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-100 mb-1">Telefon</h3>
-                      <p className="text-slate-400">+48 123 456 789</p>
-                      <p className="text-slate-400 text-sm">(Pon-Pt, 9:00-17:00)</p>
+                      <h3 className="font-semibold text-white mb-1">Telefon</h3>
+                      <p className="text-white/55">
+                        <a href="tel:+48123456789" className="hover:text-white">+48 123 456 789</a>
+                      </p>
+                      <p className="text-white/55 text-sm">(Pon-Pt, 9:00-17:00)</p>
                     </div>
                   </div>
 
                   {/* Address */}
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-6 h-6 text-purple-400" />
+                    <div className="w-12 h-12 rounded-md bg-muted/50 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-6 h-6 text-muted-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-100 mb-1">Adres</h3>
-                      <p className="text-slate-400">ul. Handlowa 123</p>
-                      <p className="text-slate-400">00-001 Warszawa, Polska</p>
+                      <h3 className="font-semibold text-white mb-1">Adres</h3>
+                      <a
+                        href="https://maps.google.com/?q=ul.+Handlowa+123,+00-001+Warszawa"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-white"
+                      >
+                        <p className="text-white/55">ul. Handlowa 123</p>
+                        <p className="text-white/55">00-001 Warszawa, Polska</p>
+                      </a>
                     </div>
                   </div>
 
                   {/* Hours */}
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-6 h-6 text-cyan-400" />
+                    <div className="w-12 h-12 rounded-md bg-muted/50 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-6 h-6 text-muted-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-100 mb-1">Godziny wsparcia</h3>
-                      <p className="text-slate-400">Poniedziałek - Piątek: 9:00 - 17:00</p>
-                      <p className="text-slate-400">Sobota - Niedziela: Zamknięte</p>
+                      <h3 className="font-semibold text-white mb-1">Godziny wsparcia</h3>
+                      <p className="text-white/55">Poniedziałek - Piątek: 9:00 - 17:00</p>
+                      <p className="text-white/55">Sobota - Niedziela: Zamknięte</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Social Media */}
-              <Card className="bg-slate-900/50 border-slate-800">
+              <Card className="bg-black/40 border-white/10">
                 <CardHeader>
-                  <CardTitle className="text-xl text-slate-100">Media społecznościowe</CardTitle>
+                  <CardTitle className="text-xl text-white">Media społecznościowe</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-4">
-                    <a href="#" className="w-12 h-12 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors">
+                    <a href="#" className="w-12 h-12 rounded-lg bg-black/40 border border-white/10 hover:bg-white/10 flex items-center justify-center transition-colors">
                       <span className="text-xl">📘</span>
                     </a>
-                    <a href="#" className="w-12 h-12 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors">
+                    <a href="#" className="w-12 h-12 rounded-lg bg-black/40 border border-white/10 hover:bg-white/10 flex items-center justify-center transition-colors">
                       <span className="text-xl">📷</span>
                     </a>
-                    <a href="#" className="w-12 h-12 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center transition-colors">
+                    <a href="#" className="w-12 h-12 rounded-lg bg-black/40 border border-white/10 hover:bg-white/10 flex items-center justify-center transition-colors">
                       <span className="text-xl">🎵</span>
                     </a>
                   </div>
@@ -139,61 +158,61 @@ export default function Contact() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
             >
-              <Card className="bg-slate-900/50 border-slate-800">
+              <Card className="bg-black/40 border-white/10">
                 <CardHeader>
-                  <CardTitle className="text-2xl text-slate-100">Wyślij wiadomość</CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardTitle className="text-2xl text-white">Wyślij wiadomość</CardTitle>
+                  <CardDescription className="text-white/55">
                     Wypełnij formularz, a my odpowiemy tak szybko, jak to możliwe
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
-                      <Label htmlFor="name" className="text-slate-200">Imię i nazwisko</Label>
+                      <Label htmlFor="name" className="text-white/90">Imię i nazwisko</Label>
                       <Input
                         id="name"
                         placeholder="Jan Kowalski"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="bg-slate-800/50 border-white/8 text-slate-100"
+                        className="bg-black/40 border-white/10 text-white"
                         required
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-slate-200">Email</Label>
+                      <Label htmlFor="email" className="text-white/90">Email</Label>
                       <Input
                         id="email"
                         type="email"
                         placeholder="jan@example.com"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="bg-slate-800/50 border-white/8 text-slate-100"
+                        className="bg-black/40 border-white/10 text-white"
                         required
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="subject" className="text-slate-200">Temat</Label>
+                      <Label htmlFor="subject" className="text-white/90">Temat</Label>
                       <Input
                         id="subject"
                         placeholder="W czym możemy pomóc?"
                         value={formData.subject}
                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                        className="bg-slate-800/50 border-white/8 text-slate-100"
+                        className="bg-black/40 border-white/10 text-white"
                         required
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="message" className="text-slate-200">Wiadomość</Label>
+                      <Label htmlFor="message" className="text-white/90">Wiadomość</Label>
                       <Textarea
                         id="message"
                         placeholder="Opisz swoją sprawę..."
                         rows={6}
                         value={formData.message}
                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                        className="bg-slate-800/50 border-white/8 text-slate-100 resize-none"
+                        className="bg-black/40 border-white/10 text-white resize-none"
                         required
                       />
                     </div>

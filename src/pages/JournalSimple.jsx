@@ -41,6 +41,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { directionBadgeClass, directionLabel, getTradeRealizedPL, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
 import { formatTradeDate, formatTradeClock, formatTradeClockDate, getDateFormat } from "@/lib/userSettings";
+import QuoteLine from "@/components/QuoteLine";
 
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
 const DAYS_PL = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
@@ -102,13 +103,13 @@ function MiniCalendar({ from, to, onSelect }) {
   return (
     <div className="w-[224px] select-none">
       <div className="flex items-center justify-between mb-2">
-        <button type="button" onClick={prevMonth} className="p-1 rounded hover:bg-cyan-500/10 dark:hover:bg-cyan-500/15 text-slate-500 dark:text-cyan-300/80">
+        <button type="button" onClick={prevMonth} className="p-1 rounded hover:bg-accent text-muted-foreground">
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <span className="text-sm font-semibold text-slate-800 dark:text-cyan-100">
+        <span className="text-sm font-semibold text-foreground">
           {MONTHS_PL[view.month]} {view.year}
         </span>
-        <button type="button" onClick={nextMonth} className="p-1 rounded hover:bg-cyan-500/10 dark:hover:bg-cyan-500/15 text-slate-500 dark:text-cyan-300/80">
+        <button type="button" onClick={nextMonth} className="p-1 rounded hover:bg-accent text-muted-foreground">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -132,10 +133,10 @@ function MiniCalendar({ from, to, onSelect }) {
               onClick={() => handleDay(d)}
               className={[
                 "text-xs h-7 w-full rounded transition-colors",
-                isFrom || isTo ? "bg-cyan-600 dark:bg-cyan-500 text-white font-semibold" : "",
-                inRange ? "bg-cyan-100 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-200 rounded-none" : "",
-                isNow && !isFrom && !isTo ? "font-bold text-cyan-600 dark:text-cyan-400" : "",
-                !isFrom && !isTo && !inRange ? "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" : "",
+                isFrom || isTo ? "bg-primary text-primary-foreground font-semibold" : "",
+                inRange ? "bg-primary/10 text-foreground rounded-none" : "",
+                isNow && !isFrom && !isTo ? "font-bold text-primary" : "",
+                !isFrom && !isTo && !inRange ? "text-foreground hover:bg-muted" : "",
               ].join(" ").trim()}
             >
               {d}
@@ -646,12 +647,12 @@ export default function JournalSimple({ mode = "all" }) {
         )}
         {/* Bulk Actions Bar */}
         {selectedTrades.size > 0 && (
-          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-card shadow-2xl rounded-xl border border-cyan-500/25 dark:border-cyan-500/30 px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4 animate-in slide-in-from-top-5 backdrop-blur-md">
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-card rounded-md border border-border px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4 animate-in slide-in-from-top-5">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-cyan-500/15 dark:bg-cyan-500/20 flex items-center justify-center ring-1 ring-cyan-500/30">
-                <span className="text-xs md:text-sm font-bold text-cyan-700 dark:text-cyan-200">{selectedTrades.size}</span>
+              <div className="w-8 h-8 rounded-md bg-primary/15 flex items-center justify-center">
+                <span className="text-xs md:text-sm font-bold text-primary">{selectedTrades.size}</span>
               </div>
-              <span className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <span className="text-xs md:text-sm font-semibold text-foreground">
                 {selectedTrades.size} {selectedTrades.size === 1 ? 'trade' : 'trades'} selected
               </span>
             </div>
@@ -682,10 +683,11 @@ export default function JournalSimple({ mode = "all" }) {
             <h1 className="cyber-page-title">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : isMissedMode ? (t('missedTrades') || 'Missed Trades') : 'Trade Journal'}</h1>
             <p className="cyber-page-sub">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : isMissedMode ? (t('missedTrades') || 'Missed Trades') : 'Track and analyze your trading performance'}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            <QuoteLine className="hidden lg:flex shrink-0" />
             <Button
               onClick={() => setShowAddForm(true)}
-              className="h-10 px-4 gap-2 rounded-xl shadow-md cyber-primary-btn w-full sm:w-auto"
+              className="h-10 px-4 gap-2 w-full sm:w-auto"
               title={t('addTrade')}
             >
               <Plus className="w-5 h-5 shrink-0" />
@@ -699,7 +701,7 @@ export default function JournalSimple({ mode = "all" }) {
           const isAll = statusFilters.includes("all") && outcomeFilters.includes("all");
           const tabs = [
             { key: "all",    label: t('totalTradesLabel'), count: stats.total,   active: isAll,                              accent: "slate",   onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["all"]); } },
-            { key: "open",   label: t('openStatus'),       count: stats.open,    active: statusFilters.includes("Open"),     accent: "blue",    onClick: () => { setStatusFilters(["Open"]);   setOutcomeFilters(["all"]); } },
+            { key: "open",   label: t('openStatus'),       count: stats.open,    active: statusFilters.includes("Open"),     accent: "lime",    onClick: () => { setStatusFilters(["Open"]);   setOutcomeFilters(["all"]); } },
             { key: "closed", label: t('closedStatus'),     count: stats.closed,  active: statusFilters.includes("Closed"),   accent: "emerald", onClick: () => { setStatusFilters(["Closed"]); setOutcomeFilters(["all"]); } },
             { key: "wins",   label: t('wins'),             count: stats.wins,    active: outcomeFilters.includes("Win"),     accent: "yellow",  onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Win"]); } },
             { key: "be",     label: "BE",                  count: stats.breakeven, active: outcomeFilters.includes("Breakeven"), accent: "orange",  onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Breakeven"]); } },
@@ -708,7 +710,7 @@ export default function JournalSimple({ mode = "all" }) {
           ];
           const accentMap = {
             slate:   { dot: "bg-slate-400",   text: "text-slate-700 dark:text-slate-200",   badgeActive: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100" },
-            blue:    { dot: "bg-blue-500",    text: "text-blue-700 dark:text-blue-300",     badgeActive: "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-200" },
+            lime:    { dot: "bg-primary",     text: "text-foreground",                          badgeActive: "bg-primary/15 text-primary" },
             emerald: { dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300", badgeActive: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200" },
             yellow:  { dot: "bg-yellow-500",  text: "text-yellow-700 dark:text-yellow-300", badgeActive: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/60 dark:text-yellow-200" },
             orange:  { dot: "bg-orange-500",  text: "text-orange-700 dark:text-orange-300", badgeActive: "bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-200" },
@@ -719,7 +721,7 @@ export default function JournalSimple({ mode = "all" }) {
             <div className="flex flex-col lg:flex-row lg:items-end gap-3">
               <div
                 role="tablist"
-                className="flex-1 app-h-scroll items-end gap-1 border-b border-slate-200 dark:border-slate-700/70 px-1 lg:flex-wrap lg:overflow-visible"
+                className="flex-1 app-h-scroll items-end gap-1 border-b border-border px-1 lg:flex-wrap lg:overflow-visible"
               >
                 {tabs.map((tab) => {
                   const a = accentMap[tab.accent];
@@ -730,17 +732,17 @@ export default function JournalSimple({ mode = "all" }) {
                       role="tab"
                       aria-selected={tab.active}
                       onClick={tab.onClick}
-                      className={`group relative shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-t-xl border border-b-0 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
+                      className={`group relative shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-t-xl border border-b-0 transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
                         tab.active
-                          ? `bg-card border-slate-200 dark:border-slate-700 shadow-[0_-2px_6px_-2px_rgba(0,0,0,0.08)] -mb-px ${a.text}`
-                          : "bg-slate-100/70 dark:bg-slate-800/40 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-100 hover:-translate-y-0.5"
+                          ? `bg-card border-border -mb-px ${a.text}`
+                          : "bg-muted/40 border-transparent text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                       }`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${a.dot} ${tab.active ? "opacity-100" : "opacity-60"}`} />
                       <span className="text-xs sm:text-sm font-semibold tracking-tight whitespace-nowrap">{tab.label}</span>
                       <span
                         className={`ml-0.5 min-w-[1.5rem] text-center text-[11px] font-bold px-1.5 py-0.5 rounded-full transition-colors ${
-                          tab.active ? a.badgeActive : "bg-slate-200/80 text-slate-600 dark:bg-slate-700/60 dark:text-slate-300"
+                          tab.active ? a.badgeActive : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {tab.count}
@@ -768,7 +770,7 @@ export default function JournalSimple({ mode = "all" }) {
         })()}
 
         {/* Filters */}
-        <Card className="shadow-md">
+        <Card>
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
@@ -788,8 +790,8 @@ export default function JournalSimple({ mode = "all" }) {
                   <div 
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("all")
-                        ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        ? 'bg-primary border-primary'
+                        : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
                     }`}
                     onClick={() => { toggleStatusFilter("all"); setOutcomeFilters(["all"]); }}
                   >
@@ -805,8 +807,8 @@ export default function JournalSimple({ mode = "all" }) {
                   <div 
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("Open")
-                        ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        ? 'bg-primary border-primary'
+                        : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
                     }`}
                     onClick={() => { toggleStatusFilter("Open"); setOutcomeFilters(["all"]); }}
                   >
@@ -822,8 +824,8 @@ export default function JournalSimple({ mode = "all" }) {
                   <div 
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("Closed")
-                        ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        ? 'bg-primary border-primary'
+                        : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
                     }`}
                     onClick={() => { toggleStatusFilter("Closed"); setOutcomeFilters(["all"]); }}
                   >
@@ -839,8 +841,8 @@ export default function JournalSimple({ mode = "all" }) {
                   <div 
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("Planned")
-                        ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        ? 'bg-primary border-primary'
+                        : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
                     }`}
                     onClick={() => { toggleStatusFilter("Planned"); setOutcomeFilters(["all"]); }}
                   >
@@ -858,7 +860,7 @@ export default function JournalSimple({ mode = "all" }) {
                 <button
                   type="button"
                   onClick={() => setAccountFilterOpen((prev) => !prev)}
-                  className="relative w-full sm:w-[220px] h-10 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-card dark:text-slate-200 flex items-center justify-center"
+                  className="relative w-full sm:w-[220px] h-10 px-4 py-2 border border-border bg-card rounded-lg text-sm flex items-center justify-center hover:bg-muted/40"
                 >
                   <span className="truncate text-center w-full pr-4">
                     {activeAccountFilterLabel || (t('allAccounts') || 'All Accounts')}
@@ -866,20 +868,20 @@ export default function JournalSimple({ mode = "all" }) {
                   {accountFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
                 </button>
                 {accountFilterOpen && (
-                  <div className="absolute left-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-lg p-2 max-h-64 overflow-y-auto">
+                  <div className="absolute left-0 mt-2 z-20 w-full rounded-md border border-border bg-popover shadow-lg p-2 max-h-64 overflow-y-auto">
                     <button
                       type="button"
                       onClick={() => {
                         toggleAccountFilter("all");
                       }}
-                      className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted/40"
                     >
-                      <span className="text-sm text-slate-700 dark:text-slate-200 truncate">{t('allAccounts') || 'All Accounts'}</span>
+                      <span className="text-sm text-foreground truncate">{t('allAccounts') || 'All Accounts'}</span>
                       <div
                         className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
                           accountFilters.includes("all")
-                            ? 'bg-blue-600 border-blue-600'
-                            : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500'
+                            ? 'bg-primary border-primary'
+                            : 'bg-background border-border'
                         }`}
                       >
                         {accountFilters.includes("all") && (
@@ -898,14 +900,14 @@ export default function JournalSimple({ mode = "all" }) {
                           onClick={() => {
                             toggleAccountFilter(String(account.id));
                           }}
-                          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted/40"
                         >
-                          <span className="text-sm text-slate-700 dark:text-slate-200 truncate">{account.name}</span>
+                          <span className="text-sm text-foreground truncate">{account.name}</span>
                           <div
                             className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
                               isSelected
-                                ? 'bg-blue-600 border-blue-600'
-                                : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500'
+                                ? 'bg-primary border-primary'
+                                : 'bg-background border-border'
                             }`}
                           >
                             {isSelected && (
@@ -924,13 +926,13 @@ export default function JournalSimple({ mode = "all" }) {
                 <button
                   type="button"
                   onClick={() => setTimeFilterOpen((prev) => !prev)}
-                  className="relative w-full sm:min-w-[160px] h-10 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-card dark:text-slate-200 flex items-center justify-center"
+                  className="relative w-full sm:min-w-[160px] h-10 px-4 py-2 border border-border bg-card rounded-lg text-sm flex items-center justify-center hover:bg-muted/40"
                 >
                   <span className="truncate text-center w-full pr-4">{activeTimeFilterLabel}</span>
                   {timeFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
                 </button>
                 {timeFilterOpen && (
-                  <div className="absolute right-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-lg p-2">
+                  <div className="absolute right-0 mt-2 z-20 w-full rounded-md border border-border bg-popover shadow-lg p-2">
                     {[
                       { value: "all", label: timeFilterLabels.all },
                       { value: "day", label: timeFilterLabels.day },
@@ -946,14 +948,14 @@ export default function JournalSimple({ mode = "all" }) {
                             toggleTimeFilter(option.value);
                             setDateRange({ from: undefined, to: undefined });
                           }}
-                          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+                          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted/40"
                         >
-                          <span className="text-sm text-slate-700 dark:text-slate-200">{option.label}</span>
+                          <span className="text-sm text-foreground">{option.label}</span>
                           <div
                             className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
                               isChecked
-                                ? 'bg-blue-600 border-blue-600'
-                                : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500'
+                                ? 'bg-primary border-primary'
+                                : 'bg-background border-border'
                             }`}
                           >
                             {isChecked && (
@@ -976,8 +978,8 @@ export default function JournalSimple({ mode = "all" }) {
                   onClick={() => setDatePickerOpen((prev) => !prev)}
                   className={`relative flex items-center gap-2 px-3 py-2 h-10 border rounded-md text-sm transition-colors ${
                     dateRangeActive
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
-                      : "border-gray-300 dark:border-gray-600 dark:bg-card dark:text-slate-200"
+                      ? "border-primary bg-primary/10 text-foreground"
+                      : "border-border bg-card text-foreground"
                   }`}
                 >
                   <CalendarRange className="w-4 h-4 shrink-0" />
@@ -985,7 +987,7 @@ export default function JournalSimple({ mode = "all" }) {
                   {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
                 {datePickerOpen && (
-                  <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-30 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-xl p-3">
+                  <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-30 max-w-[calc(100vw-1.5rem)] rounded-lg border border-border bg-popover shadow-md p-3">
                     <MiniCalendar
                       from={dateRange.from}
                       to={dateRange.to}
@@ -1004,10 +1006,10 @@ export default function JournalSimple({ mode = "all" }) {
                               : ""}
                         </span>
                         <div className="flex gap-2">
-                          <button type="button" onClick={() => { setDateRange({ from: "", to: "" }); }} className="text-[11px] text-slate-400 hover:text-red-500 px-2 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                          <button type="button" onClick={() => { setDateRange({ from: "", to: "" }); }} className="text-[11px] text-slate-400 hover:text-red-500 px-2 py-0.5 rounded hover:bg-muted/40">
                             Wyczyść
                           </button>
-                          <button type="button" onClick={() => setDatePickerOpen(false)} className="text-[11px] text-white bg-blue-600 hover:bg-blue-700 px-3 py-0.5 rounded">
+                          <button type="button" onClick={() => setDatePickerOpen(false)} className="text-[11px] text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-0.5 rounded">
                             Zamknij
                           </button>
                         </div>
@@ -1021,62 +1023,62 @@ export default function JournalSimple({ mode = "all" }) {
         </Card>
 
         {(isSingleStatusMode || statusFilters.includes("all") || statusFilters.some(s => s !== "Planned" && s !== "Missed")) && (
-          <Card className="bg-white dark:bg-card shadow-xl">
+          <Card className="bg-card border-border">
             <CardContent className="p-0">
               <div className="hidden md:block overflow-x-auto w-full">
-                <table className="w-full table-fixed text-xs border-collapse [&_th]:px-1 [&_td]:px-1 [&_th]:py-1 [&_td]:py-1 [&_th]:leading-tight [&_td]:leading-tight [&_th]:overflow-hidden [&_th]:text-ellipsis [&_td]:overflow-hidden [&_td]:text-ellipsis [&_button]:min-h-0 [&_button]:min-w-0">
-                <thead className="bg-slate-50 dark:bg-card border-b border-slate-200 dark:border-border">
+                <table className="journal-table w-full table-fixed text-xs border-collapse [&_th]:px-1.5 [&_td]:px-1.5 [&_th]:py-2 [&_td]:py-2 [&_th]:leading-tight [&_td]:leading-tight [&_th]:overflow-hidden [&_th]:text-ellipsis [&_td]:overflow-hidden [&_td]:text-ellipsis [&_button]:min-h-0 [&_button]:min-w-0">
+                <thead className="bg-transparent border-b border-border">
                   <tr>
                     {visibleColumns.status && (
-                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('statusLabel')}</th>
+                      <th className="text-left px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('statusLabel')}</th>
                     )}
-                    <th className="text-left px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[92px]">{t('account') || 'Account'}</th>
+                    <th className="text-left px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-[92px]">{t('account') || 'Account'}</th>
                     {visibleColumns.date && (
-                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                        <button onClick={() => handleSort("date")} className="flex items-center gap-0.5 hover:text-blue-600">
+                      <th className="text-left px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                        <button onClick={() => handleSort("date")} className="flex items-center gap-0.5 hover:text-primary">
                           {t('date')} <ArrowUpDown className="w-3 h-3" />
                         </button>
                       </th>
                     )}
                     {visibleColumns.symbol && (
-                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('symbol')}</th>
+                      <th className="text-left px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('symbol')}</th>
                     )}
                     {visibleColumns.direction && (
-                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('direction')}</th>
+                      <th className="text-left px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('direction')}</th>
                     )}
-                    <th className="text-left px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[92px]">{t('strategy') || 'Strategy'}</th>
+                    <th className="text-left px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-[92px]">{t('strategy') || 'Strategy'}</th>
                     {visibleColumns.entry && (
-                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('entryPrice')}</th>
+                      <th className="text-left px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('entryPrice')}</th>
                     )}
-                    <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('stopLossPips')}</th>
-                    <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('takeProfitPips')}</th>
+                    <th className="text-left px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('stopLossPips')}</th>
+                    <th className="text-left px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('takeProfitPips')}</th>
                     {visibleColumns.exit && (
-                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('exit')}</th>
+                      <th className="text-left px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('exit')}</th>
                     )}
                     {visibleColumns.position && (
-                      <th className="text-left px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[72px]">{t('lotSize')}</th>
+                      <th className="text-left px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-[72px]">{t('lotSize')}</th>
                     )}
                     {visibleColumns.pl && (
-                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                        <button onClick={() => handleSort("profit_loss")} className="flex items-center gap-0.5 hover:text-blue-600">
+                      <th className="text-left px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">
+                        <button onClick={() => handleSort("profit_loss")} className="flex items-center gap-0.5 hover:text-primary">
                           {t('profitLoss')} <ArrowUpDown className="w-3 h-3" />
                         </button>
                       </th>
                     )}
                     {visibleColumns.outcome && (
-                      <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('outcome')}</th>
+                      <th className="text-left px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('outcome')}</th>
                     )}
-                    <th className="text-left px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[110px]">{t('screenshots') || 'Scr'}</th>
+                    <th className="text-left px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-[110px]">{t('screenshots') || 'Scr'}</th>
                     {visibleColumns.actions && (
-                      <th className="text-right px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('actions')}</th>
+                      <th className="text-right px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('actions')}</th>
                     )}
                     <th className="text-center px-1.5 py-1 w-8">
                       <div 
                         onClick={toggleAllTrades}
                         className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
                           displayTrades.length > 0 && selectedTrades.size === displayTrades.length
-                            ? 'bg-blue-600 border-blue-600'
-                            : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                            ? 'bg-primary border-primary'
+                            : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
                         }`}
                       >
                         {displayTrades.length > 0 && selectedTrades.size === displayTrades.length && (
@@ -1090,7 +1092,7 @@ export default function JournalSimple({ mode = "all" }) {
                 </thead>
                 <tbody>
                   {displayTrades.map((trade) => (
-                    <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    <tr key={trade.id} className="border-b border-border hover:bg-muted/40 transition-colors">
                       {visibleColumns.status && (
                         <td className="px-1.5 py-1">
                           <Badge className={`${tradeStatusBadgeClass(trade.status)} text-xs font-semibold px-1.5 py-0.5 border`}> 
@@ -1106,7 +1108,7 @@ export default function JournalSimple({ mode = "all" }) {
                         <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
                           <div>{formatTradeClockDate(trade, "entry", dateFormat) || fmtDate(trade.date)}</div>
                           {(trade.entry_time || trade.time) && (
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                            <div className="text-[10px] text-muted-foreground">
                               {formatTradeClock(trade, "entry")}
                             </div>
                           )}
@@ -1129,7 +1131,7 @@ export default function JournalSimple({ mode = "all" }) {
                         <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
                           <div>{trade.entry_price ?? '-'}</div>
                           {(trade.entry_time || trade.time) && (
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                            <div className="text-[10px] text-muted-foreground">
                               {formatTradeClock(trade, "entry")}
                             </div>
                           )}
@@ -1141,7 +1143,7 @@ export default function JournalSimple({ mode = "all" }) {
                         <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
                           <div>{trade.exit_price ?? '-'}</div>
                           {(trade.exit_time || (trade.close_date && trade.close_date !== trade.date)) && (
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                            <div className="text-[10px] text-muted-foreground">
                               {trade.close_date && trade.close_date !== trade.date
                                 ? `${formatTradeClockDate(trade, "exit", dateFormat)} `
                                 : ""}
@@ -1224,8 +1226,8 @@ export default function JournalSimple({ mode = "all" }) {
                           onClick={() => toggleTradeSelection(trade.id)}
                           className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
                             selectedTrades.has(trade.id)
-                              ? 'bg-blue-600 border-blue-600'
-                              : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                              ? 'bg-primary border-primary'
+                              : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
                           }`}
                         >
                           {selectedTrades.has(trade.id) && (
@@ -1252,7 +1254,7 @@ export default function JournalSimple({ mode = "all" }) {
 
               {displayTrades.length === 0 && (
                 <div className="hidden md:block text-center py-12">
-                  <p className="text-slate-500">No trades to display</p>
+                  <p className="text-muted-foreground">No trades to display</p>
                 </div>
               )}
             </CardContent>
@@ -1260,7 +1262,7 @@ export default function JournalSimple({ mode = "all" }) {
         )}
 
         {!isSingleStatusMode && (statusFilters.includes("all") || statusFilters.includes("Planned")) && (
-          <Card className="bg-yellow-50 dark:bg-yellow-950/40 shadow-xl">
+          <Card className="bg-muted/40 border-border">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-yellow-700">{t('plannedTrades')}</CardTitle>
               <Button
@@ -1280,25 +1282,25 @@ export default function JournalSimple({ mode = "all" }) {
                     <thead>
                       <tr>
                         {visibleColumns.date && (
-                          <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('date')}</th>
+                          <th className="px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('date')}</th>
                         )}
-                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[92px]">{t('account') || 'Account'}</th>
+                        <th className="px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-[92px]">{t('account') || 'Account'}</th>
                         {visibleColumns.symbol && (
-                          <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('symbol')}</th>
+                          <th className="px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('symbol')}</th>
                         )}
                         {visibleColumns.direction && (
-                          <th className="px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('direction')}</th>
+                          <th className="px-1.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('direction')}</th>
                         )}
-                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap w-[92px]">{t('strategy') || 'Strategy'}</th>
-                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('entryPrice')}</th>
-                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('stopLossPips')}</th>
-                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('takeProfitPips')}</th>
+                        <th className="px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap w-[92px]">{t('strategy') || 'Strategy'}</th>
+                        <th className="px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('entryPrice')}</th>
+                        <th className="px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('stopLossPips')}</th>
+                        <th className="px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('takeProfitPips')}</th>
                         {visibleColumns.notes && (
-                          <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('notes')}</th>
+                          <th className="px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('notes')}</th>
                         )}
-                        <th className="px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('screenshots') || 'Scr'}</th>
+                        <th className="px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('screenshots') || 'Scr'}</th>
                         {visibleColumns.actions && (
-                          <th className="text-right px-1 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('actions')}</th>
+                          <th className="text-right px-1 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground whitespace-nowrap">{t('actions')}</th>
                         )}
                       </tr>
                     </thead>
@@ -1359,7 +1361,7 @@ export default function JournalSimple({ mode = "all" }) {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => setEditingTrade(trade)}
-                                  className="text-blue-600 h-5 w-5 p-0"
+                                  className="text-primary h-5 w-5 p-0"
                                 >
                                   <Edit className="w-3 h-3" />
                                 </Button>
@@ -1385,7 +1387,7 @@ export default function JournalSimple({ mode = "all" }) {
                 </div>
                 {plannedTrades.length === 0 && (
                   <div className="hidden md:block text-center py-8">
-                    <p className="text-slate-500">{t('noTradesToDisplay')}</p>
+                    <p className="text-muted-foreground">{t('noTradesToDisplay')}</p>
                   </div>
                 )}
               </CardContent>
@@ -1403,11 +1405,11 @@ export default function JournalSimple({ mode = "all" }) {
         {/* Add Trade Dialog */}
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
           <DialogContent
-            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0 max-md:!left-0 max-md:!top-0 max-md:!translate-x-0 max-md:!translate-y-0 max-md:!w-full max-md:!max-w-none max-md:!h-[100dvh] max-md:!max-h-[100dvh] max-md:!rounded-none"
+            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-card text-card-foreground p-0 max-md:!left-0 max-md:!top-0 max-md:!translate-x-0 max-md:!translate-y-0 max-md:!w-full max-md:!max-w-none max-md:!h-[100dvh] max-md:!max-h-[100dvh] max-md:!rounded-none"
             {...preventDialogDismissProps}
             onEscapeKeyDown={(event) => event.preventDefault()}
           >
-            <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
+            <div className="sticky top-0 z-10 bg-card px-4 py-3 pr-12 border-b border-border">
               <DialogTitle>{t('addTrade')}</DialogTitle>
             </div>
             <div className="p-4">
@@ -1429,10 +1431,10 @@ export default function JournalSimple({ mode = "all" }) {
         {/* Edit Trade Dialog */}
         <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
           <DialogContent
-            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0 max-md:!left-0 max-md:!top-0 max-md:!translate-x-0 max-md:!translate-y-0 max-md:!w-full max-md:!max-w-none max-md:!h-[100dvh] max-md:!max-h-[100dvh] max-md:!rounded-none"
+            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-card text-card-foreground p-0 max-md:!left-0 max-md:!top-0 max-md:!translate-x-0 max-md:!translate-y-0 max-md:!w-full max-md:!max-w-none max-md:!h-[100dvh] max-md:!max-h-[100dvh] max-md:!rounded-none"
             {...preventDialogDismissProps}
           >
-            <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
+            <div className="sticky top-0 z-10 bg-card px-4 py-3 pr-12 border-b border-border">
               <DialogTitle>Edit Trade</DialogTitle>
             </div>
             <div className="p-4">
@@ -1456,11 +1458,11 @@ export default function JournalSimple({ mode = "all" }) {
 
         {/* View Trade Dialog */}
         <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
-          <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-700 max-md:!left-0 max-md:!top-0 max-md:!translate-x-0 max-md:!translate-y-0 max-md:!w-full max-md:!max-w-none max-md:!h-[100dvh] max-md:!max-h-[100dvh] max-md:!rounded-none">
+          <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-card text-card-foreground border-border max-md:!left-0 max-md:!top-0 max-md:!translate-x-0 max-md:!translate-y-0 max-md:!w-full max-md:!max-w-none max-md:!h-[100dvh] max-md:!max-h-[100dvh] max-md:!rounded-none">
             <DialogHeader className="cyber-dialog-header sticky top-0 z-10 text-white px-6 py-4 border-b">
               <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
             </DialogHeader>
-            <div className="p-6 bg-white dark:bg-card">
+            <div className="p-6 bg-card">
               {viewingTrade && (
                 <Suspense fallback={<FormFallback />}>
                 <TradeDetailView
@@ -1486,7 +1488,7 @@ export default function JournalSimple({ mode = "all" }) {
             }
           }}
         >
-          <AlertDialogContent className="bg-white dark:bg-card border-slate-200 dark:border-slate-700">
+          <AlertDialogContent className="bg-card border-border">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-slate-900 dark:text-white">
                 {deleteDialog.mode === "bulk" ? "Usunąć zaznaczone transakcje?" : "Usunąć transakcję?"}

@@ -47,11 +47,11 @@ export default function ExpensePreview({ data, onSave, onCancel, trips = [] }) {
   };
 
   return (
-    <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
-      <CardHeader className="border-b border-slate-200">
+    <Card className="border border-border bg-card">
+      <CardHeader className="border-b border-border">
         <CardTitle className="flex items-center justify-between">
           <span>Review & Edit Expense</span>
-          <span className="text-sm font-normal text-slate-500">
+          <span className="text-sm font-normal text-muted-foreground">
             AI extracted data - please verify
           </span>
         </CardTitle>
@@ -207,7 +207,7 @@ export default function ExpensePreview({ data, onSave, onCancel, trips = [] }) {
           {formData.items && formData.items.length > 0 && (
             <div className="space-y-2">
               <Label>Line Items</Label>
-              <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 space-y-2">
+              <div className="border border-border rounded-lg p-4 bg-muted/30 space-y-2">
                 {formData.items.map((item, idx) => (
                   <div key={idx} className="text-sm">
                     <p className="font-medium text-slate-900">{item.description}</p>
@@ -220,7 +220,7 @@ export default function ExpensePreview({ data, onSave, onCancel, trips = [] }) {
             </div>
           )}
 
-          <div className="flex gap-3 pt-4 border-t border-slate-200">
+          <div className="flex gap-3 pt-4 border-t border-border">
             <Button
               type="button"
               variant="outline"

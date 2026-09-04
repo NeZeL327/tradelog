@@ -28,8 +28,8 @@ export default function Terms() {
               </Button>
             </Link>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                <Scale className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-md bg-primary flex items-center justify-center">
+                <Scale className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
                 <h1 className="text-3xl font-bold">
@@ -268,7 +268,7 @@ export default function Terms() {
                     : 'If you have any questions about these Terms, please contact us:'}
                 </p>
                 <p className="text-muted-foreground mt-2">
-                  Email: <a href="mailto:support@tradejournal.app" className="text-blue-500 hover:underline">support@tradejournal.app</a>
+                  Email: <a href="mailto:support@tradejournal.app" className="text-primary hover:underline">support@tradejournal.app</a>
                 </p>
               </section>
             </CardContent>

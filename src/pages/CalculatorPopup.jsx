@@ -58,13 +58,13 @@ export default function CalculatorPopup() {
       <div
         className={cn(
           "flex items-center gap-2 px-2 py-1.5 border-b border-border shrink-0",
-          kind === "m1" ? "bg-cyan-50 dark:bg-cyan-950/40" : "bg-violet-50 dark:bg-violet-950/40"
+          "bg-muted/40"
         )}
       >
         {kind === "m1" ? (
-          <Crosshair className="w-3.5 h-3.5 text-cyan-600" />
+          <Crosshair className="w-3.5 h-3.5 text-muted-foreground" />
         ) : (
-          <Calculator className="w-3.5 h-3.5 text-violet-600" />
+          <Calculator className="w-3.5 h-3.5 text-muted-foreground" />
         )}
         <span className="text-[11px] font-semibold truncate flex-1">
           {kind === "m1" ? "M1 MASTERY" : "Konfiguracja A+"}
@@ -74,7 +74,7 @@ export default function CalculatorPopup() {
             type="button"
             className={cn(
               "rounded px-2 py-0.5 text-[10px] font-medium",
-              kind === "aplus" ? "bg-violet-600 text-white" : "hover:bg-muted text-muted-foreground"
+              kind === "aplus" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"
             )}
             onClick={() => setKind("aplus")}
           >
@@ -84,7 +84,7 @@ export default function CalculatorPopup() {
             type="button"
             className={cn(
               "rounded px-2 py-0.5 text-[10px] font-medium",
-              kind === "m1" ? "bg-cyan-600 text-white" : "hover:bg-muted text-muted-foreground"
+              kind === "m1" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"
             )}
             onClick={() => setKind("m1")}
           >
@@ -167,7 +167,7 @@ function PopupAPlusBody() {
                   const checked = selected.includes(opt.id);
                   return (
                     <li key={opt.id}>
-                      <label className={cn("flex items-center gap-1.5 rounded-md px-1 py-0.5 cursor-pointer text-[11px] leading-tight", checked ? "bg-violet-500/10" : "hover:bg-muted/50")}>
+                      <label className={cn("flex items-center gap-1.5 rounded-md px-1 py-0.5 cursor-pointer text-[11px] leading-tight", checked ? "bg-primary/10" : "hover:bg-muted/50")}>
                         <Checkbox checked={checked} onCheckedChange={() => update(group.id, opt.id)} className="h-3 w-3" />
                         <span className="flex-1 truncate">{opt.label}</span>
                         <span className={cn("tabular-nums text-[9px]", pointsToneClass(opt.points))}>{formatPoints(opt.points)}</span>
@@ -235,10 +235,10 @@ function PopupM1Body() {
         {M1_MASTERY_OPTIONS.map((opt) => {
           const checked = selection.includes(opt.id);
           return (
-            <label key={opt.id} className={cn("flex items-center gap-1.5 rounded-md px-1 py-0.5 cursor-pointer text-[11px] leading-tight", checked ? "bg-cyan-500/10" : "hover:bg-muted/50")}>
+            <label key={opt.id} className={cn("flex items-center gap-1.5 rounded-md px-1 py-0.5 cursor-pointer text-[11px] leading-tight", checked ? "bg-primary/10" : "hover:bg-muted/50")}>
               <Checkbox checked={checked} onCheckedChange={() => update(opt.id)} className="h-3 w-3" />
               <span className="flex-1 min-w-0">
-                <span className="font-semibold text-cyan-700 dark:text-cyan-300">{opt.code}</span>
+                <span className="font-semibold text-foreground">{opt.code}</span>
                 {" — "}
                 {opt.label}
               </span>

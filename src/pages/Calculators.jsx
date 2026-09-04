@@ -42,6 +42,8 @@ import {
   emptyM1Selection,
 } from "@/lib/m1MasteryScore";
 
+import QuoteLine from "@/components/QuoteLine";
+
 const GROUP_ICONS = {
   poi: MapPin,
   liquidity: Droplets,
@@ -142,7 +144,7 @@ function APlusCalculator() {
           type="button"
           variant="default"
           size="sm"
-          className="gap-1.5 bg-violet-600 hover:bg-violet-700"
+          className="gap-1.5"
           onClick={() => openFloatingCalculatorPip("aplus")}
         >
           <PictureInPicture2 className="w-3.5 h-3.5" />
@@ -174,10 +176,10 @@ function APlusCalculator() {
         </Button>
       </div>
 
-      <Card className="border-violet-200/60 dark:border-violet-800/50 bg-violet-50/40 dark:bg-violet-950/20">
+      <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <ListChecks className="w-4 h-4 text-violet-600" />
+            <ListChecks className="w-4 h-4 text-muted-foreground" />
             4. LTF Egzekucja (1min)
           </CardTitle>
           <CardDescription>
@@ -195,8 +197,8 @@ function APlusCalculator() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-md border-slate-200 dark:border-border overflow-hidden">
-        <CardHeader className="border-b border-border bg-slate-50/80 dark:bg-muted/30">
+      <Card className="border-border overflow-hidden">
+        <CardHeader className="border-b border-border bg-muted/20">
           <CardTitle className="text-lg dark:text-white">Klasyfikacja Konfiguracji A+</CardTitle>
           <CardDescription>
             Multi-wybór w POI / Liquidity / Time. Price delivery — jeden wariant. „Non” wyłącza pozostałe w grupie.
@@ -213,7 +215,7 @@ function APlusCalculator() {
                   className="rounded-xl border border-border/70 bg-background/60 p-3.5 space-y-3"
                 >
                   <div className="flex items-start gap-2">
-                    <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-300">
+                    <span className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
                       <Icon className="w-4 h-4" />
                     </span>
                     <div className="min-w-0">
@@ -238,7 +240,7 @@ function APlusCalculator() {
                               checked
                                 ? negative
                                   ? "border-rose-400/70 bg-rose-500/10"
-                                  : "border-violet-400/60 bg-violet-500/10"
+                                  : "border-primary/60 bg-primary/10"
                                 : "border-transparent hover:bg-muted/50"
                             )}
                           >
@@ -294,7 +296,7 @@ function APlusCalculator() {
 
             <div className="rounded-2xl border border-border/70 bg-background/80 p-3.5 space-y-2.5">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-violet-500" />
+                <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
                 Suma — legenda
               </p>
               <ul className="space-y-1.5">
@@ -389,7 +391,7 @@ function M1MasteryCalculator() {
           type="button"
           variant="default"
           size="sm"
-          className="gap-1.5 bg-cyan-600 hover:bg-cyan-700"
+          className="gap-1.5"
           onClick={() => openFloatingCalculatorPip("m1")}
         >
           <PictureInPicture2 className="w-3.5 h-3.5" />
@@ -421,10 +423,10 @@ function M1MasteryCalculator() {
         </Button>
       </div>
 
-      <Card className="shadow-md border-slate-200 dark:border-border overflow-hidden max-w-4xl mx-auto">
-        <CardHeader className="border-b border-border bg-cyan-50/60 dark:bg-cyan-950/20">
+      <Card className="border-border overflow-hidden max-w-4xl mx-auto">
+        <CardHeader className="border-b border-border bg-muted/30">
           <CardTitle className="text-lg italic dark:text-white flex items-center gap-2">
-            <Crosshair className="w-5 h-5 text-cyan-600 dark:text-cyan-400 not-italic" />
+            <Crosshair className="w-5 h-5 text-muted-foreground not-italic" />
             M1 MASTERY
           </CardTitle>
           <CardDescription>Ekstra Confluences / Entry model (1min)</CardDescription>
@@ -439,7 +441,7 @@ function M1MasteryCalculator() {
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg border px-2.5 py-2.5 cursor-pointer transition",
                       checked
-                        ? "border-cyan-400/70 bg-cyan-500/10"
+                        ? "border-primary/70 bg-primary/10"
                         : "border-transparent hover:bg-muted/50"
                     )}
                   >
@@ -449,7 +451,7 @@ function M1MasteryCalculator() {
                       aria-label={`${opt.code} ${opt.label}`}
                     />
                     <span className="flex-1 text-sm text-slate-800 dark:text-slate-200">
-                      <span className="font-semibold text-cyan-700 dark:text-cyan-300">{opt.code}</span>
+                      <span className="font-semibold text-foreground">{opt.code}</span>
                       {" — "}
                       {opt.label}
                     </span>
@@ -495,7 +497,7 @@ function M1MasteryCalculator() {
 
             <div className="rounded-2xl border border-border/70 bg-background/80 p-3.5 space-y-2.5">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-cyan-500" />
+                <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
                 Suma — legenda
               </p>
               <ul className="space-y-1.5">
@@ -534,7 +536,7 @@ function M1MasteryCalculator() {
                     key={row.id}
                     className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/60 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-800 dark:text-emerald-300"
                   >
-                    <span className="font-semibold text-cyan-700 dark:text-cyan-300">{row.code}</span>
+                    <span className="font-semibold text-foreground">{row.code}</span>
                     {row.label}
                     <strong className={cn("tabular-nums", pointsToneClass(row.points))}>
                       {formatM1Points(row.points)}
@@ -560,15 +562,18 @@ export default function Calculators() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-          <Calculator className="w-7 h-7 text-violet-500" />
-          Kalkulatory
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          <strong>Picture-in-Picture</strong> — duże fioletowe / cyjanowe przyciski powyżej list albo ikona w belce
-          okienka. Alternatywa: <strong>Osobne okno</strong>, jeśli PiP zniknie przy zmianie karty.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="cyber-page-title flex items-center gap-2">
+            <Calculator className="w-7 h-7 text-primary shrink-0" />
+            Kalkulatory
+          </h1>
+          <p className="cyber-page-sub mt-1">
+            <strong>Picture-in-Picture</strong> — przyciski powyżej list albo ikona w belce
+            okienka. Alternatywa: <strong>Osobne okno</strong>, jeśli PiP zniknie przy zmianie karty.
+          </p>
+        </div>
+        <QuoteLine className="hidden lg:flex shrink-0" />
       </div>
 
       <Tabs value={tab} onValueChange={onTabChange} className="space-y-6">

@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, FileText, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
+import QuoteLine from "@/components/QuoteLine";
 import ReportForm from "@/components/reports/ReportForm";
 import ReportArticle from "@/components/reports/ReportArticle";
 import { reportPeriodLabel, reportTypeLabel } from "@/lib/reports";
@@ -300,10 +301,13 @@ export default function Raporty() {
             {t("reportsSubtitle") || "Podsumowanie mojego tradingu, procesu, błędów i rozwoju."}
           </p>
         </div>
-        <Button className="cyber-primary-btn w-full sm:w-auto" onClick={() => setTypeDialogOpen(true)}>
-          <Plus className="w-5 h-5 mr-2" />
-          {t("reportAdd") || "Dodaj raport"}
-        </Button>
+        <div className="flex gap-3 items-center">
+          <QuoteLine className="hidden lg:flex shrink-0" />
+          <Button className="cyber-primary-btn w-full sm:w-auto" onClick={() => setTypeDialogOpen(true)}>
+            <Plus className="w-5 h-5 mr-2" />
+            {t("reportAdd") || "Dodaj raport"}
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">

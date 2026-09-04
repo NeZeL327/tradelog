@@ -333,7 +333,7 @@ export default function PinnedNotesSidebar() {
           </div>
           {isExpanded && (
             <div
-              className="mt-2 rounded-md border border-slate-200 bg-white/80 p-2 dark:border-slate-700 dark:bg-slate-800/50"
+              className="mt-2 rounded-md border border-border bg-muted/30 p-2"
               style={{
                 backgroundColor: contentBg || undefined,
                 borderColor
@@ -374,10 +374,10 @@ export default function PinnedNotesSidebar() {
   return (
     <div className={cn("pointer-events-auto relative w-[320px]", collapsed && "h-16")}>
       {!collapsed && (
-        <div className="mr-14 rounded-xl border border-slate-200 bg-white shadow-xl backdrop-blur-sm dark:border-slate-600 dark:bg-slate-700 transition-[transform,box-shadow,opacity] duration-300">
-          <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 dark:border-slate-700">
+        <div className="mr-14 rounded-xl border border-border bg-card shadow-lg backdrop-blur-sm transition-[transform,box-shadow,opacity] duration-300">
+          <div className="flex items-center justify-between border-b border-border px-3 py-2">
             <div className="flex items-center gap-2 px-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-blue-200/70 bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600 text-[13px] font-black text-white shadow-sm dark:border-slate-500/70">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-muted text-[13px] font-black text-foreground">
                 N
               </div>
               <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Szybkie notatki</span>
@@ -407,7 +407,7 @@ export default function PinnedNotesSidebar() {
                   />
                   Wszystkie strony
                 </label>
-                <Button type="button" size="sm" className="h-8 gap-1 border-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-sm transition-all hover:brightness-105 hover:shadow-md" onClick={handleQuickCreateChecklist}>
+                <Button type="button" size="sm" className="h-8 gap-1" onClick={handleQuickCreateChecklist}>
                   <Plus className="h-4 w-4" />
                   Dodaj
                 </Button>
@@ -437,7 +437,7 @@ export default function PinnedNotesSidebar() {
                     const { topLevel, byParent } = getSectionNotes(section.id);
                     const sectionExpanded = Boolean(expandedSections[section.id]);
                     return (
-                      <div key={section.id} className="rounded-md border border-slate-200 bg-white/80 p-2 dark:border-slate-700 dark:bg-slate-800/50">
+                      <div key={section.id} className="rounded-md border border-border bg-muted/30 p-2">
                         <button
                           type="button"
                           className="w-full flex items-center justify-between gap-2 text-left"
@@ -472,7 +472,7 @@ export default function PinnedNotesSidebar() {
           type="button"
           variant="ghost"
           size="icon"
-          className="absolute right-0 top-3 h-10 w-10 rounded-xl border border-blue-200/70 bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-600 text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl dark:border-slate-500/70"
+          className="absolute right-0 top-3 h-10 w-10 rounded-md border border-border bg-card text-foreground shadow-none hover:bg-muted"
           onClick={() => setCollapsed((prev) => !prev)}
           aria-label={collapsed ? "Rozwiń panel notatek" : "Zwiń panel notatek"}
         >
