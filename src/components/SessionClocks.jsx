@@ -74,7 +74,7 @@ export default function SessionClocks() {
 
   return (
     <div
-      className="hidden sm:flex items-stretch overflow-hidden rounded-lg border border-border/70 bg-background/30 mr-1"
+      className="hidden sm:flex items-center gap-1.5 mr-1"
       aria-label="Godziny sesji tradingowych"
     >
       {CLOCKS.map((clock) => {
@@ -83,20 +83,22 @@ export default function SessionClocks() {
           <div
             key={clock.id}
             title={clock.title}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 border-r border-border/80 last:border-r-0 min-w-[4.75rem]"
+            className="flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1"
           >
             <span
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${open ? "bg-primary" : "bg-muted-foreground/40"}`}
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                open
+                  ? "bg-primary shadow-[0_0_8px_hsl(var(--primary))]"
+                  : "bg-muted-foreground/40"
+              }`}
               aria-hidden
             />
-            <div className="flex flex-col leading-none">
-              <span className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                {clock.label}
-              </span>
-              <span className="text-[12px] font-medium tabular-nums text-foreground mt-0.5">
-                {formatTime(now, clock.zone, prefs.use12h)}
-              </span>
-            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {clock.label}
+            </span>
+            <span className="text-[12px] font-medium tabular-nums text-foreground">
+              {formatTime(now, clock.zone, prefs.use12h)}
+            </span>
           </div>
         );
       })}

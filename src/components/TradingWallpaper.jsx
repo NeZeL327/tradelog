@@ -13,7 +13,7 @@ export default function TradingWallpaper({ variant = 'candles' }) {
 
       {/* Mesh gradient – 3 orby, dobrze widoczne, wolny drift */}
       <motion.div
-        className="absolute -top-[20%] -right-[15%] w-[95vmax] h-[95vmax] rounded-full bg-emerald-500/40 blur-[90px]"
+        className="absolute -top-[20%] -right-[15%] w-[95vmax] h-[95vmax] rounded-full bg-profit/40 blur-[90px]"
         animate={{
           x: [0, 40, 0],
           y: [0, -30, 0],
@@ -44,8 +44,8 @@ export default function TradingWallpaper({ variant = 'candles' }) {
         className="absolute inset-0 trading-wallpaper-grid-mesh"
         style={{
           backgroundImage: `
-            linear-gradient(90deg, rgba(34, 211, 238, 0.14) 1px, transparent 1px),
-            linear-gradient(180deg, rgba(34, 211, 238, 0.14) 1px, transparent 1px)
+            linear-gradient(90deg, hsl(var(--border) / 0.35) 1px, transparent 1px),
+            linear-gradient(180deg, hsl(var(--border) / 0.35) 1px, transparent 1px)
           `,
           backgroundSize: '56px 56px',
         }}
@@ -60,13 +60,13 @@ export default function TradingWallpaper({ variant = 'candles' }) {
       >
         <defs>
           <linearGradient id="tw-line-pro" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgba(34, 211, 238, 0.35)" />
-            <stop offset="50%" stopColor="rgba(16, 185, 129, 0.5)" />
-            <stop offset="100%" stopColor="rgba(34, 211, 238, 0.3)" />
+            <stop offset="0%" stopColor="hsl(var(--primary) / 0.25)" />
+            <stop offset="50%" stopColor="hsl(var(--profit) / 0.35)" />
+            <stop offset="100%" stopColor="hsl(var(--primary) / 0.2)" />
           </linearGradient>
           <linearGradient id="tw-line-pro-2" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgba(16, 185, 129, 0.2)" />
-            <stop offset="100%" stopColor="rgba(34, 211, 238, 0.25)" />
+            <stop offset="0%" stopColor="hsl(var(--profit) / 0.15)" />
+            <stop offset="100%" stopColor="hsl(var(--primary) / 0.18)" />
           </linearGradient>
         </defs>
         <path

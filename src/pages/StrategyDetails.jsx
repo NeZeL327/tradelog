@@ -9,7 +9,7 @@ import { ArrowLeft, TrendingUp, Target, Award, Star, AlertCircle } from "lucide-
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
 import { getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
-import { CHART, chartTooltipStyle } from "@/lib/chartTheme";
+import { CHART, chartTooltipStyle, chartGridProps } from "@/lib/chartTheme";
 import QuoteLine from "@/components/QuoteLine";
 
 export default function StrategyDetails() {
@@ -168,8 +168,8 @@ export default function StrategyDetails() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <Target className="w-8 h-8 mx-auto mb-2" style={{ color: totalPL >= 0 ? '#10b981' : '#ef4444' }} />
-                <p className={`text-3xl font-bold ${totalPL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <Target className="w-8 h-8 mx-auto mb-2" style={{ color: totalPL >= 0 ? '#10b981' : 'hsl(var(--loss))' }} />
+                <p className={`text-3xl font-bold ${totalPL >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>
                   {totalPL > 0 ? '+' : ''}{totalPL.toFixed(2)}
                 </p>
                 <p className="text-sm text-muted-foreground">Łączny P&L</p>
@@ -187,7 +187,7 @@ export default function StrategyDetails() {
                       key={i}
                       className="w-4 h-4"
                       fill={i < (strategy.performance_rating || 0) ? '#fbbf24' : '#e5e7eb'}
-                      color={i < (strategy.performance_rating || 0) ? '#f59e0b' : '#d1d5db'}
+                      color={i < (strategy.performance_rating || 0) ? 'hsl(var(--warning))' : '#d1d5db'}
                     />
                   ))}
                 </div>
@@ -200,15 +200,15 @@ export default function StrategyDetails() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Card className="text-center p-6">
             <div className="text-sm font-semibold text-muted-foreground mb-2">Wygrane</div>
-            <p className="text-2xl font-bold text-green-600 dark:text-green-400">{wins}</p>
+            <p className="text-2xl font-bold text-profit dark:text-profit">{wins}</p>
           </Card>
           <Card className="text-center p-6">
             <div className="text-sm font-semibold text-muted-foreground mb-2">Przegrane</div>
-            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{losses}</p>
+            <p className="text-2xl font-bold text-loss dark:text-loss">{losses}</p>
           </Card>
           <Card className="text-center p-6">
             <div className="text-sm font-semibold text-muted-foreground mb-2">Średni P&L</div>
-            <p className={`text-2xl font-bold ${avgPL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            <p className={`text-2xl font-bold ${avgPL >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>
               {parseFloat(avgPL) > 0 ? '+' : ''}{avgPL}
             </p>
           </Card>
@@ -300,7 +300,7 @@ export default function StrategyDetails() {
                         <stop offset="95%" stopColor={CHART.line} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <CartesianGrid {...chartGridProps} />
                     <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <Tooltip contentStyle={chartTooltipStyle} formatter={(value) => value.toFixed(2)} />
@@ -317,7 +317,7 @@ export default function StrategyDetails() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <CartesianGrid {...chartGridProps} />
                     <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <Tooltip contentStyle={chartTooltipStyle} />

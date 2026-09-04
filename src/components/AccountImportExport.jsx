@@ -372,7 +372,7 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
             {parsing && <p className="text-sm text-slate-500">Odczytywanie pliku…</p>}
 
             {parseError && !parsing && (
-              <div className="rounded-lg border border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-300">
+              <div className="rounded-lg border border-red-300 bg-loss/10 dark:bg-red-950/30 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-300">
                 {parseError}
               </div>
             )}
@@ -386,7 +386,7 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
                 <p>
                   Wierszy w pliku: <strong>{preview.total}</strong>
                 </p>
-                <p className="text-green-700 dark:text-green-400">
+                <p className="text-profit dark:text-profit">
                   Nowe do importu: <strong>{preview.newCount}</strong>
                 </p>
                 {preview.skipped > 0 && (

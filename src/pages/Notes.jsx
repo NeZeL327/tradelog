@@ -575,10 +575,10 @@ export default function Notes() {
   const tagColor = (tag) => TAG_COLORS[Math.abs(tag.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % TAG_COLORS.length];
   const tagClass = {
     blue: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-    emerald: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+    emerald: "bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit",
     violet: "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
     amber: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-    rose: "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+    rose: "bg-loss/10 text-loss dark:bg-loss/10 dark:text-loss",
     sky: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
     indigo: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
   };
@@ -748,7 +748,7 @@ export default function Notes() {
                             Zmień nazwę
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={() => handleDeleteFolder(folder)}>
+                          <DropdownMenuItem className="text-loss dark:text-loss" onClick={() => handleDeleteFolder(folder)}>
                             Usuń folder
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -821,7 +821,7 @@ export default function Notes() {
                                       </DropdownMenuSubContent>
                                     </DropdownMenuSub>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={() => handleDeleteNote(note.id)}>
+                                    <DropdownMenuItem className="text-loss dark:text-loss" onClick={() => handleDeleteNote(note.id)}>
                                       <Trash2 className="h-3.5 w-3.5 mr-2" />Usuń
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
@@ -986,7 +986,7 @@ export default function Notes() {
                       {selectedNote.pinnedToSidebar ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                     </button>
                     <button
-                      className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      className="p-1.5 rounded-md text-slate-400 hover:text-loss hover:bg-loss/10 dark:hover:bg-red-900/20 transition-colors"
                       title="Usuń notatkę"
                       onClick={() => handleDeleteNote(selectedNote.id)}
                     >
@@ -1147,7 +1147,7 @@ export default function Notes() {
                       <DropdownMenuItem onClick={() => editor?.chain().focus().addColumnAfter().run()}>Dodaj kolumnę po</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => editor?.chain().focus().deleteColumn().run()}>Usuń kolumnę</DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={() => editor?.chain().focus().deleteTable().run()}>Usuń tabelę</DropdownMenuItem>
+                      <DropdownMenuItem className="text-loss dark:text-loss" onClick={() => editor?.chain().focus().deleteTable().run()}>Usuń tabelę</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
 
@@ -1220,7 +1220,7 @@ export default function Notes() {
           color: #64748b;
           margin: 0.5rem 0;
         }
-        .dark .tiptap-notes-editor .ProseMirror blockquote { color: #94a3b8; }
+        .dark .tiptap-notes-editor .ProseMirror blockquote { color: hsl(var(--muted-foreground)); }
         .tiptap-notes-editor .ProseMirror strong { font-weight: 700; }
         .tiptap-notes-editor .ProseMirror em { font-style: italic; }
         .tiptap-notes-editor .ProseMirror u { text-decoration: underline; }

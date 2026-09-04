@@ -116,11 +116,11 @@ function StarRating({ value, onChange, readOnly = false, size = "md" }) {
 }
 
 const INTENSITY_LEVELS = [
-  { n: 1, label: "Spokój", hint: "prawie brak emocji", color: "text-emerald-600 dark:text-emerald-400" },
+  { n: 1, label: "Spokój", hint: "prawie brak emocji", color: "text-profit dark:text-profit" },
   { n: 2, label: "Lekko", hint: "delikatne emocje", color: "text-lime-600 dark:text-lime-400" },
   { n: 3, label: "Umiarkowanie", hint: "wyczuwalne napięcie", color: "text-amber-600 dark:text-amber-400" },
   { n: 4, label: "Silnie", hint: "dużo emocji", color: "text-orange-600 dark:text-orange-400" },
-  { n: 5, label: "Bardzo mocno", hint: "przeładowanie", color: "text-rose-600 dark:text-rose-400" },
+  { n: 5, label: "Bardzo mocno", hint: "przeładowanie", color: "text-loss dark:text-loss" },
 ];
 
 function MiniStars({ count, active = false }) {

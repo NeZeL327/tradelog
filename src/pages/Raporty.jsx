@@ -27,13 +27,39 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, FileText, ChevronRight } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Plus,
+  FileText,
+  Calendar,
+  Sparkles,
+  Download,
+  GitCompare,
+  Eye,
+  MoreHorizontal,
+  ChevronDown,
+  ArrowRight,
+  Trophy,
+  BarChart3,
+  Target,
+  TrendingUp,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageProvider";
 import QuoteLine from "@/components/QuoteLine";
 import ReportForm from "@/components/reports/ReportForm";
 import ReportArticle from "@/components/reports/ReportArticle";
-import { reportPeriodLabel, reportTypeLabel } from "@/lib/reports";
+import Sparkline from "@/components/Sparkline";
+import { FilterChip } from "@/components/ui/filter-chip";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SkeletonBlock } from "@/components/ui/skeleton-block";
+import { computeBasicStats, reportPeriodLabel, reportTypeLabel, tradesInPeriod } from "@/lib/reports";
+import { getTradeRealizedPL } from "@/lib/utils";
 
 const TYPE_TABS = [
   { key: "all", labelKey: "reportFilterAll" },
@@ -43,57 +69,120 @@ const TYPE_TABS = [
   { key: "yearly", labelKey: "reportYearly" },
 ];
 
-function ReportRow({ report, language, t, onOpen }) {
-  const resultR = report.result_r;
-  const resultLabel =
-    resultR == null || resultR === ""
-      ? "—"
-      : `${Number(resultR) >= 0 ? "+" : ""}${Number(resultR).toFixed(1)}R`;
-  const lesson = String(report.key_lesson || "").trim();
-  const snippet = lesson.length > 80 ? `${lesson.slice(0, 80)}…` : lesson;
+function toNum(value) {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
 
+function formatR(value) {
+  const n = toNum(value);
+  if (n == null) return "—";
+  return `${n >= 0 ? "+" : ""}${n.toFixed(2)}`;
+}
+
+function formatPct(value) {
+  const n = toNum(value);
+  if (n == null) return "—";
+  return `${n.toFixed(1)}%`;
+}
+
+function profitFactorFromTrades(list) {
+  let gain = 0;
+  let loss = 0;
+  (list || []).forEach((trade) => {
+    const pl = getTradeRealizedPL(trade) ?? 0;
+    if (pl > 0) gain += pl;
+    else if (pl < 0) loss += Math.abs(pl);
+  });
+  if (!loss) return gain > 0 ? gain : null;
+  return gain / loss;
+}
+
+function sparkValuesFromReports(reports) {
+  const values = [...reports]
+    .reverse()
+    .map((r) => toNum(r.result_r))
+    .filter((n) => n != null);
+  return values.length ? values : [0];
+}
+
+function sparkFromTrades(list) {
+  const byDay = {};
+  (list || []).forEach((trade) => {
+    const day = String(trade.date || "").slice(0, 10);
+    if (!day) return;
+    byDay[day] = (byDay[day] || 0) + (getTradeRealizedPL(trade) ?? 0);
+  });
+  const keys = Object.keys(byDay).sort();
+  if (!keys.length) return [0];
+  let acc = 0;
+  return keys.map((key) => {
+    acc += byDay[key];
+    return acc;
+  });
+}
+
+function reportTitle(type, t) {
+  const map = {
+    weekly: t("reportWeeklyTitle") || "Raport tygodniowy",
+    monthly: t("reportMonthlyTitle") || "Raport miesięczny",
+    quarterly: t("reportQuarterlyTitle") || "Raport kwartalny",
+    yearly: t("reportYearlyTitle") || "Raport roczny",
+  };
+  return map[type] || reportTypeLabel(type, t);
+}
+
+function reportTypeCol(type, t) {
+  const map = {
+    weekly: t("reportTypeWeekly") || "Tygodniowy",
+    monthly: t("reportTypeMonthly") || "Miesięczny",
+    quarterly: t("reportTypeQuarterly") || "Kwartalny",
+    yearly: t("reportTypeYearly") || "Roczny",
+  };
+  return map[type] || reportTypeLabel(type, t);
+}
+
+function Ring({ value }) {
+  const pct = Math.max(0, Math.min(100, Number(value) || 0));
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(report)}
-      className="w-full text-left px-3 sm:px-3.5 py-3 sm:py-2.5 flex items-center gap-2.5 sm:gap-3 hover:bg-muted/40 active:bg-muted/60 transition-colors border-b border-border/50 last:border-b-0 min-h-[3.25rem]"
+    <div
+      className="relative h-11 w-11 shrink-0 rounded-full"
+      style={{
+        background: `conic-gradient(hsl(var(--profit)) ${pct * 3.6}deg, hsl(220 8% 16%) 0deg)`,
+        boxShadow: "0 0 14px hsl(var(--profit) / 0.35)",
+      }}
+      aria-hidden
     >
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {reportTypeLabel(report.report_type, t)}
-          </span>
-          {report.status === "draft" && (
-            <Badge variant="outline" className="h-5 text-[10px] px-1.5">{t("reportDraft") || "Szkic"}</Badge>
-          )}
-          <span className="text-sm font-medium text-foreground truncate max-w-full">
-            {reportPeriodLabel(report, language)}
-          </span>
-        </div>
-        {snippet ? (
-          <p className="text-xs text-muted-foreground truncate mt-0.5">„{snippet}”</p>
-        ) : (
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">
-            {report.trades_count != null ? `${report.trades_count} trejdów` : "—"}
-            {report.win_rate != null && report.win_rate !== "" ? ` · ${report.win_rate}% WR` : ""}
-            {report.rating ? ` · ${report.rating}/10` : ""}
-          </p>
-        )}
-      </div>
-      <span
-        className={`text-sm font-bold tabular-nums shrink-0 ${
-          Number(resultR) > 0
-            ? "text-emerald-600"
-            : Number(resultR) < 0
-              ? "text-rose-600"
-              : "text-muted-foreground"
-        }`}
-      >
-        {resultLabel}
-      </span>
-      <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 opacity-70" />
-    </button>
+      <div className="absolute inset-[4px] rounded-full bg-card" />
+    </div>
   );
+}
+
+function exportReportsCsv(rows, language, t) {
+  const headers = [
+    t("reportPeriod") || "Okres",
+    t("reportTypeCol") || "Typ",
+    t("reportTradesCount") || "Transakcje",
+    t("reportResultR") || "Wynik",
+    "Win Rate",
+    t("reportStatusCol") || "Status",
+  ];
+  const lines = rows.map((r) => [
+    reportPeriodLabel(r, language),
+    reportTypeLabel(r.report_type, t),
+    r.trades_count ?? "",
+    r.result_r ?? "",
+    r.win_rate ?? "",
+    r.status === "draft" ? (t("reportDraft") || "Szkic") : (t("reportStatusDone") || "Zakończony"),
+  ].map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","));
+  const blob = new Blob([[headers.join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "aikeeptrade-raporty.csv";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function Raporty() {
@@ -103,12 +192,13 @@ export default function Raporty() {
 
   const [typeFilter, setTypeFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
-  const [view, setView] = useState("list"); // list | form | article
+  const [view, setView] = useState("list");
   const [formType, setFormType] = useState("weekly");
   const [editing, setEditing] = useState(null);
   const [selected, setSelected] = useState(null);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [compareOpen, setCompareOpen] = useState(false);
 
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ["reports", user?.id],
@@ -187,9 +277,36 @@ export default function Raporty() {
       });
   }, [reports, typeFilter, yearFilter]);
 
-  const tabReports = (key) => {
-    if (key === "all") return filtered;
-    return filtered.filter((r) => r.report_type === key);
+  const kpis = useMemo(() => {
+    const withR = filtered.map((r) => ({ r, n: toNum(r.result_r) })).filter((x) => x.n != null);
+    const best = withR.reduce((acc, cur) => (!acc || cur.n > acc.n ? cur : acc), null);
+    const avg = withR.length
+      ? withR.reduce((sum, x) => sum + x.n, 0) / withR.length
+      : null;
+    const wrVals = filtered.map((r) => toNum(r.win_rate)).filter((n) => n != null);
+    const wr = wrVals.length ? wrVals.reduce((a, b) => a + b, 0) / wrVals.length : null;
+    return {
+      total: filtered.length,
+      bestValue: best?.n ?? null,
+      bestLabel: best ? reportPeriodLabel(best.r, language) : "",
+      avg,
+      wr,
+      spark: sparkValuesFromReports(filtered),
+    };
+  }, [filtered, language]);
+
+  const latest = filtered[0] || null;
+  const latestTrades = latest
+    ? tradesInPeriod(trades, latest.period_start, latest.period_end)
+    : [];
+  const latestStats = computeBasicStats(latestTrades);
+  const latestPf = profitFactorFromTrades(latestTrades);
+  const latestSpark = sparkFromTrades(latestTrades);
+  const comparePair = filtered.slice(0, 2);
+
+  const openReport = (report) => {
+    setSelected(report);
+    setView("article");
   };
 
   const openNew = (type) => {
@@ -207,10 +324,31 @@ export default function Raporty() {
     }
   };
 
+  const handleExport = () => {
+    if (!filtered.length) {
+      toast.error(t("reportEmpty") || "Brak raportów do eksportu.");
+      return;
+    }
+    try {
+      exportReportsCsv(filtered, language, t);
+      toast.success(t("reportExported") || "Wyeksportowano raporty.");
+    } catch (err) {
+      toast.error(err?.message || "Błąd eksportu");
+    }
+  };
+
+  const handleCompare = () => {
+    if (comparePair.length < 2) {
+      toast.error(t("reportCompareNeedTwo") || "Potrzebujesz co najmniej dwóch raportów.");
+      return;
+    }
+    setCompareOpen(true);
+  };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="w-full min-h-0 space-y-4 dashboard-surface">
+        <SkeletonBlock rows={6} className="rounded-lg border border-border" />
       </div>
     );
   }
@@ -294,7 +432,7 @@ export default function Raporty() {
 
   return (
     <div className="w-full min-h-0 space-y-6 dashboard-surface">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
           <h1 className="cyber-page-title">{t("reportsTitle") || "Raporty tradingowe"}</h1>
           <p className="cyber-page-sub">
@@ -303,32 +441,46 @@ export default function Raporty() {
         </div>
         <div className="flex gap-3 items-center">
           <QuoteLine className="hidden lg:flex shrink-0" />
-          <Button className="cyber-primary-btn w-full sm:w-auto" onClick={() => setTypeDialogOpen(true)}>
-            <Plus className="w-5 h-5 mr-2" />
-            {t("reportAdd") || "Dodaj raport"}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="cyber-primary-btn w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-1.5" />
+                {t("reportAdd") || "Dodaj raport"}
+                <ChevronDown className="w-4 h-4 ml-1 opacity-80" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              {[
+                { type: "weekly", label: t("reportWeekly") || "Tygodniowe" },
+                { type: "monthly", label: t("reportMonthly") || "Miesięczne" },
+                { type: "quarterly", label: t("reportQuarterly") || "Kwartalne" },
+                { type: "yearly", label: t("reportYearly") || "Roczne" },
+              ].map((item) => (
+                <DropdownMenuItem key={item.type} onClick={() => openNew(item.type)}>
+                  {item.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-        <div className="app-h-scroll -mx-1 px-1 pb-0.5 sm:flex-wrap sm:overflow-visible">
+        <div className="flex flex-wrap gap-2">
           {TYPE_TABS.map((tab) => (
-            <button
+            <FilterChip
               key={tab.key}
-              type="button"
+              active={typeFilter === tab.key}
+              className="rounded-full px-4"
               onClick={() => setTypeFilter(tab.key)}
-              className={`shrink-0 px-3 py-2 sm:py-1.5 rounded-lg text-sm font-medium border transition-colors ${
-                typeFilter === tab.key
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background border-border text-muted-foreground hover:text-foreground"
-              }`}
             >
               {t(tab.labelKey) || tab.key}
-            </button>
+            </FilterChip>
           ))}
         </div>
         <Select value={yearFilter} onValueChange={setYearFilter}>
-          <SelectTrigger className="w-full sm:w-[140px] h-10">
+          <SelectTrigger className="w-full sm:w-[170px] h-9 rounded-xl">
+            <Calendar className="w-3.5 h-3.5 text-muted-foreground mr-1" />
             <SelectValue placeholder={t("year") || "Rok"} />
           </SelectTrigger>
           <SelectContent>
@@ -340,68 +492,241 @@ export default function Raporty() {
         </Select>
       </div>
 
-      {/* Type sections when "all" */}
-      {typeFilter === "all" ? (
-        <div className="space-y-5">
-          {["weekly", "monthly", "quarterly", "yearly"].map((type) => {
-            const items = tabReports(type);
-            return (
-              <section key={type} className="space-y-1.5">
-                <h2 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-0.5">
-                  {reportTypeLabel(type, t)}
-                  <span className="text-muted-foreground/60 font-normal ml-1.5">{items.length}</span>
-                </h2>
-                {items.length === 0 ? (
-                  <p className="text-xs text-muted-foreground px-1 py-2">
-                    {t("reportEmptyType") || "Brak raportów w tej kategorii."}
-                  </p>
-                ) : (
-                  <div className="rounded-xl border border-border/70 bg-card/70 overflow-hidden">
-                    {items.map((r) => (
-                      <ReportRow
-                        key={r.id}
-                        report={r}
-                        language={language}
-                        t={t}
-                        onOpen={(rep) => {
-                          setSelected(rep);
-                          setView("article");
-                        }}
-                      />
-                    ))}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="report-card p-4 min-h-[118px]">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="report-icon"><TrendingUp className="w-3.5 h-3.5" /></span>
+            <p className="type-section">{t("reportKpiTotal") || "Łączna liczba raportów"}</p>
+          </div>
+          <p className="type-metric tabular-nums">{kpis.total}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">{t("reportKpiTotalHint") || "Wszystkie okresy"}</p>
+        </div>
+        <div className="report-card p-4 min-h-[118px] flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="report-icon"><Trophy className="w-3.5 h-3.5" /></span>
+              <p className="type-section">{t("reportKpiBest") || "Najlepszy okres"}</p>
+            </div>
+            <p className={`type-metric tabular-nums ${toNum(kpis.bestValue) >= 0 ? "text-profit" : "text-loss"}`}>
+              {formatR(kpis.bestValue)}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">{kpis.bestLabel || "—"}</p>
+          </div>
+          <Sparkline values={kpis.spark} width={96} height={44} className="shrink-0 mt-1" />
+        </div>
+        <div className="report-card p-4 min-h-[118px] flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="report-icon"><BarChart3 className="w-3.5 h-3.5" /></span>
+              <p className="type-section">{t("reportKpiAvg") || "Średni wynik okresu"}</p>
+            </div>
+            <p className={`type-metric tabular-nums ${toNum(kpis.avg) >= 0 ? "text-profit" : "text-loss"}`}>
+              {formatR(kpis.avg)}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">{t("reportKpiAvgHint") || "Na raport"}</p>
+          </div>
+          <Sparkline values={kpis.spark} width={96} height={44} className="shrink-0 mt-1" />
+        </div>
+        <div className="report-card p-4 min-h-[118px] flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="report-icon"><Target className="w-3.5 h-3.5" /></span>
+              <p className="type-section">{t("reportKpiWinRate") || "Skuteczność"}</p>
+            </div>
+            <p className="type-metric tabular-nums">{kpis.wr == null ? "—" : `${kpis.wr.toFixed(1)}%`}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">{t("reportKpiWinRateHint") || "Średni Win Rate"}</p>
+          </div>
+          <Ring value={kpis.wr} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_240px] gap-4">
+        <div className="report-card p-4 sm:p-5 min-h-[220px]">
+          {latest ? (
+            <>
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="report-icon shrink-0">
+                    <Calendar className="w-4 h-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-semibold text-foreground truncate">
+                      {reportTitle(latest.report_type, t)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {reportPeriodLabel(latest, language)}
+                    </p>
                   </div>
-                )}
-              </section>
-            );
-          })}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border py-14 text-center space-y-3">
-          <FileText className="w-8 h-8 mx-auto text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            {t("reportEmpty") || "Nie masz jeszcze raportów. Dodaj pierwszy."}
-          </p>
-          <Button variant="outline" size="sm" onClick={() => setTypeDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            {t("reportAdd") || "Dodaj raport"}
-          </Button>
-        </div>
-      ) : (
-        <div className="rounded-xl border border-border/70 bg-card/70 overflow-hidden">
-          {filtered.map((r) => (
-            <ReportRow
-              key={r.id}
-              report={r}
-              language={language}
-              t={t}
-              onOpen={(rep) => {
-                setSelected(rep);
-                setView("article");
-              }}
+                </div>
+                <Button variant="outline" size="sm" className="h-8 shrink-0 rounded-xl" onClick={() => openReport(latest)}>
+                  {t("reportOpen") || "Otwórz raport"}
+                  <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-5 items-end">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">P&L</p>
+                    <p className={`text-2xl font-semibold tabular-nums mt-1 ${toNum(latest.result_r) >= 0 ? "text-profit" : "text-loss"}`}>
+                      {formatR(latest.result_r)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Win Rate</p>
+                    <p className="text-2xl font-semibold tabular-nums mt-1">{formatPct(latest.win_rate)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("reportTradesCount") || "Transakcje"}</p>
+                    <p className="text-2xl font-semibold tabular-nums mt-1">
+                      {latest.trades_count ?? latestStats.trades_count ?? 0}
+                    </p>
+                    <p className="text-xs mt-0.5">
+                      <span className="text-profit">{latestStats.wins_count}W</span>
+                      <span className="text-muted-foreground"> / </span>
+                      <span className="text-loss">{latestStats.losses_count}L</span>
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("reportPf") || "Profit Factor"}</p>
+                    <p className="text-2xl font-semibold tabular-nums mt-1">
+                      {latestPf == null ? "—" : latestPf.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Sparkline
+                    values={latestSpark}
+                    width={640}
+                    height={112}
+                    fill
+                    endLabel={formatR(latest.result_r)}
+                    className="w-full"
+                  />
+                  <p className="absolute bottom-0 right-0 text-[10px] text-muted-foreground">
+                    {t("reportPeriodResult") || "Wynik okresu"}
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : (
+            <EmptyState
+              icon={FileText}
+              description={t("reportEmpty") || "Nie masz jeszcze raportów. Dodaj pierwszy."}
+              actionLabel={t("reportAdd") || "Dodaj raport"}
+              onAction={() => setTypeDialogOpen(true)}
             />
-          ))}
+          )}
         </div>
-      )}
+
+        <div className="report-card p-4 h-fit">
+          <p className="type-section mb-3">{t("reportQuickActions") || "Szybkie akcje"}</p>
+          <div className="grid gap-2">
+            <Button variant="outline" className="justify-start h-11 rounded-xl border-border hover:border-primary/40 hover:bg-primary/10 hover:text-foreground" onClick={() => setTypeDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              {t("reportNew") || "Nowy raport"}
+            </Button>
+            <Button variant="outline" className="justify-start h-11 rounded-xl border-border hover:border-primary/40 hover:bg-primary/10 hover:text-foreground" onClick={() => openNew("weekly")}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              {t("reportGenerateAi") || "Generuj raport z AI"}
+            </Button>
+            <Button variant="outline" className="justify-start h-11 rounded-xl border-border hover:border-primary/40 hover:bg-primary/10 hover:text-foreground" onClick={handleExport}>
+              <Download className="w-4 h-4 mr-2" />
+              {t("reportExport") || "Eksportuj dane"}
+            </Button>
+            <Button variant="outline" className="justify-start h-11 rounded-xl border-border hover:border-primary/40 hover:bg-primary/10 hover:text-foreground" onClick={handleCompare}>
+              <GitCompare className="w-4 h-4 mr-2" />
+              {t("reportCompare") || "Porównaj okresy"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="report-card overflow-hidden">
+        <div className="px-4 py-3 border-b border-border">
+          <h2 className="text-sm font-semibold">{t("reportHistory") || "Historia raportów"}</h2>
+        </div>
+        {filtered.length === 0 ? (
+          <div className="px-4 py-10">
+            <EmptyState
+              icon={FileText}
+              description={t("reportEmpty") || "Nie masz jeszcze raportów. Dodaj pierwszy."}
+              actionLabel={t("reportAdd") || "Dodaj raport"}
+              onAction={() => setTypeDialogOpen(true)}
+            />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground">
+                  <th className="text-left font-semibold px-4 py-2.5">{t("reportPeriod") || "Okres"}</th>
+                  <th className="text-left font-semibold px-4 py-2.5">{t("reportTypeCol") || "Typ"}</th>
+                  <th className="text-right font-semibold px-4 py-2.5">{t("reportTradesCount") || "Transakcje"}</th>
+                  <th className="text-right font-semibold px-4 py-2.5">P&L</th>
+                  <th className="text-right font-semibold px-4 py-2.5">Win Rate</th>
+                  <th className="text-right font-semibold px-4 py-2.5">{t("reportPf") || "Profit Factor"}</th>
+                  <th className="text-left font-semibold px-4 py-2.5">{t("reportStatusCol") || "Status"}</th>
+                  <th className="text-right font-semibold px-4 py-2.5">{t("actions") || "Akcje"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((report) => {
+                  const pf = profitFactorFromTrades(
+                    tradesInPeriod(trades, report.period_start, report.period_end)
+                  );
+                  const done = report.status !== "draft";
+                  return (
+                    <tr key={report.id} className="border-b border-border/60 last:border-0 hover:bg-muted/40">
+                      <td className="px-4 py-2.5 font-medium">{reportPeriodLabel(report, language)}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground">{reportTypeCol(report.report_type, t)}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{report.trades_count ?? "—"}</td>
+                      <td className={`px-4 py-2.5 text-right tabular-nums font-medium ${toNum(report.result_r) >= 0 ? "text-profit" : "text-loss"}`}>
+                        {formatR(report.result_r)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{formatPct(report.win_rate)}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{pf == null ? "—" : pf.toFixed(2)}</td>
+                      <td className="px-4 py-2.5">
+                        <span className="inline-flex items-center gap-1.5 text-xs">
+                          <span className={`h-1.5 w-1.5 rounded-full ${done ? "bg-profit" : "bg-warning"}`} />
+                          {done ? (t("reportStatusDone") || "Zakończony") : (t("reportDraft") || "Szkic")}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <div className="inline-flex items-center justify-end gap-1">
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openReport(report)}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-8 w-8">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openReport(report)}>
+                                {t("reportView") || "Zobacz raport"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEditing(report);
+                                  setFormType(report.report_type);
+                                  setView("form");
+                                }}
+                              >
+                                {t("reportEdit") || "Edytuj raport"}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       <Dialog open={typeDialogOpen} onOpenChange={setTypeDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -423,6 +748,34 @@ export default function Raporty() {
               >
                 {item.label}
               </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t("reportCompare") || "Porównaj okresy"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            {comparePair.map((report) => (
+              <button
+                key={report.id}
+                type="button"
+                className="rounded-lg border border-border bg-muted/20 p-3 text-left hover:bg-muted/40"
+                onClick={() => {
+                  setCompareOpen(false);
+                  openReport(report);
+                }}
+              >
+                <p className="text-xs text-muted-foreground">{reportTypeLabel(report.report_type, t)}</p>
+                <p className="text-sm font-medium mt-1">{reportPeriodLabel(report, language)}</p>
+                <p className={`text-lg font-medium tabular-nums mt-2 ${toNum(report.result_r) >= 0 ? "text-profit" : "text-loss"}`}>
+                  {formatR(report.result_r)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">WR {formatPct(report.win_rate)}</p>
+              </button>
             ))}
           </div>
         </DialogContent>

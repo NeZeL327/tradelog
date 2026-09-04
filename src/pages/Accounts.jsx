@@ -287,7 +287,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
     Live: "#10b981",
     Demo: "#64748b",
     Challenge: "#9FE870",
-    Funded: "#f59e0b"
+    Funded: "hsl(var(--warning))"
   };
   const initialBalance = parseFloat(account.initial_balance) || 0;
   const currentBalance = parseFloat(account.current_balance);
@@ -317,10 +317,10 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Active': return 'text-green-600';
+      case 'Active': return 'text-profit';
       case 'Inactive': return 'text-gray-500';
       case 'Suspended': return 'text-yellow-600';
-      case 'Closed': return 'text-red-600';
+      case 'Closed': return 'text-loss';
       default: return 'text-gray-500';
     }
   };
@@ -347,7 +347,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
     const baseClasses = "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium";
     switch (account.account_type) {
       case 'Live':
-        return <Badge className={`${baseClasses} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`}>Live</Badge>;
+        return <Badge className={`${baseClasses} bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit`}>Live</Badge>;
       case 'Demo':
         return <Badge className={`${baseClasses} bg-muted text-foreground`}>Demo</Badge>;
       case 'Challenge':
@@ -373,21 +373,21 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
               {account.broker && <span className="truncate">{account.broker}</span>}
               {account.account_number && <span className="truncate">Nr: {account.account_number}</span>}
               <span className={`${getStatusColor(account.status)} whitespace-nowrap`}>{getStatusText(account.status)}</span>
-              <span className={`whitespace-nowrap ${isAccountActive ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
+              <span className={`whitespace-nowrap ${isAccountActive ? 'text-profit dark:text-profit' : 'text-slate-500 dark:text-slate-400'}`}>
                 {isAccountActive ? 'Aktywne' : 'Nieaktywne'}
               </span>
             </div>
           </div>
           <div className="flex gap-1 flex-shrink-0">
             <div className="flex items-center gap-1 px-1.5 border rounded-md bg-muted/30">
-              <Power className={`w-3 h-3 shrink-0 ${isAccountActive ? 'text-green-600' : 'text-slate-400'}`} />
+              <Power className={`w-3 h-3 shrink-0 ${isAccountActive ? 'text-profit' : 'text-slate-400'}`} />
               <button
                 type="button"
                 role="switch"
                 aria-checked={isAccountActive}
                 onClick={() => onToggleActive(account, !isAccountActive)}
                 aria-label={`Przełącz aktywność konta ${account.name}`}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isAccountActive ? 'bg-green-600' : 'bg-slate-300 dark:bg-slate-600'}`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isAccountActive ? 'bg-primary' : 'bg-muted'}`}
               >
                 <span
                   className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${isAccountActive ? 'translate-x-[22px]' : 'translate-x-[1px]'}`}
@@ -406,7 +406,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             <Button size="sm" variant="outline" onClick={() => onEdit(account)} className="h-8 w-8 p-0">
               <Edit className="w-3.5 h-3.5" />
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onDelete(account)} className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
+            <Button size="sm" variant="outline" onClick={() => onDelete(account)} className="h-8 w-8 p-0 text-loss hover:text-red-700">
               <Trash className="w-3.5 h-3.5" />
             </Button>
           </div>
@@ -420,10 +420,10 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
           </div>
           <div className="space-y-1">
             <span className="text-xs font-medium text-slate-600 dark:text-slate-400">P&L</span>
-            <div className={`font-semibold text-sm ${profitLoss >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            <div className={`font-semibold text-sm ${profitLoss >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>
               {profitLoss >= 0 ? '+' : ''}{profitLoss?.toFixed(2)} {account.currency}
             </div>
-            <div className={`text-xs ${profitLoss >= 0 ? 'text-green-600/70 dark:text-green-400/60' : 'text-red-600/70 dark:text-red-400/60'}`}>
+            <div className={`text-xs ${profitLoss >= 0 ? 'text-profit/70 dark:text-profit/60' : 'text-loss/70 dark:text-loss/60'}`}>
               ({profitLossPercent}%)
             </div>
           </div>
@@ -438,7 +438,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             </div>
             <div className="text-center sm:text-left">
               <span className="text-muted-foreground block">Win Rate</span>
-              <div className="font-semibold mt-0.5 text-green-600 dark:text-green-400">{winRate}%</div>
+              <div className="font-semibold mt-0.5 text-profit dark:text-profit">{winRate}%</div>
             </div>
             <div className="text-center sm:text-left">
               <span className="text-muted-foreground block">W/L Ratio</span>
@@ -446,13 +446,13 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             </div>
             <div className="text-center sm:text-left">
               <span className="text-muted-foreground block">Śr. zysk</span>
-              <div className="font-semibold mt-0.5 text-green-600 dark:text-green-400">
+              <div className="font-semibold mt-0.5 text-profit dark:text-profit">
                 {avgWin >= 0 ? "+" : ""}{avgWin.toFixed(2)} {account.currency}
               </div>
             </div>
             <div className="text-center sm:text-left">
               <span className="text-muted-foreground block">Śr. strata</span>
-              <div className="font-semibold mt-0.5 text-red-600 dark:text-red-400">
+              <div className="font-semibold mt-0.5 text-loss dark:text-loss">
                 {avgLoss.toFixed(2)} {account.currency}
               </div>
             </div>
@@ -477,7 +477,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
               {account.profit_target && (
                 <div className="text-center sm:text-left">
                   <span className="text-muted-foreground block">Cel zysku</span>
-                  <div className="font-semibold mt-0.5 text-green-600 dark:text-green-400">{account.profit_target}</div>
+                  <div className="font-semibold mt-0.5 text-profit dark:text-profit">{account.profit_target}</div>
                 </div>
               )}
             </div>
@@ -499,7 +499,7 @@ function AccountForm({ account, onSubmit, onCancel, isLoading }) {
     Live: "#10b981",
     Demo: "#64748b",
     Challenge: "#9FE870",
-    Funded: "#f59e0b"
+    Funded: "hsl(var(--warning))"
   };
   const [formData, setFormData] = useState(account || {
     name: '',

@@ -99,7 +99,7 @@ export default function ThemeToggle({ className = "" }) {
             onClick={() => handleThemeChange(entry.value)}
             className={cn(
               "h-7 rounded-sm px-1.5 sm:px-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
-              isActive && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+              isActive && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.45)]"
             )}
             aria-pressed={isActive}
           >

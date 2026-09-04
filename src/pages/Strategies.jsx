@@ -15,7 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "@/components/LanguageProvider";
 import { cn, getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
-import { CHART } from "@/lib/chartTheme";
+import { CHART, chartTooltipStyle, chartGridProps } from "@/lib/chartTheme";
 import QuoteLine from "@/components/QuoteLine";
 
 export default function Strategies() {
@@ -161,10 +161,10 @@ export default function Strategies() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={350}>
                   <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <CartesianGrid {...chartGridProps} />
                     <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <YAxis domain={[yMin, yMax]} stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
-                    <Tooltip contentStyle={{ borderRadius: '8px' }} />
+                    <Tooltip contentStyle={chartTooltipStyle} />
                     <Legend />
                     <Bar dataKey="winRate" fill={CHART.line} name="Win Rate (%)" />
                     <Bar dataKey="avgPL" fill={CHART.profit} name="Średni P&L" />
@@ -510,7 +510,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
                         <Star
                           className="w-6 h-6"
                           fill={rating <= (formData.performance_rating || 0) ? '#fbbf24' : 'none'}
-                          color={rating <= (formData.performance_rating || 0) ? '#f59e0b' : '#d1d5db'}
+                          color={rating <= (formData.performance_rating || 0) ? 'hsl(var(--warning))' : '#d1d5db'}
                         />
                       </button>
                     ))}
@@ -557,7 +557,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
 function StrategyCard({ strategy, stats, onEdit, onDelete }) {
   const accent = strategy.color || "#64748b";
   const statusStyles = {
-    Aktywna: "bg-emerald-500/12 text-emerald-800 dark:text-emerald-200 border-emerald-500/25",
+    Aktywna: "bg-profit/12 text-profit dark:text-profit border-profit/25",
     Testowa: "bg-amber-500/12 text-amber-900 dark:text-amber-200 border-amber-500/25",
     Archiwalna: "bg-slate-500/12 text-slate-700 dark:text-slate-300 border-slate-500/25",
   };
@@ -607,7 +607,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
                       key={i}
                       className="h-3.5 w-3.5"
                       fill={i < strategy.performance_rating ? "#fbbf24" : "none"}
-                      color={i < strategy.performance_rating ? "#f59e0b" : "#94a3b8"}
+                      color={i < strategy.performance_rating ? "hsl(var(--warning))" : "hsl(var(--muted-foreground))"}
                     />
                   ))}
                 </div>
@@ -636,7 +636,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400"
+              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-loss/10 hover:text-loss dark:hover:text-loss"
               onClick={onDelete}
               title="Usuń strategię"
             >
@@ -655,13 +655,13 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Win Rate</p>
             </div>
             <div className="rounded-md border border-border bg-card p-3 text-center">
-              <TrendingUp className="mx-auto mb-1 h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <TrendingUp className="mx-auto mb-1 h-5 w-5 text-profit dark:text-profit" />
               <p
                 className={cn(
                   "text-lg font-bold tabular-nums",
                   parseFloat(stats.avgPL) >= 0
-                    ? "text-emerald-600 dark:text-emerald-300"
-                    : "text-rose-600 dark:text-rose-300"
+                    ? "text-profit dark:text-profit"
+                    : "text-loss dark:text-loss"
                 )}
               >
                 {parseFloat(stats.avgPL) > 0 ? "+" : ""}
@@ -682,8 +682,8 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
             className={cn(
               "flex items-center justify-between rounded-xl border px-4 py-3 shadow-inner",
               parseFloat(stats.totalPL) >= 0
-                ? "border-emerald-200/80 bg-gradient-to-r from-emerald-50 to-emerald-50/30 dark:border-emerald-500/25 dark:from-emerald-950/40 dark:to-emerald-950/10"
-                : "border-rose-200/80 bg-gradient-to-r from-rose-50 to-rose-50/30 dark:border-rose-500/25 dark:from-rose-950/40 dark:to-rose-950/10"
+                ? "border-profit/80 bg-gradient-to-r from-profit/10 to-profit/5 dark:border-profit/25 dark:from-profit/10 dark:to-profit/5"
+                : "border-loss/80 bg-gradient-to-r from-loss/10 to-loss/5 dark:border-loss/25 dark:from-loss/10 dark:to-loss/5"
             )}
           >
             <span className="text-sm font-semibold text-foreground/90">Łączny P&amp;L</span>
@@ -691,8 +691,8 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
               className={cn(
                 "text-2xl font-bold tabular-nums tracking-tight",
                 parseFloat(stats.totalPL) >= 0
-                  ? "text-emerald-600 dark:text-emerald-300"
-                  : "text-rose-600 dark:text-rose-300"
+                  ? "text-profit dark:text-profit"
+                  : "text-loss dark:text-loss"
               )}
             >
               {parseFloat(stats.totalPL) > 0 ? "+" : ""}

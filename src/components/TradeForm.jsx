@@ -156,7 +156,7 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 bg-transparent p-8 max-h-[80vh] overflow-y-auto">
-      <div className="text-green-600 font-bold mb-4">✅ Professional Trade Journal Form</div>
+      <div className="text-profit font-bold mb-4">✅ Professional Trade Journal Form</div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Account & Strategy */}
@@ -211,8 +211,8 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
         </div>
 
         {/* Basic Trade Info */}
-        <div className="md:col-span-2 lg:col-span-3 p-4 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-200 dark:border-green-800">
-          <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-3">📈 Basic Trade Information</h3>
+        <div className="md:col-span-2 lg:col-span-3 p-4 bg-profit/10 dark:bg-profit/10/30 rounded-xl border border-profit/20 dark:border-green-800">
+          <h3 className="text-lg font-semibold text-profit dark:text-green-100 mb-3">📈 Basic Trade Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <Label>Date *</Label>
@@ -307,7 +307,7 @@ export default function TradeForm({ trade, onSubmit, onCancel }) {
         </div>
 
         {/* Risk Management */}
-        <div className="md:col-span-2 lg:col-span-3 p-4 bg-red-50 dark:bg-red-900/30 rounded-xl border border-red-200 dark:border-red-800">
+        <div className="md:col-span-2 lg:col-span-3 p-4 bg-loss/10 dark:bg-red-900/30 rounded-xl border border-loss/20 dark:border-red-800">
           <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-3">⚠️ Risk Management</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>

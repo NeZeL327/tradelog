@@ -7,7 +7,7 @@ import {
   LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar,
   LogOut, NotebookPen, ListTodo, AlarmClockOff,
   ChevronRight, User, FlaskConical, Settings as SettingsIcon, FileBarChart, Calculator, ClipboardList,
-  Search,
+  Search, CandlestickChart,
 } from "lucide-react";
 import {
   Sidebar,
@@ -54,6 +54,7 @@ const NAV_GROUPS = (t) => [
   {
     label: t("navGroupAnalysis"),
     items: [
+      { title: t("tradeDetails"), url: "/trade", icon: CandlestickChart },
       { title: t("analytics"), url: createPageUrl("Analytics"), icon: BarChart3 },
       { title: t("backtesting"), url: createPageUrl("Backtesting"), icon: FlaskConical },
       { title: t("strategies"), url: createPageUrl("Strategies"), icon: Brain },
@@ -80,6 +81,11 @@ function normalizePath(p) {
   if (!p) return "";
   const s = p.split("?")[0].replace(/\/+$/, "") || "/";
   return s.toLowerCase();
+}
+
+function isTradeDetailsPath(p) {
+  const n = normalizePath(p);
+  return n === "/trade" || n.startsWith("/trade/") || n === "/tradedetails";
 }
 
 function NavLink({ to, children, className, onNavigate }) {
@@ -143,7 +149,7 @@ function LayoutContent({ children }) {
           <div className="sidebar-mountain-layer" aria-hidden="true">
             <img src="/sidebar-mountains.png" alt="" />
           </div>
-          {/* Brand row + compact user card */}
+          {/* Brand row */}
           <SidebarHeader className="relative z-[1] border-transparent px-3 py-3 group-data-[collapsible=icon]:px-2">
             <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center px-1">
               <img
@@ -172,15 +178,17 @@ function LayoutContent({ children }) {
             {navGroups.map((group, idx) => (
               <SidebarGroup key={group.label} className="p-0">
                 {idx > 0 && (
-                  <div className="h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent my-3 mx-1 group-data-[collapsible=icon]:my-2" aria-hidden />
+                  <div className="h-px bg-sidebar-border my-3 mx-1 group-data-[collapsible=icon]:my-2" aria-hidden />
                 )}
-                <SidebarGroupLabel className="h-auto text-[10px] font-semibold uppercase tracking-[0.14em] px-2.5 mb-1.5 text-primary/70 group-data-[collapsible=icon]:hidden">
+                <SidebarGroupLabel className="h-auto text-[10px] font-semibold uppercase tracking-[0.16em] px-2.5 mb-1.5 text-primary group-data-[collapsible=icon]:hidden">
                   {group.label}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu className="gap-1">
                     {group.items.map((item) => {
-                      const isActive = pathNorm === normalizePath(item.url);
+                      const isActive =
+                        pathNorm === normalizePath(item.url)
+                        || (isTradeDetailsPath(item.url) && isTradeDetailsPath(pathNorm));
                       return (
                         <SidebarMenuItem key={item.title}>
                           <SidebarMenuButton
@@ -190,7 +198,7 @@ function LayoutContent({ children }) {
                               relative rounded-md transition-colors duration-150 !py-0 !h-auto
                               ${isActive
                                 ? "sidebar-active font-medium"
-                                : "text-sidebar-foreground/80 hover:bg-white/5 hover:text-white"
+                                : "text-sidebar-foreground/80 hover:bg-foreground/5 hover:text-foreground"
                               }
                             `}
                           >
@@ -222,9 +230,9 @@ function LayoutContent({ children }) {
                 <NavLink
                   to={createPageUrl("Settings")}
                   onNavigate={closeMobileNav}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-2 bg-muted/40 hover:bg-muted/70 dark:bg-black/25 dark:hover:bg-white/5 transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:bg-transparent"
+                  className="flex items-center gap-2.5 rounded-md px-2 py-2 hover:bg-foreground/5 transition-colors group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1"
                 >
-                  <Avatar className="h-8 w-8 ring-1 ring-white/10">
+                  <Avatar className="h-8 w-8 ring-1 ring-border">
                     <AvatarFallback
                       className={`text-white font-semibold bg-gradient-to-br ${avatarPreset.gradient}`}
                     >
@@ -257,7 +265,7 @@ function LayoutContent({ children }) {
                     className={`relative rounded-md transition-colors duration-150 !py-0 !h-auto ${
                       pathNorm === normalizePath(createPageUrl("Settings"))
                         ? "sidebar-active font-medium"
-                        : "text-sidebar-foreground/90 hover:bg-white/5 hover:text-white"
+                        : "text-sidebar-foreground/90 hover:bg-foreground/5 hover:text-foreground"
                     }`}
                   >
                     <NavLink
@@ -337,7 +345,7 @@ function LayoutContent({ children }) {
 
           {/* Content panel — rounded inset (connected transition under header) */}
           <main className="flex-1 flex flex-col min-w-0 overflow-auto cyber-dashboard dashboard-surface bg-[hsl(var(--background))] md:mr-3 md:mb-3 md:rounded-lg md:border border-border/80 dark:md:mr-0 dark:md:mb-0 dark:md:rounded-none dark:border-transparent">
-            <div className="flex-1 w-full max-w-screen-2xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-[max(1rem,env(safe-area-inset-bottom))] app-mobile-tab-pad">
+            <div className="flex-1 min-h-0 flex flex-col w-full max-w-screen-2xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-[max(1rem,env(safe-area-inset-bottom))] app-mobile-tab-pad">
               {children}
             </div>
             <div className="hidden md:block">

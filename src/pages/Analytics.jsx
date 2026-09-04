@@ -15,7 +15,8 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
 import { getTradeEntryMinutes } from "@/lib/userSettings";
 import { aggregateTagPerformance } from "@/lib/tradeTags";
-import { CHART, chartTooltipStyle } from "@/lib/chartTheme";
+import { CHART, chartTooltipStyle, chartGridProps } from "@/lib/chartTheme";
+import { SkeletonKpiRow, SkeletonBlock } from "@/components/ui/skeleton-block";
 import QuoteLine from "@/components/QuoteLine";
 
 const decidedWinRate = (wins, losses) => {
@@ -633,8 +634,9 @@ export default function Analytics() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
+      <div className="w-full mx-auto space-y-6 dashboard-surface py-2">
+        <SkeletonKpiRow count={4} />
+        <SkeletonBlock rows={8} className="rounded-lg border border-border" />
       </div>
     );
   }
@@ -1057,7 +1059,7 @@ export default function Analytics() {
             <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center opacity-0">{t('reset')}</span>
             <Button
               variant="outline"
-              className="h-10 w-full border-rose-300 text-rose-700 hover:bg-rose-50 hover:border-rose-400"
+              className="h-10 w-full border-loss/30 text-loss hover:bg-loss/10 hover:border-loss/40"
               onClick={() => {
                 setFilterSymbols(["all"]);
                 setFilterStrategies(["all"]);
@@ -1077,8 +1079,8 @@ export default function Analytics() {
         <div className="grid grid-cols-3 gap-3">
           <Card>
             <CardContent className="p-4 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{t('wins')}</p>
-              <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{outcomeCounts.wins}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-profit dark:text-profit">{t('wins')}</p>
+              <p className="text-3xl font-bold text-profit dark:text-profit mt-1">{outcomeCounts.wins}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {outcomeTotal ? `${((outcomeCounts.wins / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
               </p>
@@ -1095,8 +1097,8 @@ export default function Analytics() {
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">{t('losses')}</p>
-              <p className="text-3xl font-bold text-rose-600 dark:text-rose-400 mt-1">{outcomeCounts.losses}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-loss dark:text-loss">{t('losses')}</p>
+              <p className="text-3xl font-bold text-loss dark:text-loss mt-1">{outcomeCounts.losses}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {outcomeTotal ? `${((outcomeCounts.losses / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
               </p>
@@ -1141,14 +1143,14 @@ export default function Analytics() {
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="96%" height={320}>
                       <ComposedChart data={outcomeChartData} margin={{ top: 50, right: 50, left: 30, bottom: 70 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="name" stroke={CHART.axis} />
                         <YAxis yAxisId="left" stroke={CHART.axis} allowDecimals={false} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} tickFormatter={(value) => `${value}%`} width={70} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <Tooltip
                           contentStyle={chartTooltipStyle}
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: '#f1f5f9' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
                           formatter={(value, name) => [
                             name === 'rate' ? `${Number(value).toFixed(1)}%` : value,
                             name === 'rate' ? t('winRate') : t('trades')
@@ -1197,18 +1199,18 @@ export default function Analytics() {
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="96%" height={320}>
                       <BarChart data={directionEdgeData} layout="vertical" margin={{ top: 50, right: 60, left: 90, bottom: 50 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis type="number" stroke={CHART.axis} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
                         <YAxis type="category" dataKey="direction" stroke={CHART.axis} width={80} />
                         <Tooltip
                           contentStyle={chartTooltipStyle}
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: '#f1f5f9' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
                           formatter={(value) => [Number(value).toFixed(2), t('netPL')]}
                         />
                         <Bar dataKey="netPL" radius={[0, 10, 10, 0]}>
                           {directionEdgeData.map((entry) => (
-                            <Cell key={entry.direction} fill={entry.netPL >= 0 ? '#22c55e' : '#f43f5e'} />
+                            <Cell key={entry.direction} fill={entry.netPL >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))'} />
                           ))}
                         </Bar>
                       </BarChart>
@@ -1242,13 +1244,13 @@ export default function Analytics() {
                           <stop offset="95%" stopColor={CHART.line} stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                      <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="trade" stroke={CHART.axis} tickMargin={10} height={65} />
                       <YAxis stroke={CHART.axis} width={75} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1))]} />
                       <Tooltip
                         contentStyle={chartTooltipStyle}
                         itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                        labelStyle={{ color: '#f1f5f9' }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
                       />
                       <Area type="monotone" dataKey="equity" stroke={CHART.line} strokeWidth={2} fillOpacity={1} fill="url(#colorEquity)" />
                     </AreaChart>
@@ -1284,7 +1286,7 @@ export default function Analytics() {
                     <p className="text-sm font-semibold text-foreground">
                       {bestPeriod ? bestPeriod.period : '--'}
                     </p>
-                    <p className={`text-xs ${bestPeriod && Number(bestPeriod.pl) >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                    <p className={`text-xs ${bestPeriod && Number(bestPeriod.pl) >= 0 ? 'text-profit' : 'text-loss'}`}>
                       {bestPeriod ? `${bestPeriod.pl >= 0 ? '+' : ''}${bestPeriod.pl.toFixed(2)}` : '--'}
                     </p>
                   </div>
@@ -1306,13 +1308,13 @@ export default function Analytics() {
                 <div className="w-full overflow-hidden px-6 py-2 pb-4">
                   <ResponsiveContainer width="96%" height={400}>
                     <BarChart data={periodData} margin={{ top: 50, right: 50, left: 30, bottom: timePeriod === "weekly" ? 120 : 80 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                      <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="period" stroke={CHART.axis} angle={timePeriod === "weekly" ? -45 : 0} textAnchor={timePeriod === "weekly" ? "end" : "middle"} height={timePeriod === "weekly" ? 105 : 55} tickMargin={10} />
                       <YAxis stroke={CHART.axis} width={75} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
                       <Tooltip
                         contentStyle={chartTooltipStyle}
                         itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                        labelStyle={{ color: '#f1f5f9' }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
                       />
                       <Bar dataKey="pl" fill={CHART.line} name="P&L" radius={[8, 8, 0, 0]} />
                     </BarChart>
@@ -1331,13 +1333,13 @@ export default function Analytics() {
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={directionData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="direction" stroke={CHART.axis} />
                         <YAxis stroke={CHART.axis} width={60} />
                         <Tooltip
                           contentStyle={chartTooltipStyle}
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: '#f1f5f9' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
                         <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]}>
@@ -1360,13 +1362,13 @@ export default function Analytics() {
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={timeframeData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="timeframe" stroke={CHART.axis} />
                         <YAxis stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <Tooltip
                           contentStyle={chartTooltipStyle}
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: '#f1f5f9' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
                         <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
@@ -1388,14 +1390,14 @@ export default function Analytics() {
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="100%" height={350}>
                       <BarChart data={sessionData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="session" stroke={CHART.axis} />
                         <YAxis yAxisId="left" stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                         <Tooltip
                           contentStyle={chartTooltipStyle}
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: '#f1f5f9' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
                         <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
@@ -1418,14 +1420,14 @@ export default function Analytics() {
                 <div className="w-full overflow-hidden px-4 py-2">
                   <ResponsiveContainer width="100%" height={450}>
                     <BarChart data={symbolData} layout="vertical" margin={{ top: 30, right: 35, left: 95, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis xAxisId="bottom" type="number" stroke={CHART.axis} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                         <XAxis xAxisId="top" orientation="top" type="number" stroke={CHART.axis} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <YAxis dataKey="symbol" type="category" stroke={CHART.axis} width={90} />
                         <Tooltip
                           contentStyle={chartTooltipStyle}
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: '#f1f5f9' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
                         <Bar dataKey="totalPL" xAxisId="bottom" fill={CHART.profit} name={t('totalPLLabel')} radius={[0, 8, 8, 0]} />
@@ -1455,13 +1457,13 @@ export default function Analytics() {
                       </div>
                       <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">{t('avgPLLabel')}:</span>
-                      <span className={`font-bold ${symbol.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className={`font-bold ${symbol.avgPL >= 0 ? 'text-profit' : 'text-loss'}`}>
                         {symbol.avgPL > 0 ? '+' : ''}{symbol.avgPL.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">{t('totalPLLabel')}:</span>
-                      <span className={`font-bold ${symbol.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className={`font-bold ${symbol.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
                         {symbol.totalPL > 0 ? '+' : ''}{symbol.totalPL.toFixed(2)}
                       </span>
                     </div>
@@ -1608,7 +1610,7 @@ export default function Analytics() {
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-profit' : 'text-loss'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
@@ -1636,7 +1638,7 @@ export default function Analytics() {
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-profit' : 'text-loss'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
@@ -1657,13 +1659,13 @@ export default function Analytics() {
                               <div className="w-full overflow-hidden px-2 py-1">
                                 <ResponsiveContainer width="100%" height={230}>
                                   <BarChart data={directionBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                                    <CartesianGrid {...chartGridProps} />
                                     <XAxis dataKey="direction" stroke={CHART.axis} />
                                     <YAxis stroke={CHART.axis} width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
                                     <Tooltip
                                       contentStyle={chartTooltipStyle}
                                       itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                                      labelStyle={{ color: '#f1f5f9' }}
+                                      labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
                                     <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]}>
@@ -1687,13 +1689,13 @@ export default function Analytics() {
                               <div className="w-full overflow-hidden px-2 py-1">
                                 <ResponsiveContainer width="100%" height={230}>
                                   <BarChart data={timeframeBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                                    <CartesianGrid {...chartGridProps} />
                                     <XAxis dataKey="timeframe" stroke={CHART.axis} />
                                     <YAxis stroke={CHART.axis} width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
                                     <Tooltip
                                       contentStyle={chartTooltipStyle}
                                       itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                                      labelStyle={{ color: '#f1f5f9' }}
+                                      labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
                                     <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
@@ -1710,7 +1712,7 @@ export default function Analytics() {
                           {bestTrade && (
                             <Card>
                               <CardHeader>
-                                <CardTitle className="text-base text-green-900 flex items-center gap-2">
+                                <CardTitle className="text-base text-profit flex items-center gap-2">
                                   <TrendingUp className="w-4 h-4" />
                                   {t('bestTradeSingle')}
                                 </CardTitle>
@@ -1726,7 +1728,7 @@ export default function Analytics() {
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
-                                  <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                                  <span className="text-lg font-bold text-profit dark:text-profit">
                                     {(() => { const pl = getTradeRealizedPL(bestTrade) ?? 0; return `${pl >= 0 ? '+' : ''}${pl.toFixed(2)}`; })()}
                                   </span>
                                 </div>
@@ -1757,7 +1759,7 @@ export default function Analytics() {
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
-                                  <span className="text-lg font-bold text-red-600 dark:text-red-400">
+                                  <span className="text-lg font-bold text-loss dark:text-loss">
                                     {(getTradeRealizedPL(worstTrade) ?? 0).toFixed(2)}
                                   </span>
                                 </div>
@@ -1787,14 +1789,14 @@ export default function Analytics() {
                 <div className="w-full overflow-hidden px-4 py-2">
                   <ResponsiveContainer width="100%" height={450}>
                     <BarChart data={strategyData} margin={{ top: 30, right: 35, left: 20, bottom: 100 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                      <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="name" stroke={CHART.axis} angle={-45} textAnchor="end" height={95} />
                       <YAxis yAxisId="left" stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                       <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                       <Tooltip
                         contentStyle={chartTooltipStyle}
                         itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                        labelStyle={{ color: '#f1f5f9' }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
                       />
                       <Legend />
                       <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
@@ -1824,8 +1826,8 @@ export default function Analytics() {
                         <p className="text-2xl font-bold text-foreground">{strategy.winRate}%</p>
                         <p className="text-xs text-muted-foreground">{t('winRate')}</p>
                       </div>
-                      <div className="p-3 bg-green-50 dark:bg-green-950 rounded-lg text-center">
-                        <p className={`text-2xl font-bold ${strategy.avgPL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <div className="p-3 bg-profit/10 dark:bg-profit/10 rounded-lg text-center">
+                        <p className={`text-2xl font-bold ${strategy.avgPL >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>
                           {strategy.avgPL > 0 ? '+' : ''}{strategy.avgPL.toFixed(2)}
                         </p>
                         <p className="text-xs text-muted-foreground">{t('avgPLLabel')}</p>
@@ -1833,7 +1835,7 @@ export default function Analytics() {
                         </div>
                         <div className="flex justify-between p-3 bg-muted/30 rounded-lg">
                         <span className="text-sm text-muted-foreground">{t('totalPLLabel')}:</span>
-                      <span className={`font-bold ${strategy.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className={`font-bold ${strategy.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
                         {strategy.totalPL > 0 ? '+' : ''}{strategy.totalPL.toFixed(2)}
                       </span>
                     </div>
@@ -1981,7 +1983,7 @@ export default function Analytics() {
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-profit' : 'text-loss'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
@@ -2009,7 +2011,7 @@ export default function Analytics() {
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-profit' : 'text-loss'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
@@ -2030,13 +2032,13 @@ export default function Analytics() {
                               <div className="w-full overflow-hidden px-2 py-1">
                                 <ResponsiveContainer width="100%" height={230}>
                                   <BarChart data={directionBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                                    <CartesianGrid {...chartGridProps} />
                                     <XAxis dataKey="direction" stroke={CHART.axis} />
                                     <YAxis stroke={CHART.axis} width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
                                     <Tooltip
                                       contentStyle={chartTooltipStyle}
                                       itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                                      labelStyle={{ color: '#f1f5f9' }}
+                                      labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
                                     <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]}>
@@ -2060,13 +2062,13 @@ export default function Analytics() {
                               <div className="w-full overflow-hidden px-2 py-1">
                                 <ResponsiveContainer width="100%" height={230}>
                                   <BarChart data={timeframeBreakdownData} margin={{ top: 25, right: 25, left: 15, bottom: 25 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                                    <CartesianGrid {...chartGridProps} />
                                     <XAxis dataKey="timeframe" stroke={CHART.axis} />
                                     <YAxis stroke={CHART.axis} width={50} domain={[0, (dataMax) => Math.ceil(dataMax * 1.1)]} />
                                     <Tooltip
                                       contentStyle={chartTooltipStyle}
                                       itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                                      labelStyle={{ color: '#f1f5f9' }}
+                                      labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
                                     <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
@@ -2083,7 +2085,7 @@ export default function Analytics() {
                           {bestTrade && (
                             <Card>
                               <CardHeader>
-                                <CardTitle className="text-base text-green-900 dark:text-green-300 flex items-center gap-2">
+                                <CardTitle className="text-base text-profit dark:text-profit flex items-center gap-2">
                                   <TrendingUp className="w-4 h-4" />
                                   {t('bestTradeSingle')}
                                 </CardTitle>
@@ -2103,7 +2105,7 @@ export default function Analytics() {
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
-                                  <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                                  <span className="text-lg font-bold text-profit dark:text-profit">
                                     {(() => { const pl = getTradeRealizedPL(bestTrade) ?? 0; return `${pl >= 0 ? '+' : ''}${pl.toFixed(2)}`; })()}
                                   </span>
                                 </div>
@@ -2134,7 +2136,7 @@ export default function Analytics() {
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
-                                  <span className="text-lg font-bold text-red-600 dark:text-red-400">
+                                  <span className="text-lg font-bold text-loss dark:text-loss">
                                     {(getTradeRealizedPL(worstTrade) ?? 0).toFixed(2)}
                                   </span>
                                 </div>
@@ -2188,7 +2190,7 @@ export default function Analytics() {
                         <Tooltip
                           contentStyle={chartTooltipStyle}
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: '#f1f5f9' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                       </PieChart>
                     </ResponsiveContainer>
@@ -2209,13 +2211,13 @@ export default function Analytics() {
                         { status: 'Zawieszone', count: accounts.filter(a => a.status === 'Suspended').length, fill: CHART.warning },
                         { status: 'Zamknięte', count: accounts.filter(a => a.status === 'Closed').length, fill: CHART.loss }
                       ].filter(item => item.count > 0)} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="status" stroke={CHART.axis} />
                         <YAxis stroke={CHART.axis} width={60} domain={[0, (dataMax) => Math.ceil(dataMax * 1.2)]} />
                         <Tooltip
                           contentStyle={chartTooltipStyle}
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: '#f1f5f9' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Bar dataKey="count" fill={CHART.line} radius={[8, 8, 0, 0]} />
                       </BarChart>
@@ -2233,14 +2235,14 @@ export default function Analytics() {
                 <div className="w-full overflow-hidden px-4 py-2">
                   <ResponsiveContainer width="100%" height={390}>
                     <BarChart data={accountData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                      <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="name" stroke={CHART.axis} />
                       <YAxis yAxisId="left" stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                       <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                       <Tooltip
                         contentStyle={chartTooltipStyle}
                         itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                        labelStyle={{ color: '#f1f5f9' }}
+                        labelStyle={{ color: 'hsl(var(--foreground))' }}
                       />
                       <Legend />
                       <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name="Win Rate (%)" radius={[8, 8, 0, 0]} />
@@ -2267,8 +2269,8 @@ export default function Analytics() {
                         <p className="text-xl font-bold text-foreground">{account.winRate}%</p>
                         <p className="text-xs text-muted-foreground">{t('winRate')}</p>
                       </div>
-                      <div className="p-3 bg-green-100 dark:bg-green-950 rounded-lg text-center">
-                        <p className={`text-xl font-bold ${account.roi >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                      <div className="p-3 bg-profit/10 dark:bg-profit/10 rounded-lg text-center">
+                        <p className={`text-xl font-bold ${account.roi >= 0 ? 'text-profit dark:text-profit' : 'text-red-700 dark:text-loss'}`}>
                           {account.roi > 0 ? '+' : ''}{account.roi.toFixed(2)}%
                         </p>
                         <p className="text-xs text-muted-foreground">{t('roi')}</p>
@@ -2277,7 +2279,7 @@ export default function Analytics() {
                     <div className="p-3 bg-slate-100 dark:bg-card rounded-lg">
                       <div className="flex justify-between mb-1">
                         <span className="text-sm text-muted-foreground">{t('totalPLLabel')}:</span>
-                        <span className={`font-bold ${account.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`font-bold ${account.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
                           {account.totalPL > 0 ? '+' : ''}{account.totalPL.toFixed(2)}
                         </span>
                       </div>
@@ -2320,11 +2322,11 @@ export default function Analytics() {
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('bestSlot')}</span>
-                        <TrendingUp className="w-4 h-4 text-emerald-500" />
+                        <span className="text-xs font-medium text-profit dark:text-profit">{t('bestSlot')}</span>
+                        <TrendingUp className="w-4 h-4 text-profit" />
                       </div>
-                      <p className="mt-2 text-lg font-bold text-emerald-900 dark:text-emerald-200">{bestSlot ? bestSlot.slot : '—'}</p>
-                      <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
+                      <p className="mt-2 text-lg font-bold text-profit dark:text-profit">{bestSlot ? bestSlot.slot : '—'}</p>
+                      <p className="text-[11px] text-profit/80 dark:text-profit/80">
                         {bestSlot ? `${bestSlot.avgPL >= 0 ? '+' : ''}${bestSlot.avgPL} ${t('avg')} · ${bestSlot.winRate}%` : t('noData')}
                       </p>
                     </CardContent>
@@ -2333,11 +2335,11 @@ export default function Analytics() {
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('worstSlot')}</span>
-                        <AlertCircle className="w-4 h-4 text-rose-500" />
+                        <span className="text-xs font-medium text-loss dark:text-loss">{t('worstSlot')}</span>
+                        <AlertCircle className="w-4 h-4 text-loss" />
                       </div>
-                      <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200">{worstSlot ? worstSlot.slot : '—'}</p>
-                      <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                      <p className="mt-2 text-lg font-bold text-loss dark:text-loss">{worstSlot ? worstSlot.slot : '—'}</p>
+                      <p className="text-[11px] text-loss/80 dark:text-loss/80">
                         {worstSlot ? `${worstSlot.avgPL} ${t('avg')} · ${worstSlot.winRate}%` : t('noData')}
                       </p>
                     </CardContent>
@@ -2373,14 +2375,14 @@ export default function Analytics() {
                               <stop offset="95%" stopColor={CHART.profit} stopOpacity={0} />
                             </linearGradient>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                          <CartesianGrid {...chartGridProps} />
                           <XAxis dataKey="hour" stroke={CHART.axis} />
                           <YAxis yAxisId="left" stroke={CHART.line} width={50} domain={[0, 100]} />
                           <YAxis yAxisId="right" orientation="right" stroke={CHART.profit} width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                           <Tooltip
                             contentStyle={chartTooltipStyle}
                             itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                            labelStyle={{ color: '#f1f5f9' }}
+                            labelStyle={{ color: 'hsl(var(--foreground))' }}
                           />
                           <Legend />
                           <Area yAxisId="right" type="monotone" dataKey="avgPL" name={t('avgPLLabel')} stroke={CHART.profit} strokeWidth={2.5} fill="url(#hourPLGradient)" dot={{ r: 3, fill: CHART.profit }} activeDot={{ r: 5 }} />
@@ -2401,18 +2403,18 @@ export default function Analytics() {
                     <div className="w-full overflow-x-auto py-2">
                       <ResponsiveContainer width="100%" height={Math.max(320, timeSlotData.length * 30)} minWidth={320}>
                         <BarChart data={timeSlotData} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                          <CartesianGrid {...chartGridProps} />
                           <XAxis type="number" stroke={CHART.axis} />
                           <YAxis type="category" dataKey="slot" stroke={CHART.axis} width={110} tick={{ fontSize: 11 }} />
                           <Tooltip
                             contentStyle={chartTooltipStyle}
                             itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                            labelStyle={{ color: '#f1f5f9' }}
+                            labelStyle={{ color: 'hsl(var(--foreground))' }}
                           />
                           <Legend />
                           <Bar dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
                             {timeSlotData.map((d, i) => (
-                              <Cell key={i} fill={d.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
+                              <Cell key={i} fill={d.avgPL >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))'} />
                             ))}
                           </Bar>
                           <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill={CHART.line} radius={[0, 6, 6, 0]} />
@@ -2436,9 +2438,9 @@ export default function Analytics() {
                             <tr key={s.slotStart} className="border-b border-slate-100 dark:border-slate-800">
                               <td className="py-1.5 px-2 font-medium text-slate-800 dark:text-slate-200">{s.slot}</td>
                               <td className="py-1.5 px-2 text-right text-muted-foreground">{s.trades}</td>
-                              <td className={`py-1.5 px-2 text-right font-semibold ${s.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{s.winRate}%</td>
-                              <td className={`py-1.5 px-2 text-right ${s.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{s.avgPL >= 0 ? '+' : ''}{s.avgPL}</td>
-                              <td className={`py-1.5 px-2 text-right font-semibold ${s.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{s.totalPL >= 0 ? '+' : ''}{s.totalPL}</td>
+                              <td className={`py-1.5 px-2 text-right font-semibold ${s.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>{s.winRate}%</td>
+                              <td className={`py-1.5 px-2 text-right ${s.avgPL >= 0 ? 'text-profit' : 'text-loss'}`}>{s.avgPL >= 0 ? '+' : ''}{s.avgPL}</td>
+                              <td className={`py-1.5 px-2 text-right font-semibold ${s.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>{s.totalPL >= 0 ? '+' : ''}{s.totalPL}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -2482,13 +2484,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('costliestEmotion')}</span>
-                    <AlertCircle className="w-4 h-4 text-rose-500" />
+                    <span className="text-xs font-medium text-loss dark:text-loss">{t('costliestEmotion')}</span>
+                    <AlertCircle className="w-4 h-4 text-loss" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200 truncate" title={worstEmotion?.tag}>
+                  <p className="mt-2 text-lg font-bold text-loss dark:text-loss truncate" title={worstEmotion?.tag}>
                     {worstEmotion && worstEmotion.avgPL < 0 ? worstEmotion.tag : '—'}
                   </p>
-                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                  <p className="text-[11px] text-loss/80 dark:text-loss/80">
                     {worstEmotion && worstEmotion.avgPL < 0 ? `${worstEmotion.avgPL} ${t('perTrade')}` : t('noData')}
                   </p>
                 </CardContent>
@@ -2497,13 +2499,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('bestEmotionLabel')}</span>
-                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                    <span className="text-xs font-medium text-profit dark:text-profit">{t('bestEmotionLabel')}</span>
+                    <TrendingUp className="w-4 h-4 text-profit" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-emerald-900 dark:text-emerald-200 truncate" title={bestEmotion?.tag}>
+                  <p className="mt-2 text-lg font-bold text-profit dark:text-profit truncate" title={bestEmotion?.tag}>
                     {bestEmotion && bestEmotion.avgPL > 0 ? bestEmotion.tag : '—'}
                   </p>
-                  <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
+                  <p className="text-[11px] text-profit/80 dark:text-profit/80">
                     {bestEmotion && bestEmotion.avgPL > 0 ? `+${bestEmotion.avgPL} ${t('perTrade')}` : t('noData')}
                   </p>
                 </CardContent>
@@ -2530,18 +2532,18 @@ export default function Analytics() {
                       <div className="w-full overflow-hidden px-2 py-2">
                         <ResponsiveContainer width="100%" height={Math.max(320, emotionPerf.length * 46)}>
                           <BarChart data={emotionPerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                            <CartesianGrid {...chartGridProps} />
                             <XAxis type="number" stroke={CHART.axis} />
                             <YAxis type="category" dataKey="tag" stroke={CHART.axis} width={150} tick={{ fontSize: 11 }} />
                             <Tooltip
                               contentStyle={chartTooltipStyle}
                               itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                              labelStyle={{ color: '#f1f5f9' }}
+                              labelStyle={{ color: 'hsl(var(--foreground))' }}
                             />
                             <Legend />
                             <Bar dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
                               {emotionPerf.map((e, i) => (
-                                <Cell key={i} fill={e.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
+                                <Cell key={i} fill={e.avgPL >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))'} />
                               ))}
                             </Bar>
                             <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill={CHART.muted} radius={[0, 6, 6, 0]} />
@@ -2561,13 +2563,13 @@ export default function Analytics() {
                       <div className="w-full overflow-hidden px-2 py-2">
                         <ResponsiveContainer width="100%" height={340}>
                           <BarChart data={stageRatingByOutcome} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                            <CartesianGrid {...chartGridProps} />
                             <XAxis dataKey="stage" stroke={CHART.axis} />
                             <YAxis stroke={CHART.axis} domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} width={40} />
                             <Tooltip
                               contentStyle={chartTooltipStyle}
                               itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                              labelStyle={{ color: '#f1f5f9' }}
+                              labelStyle={{ color: 'hsl(var(--foreground))' }}
                             />
                             <Legend />
                             <Bar dataKey="win" name={t('ratingWin')} fill={CHART.profit} radius={[6, 6, 0, 0]} />
@@ -2597,13 +2599,13 @@ export default function Analytics() {
                                 <stop offset="95%" stopColor={CHART.muted} stopOpacity={0} />
                               </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                            <CartesianGrid {...chartGridProps} />
                             <XAxis dataKey="idx" stroke={CHART.axis} />
                             <YAxis stroke={CHART.axis} domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} width={40} />
                             <Tooltip
                               contentStyle={chartTooltipStyle}
                               itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                              labelStyle={{ color: '#f1f5f9' }}
+                              labelStyle={{ color: 'hsl(var(--foreground))' }}
                             />
                             <Area type="monotone" dataKey="rating" name={t('emotionRatingShort')} stroke={CHART.muted} strokeWidth={2} fill="url(#tiltGradient)" />
                           </AreaChart>
@@ -2630,7 +2632,7 @@ export default function Analytics() {
                                   <span className="text-sm text-slate-800 dark:text-slate-200 truncate">{it.tag}</span>
                                   <span className="flex items-center gap-3 shrink-0">
                                     <span className="text-xs text-muted-foreground">×{it.total}</span>
-                                    <span className={`text-xs font-semibold ${it.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{it.winRate}%</span>
+                                    <span className={`text-xs font-semibold ${it.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>{it.winRate}%</span>
                                   </span>
                                 </div>
                               ))}
@@ -2660,20 +2662,20 @@ export default function Analytics() {
                     <div className="w-full overflow-hidden px-2 py-2">
                       <ResponsiveContainer width="100%" height={320}>
                         <BarChart data={confidenceData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                          <CartesianGrid {...chartGridProps} />
                           <XAxis dataKey="level" stroke={CHART.axis} />
                           <YAxis yAxisId="left" stroke={CHART.axis} width={50} domain={[0, 100]} />
                           <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                           <Tooltip
                             contentStyle={chartTooltipStyle}
                             itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                            labelStyle={{ color: '#f1f5f9' }}
+                            labelStyle={{ color: 'hsl(var(--foreground))' }}
                           />
                           <Legend />
                           <Bar dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
                           <Bar dataKey="avgPL" yAxisId="right" name={t('avgPLLabel')} radius={[8, 8, 0, 0]}>
                             {confidenceData.map((d, i) => (
-                              <Cell key={i} fill={d.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
+                              <Cell key={i} fill={d.avgPL >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))'} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -2699,8 +2701,8 @@ export default function Analytics() {
                         <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{d.level}</span>
                         <span className="flex items-center gap-3 shrink-0">
                           <span className="text-xs text-muted-foreground">×{d.trades}</span>
-                          <span className={`text-xs font-semibold ${d.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{d.winRate}%</span>
-                          <span className={`text-xs font-semibold ${d.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{d.avgPL >= 0 ? '+' : ''}{d.avgPL}</span>
+                          <span className={`text-xs font-semibold ${d.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>{d.winRate}%</span>
+                          <span className={`text-xs font-semibold ${d.avgPL >= 0 ? 'text-profit' : 'text-loss'}`}>{d.avgPL >= 0 ? '+' : ''}{d.avgPL}</span>
                         </span>
                       </div>
                     ))
@@ -2723,14 +2725,14 @@ export default function Analytics() {
                   <div className="w-full overflow-hidden px-4 py-2">
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={setupData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="quality" stroke={CHART.axis} />
                         <YAxis yAxisId="left" stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                         <Tooltip
                           contentStyle={chartTooltipStyle}
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: '#f1f5f9' }}
+                          labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
                         <Bar dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
@@ -2748,13 +2750,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('tagCoverage')}</span>
-                    <ListChecks className="w-4 h-4 text-emerald-500" />
+                    <span className="text-xs font-medium text-profit dark:text-profit">{t('tagCoverage')}</span>
+                    <ListChecks className="w-4 h-4 text-profit" />
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-emerald-900 dark:text-emerald-200">
-                    {confluenceAgg.taggedTrades}<span className="text-base text-emerald-500">/{filteredTrades.length}</span>
+                  <p className="mt-2 text-2xl font-bold text-profit dark:text-profit">
+                    {confluenceAgg.taggedTrades}<span className="text-base text-profit">/{filteredTrades.length}</span>
                   </p>
-                  <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">{confluenceCoverage}% {t('entryConditionsCoverageDesc')}</p>
+                  <p className="text-[11px] text-profit/80 dark:text-profit/80">{confluenceCoverage}% {t('entryConditionsCoverageDesc')}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -2774,13 +2776,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('weakestCondition')}</span>
-                    <AlertCircle className="w-4 h-4 text-rose-500" />
+                    <span className="text-xs font-medium text-loss dark:text-loss">{t('weakestCondition')}</span>
+                    <AlertCircle className="w-4 h-4 text-loss" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200 truncate" title={worstConfluence?.tag}>
+                  <p className="mt-2 text-lg font-bold text-loss dark:text-loss truncate" title={worstConfluence?.tag}>
                     {worstConfluence && worstConfluence.avgPL < 0 ? worstConfluence.tag : "—"}
                   </p>
-                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                  <p className="text-[11px] text-loss/80 dark:text-loss/80">
                     {worstConfluence && worstConfluence.avgPL < 0 ? `${worstConfluence.avgPL} ${t('perTrade')}` : t('noData')}
                   </p>
                 </CardContent>
@@ -2788,13 +2790,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('strongestCondition')}</span>
-                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                    <span className="text-xs font-medium text-profit dark:text-profit">{t('strongestCondition')}</span>
+                    <TrendingUp className="w-4 h-4 text-profit" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-emerald-900 dark:text-emerald-200 truncate" title={bestConfluence?.tag}>
+                  <p className="mt-2 text-lg font-bold text-profit dark:text-profit truncate" title={bestConfluence?.tag}>
                     {bestConfluence && bestConfluence.avgPL > 0 ? bestConfluence.tag : "—"}
                   </p>
-                  <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
+                  <p className="text-[11px] text-profit/80 dark:text-profit/80">
                     {bestConfluence && bestConfluence.avgPL > 0 ? `+${bestConfluence.avgPL} ${t('perTrade')}` : t('noData')}
                   </p>
                 </CardContent>
@@ -2804,7 +2806,7 @@ export default function Analytics() {
             {confluencePerf.length === 0 ? (
               <Card>
                 <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
-                  <ListChecks className="w-10 h-10 text-emerald-400" />
+                  <ListChecks className="w-10 h-10 text-profit" />
                   <p className="max-w-md text-sm text-muted-foreground">{t('noEntryConditionData')}</p>
                 </CardContent>
               </Card>
@@ -2818,13 +2820,13 @@ export default function Analytics() {
                   <CardContent className="overflow-hidden p-4">
                     <ResponsiveContainer width="100%" height={Math.max(320, confluencePerf.length * 44)}>
                       <BarChart data={confluencePerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis type="number" stroke={CHART.axis} />
                         <YAxis type="category" dataKey="tag" stroke={CHART.axis} width={140} tick={{ fontSize: 11 }} />
                         <Tooltip
                           contentStyle={chartTooltipStyle}
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: "#f1f5f9" }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
                         />
                         <Legend />
                         <Bar dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
@@ -2859,9 +2861,9 @@ export default function Analytics() {
                           <tr key={row.tag} className="border-b border-slate-100 dark:border-slate-800">
                             <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
                             <td className="py-2 px-3 text-right tabular-nums text-muted-foreground">{row.trades}</td>
-                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-green-600" : "text-red-600"}`}>{row.winRate}%</td>
-                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
-                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-profit" : "text-loss"}`}>{row.winRate}%</td>
+                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-profit" : "text-loss"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-profit" : "text-loss"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -2877,13 +2879,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('tagCoverage')}</span>
-                    <AlertTriangle className="w-4 h-4 text-rose-500" />
+                    <span className="text-xs font-medium text-loss dark:text-loss">{t('tagCoverage')}</span>
+                    <AlertTriangle className="w-4 h-4 text-loss" />
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-rose-900 dark:text-rose-200">
-                    {mistakeAgg.taggedTrades}<span className="text-base text-rose-500">/{filteredTrades.length}</span>
+                  <p className="mt-2 text-2xl font-bold text-loss dark:text-loss">
+                    {mistakeAgg.taggedTrades}<span className="text-base text-loss">/{filteredTrades.length}</span>
                   </p>
-                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">{mistakeCoverage}% {t('mistakesCoverageDesc')}</p>
+                  <p className="text-[11px] text-loss/80 dark:text-loss/80">{mistakeCoverage}% {t('mistakesCoverageDesc')}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -2903,13 +2905,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('costliestMistake')}</span>
-                    <AlertCircle className="w-4 h-4 text-rose-500" />
+                    <span className="text-xs font-medium text-loss dark:text-loss">{t('costliestMistake')}</span>
+                    <AlertCircle className="w-4 h-4 text-loss" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200 truncate" title={costliestMistake?.tag}>
+                  <p className="mt-2 text-lg font-bold text-loss dark:text-loss truncate" title={costliestMistake?.tag}>
                     {costliestMistake && costliestMistake.avgPL < 0 ? costliestMistake.tag : "—"}
                   </p>
-                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                  <p className="text-[11px] text-loss/80 dark:text-loss/80">
                     {costliestMistake && costliestMistake.avgPL < 0
                       ? `${costliestMistake.avgPL} ${t('perTrade')} · Σ ${costliestMistake.totalPL}`
                       : t('noData')}
@@ -2935,7 +2937,7 @@ export default function Analytics() {
             {mistakePerf.length === 0 ? (
               <Card>
                 <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
-                  <AlertTriangle className="w-10 h-10 text-rose-400" />
+                  <AlertTriangle className="w-10 h-10 text-loss" />
                   <p className="max-w-md text-sm text-muted-foreground">{t('noMistakeData')}</p>
                 </CardContent>
               </Card>
@@ -2949,13 +2951,13 @@ export default function Analytics() {
                   <CardContent className="overflow-hidden p-4">
                     <ResponsiveContainer width="100%" height={Math.max(320, mistakePerf.length * 44)}>
                       <BarChart data={mistakePerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={CHART.grid} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis type="number" stroke={CHART.axis} />
                         <YAxis type="category" dataKey="tag" stroke={CHART.axis} width={140} tick={{ fontSize: 11 }} />
                         <Tooltip
                           contentStyle={chartTooltipStyle}
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: "#f1f5f9" }}
+                          labelStyle={{ color: "hsl(var(--foreground))" }}
                         />
                         <Legend />
                         <Bar dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
@@ -2990,9 +2992,9 @@ export default function Analytics() {
                           <tr key={row.tag} className="border-b border-slate-100 dark:border-slate-800">
                             <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
                             <td className="py-2 px-3 text-right tabular-nums text-muted-foreground">{row.trades}</td>
-                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-green-600" : "text-red-600"}`}>{row.winRate}%</td>
-                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
-                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-profit" : "text-loss"}`}>{row.winRate}%</td>
+                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-profit" : "text-loss"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-profit" : "text-loss"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
                           </tr>
                         ))}
                       </tbody>

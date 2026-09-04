@@ -121,16 +121,16 @@ export default function Pricing() {
                 </div>
 
                 {/* Trial highlight box */}
-                <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.07] px-5 py-4">
+                <div className="rounded-2xl border border-profit/30 bg-profit/[0.07] px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="shrink-0 h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                      <Clock className="w-5 h-5 text-emerald-400" />
+                    <div className="shrink-0 h-10 w-10 rounded-full bg-profit/20 flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-profit" />
                     </div>
                     <div className="text-left">
-                      <p className="text-emerald-300 font-bold text-sm sm:text-base">
+                      <p className="text-profit font-bold text-sm sm:text-base">
                         14 dni pełnego dostępu — bez opłat
                       </p>
-                      <p className="text-emerald-300/70 text-xs sm:text-sm mt-0.5">
+                      <p className="text-profit/70 text-xs sm:text-sm mt-0.5">
                         Zapłacisz dopiero po okresie próbnym. Możesz anulować w każdej chwili.
                       </p>
                     </div>
@@ -160,8 +160,8 @@ export default function Pricing() {
                     t('pricingInclude6'),
                   ].filter(Boolean).map((label, i) => (
                     <div key={i} className="flex items-start gap-3 text-white/85 text-sm sm:text-base">
-                      <span className="shrink-0 mt-0.5 h-5 w-5 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-emerald-400" strokeWidth={3} />
+                      <span className="shrink-0 mt-0.5 h-5 w-5 rounded-full bg-profit/15 border border-profit/30 flex items-center justify-center">
+                        <Check className="w-3 h-3 text-profit" strokeWidth={3} />
                       </span>
                       <span className="leading-snug">{label}</span>
                     </div>

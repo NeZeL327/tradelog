@@ -127,8 +127,8 @@ export default function PositionManager() {
 
   const getStatusColor = () => {
     if (!isActive) return "bg-slate-100 dark:bg-slate-800";
-    if (totalPnL >= 0) return "bg-emerald-100 dark:bg-emerald-900/20";
-    return "bg-rose-100 dark:bg-rose-900/20";
+    if (totalPnL >= 0) return "bg-profit/10 dark:bg-profit/10";
+    return "bg-loss/10 dark:bg-loss/10";
   };
 
   return (
@@ -138,8 +138,8 @@ export default function PositionManager() {
         <div
           className={`fixed top-4 right-4 z-50 max-w-sm p-4 rounded-lg border flex gap-3 items-start shadow-lg animate-in slide-in-from-top ${
             notification.type === "success"
-              ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-300"
-              : "bg-rose-50 dark:bg-rose-900/20 border-rose-300 dark:border-rose-700 text-rose-900 dark:text-rose-300"
+              ? "bg-profit/10 dark:bg-profit/10 border-profit/30 dark:border-profit/30 text-profit dark:text-profit"
+              : "bg-loss/10 dark:bg-loss/10 border-loss/30 dark:border-loss/30 text-loss dark:text-loss"
           }`}
         >
           {notification.type === "success" ? (
@@ -181,7 +181,7 @@ export default function PositionManager() {
                   disabled={isActive}
                   className={`px-6 py-2 rounded-lg font-semibold border transition ${
                     direction === "Long"
-                      ? "bg-emerald-600 text-white border-emerald-600"
+                      ? "bg-profit text-white border-emerald-600"
                       : "bg-background border-border text-muted-foreground"
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
@@ -192,7 +192,7 @@ export default function PositionManager() {
                   disabled={isActive}
                   className={`px-6 py-2 rounded-lg font-semibold border transition ${
                     direction === "Short"
-                      ? "bg-rose-600 text-white border-rose-600"
+                      ? "bg-loss text-white border-rose-600"
                       : "bg-background border-border text-muted-foreground"
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
@@ -231,7 +231,7 @@ export default function PositionManager() {
                     onChange={(e) => setSlPrice(e.target.value)}
                     disabled={isActive}
                     placeholder="0.0000"
-                    className="w-full h-10 rounded-lg border border-rose-300 dark:border-rose-600 px-3 bg-background text-foreground disabled:opacity-50"
+                    className="w-full h-10 rounded-lg border border-loss/30 dark:border-loss/40 px-3 bg-background text-foreground disabled:opacity-50"
                   />
                 </div>
                 <div>
@@ -242,7 +242,7 @@ export default function PositionManager() {
                     onChange={(e) => setTpPrice(e.target.value)}
                     disabled={isActive}
                     placeholder="0.0000"
-                    className="w-full h-10 rounded-lg border border-emerald-300 dark:border-emerald-600 px-3 bg-background text-foreground disabled:opacity-50"
+                    className="w-full h-10 rounded-lg border border-profit/30 dark:border-profit/40 px-3 bg-background text-foreground disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -277,7 +277,7 @@ export default function PositionManager() {
                     <div className="flex gap-2">
                       <button
                         onClick={confirmClose}
-                        className="flex-1 py-2 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700"
+                        className="flex-1 py-2 rounded-lg bg-profit text-white font-bold hover:bg-profit"
                       >
                         ✅ Potwierdź
                       </button>
@@ -297,7 +297,7 @@ export default function PositionManager() {
                         onClick={() => handleClosePercent(percent)}
                         className={`py-3 rounded-lg font-bold border transition ${
                           percent === 100
-                            ? "bg-rose-600 text-white border-rose-600 hover:bg-rose-700"
+                            ? "bg-loss text-white border-rose-600 hover:bg-loss"
                             : "bg-background border-border text-foreground hover:bg-muted"
                         }`}
                       >
@@ -325,7 +325,7 @@ export default function PositionManager() {
                         </p>
                         <p className="text-xs text-slate-600 dark:text-slate-400">{trade.size} lots</p>
                       </div>
-                      <p className={`font-bold ${parseFloat(trade.pnl) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                      <p className={`font-bold ${parseFloat(trade.pnl) >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
                         {parseFloat(trade.pnl) > 0 ? "+" : ""}{trade.pnl}
                       </p>
                     </div>
@@ -363,11 +363,11 @@ export default function PositionManager() {
                 </div>
 
                 {/* Realized PnL */}
-                <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-xl p-4">
-                  <p className="text-xs text-emerald-700 dark:text-emerald-400">Zrealizowany P&L</p>
+                <div className="bg-profit/10 dark:bg-profit/10 border border-profit/20 dark:border-profit/30 rounded-xl p-4">
+                  <p className="text-xs text-profit dark:text-profit">Zrealizowany P&L</p>
                   <p
                     className={`text-2xl font-bold ${
-                      realizedPnL >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                      realizedPnL >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"
                     }`}
                   >
                     {realizedPnL > 0 ? "+" : ""}{realizedPnL.toFixed(2)}
@@ -376,15 +376,15 @@ export default function PositionManager() {
 
                 {/* Unrealized PnL */}
                 {currentUnrealizedPnL !== null && (
-                  <div className={`${currentUnrealizedPnL >= 0 ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800" : "bg-rose-50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800"} border rounded-md p-4`}>
-                    <p className={`text-xs ${currentUnrealizedPnL >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"}`}>
+                  <div className={`${currentUnrealizedPnL >= 0 ? "bg-profit/10 dark:bg-profit/10 border-profit/20 dark:border-profit/30" : "bg-loss/10 dark:bg-loss/10 border-loss/20 dark:border-loss/30"} border rounded-md p-4`}>
+                    <p className={`text-xs ${currentUnrealizedPnL >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
                       Niezrealizowany P&L
                     </p>
                     <p
                       className={`text-2xl font-bold ${
                         currentUnrealizedPnL >= 0
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-rose-600 dark:text-rose-400"
+                          ? "text-profit dark:text-profit"
+                          : "text-loss dark:text-loss"
                       }`}
                     >
                       {currentUnrealizedPnL > 0 ? "+" : ""}{currentUnrealizedPnL.toFixed(2)}
@@ -396,20 +396,20 @@ export default function PositionManager() {
                 <div
                   className={`${
                     totalPnL >= 0
-                      ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700"
-                      : "bg-rose-100 dark:bg-rose-900/30 border-rose-300 dark:border-rose-700"
+                      ? "bg-profit/10 dark:bg-profit/10 border-profit/30 dark:border-profit/30"
+                      : "bg-loss/10 dark:bg-loss/10 border-loss/30 dark:border-loss/30"
                   } border rounded-xl p-4`}
                 >
                   <p
                     className={`text-xs font-bold ${
-                      totalPnL >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"
+                      totalPnL >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"
                     }`}
                   >
                     RAZEM P&L
                   </p>
                   <p
                     className={`text-3xl font-bold ${
-                      totalPnL >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                      totalPnL >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"
                     }`}
                   >
                     {totalPnL > 0 ? "+" : ""}{totalPnL.toFixed(2)}

@@ -88,7 +88,7 @@ export default function ReportArticle({
         <Stat
           label={t("reportResultR") || "Wynik"}
           value={resultLabel}
-          accent={Number(resultR) > 0 ? "text-emerald-600" : Number(resultR) < 0 ? "text-rose-600" : undefined}
+          accent={Number(resultR) > 0 ? "text-profit" : Number(resultR) < 0 ? "text-loss" : undefined}
         />
         <Stat label={t("reportTradesCount") || "Trejdy"} value={report.trades_count ?? "—"} />
         <Stat label="Win Rate" value={report.win_rate != null && report.win_rate !== "" ? `${report.win_rate}%` : "—"} />

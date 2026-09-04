@@ -68,6 +68,7 @@ const ProcessReview = lazy(() => import('./pages/ProcessReview'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Strategies = lazy(() => import('./pages/Strategies'));
 const StrategyDetails = lazy(() => import('./pages/StrategyDetails'));
+const TradeDetails = lazy(() => import('./pages/TradeDetails'));
 const Upload = lazy(() => import('./pages/Upload'));
 const __Layout = lazy(() => import('./Layout.jsx'));
 
@@ -92,6 +93,7 @@ export const PAGES = {
     "Settings": Settings,
     "Strategies": Strategies,
     "StrategyDetails": StrategyDetails,
+    "TradeDetails": TradeDetails,
     "Upload": Upload,
 }
 

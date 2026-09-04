@@ -21,6 +21,13 @@ export default defineConfig({
         './src/components/LanguageProvider.jsx',
       ],
     },
+    proxy: {
+      "/yahoo-chart": {
+        target: "https://query1.finance.yahoo.com",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/yahoo-chart/, ""),
+      },
+    },
   },
   build: {
     rollupOptions: {

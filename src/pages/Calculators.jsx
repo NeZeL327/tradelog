@@ -77,9 +77,9 @@ function totalClass(total) {
 
 const VERDICT_STYLES = {
   rose: {
-    box: "border-rose-300/80 bg-rose-500/10 text-rose-800 dark:border-rose-700/60 dark:bg-rose-950/40 dark:text-rose-200",
-    sum: "border-rose-300/70 dark:border-rose-700/60 bg-rose-50/70 dark:bg-rose-950/30",
-    label: "text-rose-700 dark:text-rose-300",
+    box: "border-loss/30 bg-loss/10 text-loss dark:border-loss/30/60 dark:bg-loss/10 dark:text-loss",
+    sum: "border-loss/30 dark:border-loss/30/60 bg-loss/70 dark:bg-loss/10",
+    label: "text-loss dark:text-loss",
   },
   amber: {
     box: "border-amber-300/80 bg-amber-500/10 text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200",
@@ -87,9 +87,9 @@ const VERDICT_STYLES = {
     label: "text-amber-700 dark:text-amber-300",
   },
   emerald: {
-    box: "border-emerald-300/80 bg-emerald-500/10 text-emerald-900 dark:border-emerald-700/60 dark:bg-emerald-950/40 dark:text-emerald-200",
-    sum: "border-emerald-300/70 dark:border-emerald-700/60 bg-emerald-50/70 dark:bg-emerald-950/30",
-    label: "text-emerald-700 dark:text-emerald-300",
+    box: "border-profit/30 bg-profit/10 text-profit dark:border-profit/30/60 dark:bg-profit/10 dark:text-profit",
+    sum: "border-profit/30 dark:border-profit/30/60 bg-profit/70 dark:bg-profit/10",
+    label: "text-profit dark:text-profit",
   },
   orange: {
     box: "border-orange-300/80 bg-orange-500/15 text-orange-900 dark:border-orange-700/60 dark:bg-orange-950/40 dark:text-orange-200",
@@ -239,7 +239,7 @@ function APlusCalculator() {
                               "flex items-center gap-2.5 rounded-lg border px-2.5 py-2 cursor-pointer transition",
                               checked
                                 ? negative
-                                  ? "border-rose-400/70 bg-rose-500/10"
+                                  ? "border-loss/40 bg-loss/10"
                                   : "border-primary/60 bg-primary/10"
                                 : "border-transparent hover:bg-muted/50"
                             )}
@@ -336,8 +336,8 @@ function APlusCalculator() {
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px]",
                       row.points > 0
-                        ? "border-emerald-300/60 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
-                        : "border-rose-300/60 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                        ? "border-profit/30 bg-profit/10 text-profit dark:text-profit"
+                        : "border-loss/30 bg-loss/10 text-loss dark:text-loss"
                     )}
                   >
                     {row.label}
@@ -534,7 +534,7 @@ function M1MasteryCalculator() {
                 {breakdown.map((row) => (
                   <span
                     key={row.id}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/60 bg-emerald-500/10 px-2.5 py-1 text-[11px] text-emerald-800 dark:text-emerald-300"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-profit/30 bg-profit/10 px-2.5 py-1 text-[11px] text-profit dark:text-profit"
                   >
                     <span className="font-semibold text-foreground">{row.code}</span>
                     {row.label}

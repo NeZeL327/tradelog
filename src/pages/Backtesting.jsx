@@ -71,6 +71,7 @@ import {
   Legend,
 } from "recharts";
 import { useLanguage } from "@/components/LanguageProvider";
+import { CHART, chartTooltipStyle, chartGridProps } from "@/lib/chartTheme";
 import QuoteLine from "@/components/QuoteLine";
 import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 import { loadTradeTagLists, saveTradeTagLists } from "@/lib/tradeTags";
@@ -95,9 +96,9 @@ const COMMON_PAIRS = [
 const WEEKDAYS = ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Ndz"];
 
 const pieColors = {
-  Win: "hsl(var(--chart-2))",
-  Loss: "hsl(var(--chart-5))",
-  Breakeven: "hsl(var(--muted-foreground))",
+  Win: CHART.profit,
+  Loss: CHART.loss,
+  Breakeven: CHART.warning,
 };
 
 function toNumberSafe(v) {
@@ -706,12 +707,12 @@ export default function Backtesting() {
             <div className="flex items-center justify-between gap-2 md:gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground truncate">{t("backtestKpiAvgR")}</p>
-                <div className={`mt-1.5 text-xl md:text-2xl font-bold tabular-nums ${stats.avgR >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                <div className={`mt-1.5 text-xl md:text-2xl font-bold tabular-nums ${stats.avgR >= 0 ? "text-profit" : "text-loss"}`}>
                   {stats.total ? stats.avgR.toFixed(2) : "—"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{t("backtestColR")}</p>
               </div>
-              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(#34d399 ${Math.max(0, Math.min(100, Math.round((stats.avgR / 2) * 100)))}%, #e5e7eb 0)` }} />
+              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--profit)) ${Math.max(0, Math.min(100, Math.round((stats.avgR / 2) * 100)))}%, #e5e7eb 0)` }} />
             </div>
           </CardContent>
         </Card>
@@ -721,12 +722,12 @@ export default function Backtesting() {
             <div className="flex items-center justify-between gap-2 md:gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground truncate">{t("backtestKpiSumR")}</p>
-                <div className={`mt-1.5 text-xl md:text-2xl font-bold tabular-nums ${stats.sumR >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                <div className={`mt-1.5 text-xl md:text-2xl font-bold tabular-nums ${stats.sumR >= 0 ? "text-profit" : "text-loss"}`}>
                   {stats.total ? `${stats.sumR >= 0 ? "+" : ""}${stats.sumR.toFixed(2)}` : "—"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{t("profitFactor")}: {stats.profitFactor}</p>
               </div>
-              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumR >= 0 ? "#22c55e" : "#f43f5e"} ${Math.min(100, Math.abs(stats.sumR) * 5)}%, #e5e7eb 0)` }} />
+              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumR >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"} ${Math.min(100, Math.abs(stats.sumR) * 5)}%, #e5e7eb 0)` }} />
             </div>
           </CardContent>
         </Card>
@@ -736,14 +737,14 @@ export default function Backtesting() {
             <div className="flex items-center justify-between gap-2 md:gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground truncate">{t("backtestKpiSumAmount")}</p>
-                <div className={`mt-1.5 text-xl md:text-2xl font-bold tabular-nums ${stats.sumAmount >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                <div className={`mt-1.5 text-xl md:text-2xl font-bold tabular-nums ${stats.sumAmount >= 0 ? "text-profit" : "text-loss"}`}>
                   {stats.amountCount
                     ? stats.sumAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })
                     : "—"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{stats.amountCount} {t("backtestKpiTests")}</p>
               </div>
-              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumAmount >= 0 ? "#22c55e" : "#f43f5e"} ${Math.min(100, Math.abs(stats.sumAmount) / 10)}%, #e5e7eb 0)` }} />
+              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumAmount >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"} ${Math.min(100, Math.abs(stats.sumAmount) / 10)}%, #e5e7eb 0)` }} />
             </div>
           </CardContent>
         </Card>
@@ -766,9 +767,9 @@ export default function Backtesting() {
           </div>
         </div>
         <div className="cyber-gauge">
-          <div className="cyber-gauge-ring" style={{ background: `conic-gradient(${expectancy >= 0 ? "#34d399" : "#f43f5e"} ${Math.max(0, Math.min(100, Math.round((Math.abs(expectancy) / 1) * 100)))}%, hsl(var(--border)) 0)` }} />
+          <div className="cyber-gauge-ring" style={{ background: `conic-gradient(${expectancy >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"} ${Math.max(0, Math.min(100, Math.round((Math.abs(expectancy) / 1) * 100)))}%, hsl(var(--border)) 0)` }} />
           <div className="cyber-gauge-label">
-            <span className={`cyber-gauge-value ${expectancy >= 0 ? "" : "text-rose-500"}`}>{stats.total ? `${expectancy >= 0 ? "+" : ""}${expectancy.toFixed(2)}R` : "—"}</span>
+            <span className={`cyber-gauge-value ${expectancy >= 0 ? "" : "text-loss"}`}>{stats.total ? `${expectancy >= 0 ? "+" : ""}${expectancy.toFixed(2)}R` : "—"}</span>
             <span className="cyber-gauge-cap">Expectancy</span>
           </div>
         </div>
@@ -953,7 +954,7 @@ export default function Backtesting() {
                   >
                     <td className="p-3 text-center">
                       {row.entry_confirmation ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto" aria-label={t("backtestEntryYes")} />
+                        <CheckCircle2 className="w-5 h-5 text-profit mx-auto" aria-label={t("backtestEntryYes")} />
                       ) : (
                         <Circle className="w-4 h-4 text-muted-foreground/50 mx-auto" aria-label={t("backtestEntryNo")} />
                       )}
@@ -966,11 +967,11 @@ export default function Backtesting() {
                     </td>
                     <td className="p-3">
                       {row.direction === "Short" ? (
-                        <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 text-xs font-medium">
+                        <span className="inline-flex items-center gap-1 text-loss dark:text-loss text-xs font-medium">
                           <TrendingDown className="w-3.5 h-3.5" /> Short
                         </span>
                       ) : row.direction === "Long" ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+                        <span className="inline-flex items-center gap-1 text-profit dark:text-profit text-xs font-medium">
                           <TrendingUp className="w-3.5 h-3.5" /> Long
                         </span>
                       ) : (
@@ -984,9 +985,9 @@ export default function Backtesting() {
                       <span
                         className={
                           row.outcome === "Win"
-                            ? "text-emerald-600 dark:text-emerald-400 font-medium"
+                            ? "text-profit dark:text-profit font-medium"
                             : row.outcome === "Loss"
-                              ? "text-rose-600 dark:text-rose-400 font-medium"
+                              ? "text-loss dark:text-loss font-medium"
                               : "text-amber-600 dark:text-amber-400 font-medium"
                         }
                       >
@@ -1005,9 +1006,9 @@ export default function Backtesting() {
                     <td
                       className={`p-3 text-right tabular-nums font-medium ${
                         toNumberSafe(row.amount) !== null && toNumberSafe(row.amount) < 0
-                          ? "text-rose-600 dark:text-rose-400"
+                          ? "text-loss dark:text-loss"
                           : toNumberSafe(row.amount) !== null && toNumberSafe(row.amount) > 0
-                            ? "text-emerald-600 dark:text-emerald-400"
+                            ? "text-profit dark:text-profit"
                             : "text-slate-700 dark:text-slate-300"
                       }`}
                     >
@@ -1108,13 +1109,7 @@ export default function Backtesting() {
                     />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                  }}
-                />
+                <Tooltip contentStyle={chartTooltipStyle} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -1129,16 +1124,10 @@ export default function Backtesting() {
           <CardContent className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={cumulativeRData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
+                <CartesianGrid {...chartGridProps} />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
                 <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                  }}
-                />
+                <Tooltip contentStyle={chartTooltipStyle} />
                 <Line
                   type="monotone"
                   dataKey="cumulative"
@@ -1161,16 +1150,10 @@ export default function Backtesting() {
         <CardContent className="h-[240px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
+              <CartesianGrid {...chartGridProps} />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-              <Tooltip
-                contentStyle={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: 8,
-                }}
-              />
+              <Tooltip contentStyle={chartTooltipStyle} />
               <Legend />
               <Bar dataKey="tests" fill="hsl(var(--primary) / 0.7)" name={t("backtestBarTests")} radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -1186,16 +1169,10 @@ export default function Backtesting() {
         <CardContent className="h-[240px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={cumulativeAmountData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
+              <CartesianGrid {...chartGridProps} />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
               <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" />
-              <Tooltip
-                contentStyle={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: 8,
-                }}
-              />
+              <Tooltip contentStyle={chartTooltipStyle} />
               <Line
                 type="monotone"
                 dataKey="cumulative"
@@ -1268,9 +1245,9 @@ export default function Backtesting() {
                             <td className="p-3 max-w-[200px] truncate font-medium text-slate-900 dark:text-slate-100" title={row.name}>{row.name}</td>
                             <td className="p-3 text-right tabular-nums">{row.tests}</td>
                             <td className="p-3 text-right tabular-nums">{row.winRate.toFixed(1)}%</td>
-                            <td className={`p-3 text-right tabular-nums ${row.avgR >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>{row.avgR.toFixed(2)}</td>
-                            <td className={`p-3 text-right tabular-nums font-medium ${row.sumR >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>{row.sumR >= 0 ? "+" : ""}{row.sumR.toFixed(2)}</td>
-                            <td className={`p-3 text-right tabular-nums ${row.sumAmount >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                            <td className={`p-3 text-right tabular-nums ${row.avgR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>{row.avgR.toFixed(2)}</td>
+                            <td className={`p-3 text-right tabular-nums font-medium ${row.sumR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>{row.sumR >= 0 ? "+" : ""}{row.sumR.toFixed(2)}</td>
+                            <td className={`p-3 text-right tabular-nums ${row.sumAmount >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
                               {row.sumAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                             </td>
                           </tr>
@@ -1315,7 +1292,7 @@ export default function Backtesting() {
                                 <td className="p-2.5 font-medium text-slate-900 dark:text-slate-100 truncate max-w-[140px]" title={r.key}>{r.key}</td>
                                 <td className="p-2.5 text-right tabular-nums">{r.tests}</td>
                                 <td className="p-2.5 text-right tabular-nums">{r.winRate.toFixed(0)}%</td>
-                                <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                                <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
                                   {r.sumR >= 0 ? "+" : ""}{r.sumR.toFixed(2)}
                                 </td>
                               </tr>
@@ -1331,9 +1308,9 @@ export default function Backtesting() {
               {/* Skutecznosc wg confluencji + czestotliwosc bledow */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Card className="border-border overflow-hidden">
-                  <CardHeader className="py-3 px-4 border-b border-border bg-emerald-50/50 dark:bg-emerald-950/20">
+                  <CardHeader className="py-3 px-4 border-b border-border bg-profit/50 dark:bg-profit/10">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <ListChecks className="w-4 h-4 text-emerald-600" />
+                      <ListChecks className="w-4 h-4 text-profit" />
                       Skuteczność wg confluencji
                     </CardTitle>
                     <CardDescription className="text-xs">Które warunki wejścia działają najlepiej</CardDescription>
@@ -1357,7 +1334,7 @@ export default function Backtesting() {
                               <td className="p-2.5 font-medium text-slate-900 dark:text-slate-100 truncate max-w-[160px]" title={r.key}>{r.key}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.tests}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.winRate.toFixed(0)}%</td>
-                              <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                              <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
                                 {r.sumR >= 0 ? "+" : ""}{r.sumR.toFixed(2)}
                               </td>
                             </tr>
@@ -1369,9 +1346,9 @@ export default function Backtesting() {
                 </Card>
 
                 <Card className="border-border overflow-hidden">
-                  <CardHeader className="py-3 px-4 border-b border-border bg-rose-50/50 dark:bg-rose-950/20">
+                  <CardHeader className="py-3 px-4 border-b border-border bg-loss/50 dark:bg-loss/10">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-rose-500" />
+                      <AlertTriangle className="w-4 h-4 text-loss" />
                       Najczęstsze błędy
                     </CardTitle>
                     <CardDescription className="text-xs">Co najbardziej kosztuje Cię w R</CardDescription>
@@ -1395,7 +1372,7 @@ export default function Backtesting() {
                               <td className="p-2.5 font-medium text-slate-900 dark:text-slate-100 truncate max-w-[160px]" title={r.key}>{r.key}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.tests}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.winRate.toFixed(0)}%</td>
-                              <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                              <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
                                 {r.sumR >= 0 ? "+" : ""}{r.sumR.toFixed(2)}
                               </td>
                             </tr>
@@ -1419,15 +1396,13 @@ export default function Backtesting() {
                 <CardContent className="h-[260px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={rDistribution} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-border/60" />
+                      <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                      <Tooltip
-                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
-                      />
+                      <Tooltip contentStyle={chartTooltipStyle} />
                       <Bar dataKey="count" name={t("backtestKpiTests")} radius={[4, 4, 0, 0]}>
                         {rDistribution.map((b, i) => (
-                          <Cell key={i} fill={b.max <= 0 ? "hsl(var(--chart-5))" : "hsl(var(--chart-2))"} />
+                          <Cell key={i} fill={b.max <= 0 ? CHART.loss : CHART.profit} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -1440,14 +1415,14 @@ export default function Backtesting() {
                 <Card className="border-border">
                   <CardHeader className="pb-2">
                     <CardTitle className="cyber-panel-title text-xs flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-emerald-500" />
+                      <Trophy className="w-4 h-4 text-profit" />
                       {t("bestTrade") || "Najlepszy test"}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {bestWorstByR.best ? (
                       <div className="space-y-1">
-                        <p className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                        <p className="text-2xl font-bold tabular-nums text-profit dark:text-profit">
                           {Number(bestWorstByR.best.r_multiple).toFixed(2)}R
                         </p>
                         <p className="text-sm text-slate-600 dark:text-slate-300 truncate">
@@ -1464,14 +1439,14 @@ export default function Backtesting() {
                 <Card className="border-border">
                   <CardHeader className="pb-2">
                     <CardTitle className="cyber-panel-title text-xs flex items-center gap-2">
-                      <TrendingDown className="w-4 h-4 text-rose-500" />
+                      <TrendingDown className="w-4 h-4 text-loss" />
                       {t("worstTrade") || "Najgorszy test"}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {bestWorstByR.worst ? (
                       <div className="space-y-1">
-                        <p className="text-2xl font-bold tabular-nums text-rose-600 dark:text-rose-400">
+                        <p className="text-2xl font-bold tabular-nums text-loss dark:text-loss">
                           {Number(bestWorstByR.worst.r_multiple).toFixed(2)}R
                         </p>
                         <p className="text-sm text-slate-600 dark:text-slate-300 truncate">
@@ -1517,7 +1492,7 @@ export default function Backtesting() {
                     <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-semibold uppercase">{detailRow.symbol}</span>
                   ) : null}
                   {detailRow.direction ? (
-                    <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${detailRow.direction === "Short" ? "bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400" : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"}`}>{detailRow.direction}</span>
+                    <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${detailRow.direction === "Short" ? "bg-loss/10 dark:bg-loss/10 text-loss dark:text-loss" : "bg-profit/10 dark:bg-profit/10 text-profit dark:text-profit"}`}>{detailRow.direction}</span>
                   ) : null}
                   {detailRow.session ? (
                     <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium">{detailRow.session}</span>
@@ -1594,20 +1569,20 @@ export default function Backtesting() {
                 ) : null}
                 {Array.isArray(detailRow.confluences) && detailRow.confluences.length > 0 ? (
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5"><ListChecks className="w-3.5 h-3.5 text-emerald-600" /> Confluencje</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5"><ListChecks className="w-3.5 h-3.5 text-profit" /> Confluencje</p>
                     <div className="flex flex-wrap gap-1.5">
                       {detailRow.confluences.map((c, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs">{c}</span>
+                        <span key={i} className="px-2 py-0.5 rounded-md bg-profit/10 dark:bg-profit/10 text-profit dark:text-profit text-xs">{c}</span>
                       ))}
                     </div>
                   </div>
                 ) : null}
                 {Array.isArray(detailRow.mistakes) && detailRow.mistakes.length > 0 ? (
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-rose-500" /> Błędy</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-loss" /> Błędy</p>
                     <div className="flex flex-wrap gap-1.5">
                       {detailRow.mistakes.map((m, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs">{m}</span>
+                        <span key={i} className="px-2 py-0.5 rounded-md bg-loss/10 dark:bg-loss/10 text-loss dark:text-loss text-xs">{m}</span>
                       ))}
                     </div>
                   </div>
@@ -1617,9 +1592,9 @@ export default function Backtesting() {
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("backtestColOutcome")}</p>
                     <p className={`text-lg font-semibold mt-1 ${
                       detailRow.outcome === "Win"
-                        ? "text-emerald-600 dark:text-emerald-400"
+                        ? "text-profit dark:text-profit"
                         : detailRow.outcome === "Loss"
-                          ? "text-rose-600 dark:text-rose-400"
+                          ? "text-loss dark:text-loss"
                           : "text-amber-600 dark:text-amber-400"
                     }`}>
                       {detailRow.outcome === "Win"
@@ -1634,7 +1609,7 @@ export default function Backtesting() {
                     <p className="text-lg font-semibold mt-1 flex items-center gap-2">
                       {detailRow.entry_confirmation ? (
                         <>
-                          <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                          <CheckCircle2 className="w-6 h-6 text-profit" />
                           {t("backtestEntryYes")}
                         </>
                       ) : (

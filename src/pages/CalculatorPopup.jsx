@@ -29,9 +29,9 @@ import {
 } from "@/lib/m1MasteryScore";
 
 const VERDICT_BOX = {
-  rose: "border-rose-300/80 bg-rose-500/10 text-rose-800 dark:text-rose-200",
+  rose: "border-loss/30 bg-loss/10 text-loss dark:text-loss",
   amber: "border-amber-300/80 bg-amber-500/10 text-amber-900 dark:text-amber-200",
-  emerald: "border-emerald-300/80 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200",
+  emerald: "border-profit/30 bg-profit/10 text-profit dark:text-profit",
   orange: "border-orange-300/80 bg-orange-500/15 text-orange-900 dark:text-orange-200",
 };
 

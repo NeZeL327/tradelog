@@ -18,6 +18,7 @@ const UserNotRegisteredError = lazy(() => import('@/components/UserNotRegistered
 const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Cookies = lazy(() => import('./pages/Cookies'));
+const TradeDetails = lazy(() => import('./pages/TradeDetails'));
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -95,6 +96,22 @@ const AuthenticatedApp = () => {
         <Route path="/terms" element={<PageShell><Terms /></PageShell>} />
         <Route path="/privacy" element={<PageShell><Privacy /></PageShell>} />
         <Route path="/cookies" element={<PageShell><Cookies /></PageShell>} />
+        <Route
+          path="/trade"
+          element={
+            <LayoutWrapper currentPageName="TradeDetails">
+              <TradeDetails />
+            </LayoutWrapper>
+          }
+        />
+        <Route
+          path="/trade/:tradeId"
+          element={
+            <LayoutWrapper currentPageName="TradeDetails">
+              <TradeDetails />
+            </LayoutWrapper>
+          }
+        />
         {Object.entries(Pages).map(([path, Page]) => (
           <Route
             key={path}

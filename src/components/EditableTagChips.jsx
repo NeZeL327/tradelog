@@ -20,18 +20,18 @@ const chipBase =
 
 const ACCENTS = {
   emerald: {
-    active: "bg-emerald-600 border-emerald-600 text-white shadow-sm",
-    idle: "bg-background/80 border-border/80 text-muted-foreground hover:border-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300",
-    manage: "border-emerald-400/60 bg-emerald-500/10",
-    section: "bg-emerald-500/[0.04] dark:bg-emerald-400/[0.06] border-emerald-500/20",
-    icon: "text-emerald-600",
+    active: "bg-profit border-emerald-600 text-white shadow-sm",
+    idle: "bg-background/80 border-border/80 text-muted-foreground hover:border-emerald-400 hover:text-profit dark:hover:text-profit",
+    manage: "border-emerald-400/60 bg-profit/10",
+    section: "bg-profit/[0.04] dark:bg-profit/[0.06] border-profit/20",
+    icon: "text-profit",
   },
   rose: {
-    active: "bg-rose-600 border-rose-600 text-white shadow-sm",
-    idle: "bg-background/80 border-border/80 text-muted-foreground hover:border-rose-400 hover:text-rose-700 dark:hover:text-rose-300",
-    manage: "border-rose-400/60 bg-rose-500/10",
-    section: "bg-rose-500/[0.04] dark:bg-rose-400/[0.06] border-rose-500/20",
-    icon: "text-rose-500",
+    active: "bg-loss border-rose-600 text-white shadow-sm",
+    idle: "bg-background/80 border-border/80 text-muted-foreground hover:border-loss/40 hover:text-loss dark:hover:text-rose-300",
+    manage: "border-loss/40/60 bg-loss/10",
+    section: "bg-loss/[0.04] dark:bg-loss/10 border-loss/20",
+    icon: "text-loss",
   },
   violet: {
     active: "bg-primary border-primary text-primary-foreground",

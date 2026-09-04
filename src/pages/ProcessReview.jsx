@@ -94,8 +94,8 @@ function Kpi({ label, value, hint, tone }) {
       <p
         className={cn(
           "mt-1 text-2xl sm:text-3xl font-semibold tabular-nums tracking-tight",
-          tone === "good" && "text-emerald-600 dark:text-emerald-400",
-          tone === "bad" && "text-rose-600 dark:text-rose-400",
+          tone === "good" && "text-profit dark:text-profit",
+          tone === "bad" && "text-loss dark:text-loss",
           !tone && "text-foreground"
         )}
       >
@@ -109,9 +109,9 @@ function Kpi({ label, value, hint, tone }) {
 function RankBar({ label, meta, ratio, tone = "neutral", rank }) {
   const bar =
     tone === "good"
-      ? "bg-emerald-500/80"
+      ? "bg-profit/80"
       : tone === "bad"
-        ? "bg-rose-500/75"
+        ? "bg-loss/75"
         : "bg-slate-400/70 dark:bg-slate-500/70";
   return (
     <div className="space-y-1.5 py-2.5 border-b border-border/50 last:border-0">

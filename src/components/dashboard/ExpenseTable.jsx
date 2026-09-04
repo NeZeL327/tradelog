@@ -9,8 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const statusColors = {
   Pending: "bg-amber-100 text-amber-800 border-amber-200",
-  Approved: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  Rejected: "bg-red-100 text-red-800 border-red-200"
+  Approved: "bg-profit/10 text-profit border-profit/20",
+  Rejected: "bg-red-100 text-red-800 border-loss/20"
 };
 
 export default function ExpenseTable({ expenses, isLoading, onSelectExpense, onEditExpense, trips = [], selectedIds = [], onSelectionChange, onViewReceipt }) {
@@ -120,7 +120,7 @@ export default function ExpenseTable({ expenses, isLoading, onSelectExpense, onE
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className={expense.payment_source === "Personal - Reimbursable" ? "border-amber-300 text-amber-700" : "border-emerald-300 text-emerald-700"}>
+                    <Badge variant="outline" className={expense.payment_source === "Personal - Reimbursable" ? "border-amber-300 text-amber-700" : "border-profit/30 text-profit"}>
                       {expense.payment_source === "Personal - Reimbursable" ? (
                         <><Wallet className="w-3 h-3 mr-1" />Reimburse</>
                       ) : (

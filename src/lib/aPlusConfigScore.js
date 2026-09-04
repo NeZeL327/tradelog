@@ -180,8 +180,8 @@ export function formatPoints(n) {
 /** Option points: + green, 0 / negative red. */
 export function pointsToneClass(points) {
   const v = Number(points) || 0;
-  if (v > 0) return "text-emerald-600 dark:text-emerald-400";
-  return "text-rose-600 dark:text-rose-400";
+  if (v > 0) return "text-profit dark:text-profit";
+  return "text-loss dark:text-loss";
 }
 
 /**
@@ -191,13 +191,13 @@ export function pointsToneClass(points) {
 export function sumToneClass(total) {
   const n = Number(total);
   const score = Number.isFinite(n) ? n : 0;
-  if (score <= 0) return "text-rose-700 dark:text-rose-400";
-  if (score <= 2) return "text-rose-600 dark:text-rose-400";
+  if (score <= 0) return "text-loss dark:text-loss";
+  if (score <= 2) return "text-loss dark:text-loss";
   if (score <= 4) return "text-orange-600 dark:text-orange-400";
   if (score <= 5) return "text-amber-600 dark:text-amber-400";
   if (score <= 7) return "text-lime-600 dark:text-lime-400";
-  if (score <= 9) return "text-emerald-600 dark:text-emerald-400";
-  return "text-emerald-700 dark:text-emerald-300";
+  if (score <= 9) return "text-profit dark:text-profit";
+  return "text-profit dark:text-profit";
 }
 
 /** Panel border/bg for the suma block — same red→green scale. */
@@ -205,18 +205,18 @@ export function sumPanelClass(total) {
   const n = Number(total);
   const score = Number.isFinite(n) ? n : 0;
   if (score <= 0) {
-    return "border-rose-400/80 bg-rose-50/80 dark:border-rose-700/70 dark:bg-rose-950/40";
+    return "border-loss/40 bg-loss/80 dark:border-loss/30/70 dark:bg-loss/10";
   }
   if (score <= 4) {
-    return "border-rose-300/70 bg-rose-50/60 dark:border-rose-700/50 dark:bg-rose-950/30";
+    return "border-loss/30 bg-loss/60 dark:border-loss/30/50 dark:bg-loss/10";
   }
   if (score <= 7) {
     return "border-lime-400/70 bg-lime-50/70 dark:border-lime-700/50 dark:bg-lime-950/30";
   }
   if (score <= 9) {
-    return "border-emerald-400/80 bg-emerald-50/80 dark:border-emerald-600/60 dark:bg-emerald-950/35";
+    return "border-profit/40 bg-profit/80 dark:border-profit/40/60 dark:bg-profit/10";
   }
-  return "border-emerald-500 bg-emerald-100/90 dark:border-emerald-400/70 dark:bg-emerald-950/50";
+  return "border-profit/40 bg-profit/90 dark:border-profit/40 dark:bg-profit/10/50";
 }
 
 export function loadAPlusSelection() {

@@ -286,7 +286,7 @@ export default function Checklist() {
                       <Button size="icon" variant="ghost" onClick={() => setExpandedCards((prev) => ({ ...prev, [card.id]: !isExpanded }))}>
                         <ChevronDown className={cn("h-4 w-4 transition-transform", !isExpanded && "-rotate-90")} />
                       </Button>
-                      <Button size="icon" variant="ghost" className="text-rose-600 hover:text-rose-700" onClick={() => deleteCard(card.id)}>
+                      <Button size="icon" variant="ghost" className="text-loss hover:text-loss" onClick={() => deleteCard(card.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

@@ -124,7 +124,7 @@ function ScreenshotField({
         )}
       </label>
       {uploadError && (
-        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{uploadError}</p>
+        <p className="mt-1 text-xs text-loss dark:text-loss">{uploadError}</p>
       )}
       {value && (
         <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -821,7 +821,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
           <CardContent className={embedded ? "p-0" : "p-3 sm:p-4"}>
             {error && (
-              <div className="mb-3 p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800 text-rose-700 dark:text-rose-300 rounded-lg text-[12px]">
+              <div className="mb-3 p-2.5 bg-loss/10 dark:bg-loss/10 border border-loss/80 dark:border-loss/30 text-loss dark:text-loss rounded-lg text-[12px]">
                 {error}
               </div>
             )}
@@ -852,8 +852,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                     value={formData.direction}
                     onValueChange={(v) => setFormData((prev) => ({ ...prev, direction: v || "Long" }))}
                     className={cn(
-                      formData.direction === "Long" && "text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
-                      formData.direction === "Short" && "text-rose-700 dark:text-rose-300 border-rose-500/30"
+                      formData.direction === "Long" && "text-profit dark:text-profit border-profit/30",
+                      formData.direction === "Short" && "text-loss dark:text-loss border-loss/30"
                     )}
                   >
                     <SelectItem value="Long">{t("longLabel") || "Long (kupno)"}</SelectItem>
@@ -995,8 +995,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
               {/* Wynik */}
               {formData.status !== "Planned" && formData.status !== "Missed" && (
-                <div className={cn(sectionClass, "bg-emerald-500/[0.04] dark:bg-emerald-400/[0.06] border-emerald-500/15")}>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700/80 dark:text-emerald-300/90">Wynik</p>
+                <div className={cn(sectionClass, "bg-profit/[0.04] dark:bg-profit/[0.06] border-profit/15")}>
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-profit/80 dark:text-profit/90">Wynik</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>
                     <Label className={labelClass}>{t("outcome")}</Label>
@@ -1099,7 +1099,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                           <Button type="button" variant="ghost" size="sm" className="h-8 text-[11px] px-2" onClick={() => removeScaleOut(item.id)}>Usuń</Button>
                           <div className="col-span-2 sm:col-span-4 text-xs text-muted-foreground">
                             Kwota:{" "}
-                            <span className={cn("font-semibold", partialPnl == null ? "" : partialPnl >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                            <span className={cn("font-semibold", partialPnl == null ? "" : partialPnl >= 0 ? "text-profit" : "text-loss")}>
                               {partialPnl == null ? "—" : `${partialPnl.toFixed(2)}`}
                             </span>
                           </div>
@@ -1119,14 +1119,14 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                       </div>
                       <div className="rounded-md border border-border p-2">
                         <div className="text-muted-foreground">P&L</div>
-                        <div className={cn("font-semibold", scaleOutSummary.totalPnl >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                        <div className={cn("font-semibold", scaleOutSummary.totalPnl >= 0 ? "text-profit" : "text-loss")}>
                           {scaleOutSummary.totalPnl >= 0 ? "+" : ""}{scaleOutSummary.totalPnl.toFixed(2)}
                         </div>
                       </div>
                     </div>
                   )}
                   {scaleOutSummary.overClosed && (
-                    <div className="rounded-md border border-rose-200 bg-rose-50 dark:bg-rose-950/40 p-2 text-xs text-rose-700 dark:text-rose-300">
+                    <div className="rounded-md border border-loss/20 bg-loss/10 dark:bg-loss/10 p-2 text-xs text-loss dark:text-loss">
                       Suma zamknięć przekracza wielkość pozycji.
                     </div>
                   )}
@@ -1315,9 +1315,9 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                         className={cn(
                           "font-bold",
                           resolveOutcome() === "Win"
-                            ? "text-emerald-600"
+                            ? "text-profit"
                             : resolveOutcome() === "Loss"
-                              ? "text-rose-600"
+                              ? "text-loss"
                               : "text-amber-600"
                         )}
                       >

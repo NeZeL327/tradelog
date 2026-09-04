@@ -220,7 +220,7 @@ export function ImportButton({ onImportSuccess, accounts, strategies }) {
             <AlertDialogTitle className="flex items-center gap-2">
               {error ? (
                 <>
-                  <AlertCircle className="w-5 h-5 text-red-500" />
+                  <AlertCircle className="w-5 h-5 text-loss" />
                   Błąd importu
                 </>
               ) : (
@@ -232,7 +232,7 @@ export function ImportButton({ onImportSuccess, accounts, strategies }) {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {error ? (
-                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded text-red-400">
+                <div className="p-3 bg-loss/10 border border-red-500/30 rounded text-loss">
                   {error}
                 </div>
               ) : (

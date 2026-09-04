@@ -49,7 +49,7 @@ export default function JournalMobileList({
                   )}
                 </div>
                 <div className="text-right shrink-0">
-                  <p className={`text-sm font-bold tabular-nums ${hasPl ? (plUp ? "text-emerald-500" : "text-rose-500") : "text-muted-foreground"}`}>
+                  <p className={`text-sm font-bold tabular-nums ${hasPl ? (plUp ? "text-profit" : "text-loss") : "text-muted-foreground"}`}>
                     {hasPl ? `${plUp ? "+" : ""}${plNum.toFixed(2)}` : "—"}
                   </p>
                   <div className="mt-1 flex justify-end gap-1">

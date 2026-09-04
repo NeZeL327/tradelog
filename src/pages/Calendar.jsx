@@ -1,19 +1,18 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Calendar as CalendarIcon, Eye } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek } from "date-fns";
 import { pl, enUS } from "date-fns/locale";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionBadgeClass, directionLabel, getTradeRealizedPL, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass, tradeOutcomeDisplay } from "@/lib/utils";
-import TradeCard from "../components/TradeCard";
-import TradeFormNew from "../components/TradeFormNew";
-import TradeDetailView from "../components/TradeDetailView";
+import TradePreviewPanel from "../components/TradePreviewPanel";
+import { goToTradeDetails } from "@/lib/tradeDetailsNav";
 import { formatTradeDate, formatTradeClock, getDateFormat } from "@/lib/userSettings";
 import QuoteLine from "@/components/QuoteLine";
 import { useUserSettings } from "@/hooks/use-user-settings";
@@ -21,6 +20,8 @@ import { useUserSettings } from "@/hooks/use-user-settings";
 export default function Calendar() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { show_weekends: showWeekends } = useUserSettings();
   const locale = language === 'pl' ? pl : enUS;
   const dateFormat = getDateFormat();
@@ -28,7 +29,6 @@ export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [viewingTrade, setViewingTrade] = useState(null);
-  const [editingTrade, setEditingTrade] = useState(null);
 
   const normalizeTradeStatus = (status) => {
     const normalized = String(status || "").toLowerCase();
@@ -59,7 +59,7 @@ export default function Calendar() {
     return t('openStatus') || 'Open';
   };
 
-  const { data: trades = [], refetch } = useQuery({
+  const { data: trades = [] } = useQuery({
     queryKey: ['trades'],
     queryFn: () => getTrades(user?.id),
   });
@@ -231,10 +231,10 @@ export default function Calendar() {
                           </div>
                           <div className="flex gap-1 justify-center">
                             {stats.wins > 0 && (
-                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-profit"></div>
                             )}
                             {stats.losses > 0 && (
-                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-loss"></div>
                             )}
                           </div>
                         </div>
@@ -266,14 +266,14 @@ export default function Calendar() {
                     </div>
                     <div className={`p-3 rounded-lg text-center ${
                       selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) >= 0 
-                        ? 'bg-green-50 dark:bg-green-950' 
-                        : 'bg-red-50 dark:bg-red-950'
+                        ? 'bg-profit/10 dark:bg-profit/10' 
+                        : 'bg-loss/10 dark:bg-loss/10'
                     }`}>
                       <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">P&L</p>
                       <p className={`text-xl font-bold ${
                         selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) >= 0 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-red-600 dark:text-red-400'
+                          ? 'text-profit dark:text-profit' 
+                          : 'text-loss dark:text-loss'
                       }`}>
                         {selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0).toFixed(2)}
                       </p>
@@ -342,13 +342,13 @@ export default function Calendar() {
                             <div className={`mt-3 p-2 rounded-lg text-center ${tradeOutcomeToneClass(trade.outcome)}`}>
                               <div className="flex items-center justify-center gap-2">
                                 {trade.outcome === "Win" ? (
-                                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
+                                  <TrendingUp className="w-4 h-4 text-profit dark:text-profit" />
                                 ) : trade.outcome === "Loss" ? (
-                                  <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-300" />
+                                  <TrendingDown className="w-4 h-4 text-loss dark:text-loss" />
                                 ) : null}
                                 <span className={`font-bold ${
-                                  trade.outcome === "Win" ? 'text-emerald-600 dark:text-emerald-300' : 
-                                  trade.outcome === "Loss" ? 'text-rose-600 dark:text-rose-300' : 
+                                  trade.outcome === "Win" ? 'text-profit dark:text-profit' : 
+                                  trade.outcome === "Loss" ? 'text-loss dark:text-loss' : 
                                   'text-amber-600 dark:text-amber-300'
                                 }`}>
                                   {pl > 0 ? '+' : ''}{pl.toFixed(2)}
@@ -503,13 +503,13 @@ export default function Calendar() {
                               return (
                               <div className="flex items-center gap-1">
                                 {pl > 0 ? (
-                                  <TrendingUp className="w-4 h-4 text-green-600" />
+                                  <TrendingUp className="w-4 h-4 text-profit" />
                                 ) : pl < 0 ? (
-                                  <TrendingDown className="w-4 h-4 text-red-600" />
+                                  <TrendingDown className="w-4 h-4 text-loss" />
                                 ) : null}
                                 <span className={`font-semibold ${
-                                  pl > 0 ? 'text-green-600' : 
-                                  pl < 0 ? 'text-red-600' : 
+                                  pl > 0 ? 'text-profit' : 
+                                  pl < 0 ? 'text-loss' : 
                                   'text-slate-600'
                                 }`}>
                                   {pl > 0 ? '+' : ''}{pl.toFixed(2)}
@@ -574,51 +574,25 @@ export default function Calendar() {
         </Card>
       </div>
 
-      {/* Edit Trade Dialog */}
-      <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
-        <DialogContent
-          className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-card text-card-foreground p-0"
-          {...preventDialogDismissProps}
-        >
-          <div className="sticky top-0 z-10 bg-card px-4 py-3 pr-12 border-b border-border">
-            <DialogTitle>Edit Trade</DialogTitle>
-          </div>
-          <div className="p-4">
-            {editingTrade && (
-              <TradeFormNew
-                key={editingTrade.id}
-                embedded
-                trade={editingTrade}
-                onSuccess={() => {
-                  refetch();
-                  setEditingTrade(null);
-                }}
-                onClose={() => setEditingTrade(null)}
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Trade Details Dialog */}
-      <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
-        <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-card text-card-foreground border-border">
-          <DialogHeader className="cyber-dialog-header sticky top-0 z-10 text-white px-6 py-4 border-b">
-            <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
-          </DialogHeader>
-          <div className="p-6 bg-card">
-            {viewingTrade && (
-              <TradeDetailView
-                trade={viewingTrade}
-                onEdit={(tradeToEdit) => {
-                  setViewingTrade(null);
-                  setEditingTrade(tradeToEdit);
-                }}
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <TradePreviewPanel
+        open={viewingTrade !== null}
+        trade={viewingTrade}
+        trades={calendarVisibleTrades}
+        strategy={strategies.find((s) => String(s.id) === String(viewingTrade?.strategy_id)) || null}
+        onOpenChange={(next) => {
+          if (!next) setViewingTrade(null);
+        }}
+        onSelectTrade={handleViewTrade}
+        onEdit={(tradeToEdit) => {
+          if (!tradeToEdit?.id) return;
+          setViewingTrade(null);
+          goToTradeDetails(navigate, tradeToEdit, calendarVisibleTrades);
+        }}
+        onPatched={(patch) => {
+          setViewingTrade((prev) => (prev ? { ...prev, ...patch } : prev));
+          queryClient.invalidateQueries({ queryKey: ["trades"] });
+        }}
+      />
     </div>
   );
 }

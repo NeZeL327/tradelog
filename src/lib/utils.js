@@ -29,9 +29,9 @@ export const directionLabel = (direction, t) => {
 
 export const directionBadgeClass = (direction) => {
   const normalized = normalizeDirection(direction);
-  if (normalized === "Long") return "bg-emerald-500 text-white border border-emerald-300/80 shadow-sm shadow-emerald-500/30 text-xs font-semibold px-1.5 py-0.5";
-  if (normalized === "Short") return "bg-rose-500 text-white border border-rose-300/80 shadow-sm shadow-rose-500/30 text-xs font-semibold px-1.5 py-0.5";
-  return "bg-slate-500 text-white border border-slate-300/80 text-xs font-semibold px-1.5 py-0.5";
+  if (normalized === "Long") return "rounded-full bg-profit/12 text-profit border-transparent text-[11px] font-medium px-2 py-0.5";
+  if (normalized === "Short") return "rounded-full bg-loss/12 text-loss border-transparent text-[11px] font-medium px-2 py-0.5";
+  return "rounded-full bg-muted text-muted-foreground border-transparent text-[11px] font-medium px-2 py-0.5";
 };
 
 const normalizeTradeStatus = (status) => {
@@ -98,28 +98,28 @@ const normalizeTradeOutcome = (outcome) => {
 
 export const tradeStatusBadgeClass = (status) => {
   const normalized = normalizeTradeStatus(status);
-  if (normalized === "open") return "bg-amber-500 text-white border border-amber-300/80 shadow-sm shadow-amber-500/30 text-xs font-semibold px-1.5 py-0.5";
-  if (normalized === "closed") return "bg-emerald-500 text-white border border-emerald-300/80 shadow-sm shadow-emerald-500/30 text-xs font-semibold px-1.5 py-0.5";
-  if (normalized === "breakeven") return "bg-amber-500 text-white border border-amber-300/80 shadow-sm shadow-amber-500/30 text-xs font-semibold px-1.5 py-0.5";
-  if (normalized === "planned") return "bg-slate-500 text-white border border-slate-300/80 shadow-sm shadow-slate-500/30 text-xs font-semibold px-1.5 py-0.5";
-  if (normalized === "missed") return "bg-orange-500 text-white border border-orange-300/80 shadow-sm shadow-orange-500/30 text-xs font-semibold px-1.5 py-0.5";
-  return "bg-slate-500 text-white border border-slate-300/80 text-xs font-semibold px-1.5 py-0.5";
+  if (normalized === "open") return "rounded-full bg-warning/12 text-warning border-transparent text-[11px] font-medium px-2 py-0.5";
+  if (normalized === "closed") return "rounded-full bg-profit/12 text-profit border-transparent text-[11px] font-medium px-2 py-0.5";
+  if (normalized === "breakeven") return "rounded-full bg-warning/12 text-warning border-transparent text-[11px] font-medium px-2 py-0.5";
+  if (normalized === "planned") return "rounded-full bg-muted text-muted-foreground border-transparent text-[11px] font-medium px-2 py-0.5";
+  if (normalized === "missed") return "rounded-full bg-loss/12 text-loss border-transparent text-[11px] font-medium px-2 py-0.5";
+  return "rounded-full bg-muted text-muted-foreground border-transparent text-[11px] font-medium px-2 py-0.5";
 };
 
 export const tradeOutcomeBadgeClass = (outcome) => {
   const normalized = normalizeTradeOutcome(outcome);
-  if (normalized === "win") return "border-emerald-500/90 text-emerald-700 dark:text-emerald-300 bg-emerald-500/5 text-xs font-semibold px-1.5 py-0.5";
-  if (normalized === "loss") return "border-rose-500/90 text-rose-700 dark:text-rose-300 bg-rose-500/5 text-xs font-semibold px-1.5 py-0.5";
-  if (normalized === "breakeven") return "border-amber-500/90 text-amber-700 dark:text-amber-300 bg-amber-500/5 text-xs font-semibold px-1.5 py-0.5";
-  return "border-slate-500/80 text-slate-700 dark:text-slate-300 text-xs font-semibold px-1.5 py-0.5";
+  if (normalized === "win") return "rounded-full bg-profit/12 text-profit border-transparent text-[11px] font-medium px-2 py-0.5";
+  if (normalized === "loss") return "rounded-full bg-loss/12 text-loss border-transparent text-[11px] font-medium px-2 py-0.5";
+  if (normalized === "breakeven") return "rounded-full bg-warning/12 text-warning border-transparent text-[11px] font-medium px-2 py-0.5";
+  return "rounded-full bg-muted text-muted-foreground border-transparent text-[11px] font-medium px-2 py-0.5";
 };
 
 export const tradeOutcomeToneClass = (outcome) => {
   const normalized = normalizeTradeOutcome(outcome);
-  if (normalized === "win") return "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300";
-  if (normalized === "loss") return "bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300";
-  if (normalized === "breakeven") return "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300";
-  return "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300";
+  if (normalized === "win") return "bg-profit/10 text-profit";
+  if (normalized === "loss") return "bg-loss/10 text-loss";
+  if (normalized === "breakeven") return "bg-warning/10 text-warning";
+  return "bg-muted text-muted-foreground";
 };
 
 export const tradeOutcomeChartColor = (outcome) => {

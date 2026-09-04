@@ -19,13 +19,13 @@ import { useDataExport } from "@/hooks/use-data-export";
 const priceId = import.meta.env.VITE_STRIPE_PRICE_ID;
 
 const STATUS_CONFIG = {
-  active:     { label: "Aktywna",      color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700", dot: "bg-lime-400", icon: CheckCircle2 },
-  trialing:   { label: "Trial",        color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700", dot: "bg-emerald-400", icon: CheckCircle2 },
+  active:     { label: "Aktywna",      color: "bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit border-profit/30 dark:border-profit/30", dot: "bg-profit", icon: CheckCircle2 },
+  trialing:   { label: "Trial",        color: "bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit border-profit/30 dark:border-profit/30", dot: "bg-profit", icon: CheckCircle2 },
   past_due:   { label: "Zaległa",      color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-300 dark:border-amber-700",             dot: "bg-amber-500",   icon: AlertTriangle },
-  canceled:   { label: "Anulowana",    color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-red-500",     icon: XCircle },
-  incomplete: { label: "Niekompletna", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-red-500",     icon: XCircle },
-  unpaid:     { label: "Nieopłacona",  color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-red-500",     icon: XCircle },
-  free:       { label: "Nieaktywna",   color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-red-500",     icon: XCircle },
+  canceled:   { label: "Anulowana",    color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-loss",     icon: XCircle },
+  incomplete: { label: "Niekompletna", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-loss",     icon: XCircle },
+  unpaid:     { label: "Nieopłacona",  color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-loss",     icon: XCircle },
+  free:       { label: "Nieaktywna",   color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-loss",     icon: XCircle },
 };
 
 const FEATURES = [
@@ -218,13 +218,13 @@ export default function Billing() {
         <div className={cn(
           "flex items-center justify-between px-5 py-4 rounded-xl border",
           isPremium
-            ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800"
-            : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900"
+            ? "bg-profit/10 dark:bg-profit/10 border-profit/20 dark:border-profit/30"
+            : "bg-loss/10 dark:bg-red-950/20 border-loss/20 dark:border-red-900"
         )}>
           <div className="flex items-center gap-3">
             {isPremium
               ? <CheckCircle2 className="h-6 w-6 text-profit shrink-0" />
-              : <XCircle className="h-6 w-6 text-red-500 shrink-0" />
+              : <XCircle className="h-6 w-6 text-loss shrink-0" />
             }
             <div>
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -286,9 +286,9 @@ export default function Billing() {
             <div className="pt-2 space-y-2.5">
               {isPremium ? (
                 <>
-                  <div className="flex items-center justify-center gap-2 py-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800">
+                  <div className="flex items-center justify-center gap-2 py-3 rounded-lg bg-profit/10 dark:bg-profit/10 border border-profit/20 dark:border-profit/30">
                     <CheckCircle2 className="h-4 w-4 text-profit" />
-                    <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{t("billingActive")}</span>
+                    <span className="text-sm font-medium text-profit dark:text-profit">{t("billingActive")}</span>
                   </div>
                   <Button variant="outline" onClick={handleManage} disabled={!user || isLoading} className="w-full gap-2">
                     <ExternalLink className="h-4 w-4" />
@@ -331,7 +331,7 @@ export default function Billing() {
           </CardHeader>
           <CardContent className="space-y-2">
             {subscription.status === "trialing" && trialEndsAt && (
-              <div className="flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2.5 text-xs text-emerald-700 dark:text-emerald-300">
+              <div className="flex items-center gap-2 rounded-lg border border-profit/30 bg-profit/10 dark:bg-profit/10 px-3 py-2.5 text-xs text-profit dark:text-profit">
                 <Clock className="h-3.5 w-3.5 shrink-0" />
                 {t("billingTrialEndsOn")} {trialEndsAt.toLocaleDateString("pl-PL")}
                 {trialDaysLeft !== null && ` (${trialDaysLeft} dni)`}
@@ -389,7 +389,7 @@ export default function Billing() {
                 onClick={() => exportAllData(user?.id)}
                 className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-muted/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
               >
-                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-profit/10 dark:bg-profit/10 flex items-center justify-center shrink-0">
                   <FileJson className="h-4 w-4 text-profit" />
                 </div>
                 <div>
@@ -402,7 +402,7 @@ export default function Billing() {
             </div>
 
             {/* Auto-backup info */}
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-300">
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-profit/10 dark:bg-profit/10 border border-profit/20 dark:border-profit/30 text-xs text-profit dark:text-profit">
               <RefreshCw className="h-3.5 w-3.5 shrink-0" />
               Backup automatyczny — Firestore synchronizuje dane w czasie rzeczywistym
             </div>
@@ -516,7 +516,7 @@ export default function Billing() {
                         <p className="text-muted-foreground">{formatHistoryDate(item.importedAt)}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-3">
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                        <span className="px-2 py-0.5 rounded-full bg-profit/10 dark:bg-profit/10 text-profit dark:text-profit">
                           ✓ {item.successRows}
                         </span>
                         {item.errorRows > 0 && (

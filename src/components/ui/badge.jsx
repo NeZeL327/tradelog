@@ -16,8 +16,9 @@ const badgeVariants = cva(
         outline: "text-foreground",
         win: "border-transparent bg-profit/12 text-profit",
         loss: "border-transparent bg-loss/12 text-loss",
-        long: "border-transparent bg-muted text-foreground",
-        short: "border-transparent bg-muted text-foreground",
+        long: "border-transparent bg-profit/12 text-profit",
+        short: "border-transparent bg-loss/12 text-loss",
+        pending: "border-transparent bg-warning/12 text-warning",
       },
     },
     defaultVariants: {

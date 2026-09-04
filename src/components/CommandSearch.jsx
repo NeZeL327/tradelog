@@ -5,6 +5,7 @@ import {
   LayoutDashboard, BookOpen, Calendar, ListTodo, AlarmClockOff,
   BarChart3, FlaskConical, Brain, Calculator, NotebookPen,
   FileBarChart, ClipboardList, Wallet, Settings as SettingsIcon,
+  CandlestickChart,
 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -24,6 +25,7 @@ function navItems(t) {
     { title: t("calendar"), url: createPageUrl("Calendar"), icon: Calendar },
     { title: t("plannedTrades") || "Planned", url: createPageUrl("Planned"), icon: ListTodo },
     { title: t("missedTrades") || "Missed", url: createPageUrl("Missed"), icon: AlarmClockOff },
+    { title: t("tradeDetails"), url: "/trade", icon: CandlestickChart },
     { title: t("analytics"), url: createPageUrl("Analytics"), icon: BarChart3 },
     { title: t("backtesting"), url: createPageUrl("Backtesting"), icon: FlaskConical },
     { title: t("strategies"), url: createPageUrl("Strategies"), icon: Brain },

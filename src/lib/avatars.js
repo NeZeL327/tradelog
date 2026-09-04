@@ -4,7 +4,7 @@ export const AVATAR_PRESETS = [
   { id: 'bear',     label: 'Niedźwiedź', emoji: '🐻', gradient: 'from-red-500 to-orange-500' },
   { id: 'rocket',   label: 'Rakieta',    emoji: '🚀', gradient: 'from-zinc-600 to-zinc-800' },
   { id: 'diamond',  label: 'Diament',    emoji: '💎', gradient: 'from-zinc-400 to-zinc-600' },
-  { id: 'chart',    label: 'Wykres',     emoji: '📈', gradient: 'from-emerald-500 to-teal-500' },
+  { id: 'chart',    label: 'Wykres',     emoji: '📈', gradient: 'from-profit to-teal-500' },
   { id: 'target',   label: 'Cel',        emoji: '🎯', gradient: 'from-amber-500 to-orange-500' },
   { id: 'wizard',   label: 'Mag',        emoji: '🧙', gradient: 'from-zinc-600 to-emerald-800' },
   { id: 'fox',      label: 'Lis',        emoji: '🦊', gradient: 'from-orange-400 to-red-500' },

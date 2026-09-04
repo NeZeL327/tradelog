@@ -148,7 +148,7 @@ export default function Goals() {
         {/* Completed Goals */}
         {completedGoals.length > 0 && (
           <div>
-            <h2 className="text-lg font-semibold text-green-700 dark:text-green-400 mb-4 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-profit dark:text-profit mb-4 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" />
               {t('completedGoals')} ({completedGoals.length})
             </h2>
@@ -380,7 +380,7 @@ function GoalCard({ goal, progress, percentage, completed, onEdit, onDelete }) {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <CardTitle className="text-base dark:text-white">{goal.title}</CardTitle>
-                {completed && <CheckCircle2 className="w-5 h-5 text-green-600" />}
+                {completed && <CheckCircle2 className="w-5 h-5 text-profit" />}
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-400">{goalTypeLabels[goal.goal_type]}</p>
             </div>
@@ -388,7 +388,7 @@ function GoalCard({ goal, progress, percentage, completed, onEdit, onDelete }) {
               <Button variant="ghost" size="icon" onClick={onEdit} className="h-8 w-8">
                 <Edit className="w-4 h-4" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={onDelete} className="h-8 w-8 text-red-500 hover:text-red-700">
+              <Button variant="ghost" size="icon" onClick={onDelete} className="h-8 w-8 text-loss hover:text-red-700">
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>

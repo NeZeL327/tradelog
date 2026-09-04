@@ -53,9 +53,9 @@ const DEFAULT_W = 380;
 const DEFAULT_H = 520;
 
 const VERDICT_BOX = {
-  rose: "border-rose-300/80 bg-rose-500/10 text-rose-800 dark:text-rose-200",
+  rose: "border-loss/30 bg-loss/10 text-loss dark:text-loss",
   amber: "border-amber-300/80 bg-amber-500/10 text-amber-900 dark:text-amber-200",
-  emerald: "border-emerald-300/80 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200",
+  emerald: "border-profit/30 bg-profit/10 text-profit dark:text-profit",
   orange: "border-orange-300/80 bg-orange-500/15 text-orange-900 dark:text-orange-200",
 };
 
@@ -614,7 +614,7 @@ export default function FloatingCalculator() {
             title="Otwórz w osobnym oknie (działa z TradingView / Brave)"
             onClick={() => openCalculatorPopupWindow(ui.kind)}
           >
-            <ExternalLink className="w-3.5 h-3.5 text-emerald-600" />
+            <ExternalLink className="w-3.5 h-3.5 text-profit" />
           </Button>
           {pipSupported && (
             <Button
@@ -697,7 +697,7 @@ export default function FloatingCalculator() {
                 className="h-7 w-full text-[11px] gap-1.5"
                 onClick={() => openCalculatorPopupWindow(ui.kind)}
               >
-                <ExternalLink className="w-3.5 h-3.5 text-emerald-600" />
+                <ExternalLink className="w-3.5 h-3.5 text-profit" />
                 Albo osobne okno
               </Button>
             </div>

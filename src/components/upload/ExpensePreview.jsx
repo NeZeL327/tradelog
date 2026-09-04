@@ -232,7 +232,7 @@ export default function ExpensePreview({ data, onSave, onCancel, trips = [] }) {
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
+              className="flex-1 bg-gradient-to-r from-primary to-primary hover:from-emerald-700 hover:to-emerald-800"
             >
               <Save className="w-4 h-4 mr-2" />
               Save Expense

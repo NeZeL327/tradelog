@@ -308,9 +308,9 @@ export default function BulkUpload() {
                   key={index}
                   className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
                     results[index]?.status === 'processing' ? 'border-primary bg-primary/10' :
-                    results[index]?.status === 'success' ? 'border-emerald-500 bg-emerald-50' :
+                    results[index]?.status === 'success' ? 'border-profit/40 bg-profit/10' :
                     results[index]?.status === 'duplicate' ? 'border-amber-500 bg-amber-50' :
-                    results[index]?.status === 'error' ? 'border-red-500 bg-red-50' :
+                    results[index]?.status === 'error' ? 'border-red-500 bg-loss/10' :
                     'border-border bg-muted/30'
                   }`}
                 >
@@ -320,7 +320,7 @@ export default function BulkUpload() {
                       {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type || 'Unknown type'}
                     </p>
                     {results[index]?.status === 'error' && (
-                      <p className="text-xs text-red-600 mt-1">{results[index].error}</p>
+                      <p className="text-xs text-loss mt-1">{results[index].error}</p>
                     )}
                     {results[index]?.status === 'duplicate' && (
                       <p className="text-xs text-amber-600 mt-1">Duplicate - skipped</p>
@@ -332,13 +332,13 @@ export default function BulkUpload() {
                       <Loader2 className="w-5 h-5 text-primary animate-spin" />
                     )}
                     {results[index]?.status === 'success' && (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      <CheckCircle2 className="w-5 h-5 text-profit" />
                     )}
                     {results[index]?.status === 'duplicate' && (
                       <AlertTriangle className="w-5 h-5 text-amber-600" />
                     )}
                     {results[index]?.status === 'error' && (
-                      <AlertCircle className="w-5 h-5 text-red-600" />
+                      <AlertCircle className="w-5 h-5 text-loss" />
                     )}
                     {!processing && results[index]?.status === 'pending' && (
                       <Button
@@ -403,7 +403,7 @@ export default function BulkUpload() {
                   Upload More
                 </Button>
                 <Button
-                  className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800"
+                  className="flex-1 bg-gradient-to-r from-primary to-primary hover:from-emerald-700 hover:to-emerald-800"
                   onClick={() => navigate(createPageUrl("Dashboard"))}
                 >
                   View Dashboard

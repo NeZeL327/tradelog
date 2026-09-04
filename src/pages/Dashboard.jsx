@@ -2,27 +2,28 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TrendingUp, TrendingDown, Calendar, Eye, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Filter, CalendarDays, CalendarRange, Wallet, Plus } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, ScatterChart, Scatter } from "recharts";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday } from "date-fns";
 import { enUS, pl } from "date-fns/locale";
-import TradeCard from "../components/TradeCard";
 import TradeFormNew from "../components/TradeFormNew";
-import TradeDetailView from "../components/TradeDetailView";
+import TradePreviewPanel from "../components/TradePreviewPanel";
+import { goToTradeDetails } from "@/lib/tradeDetailsNav";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionLabel, getTradeRealizedPL, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor } from "@/lib/utils";
 import { formatTradeDate, formatTradeClock, getDateFormat, getTradeEntryHour } from "@/lib/userSettings";
-import { CHART, chartTooltipStyle } from "@/lib/chartTheme";
+import { CHART, chartTooltipStyle, chartGridProps, chartLegendStyle } from "@/lib/chartTheme";
 import QuoteLine from "@/components/QuoteLine";
 import Sparkline from "@/components/Sparkline";
 import { useUserSettings } from "@/hooks/use-user-settings";
+import { SkeletonKpiRow, SkeletonBlock } from "@/components/ui/skeleton-block";
 
 // ─── Mini date-range calendar (same as Journal) ──────────────────────────────
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
@@ -114,7 +115,6 @@ export default function Dashboard() {
   const hasLoadedDashboardFilters = useRef(false);
   const [selectedTrade, setSelectedTrade] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingTrade, setEditingTrade] = useState(null);
   const [expandedMetric, setExpandedMetric] = useState(null);
   const [plChartFilter, setPlChartFilter] = useState("all");
   const [plChartValue, setPlChartValue] = useState("all");
@@ -214,6 +214,7 @@ export default function Dashboard() {
     filterDirections,
     filterOutcomes
   ]);
+  const queryClient = useQueryClient();
   const { data: trades = [], isLoading, refetch } = useQuery({
     queryKey: ['trades'],
     queryFn: () => getTrades(user?.id),
@@ -488,8 +489,8 @@ export default function Dashboard() {
     const longCount = closedTrades.filter((tr) => normalizeDirection(tr.direction) === 'Long').length;
     const shortCount = closedTrades.filter((tr) => normalizeDirection(tr.direction) === 'Short').length;
     return [
-      { name: t('longLabel'), value: longCount, color: CHART.line },
-      { name: t('shortLabel'), value: shortCount, color: '#fb923c' },
+      { name: t('longLabel'), value: longCount, color: CHART.long },
+      { name: t('shortLabel'), value: shortCount, color: CHART.short },
     ];
   }, [closedTrades, t]);
 
@@ -857,8 +858,13 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full"></div>
+      <div className="w-full mx-auto space-y-6 dashboard-surface py-2">
+        <SkeletonKpiRow />
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <SkeletonBlock rows={6} className="rounded-lg border border-border" />
+          <SkeletonBlock rows={8} className="rounded-lg border border-border xl:col-span-1" />
+          <SkeletonBlock rows={6} className="rounded-lg border border-border" />
+        </div>
       </div>
     );
   }
@@ -870,7 +876,7 @@ export default function Dashboard() {
         <div className="mb-6">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl md:text-[2rem] font-bold text-foreground tracking-tight mb-1">{t('dashboard')}</h1>
+              <h1 className="cyber-page-title mb-1">{t('dashboard')}</h1>
               <p className="text-sm text-muted-foreground">{t('overviewOfYourTradingPerformance')}</p>
             </div>
             <QuoteLine
@@ -1287,7 +1293,7 @@ export default function Dashboard() {
                         </span>
                         <div className="flex gap-2">
                           <button type="button" onClick={() => setDateRange({ from: "", to: "" })}
-                            className="text-[11px] text-muted-foreground hover:text-red-500 px-2 py-0.5 rounded hover:bg-muted">
+                            className="text-[11px] text-muted-foreground hover:text-loss px-2 py-0.5 rounded hover:bg-muted">
                             Wyczyść
                           </button>
                           <button type="button" onClick={() => setDatePickerOpen(false)}
@@ -1314,7 +1320,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-2 md:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">{t('totalPL')}</p>
-                  <div data-private className={`mt-1.5 text-xl md:text-2xl font-bold tabular-nums ${totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
+                  <div data-private className={`mt-1.5 text-xl md:text-2xl font-medium tabular-nums ${totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
                     {totalPL >= 0 ? '+' : ''}{totalPL.toFixed(2)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 truncate">
@@ -1341,7 +1347,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-2 md:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">{t('winRate')}</p>
-                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-foreground">{winRate}%</div>
+                  <div className="mt-1.5 text-xl md:text-2xl font-medium tabular-nums text-foreground">{winRate}%</div>
                   <p className="text-xs text-muted-foreground mt-1 truncate">{wins}W / {losses}L{breakeven > 0 ? ` / ${breakeven}BE` : ""}</p>
                 </div>
                 <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--profit)) ${winRateRing}%, hsl(var(--border)) 0)` }} />
@@ -1357,7 +1363,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-2 md:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">{t('profitFactor')}</p>
-                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-foreground">{profitFactor}</div>
+                  <div className="mt-1.5 text-xl md:text-2xl font-medium tabular-nums text-foreground">{profitFactor}</div>
                   <p className="text-xs text-muted-foreground mt-1 truncate">{t('avgWinAvgLoss')}</p>
                 </div>
                 <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--profit)) ${pfRing}%, hsl(var(--border)) 0)` }} />
@@ -1370,7 +1376,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-2 md:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">{t('dayWinRate')}</p>
-                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-foreground">{dayWinRate}%</div>
+                  <div className="mt-1.5 text-xl md:text-2xl font-medium tabular-nums text-foreground">{dayWinRate}%</div>
                   <p className="text-xs text-muted-foreground mt-1 truncate">{dayWins}/{dayTrades.length} {t('trades')}</p>
                 </div>
                 <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--primary)) ${dayWinRing}%, hsl(var(--border)) 0)` }} />
@@ -1383,7 +1389,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-2 md:gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground truncate">{t('avgWinAvgLoss')}</p>
-                  <div className="mt-1.5 text-xl md:text-2xl font-bold text-foreground">{avgWinLossRatio}</div>
+                  <div className="mt-1.5 text-xl md:text-2xl font-medium tabular-nums text-foreground">{avgWinLossRatio}</div>
                   <div className="mt-2 flex items-center gap-1.5 text-xs flex-wrap">
                     <span className="rounded-full bg-profit/15 text-profit px-2 py-0.5 whitespace-nowrap text-[10px] md:text-xs">+{avgWin}</span>
                     <span className="rounded-full bg-loss/15 text-loss px-2 py-0.5 whitespace-nowrap text-[10px] md:text-xs">{avgLoss}</span>
@@ -1450,8 +1456,8 @@ export default function Dashboard() {
                               : zellaScore.total >= 60
                                 ? CHART.line
                                 : zellaScore.total >= 40
-                                  ? "#f59e0b"
-                                  : "#f43f5e",
+                                  ? "hsl(var(--warning))"
+                                  : "hsl(var(--loss))",
                           strokeDasharray: `${zellaScore.total * 3.267} 326.7`,
                           transition: "stroke-dasharray 0.8s ease",
                         }}
@@ -1494,7 +1500,7 @@ export default function Dashboard() {
                   <div>
                     <p className="text-[10px] text-muted-foreground">{t("streakDirection")}</p>
                     <p
-                      className={`text-xl font-bold ${activeStreakType === "Win" ? "text-emerald-500" : activeStreakType === "Loss" ? "text-rose-500" : "text-slate-700 dark:text-slate-200"}`}
+                      className={`text-xl font-bold ${activeStreakType === "Win" ? "text-profit" : activeStreakType === "Loss" ? "text-loss" : "text-slate-700 dark:text-slate-200"}`}
                     >
                       {activeStreakType === "Win"
                         ? `${activeStreakCount}W`
@@ -1504,12 +1510,12 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <div
-                    className={`rounded-full p-2 ${activeStreakType === "Win" ? "bg-emerald-500/15" : activeStreakType === "Loss" ? "bg-rose-500/15" : "bg-slate-500/10"}`}
+                    className={`rounded-full p-2 ${activeStreakType === "Win" ? "bg-profit/15" : activeStreakType === "Loss" ? "bg-loss/15" : "bg-slate-500/10"}`}
                   >
                     {activeStreakType === "Loss" ? (
-                      <TrendingDown className="w-4 h-4 text-rose-500" />
+                      <TrendingDown className="w-4 h-4 text-loss" />
                     ) : (
-                      <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      <TrendingUp className="w-4 h-4 text-profit" />
                     )}
                   </div>
                 </div>
@@ -1518,9 +1524,9 @@ export default function Dashboard() {
                     <p className="text-[10px] text-muted-foreground">{t("maxWins")}</p>
                     <p className="text-base font-semibold tabular-nums">{filteredMaxWinStreak}</p>
                   </div>
-                  <div className="rounded-md border border-rose-500/20 bg-rose-500/5 p-2">
-                    <p className="text-[10px] text-rose-700 dark:text-rose-300">{t("maxLosses")}</p>
-                    <p className="text-base font-semibold text-rose-800 dark:text-rose-200">{filteredMaxLossStreak}</p>
+                  <div className="rounded-md border border-loss/20 bg-loss/10 p-2">
+                    <p className="text-[10px] text-loss dark:text-loss">{t("maxLosses")}</p>
+                    <p className="text-base font-semibold text-loss dark:text-loss">{filteredMaxLossStreak}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1543,7 +1549,7 @@ export default function Dashboard() {
                             <stop offset="95%" stopColor={CHART.line} stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="date" stroke={axisColor} tick={{ fontSize: 9, fill: axisColor }} />
                         <YAxis
                           stroke={axisColor}
@@ -1560,7 +1566,7 @@ export default function Dashboard() {
                           dataKey="pl"
                           stroke={CHART.line}
                           fill="url(#plCumFillCyber)"
-                          strokeWidth={2}
+                          strokeWidth={1.5}
                           dot={false}
                         />
                       </AreaChart>
@@ -1600,13 +1606,7 @@ export default function Dashboard() {
                         {outcomeData.map((entry, index) => (
                           <Cell
                             key={`left-outcome-pie-${index}`}
-                            fill={
-                              index === 0
-                                ? CHART.line
-                                : index === 1
-                                  ? "#fb923c"
-                                  : "#94a3b8"
-                            }
+                            fill={entry.color}
                             stroke="hsl(var(--card))"
                             strokeWidth={1}
                           />
@@ -1635,7 +1635,7 @@ export default function Dashboard() {
                             <rect x="0" y="0" width="100%" height="100%" />
                           </clipPath>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="hour" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} domain={[0, 23]} ticks={[0, 4, 8, 12, 16, 20, 23]} />
                         <YAxis dataKey="pl" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} width={36} />
                         <Tooltip contentStyle={chartTooltipStyle} />
@@ -1831,7 +1831,7 @@ export default function Dashboard() {
                           >
                             <div className="text-xs font-medium">{format(day, "d")}</div>
                             {dayTrades.length > 0 && (
-                              <div className={`mt-1 text-[10px] font-semibold ${totalPLDay >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                              <div className={`mt-1 text-[10px] font-semibold ${totalPLDay >= 0 ? "text-profit" : "text-loss"}`}>
                                 {totalPLDay >= 0 ? "+" : ""}
                                 {totalPLDay.toFixed(0)}
                               </div>
@@ -1841,13 +1841,13 @@ export default function Dashboard() {
                       })}
                     </div>
                   </div>
-                  <div className="cyber-day-panel rounded-xl p-3 border min-h-[200px]">
+                  <div className="cyber-day-panel rounded-lg p-3 border min-h-[200px]">
                     <div className="text-xs font-semibold text-muted-foreground mb-2">
                       {selectedCalendarDate ? format(selectedCalendarDate, "PPP", { locale: dateLocale }) : t("selectDay")}
                     </div>
                     <div className="space-y-2 max-h-72 overflow-auto">
                       {(selectedCalendarDate ? tradesByDate[format(selectedCalendarDate, "yyyy-MM-dd")] || [] : []).map((trade) => (
-                        <div key={trade.id} className="cyber-day-trade rounded-lg p-2 border">
+                        <div key={trade.id} className="cyber-day-trade rounded-md p-2 border">
                           <div className="flex items-center justify-between gap-2 min-h-10">
                             <div className="min-w-0 flex-1">
                               <div className="font-semibold text-slate-800 dark:text-white truncate text-sm">{trade.symbol}</div>
@@ -1855,7 +1855,7 @@ export default function Dashboard() {
                             </div>
                             <div className="flex items-center self-center gap-2.5 shrink-0">
                               <span
-                                className={`inline-block min-w-[90px] text-right tabular-nums leading-none font-semibold text-sm ${(getTradeRealizedPL(trade) ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                                className={`inline-block min-w-[90px] text-right tabular-nums leading-none font-semibold text-sm ${(getTradeRealizedPL(trade) ?? 0) >= 0 ? "text-profit" : "text-loss"}`}
                               >
                                 {(getTradeRealizedPL(trade) ?? 0) >= 0 ? "+" : ""}
                                 {(getTradeRealizedPL(trade) ?? 0).toFixed(2)}
@@ -1894,11 +1894,11 @@ export default function Dashboard() {
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={monthlyStackData} margin={{ top: 8, right: 8, left: 4, bottom: 4 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="label" stroke={axisColor} tick={{ fontSize: 10, fill: axisColor }} />
                         <YAxis stroke={axisColor} tick={{ fontSize: 10, fill: axisColor }} width={44} />
                         <Tooltip contentStyle={chartTooltipStyle} />
-                        <Legend wrapperStyle={{ fontSize: "10px" }} />
+                        <Legend wrapperStyle={chartLegendStyle} />
                         <Bar dataKey="winPl" stackId="m" fill={CHART.line} name={t("wins")} radius={[0, 0, 0, 0]} />
                         <Bar dataKey="lossPl" stackId="m" fill={CHART.loss} name={t("losses")} radius={[4, 4, 0, 0]} />
                       </BarChart>
@@ -1959,7 +1959,7 @@ export default function Dashboard() {
                   <div className="w-full overflow-hidden">
                     <ResponsiveContainer width="100%" height={260}>
                       <LineChart data={plOverTime} margin={{ top: 10, right: 16, left: 0, bottom: 8 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                        <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="trade" stroke={axisColor} tick={{ fill: axisColor, fontSize: 10 }} />
                         <YAxis
                           stroke={axisColor}
@@ -1968,7 +1968,7 @@ export default function Dashboard() {
                           domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]}
                         />
                         <Tooltip contentStyle={chartTooltipStyle} />
-                        <Line type="monotone" dataKey="pl" stroke={CHART.line} strokeWidth={2} dot={{ fill: CHART.line, r: 3 }} />
+                        <Line type="monotone" dataKey="pl" stroke={CHART.line} strokeWidth={1.5} dot={{ fill: CHART.line, r: 3 }} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -2165,7 +2165,7 @@ export default function Dashboard() {
                 <div className="w-full h-[200px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={dailyPLData} barSize={12} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                      <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="date" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} tickFormatter={(v) => v.slice(5)} />
                       <YAxis stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} width={36} />
                       <Tooltip contentStyle={chartTooltipStyle} />
@@ -2260,12 +2260,18 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {recentTradesTable.map((trade) => (
+                      {recentTradesTable.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-2 py-8 text-center text-muted-foreground text-xs">
+                            {t("noTradesToDisplay") || t("noData") || "—"}
+                          </td>
+                        </tr>
+                      ) : recentTradesTable.map((trade) => (
                         <tr key={trade.id} className="cyber-table-row border-b">
                           <td className="px-2 py-1.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">{fmtDate(trade.date) || "-"}</td>
                           <td className="px-2 py-1.5 font-medium text-foreground">{trade.symbol || "-"}</td>
                           <td
-                            className={`px-2 py-1.5 font-semibold text-right ${(getTradeRealizedPL(trade) ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"}`}
+                            className={`px-2 py-1.5 font-semibold text-right ${(getTradeRealizedPL(trade) ?? 0) >= 0 ? "text-profit" : "text-loss"}`}
                           >
                             {trade.status === "Planned" || trade.profit_loss == null
                               ? "-"
@@ -2366,7 +2372,7 @@ export default function Dashboard() {
                 <div className="w-full h-[180px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={accountBalanceOverTime} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                      <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="trade" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} />
                       <YAxis
                         stroke={axisColor}
@@ -2378,7 +2384,7 @@ export default function Dashboard() {
                         ]}
                       />
                       <Tooltip contentStyle={chartTooltipStyle} />
-                      <Line type="monotone" dataKey="pl" stroke={CHART.line} strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="pl" stroke={CHART.line} strokeWidth={1.5} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -2398,20 +2404,20 @@ export default function Dashboard() {
                           <rect x="0" y="0" width="100%" height="100%" />
                         </clipPath>
                         <linearGradient id="ddFillCyber" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                          <stop offset="5%" stopColor="hsl(var(--loss))" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(var(--loss))" stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                      <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="trade" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} />
                       <YAxis stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} width={36} />
                       <Tooltip contentStyle={chartTooltipStyle} />
                       <Area
                         type="monotone"
                         dataKey="drawdown"
-                        stroke="#f43f5e"
+                        stroke="hsl(var(--loss))"
                         fill="url(#ddFillCyber)"
-                        strokeWidth={2}
+                        strokeWidth={1.5}
                         dot={false}
                         clipPath="url(#drawdown-clip-cyber)"
                       />
@@ -2432,15 +2438,15 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                      <p className="text-xs text-green-700 mb-1">{t('totalProfit')}</p>
-                      <p className="text-xl font-bold text-green-600">+{winningTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0).toFixed(2)}</p>
-                      <p className="text-xs text-green-600 mt-1">{winningTrades.length} {t('wins')}</p>
+                    <div className="bg-profit/10 p-3 rounded-lg border border-profit/20">
+                      <p className="text-xs text-profit mb-1">{t('totalProfit')}</p>
+                      <p className="text-xl font-bold text-profit">+{winningTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0).toFixed(2)}</p>
+                      <p className="text-xs text-profit mt-1">{winningTrades.length} {t('wins')}</p>
                     </div>
-                    <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                    <div className="bg-loss/10 p-3 rounded-lg border border-loss/20">
                       <p className="text-xs text-red-700 mb-1">{t('totalLoss')}</p>
-                      <p className="text-xl font-bold text-red-600">{losingTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0).toFixed(2)}</p>
-                      <p className="text-xs text-red-600 mt-1">{losingTrades.length} {t('losses')}</p>
+                      <p className="text-xl font-bold text-loss">{losingTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0).toFixed(2)}</p>
+                      <p className="text-xs text-loss mt-1">{losingTrades.length} {t('losses')}</p>
                     </div>
                     <div className="bg-muted/40 p-3 rounded-md border border-border">
                       <p className="text-xs text-muted-foreground mb-1">{t('plByWeekday')}</p>
@@ -2448,7 +2454,7 @@ export default function Dashboard() {
                         {Object.entries(dayPL).map(([day, pl]) => (
                           <div key={day} className="flex justify-between text-xs">
                             <span className="text-slate-600">{day.slice(0, 3)}</span>
-                            <span className={pl >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                            <span className={pl >= 0 ? 'text-profit font-semibold' : 'text-loss font-semibold'}>
                               {pl >= 0 ? '+' : ''}{pl.toFixed(0)}
                             </span>
                           </div>
@@ -2462,7 +2468,7 @@ export default function Dashboard() {
                       {Object.entries(symbolPL).map(([symbol, data]) => (
                         <div key={symbol} className="bg-card p-2 rounded border border-border">
                           <p className="text-xs font-semibold text-foreground">{symbol}</p>
-                          <p className={`text-sm font-bold ${data.pl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          <p className={`text-sm font-bold ${data.pl >= 0 ? 'text-profit' : 'text-loss'}`}>
                             {data.pl >= 0 ? '+' : ''}{data.pl.toFixed(0)}
                           </p>
                           <p className="text-[10px] text-muted-foreground">{data.wins}/{data.total} ({((data.wins/data.total)*100).toFixed(0)}%)</p>
@@ -2483,21 +2489,21 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                      <p className="text-xs text-green-700 mb-1">{t('wins')}</p>
-                      <p className="text-2xl font-bold text-green-600">{wins}</p>
-                      <p className="text-xs text-green-600 mt-1">{winRate}% {t('ofAll')}</p>
+                    <div className="bg-profit/10 p-3 rounded-lg border border-profit/20">
+                      <p className="text-xs text-profit mb-1">{t('wins')}</p>
+                      <p className="text-2xl font-bold text-profit">{wins}</p>
+                      <p className="text-xs text-profit mt-1">{winRate}% {t('ofAll')}</p>
                     </div>
-                    <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                    <div className="bg-loss/10 p-3 rounded-lg border border-loss/20">
                       <p className="text-xs text-red-700 mb-1">{t('losses')}</p>
-                      <p className="text-2xl font-bold text-red-600">{losses}</p>
-                      <p className="text-xs text-red-600 mt-1">{(100 - winRate).toFixed(1)}% {t('ofAll')}</p>
+                      <p className="text-2xl font-bold text-loss">{losses}</p>
+                      <p className="text-xs text-loss mt-1">{(100 - winRate).toFixed(1)}% {t('ofAll')}</p>
                     </div>
                     <div className="bg-muted/40 p-3 rounded-md border border-border">
                       <p className="text-xs text-muted-foreground mb-1">{t('streaks')}</p>
                       <div className="space-y-1">
-                        <p className="text-sm text-green-600 font-semibold">{t('maxWins')}: {maxWinStreak}</p>
-                        <p className="text-sm text-red-600 font-semibold">{t('maxLosses')}: {maxLossStreak}</p>
+                        <p className="text-sm text-profit font-semibold">{t('maxWins')}: {maxWinStreak}</p>
+                        <p className="text-sm text-loss font-semibold">{t('maxLosses')}: {maxLossStreak}</p>
                       </div>
                     </div>
                   </div>
@@ -2526,13 +2532,13 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                      <p className="text-xs text-green-700 mb-1">{t('avgWinShort')}</p>
-                      <p className="text-xl font-bold text-green-600">+{avgWin}</p>
+                    <div className="bg-profit/10 p-3 rounded-lg border border-profit/20">
+                      <p className="text-xs text-profit mb-1">{t('avgWinShort')}</p>
+                      <p className="text-xl font-bold text-profit">+{avgWin}</p>
                     </div>
-                    <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                    <div className="bg-loss/10 p-3 rounded-lg border border-loss/20">
                       <p className="text-xs text-red-700 mb-1">{t('avgLossShort')}</p>
-                      <p className="text-xl font-bold text-red-600">{avgLoss}</p>
+                      <p className="text-xl font-bold text-loss">{avgLoss}</p>
                     </div>
                     <div className="bg-muted/40 p-3 rounded-md border border-border">
                       <p className="text-xs text-muted-foreground mb-1">{t('medianWin')}</p>
@@ -2552,14 +2558,14 @@ export default function Dashboard() {
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-card p-3 rounded border border-border">
                         <p className="text-xs text-muted-foreground mb-1">{t('longLabel')}</p>
-                        <p className={`text-lg font-bold ${(longTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / longTrades.length) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <p className={`text-lg font-bold ${(longTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / longTrades.length) >= 0 ? 'text-profit' : 'text-loss'}`}>
                           {((longTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / longTrades.length) || 0).toFixed(2)}
                         </p>
                         <p className="text-[10px] text-muted-foreground">{longTrades.length} {t('trades')}</p>
                       </div>
                       <div className="bg-card p-3 rounded border border-border">
                         <p className="text-xs text-muted-foreground mb-1">{t('shortLabel')}</p>
-                        <p className={`text-lg font-bold ${(shortTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / shortTrades.length) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <p className={`text-lg font-bold ${(shortTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / shortTrades.length) >= 0 ? 'text-profit' : 'text-loss'}`}>
                           {((shortTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / shortTrades.length) || 0).toFixed(2)}
                         </p>
                         <p className="text-[10px] text-muted-foreground">{shortTrades.length} {t('trades')}</p>
@@ -2579,15 +2585,15 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                      <p className="text-xs text-green-700 mb-1">{t('totalProfit')}</p>
-                      <p className="text-xl font-bold text-green-600">+{(avgWin * wins).toFixed(2)}</p>
-                      <p className="text-xs text-green-600 mt-1">{t('from')} {wins} {t('wins')}</p>
+                    <div className="bg-profit/10 p-3 rounded-lg border border-profit/20">
+                      <p className="text-xs text-profit mb-1">{t('totalProfit')}</p>
+                      <p className="text-xl font-bold text-profit">+{(avgWin * wins).toFixed(2)}</p>
+                      <p className="text-xs text-profit mt-1">{t('from')} {wins} {t('wins')}</p>
                     </div>
-                    <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                    <div className="bg-loss/10 p-3 rounded-lg border border-loss/20">
                       <p className="text-xs text-red-700 mb-1">{t('totalLoss')}</p>
-                      <p className="text-xl font-bold text-red-600">{(avgLoss * losses).toFixed(2)}</p>
-                      <p className="text-xs text-red-600 mt-1">{t('from')} {losses} {t('losses')}</p>
+                      <p className="text-xl font-bold text-loss">{(avgLoss * losses).toFixed(2)}</p>
+                      <p className="text-xs text-loss mt-1">{t('from')} {losses} {t('losses')}</p>
                     </div>
                     <div className="bg-muted/40 p-3 rounded-md border border-border">
                       <p className="text-xs text-muted-foreground mb-1">{t('profitFactor')}</p>
@@ -2610,7 +2616,7 @@ export default function Dashboard() {
                               <rect x="0" y="0" width="100%" height="100%" />
                             </clipPath>
                           </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                          <CartesianGrid {...chartGridProps} />
                           <XAxis dataKey="name" stroke={axisColor} tick={{ fill: axisColor }} />
                           <YAxis stroke={axisColor} tick={{ fill: axisColor }} width={50} />
                           <Tooltip />
@@ -2771,51 +2777,25 @@ export default function Dashboard() {
           </DialogContent>
         </Dialog>
 
-        {/* Edit Trade Dialog */}
-        <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
-          <DialogContent
-            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-card text-card-foreground p-0"
-            {...preventDialogDismissProps}
-          >
-            <div className="sticky top-0 z-10 bg-card px-4 py-3 pr-12 border-b border-border">
-              <DialogTitle>Edit Trade</DialogTitle>
-            </div>
-            <div className="p-4">
-              {editingTrade && (
-                <TradeFormNew
-                  key={editingTrade.id}
-                  embedded
-                  trade={editingTrade}
-                  onSuccess={() => {
-                    refetch();
-                    setEditingTrade(null);
-                  }}
-                  onClose={() => setEditingTrade(null)}
-                />
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Trade Detail Dialog */}
-        <Dialog open={!!selectedTrade} onOpenChange={() => setSelectedTrade(null)}>
-          <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-card text-card-foreground border-border">
-            <DialogHeader className="sticky top-0 z-10 bg-card text-foreground px-6 py-4 border-b border-border">
-              <DialogTitle className="text-foreground text-xl font-bold">Trade Details</DialogTitle>
-            </DialogHeader>
-            <div className="p-6 bg-card">
-              {selectedTrade && (
-                <TradeDetailView
-                  trade={selectedTrade}
-                  onEdit={(tradeToEdit) => {
-                    setSelectedTrade(null);
-                    setEditingTrade(tradeToEdit);
-                  }}
-                />
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+        <TradePreviewPanel
+          open={selectedTrade !== null}
+          trade={selectedTrade}
+          trades={tradesFromActiveAccounts}
+          strategy={strategies.find((s) => String(s.id) === String(selectedTrade?.strategy_id)) || null}
+          onOpenChange={(next) => {
+            if (!next) setSelectedTrade(null);
+          }}
+          onSelectTrade={handleViewTrade}
+          onEdit={(tradeToEdit) => {
+            if (!tradeToEdit?.id) return;
+            setSelectedTrade(null);
+            goToTradeDetails(navigate, tradeToEdit, tradesFromActiveAccounts);
+          }}
+          onPatched={(patch) => {
+            setSelectedTrade((prev) => (prev ? { ...prev, ...patch } : prev));
+            queryClient.invalidateQueries({ queryKey: ["trades"] });
+          }}
+        />
       </div>
     </div>
   );

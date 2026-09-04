@@ -15,8 +15,8 @@ export default function TradeCard({ trade, onEdit = null }) {
   const dateFormat = getDateFormat();
   const isWin = trade.outcome === "Win";
   const isLoss = trade.outcome === "Loss";
-  const plColor = isWin ? "text-emerald-600 dark:text-emerald-300" : isLoss ? "text-rose-600 dark:text-rose-300" : "text-amber-600 dark:text-amber-300";
-  const bgColor = isWin ? "bg-emerald-50 border-emerald-200" : isLoss ? "bg-rose-50 border-rose-200" : "bg-amber-50 border-amber-200";
+  const plColor = isWin ? "text-profit dark:text-profit" : isLoss ? "text-loss dark:text-loss" : "text-amber-600 dark:text-amber-300";
+  const bgColor = isWin ? "bg-profit/10 border-profit/20" : isLoss ? "bg-loss/10 border-loss/20" : "bg-amber-50 border-amber-200";
   const directionText = directionLabel(trade.direction, t);
   const toNumber = (value) => {
     if (value === "" || value === null || value === undefined) return null;
@@ -132,7 +132,7 @@ export default function TradeCard({ trade, onEdit = null }) {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground mb-1">{t('totalPL')}</p>
-                <p className={`font-semibold ${parseFloat(trade.symbolStats.totalPL) >= 0 ? 'text-emerald-600 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-300'}`}>
+                <p className={`font-semibold ${parseFloat(trade.symbolStats.totalPL) >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>
                   {parseFloat(trade.symbolStats.totalPL) >= 0 ? '+' : ''}{trade.symbolStats.totalPL}
                 </p>
               </div>
@@ -182,7 +182,7 @@ export default function TradeCard({ trade, onEdit = null }) {
           {trade.stop_loss_pips != null && (
             <div>
               <p className="text-xs text-muted-foreground mb-1">{t('stopLossPips')}</p>
-              <p className="font-semibold text-rose-600 dark:text-rose-300">{trade.stop_loss_pips}</p>
+              <p className="font-semibold text-loss dark:text-loss">{trade.stop_loss_pips}</p>
             </div>
           )}
           {trade.take_profit_pips != null && (
@@ -219,7 +219,7 @@ export default function TradeCard({ trade, onEdit = null }) {
                       {t('size')}: {scaleOut.size || '-'} | {t('price')}: {scaleOut.price || '-'}
                     </span>
                     <span className="ml-2 text-sm">
-                      | Kwota zamknięcia: <span className={`font-semibold ${partialPnl === null ? 'text-muted-foreground' : partialPnl >= 0 ? 'text-amber-600 dark:text-amber-300' : 'text-rose-600 dark:text-rose-300'}`}>
+                      | Kwota zamknięcia: <span className={`font-semibold ${partialPnl === null ? 'text-muted-foreground' : partialPnl >= 0 ? 'text-amber-600 dark:text-amber-300' : 'text-loss dark:text-loss'}`}>
                         {partialPnl === null ? '-' : `${partialPnl.toFixed(2)}$`}
                       </span>
                     </span>
@@ -235,13 +235,13 @@ export default function TradeCard({ trade, onEdit = null }) {
 
         {/* P&L */}
         {trade.profit_loss != null && (
-          <div className={`p-4 rounded-xl ${isWin ? 'bg-green-100 dark:bg-green-900/20' : isLoss ? 'bg-red-100 dark:bg-red-900/20' : 'bg-muted'}`}>
+          <div className={`p-4 rounded-xl ${isWin ? 'bg-profit/10 dark:bg-profit/10/20' : isLoss ? 'bg-red-100 dark:bg-red-900/20' : 'bg-muted'}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {isWin ? (
-                  <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
+                  <TrendingUp className="w-6 h-6 text-profit dark:text-profit" />
                 ) : isLoss ? (
-                  <TrendingDown className="w-6 h-6 text-red-600 dark:text-red-400" />
+                  <TrendingDown className="w-6 h-6 text-loss dark:text-loss" />
                 ) : (
                   <Target className="w-6 h-6 text-muted-foreground" />
                 )}

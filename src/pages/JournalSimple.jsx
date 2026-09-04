@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, deleteTrade, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -25,7 +25,7 @@ import {
   CalendarRange
 } from "lucide-react";
 import { parseISO, isSameDay, isSameWeek, isSameMonth } from "date-fns";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,12 +42,14 @@ import { directionBadgeClass, directionLabel, getTradeRealizedPL, isClosedTrade,
 import ImageViewer from "@/components/common/ImageViewer";
 import { formatTradeDate, formatTradeClock, formatTradeClockDate, getDateFormat } from "@/lib/userSettings";
 import QuoteLine from "@/components/QuoteLine";
+import { EmptyState } from "@/components/ui/empty-state";
+import TradePreviewPanel from "../components/TradePreviewPanel";
+import { goToTradeDetails } from "@/lib/tradeDetailsNav";
 
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
 const DAYS_PL = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
 
 const TradeFormNew = lazy(() => import("../components/TradeFormNew"));
-const TradeDetailView = lazy(() => import("../components/TradeDetailView"));
 
 const FormFallback = () => (
   <div className="flex justify-center py-10">
@@ -151,6 +153,7 @@ function MiniCalendar({ from, to, onSelect }) {
 export default function JournalSimple({ mode = "all" }) {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isPlannedMode = mode === "planned";
   const isMissedMode = mode === "missed";
@@ -391,6 +394,11 @@ export default function JournalSimple({ mode = "all" }) {
         avgPL: avgPL.toFixed(2)
       }
     });
+  };
+
+  const handleRowPreview = (trade, event) => {
+    if (event.target.closest("button, a, input, textarea, [data-row-action]")) return;
+    handleViewTrade(trade);
   };
 
   const sortTrades = (list) => {
@@ -640,7 +648,7 @@ export default function JournalSimple({ mode = "all" }) {
           <button
             type="button"
             onClick={() => refetch()}
-            className="text-sm text-rose-500 underline"
+            className="text-sm text-loss underline"
           >
             Nie udało się załadować dziennika. Kliknij, żeby spróbować ponownie.
           </button>
@@ -711,10 +719,10 @@ export default function JournalSimple({ mode = "all" }) {
           const accentMap = {
             slate:   { dot: "bg-slate-400",   text: "text-slate-700 dark:text-slate-200",   badgeActive: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100" },
             lime:    { dot: "bg-primary",     text: "text-foreground",                          badgeActive: "bg-primary/15 text-primary" },
-            emerald: { dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300", badgeActive: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200" },
+            emerald: { dot: "bg-profit", text: "text-profit dark:text-profit", badgeActive: "bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit" },
             yellow:  { dot: "bg-yellow-500",  text: "text-yellow-700 dark:text-yellow-300", badgeActive: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/60 dark:text-yellow-200" },
             orange:  { dot: "bg-orange-500",  text: "text-orange-700 dark:text-orange-300", badgeActive: "bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-200" },
-            red:     { dot: "bg-red-500",     text: "text-red-700 dark:text-red-300",       badgeActive: "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-200" },
+            red:     { dot: "bg-loss",     text: "text-loss dark:text-loss",       badgeActive: "bg-loss/10 text-loss" },
             amber:   { dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-300",   badgeActive: "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200" },
           };
           return (
@@ -754,14 +762,14 @@ export default function JournalSimple({ mode = "all" }) {
               <div
                 className={`shrink-0 rounded-xl border px-4 py-2.5 shadow-sm transition-colors ${
                   stats.totalPL >= 0
-                    ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800'
-                    : 'bg-red-50 dark:bg-red-950/60 border-red-200 dark:border-red-800'
+                    ? 'bg-profit/10 dark:bg-profit/10 border-profit/20 dark:border-profit/30'
+                    : 'bg-loss/10 dark:bg-red-950/60 border-loss/20 dark:border-red-800'
                 }`}
               >
-                <p className={`text-[11px] font-semibold uppercase tracking-wide ${stats.totalPL >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
+                <p className={`text-[11px] font-semibold uppercase tracking-wide ${stats.totalPL >= 0 ? 'text-profit dark:text-profit' : 'text-red-700 dark:text-red-300'}`}>
                   {t('totalPL')}
                 </p>
-                <p data-private className={`text-xl font-bold leading-tight ${stats.totalPL >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
+                <p data-private className={`text-xl font-bold leading-tight ${stats.totalPL >= 0 ? 'text-profit dark:text-profit' : 'text-red-700 dark:text-red-300'}`}>
                   {stats.totalPL >= 0 ? '+' : ''}{stats.totalPL.toFixed(2)}
                 </p>
               </div>
@@ -1006,7 +1014,7 @@ export default function JournalSimple({ mode = "all" }) {
                               : ""}
                         </span>
                         <div className="flex gap-2">
-                          <button type="button" onClick={() => { setDateRange({ from: "", to: "" }); }} className="text-[11px] text-slate-400 hover:text-red-500 px-2 py-0.5 rounded hover:bg-muted/40">
+                          <button type="button" onClick={() => { setDateRange({ from: "", to: "" }); }} className="text-[11px] text-slate-400 hover:text-loss px-2 py-0.5 rounded hover:bg-muted/40">
                             Wyczyść
                           </button>
                           <button type="button" onClick={() => setDatePickerOpen(false)} className="text-[11px] text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-0.5 rounded">
@@ -1092,7 +1100,11 @@ export default function JournalSimple({ mode = "all" }) {
                 </thead>
                 <tbody>
                   {displayTrades.map((trade) => (
-                    <tr key={trade.id} className="border-b border-border hover:bg-muted/40 transition-colors">
+                    <tr
+                      key={trade.id}
+                      className="border-b border-border hover:bg-muted/40 transition-colors cursor-pointer"
+                      onClick={(event) => handleRowPreview(trade, event)}
+                    >
                       {visibleColumns.status && (
                         <td className="px-1.5 py-1">
                           <Badge className={`${tradeStatusBadgeClass(trade.status)} text-xs font-semibold px-1.5 py-0.5 border`}> 
@@ -1162,13 +1174,13 @@ export default function JournalSimple({ mode = "all" }) {
                             return (
                             <div data-private className="flex items-center gap-0.5">
                               {pl > 0 ? (
-                                <TrendingUp className="w-3 h-3 text-green-600" />
+                                <TrendingUp className="w-3 h-3 text-profit" />
                               ) : pl < 0 ? (
-                                <TrendingDown className="w-3 h-3 text-red-600" />
+                                <TrendingDown className="w-3 h-3 text-loss" />
                               ) : null}
                               <span className={`text-sm font-semibold ${
-                                pl > 0 ? 'text-green-600' :
-                                pl < 0 ? 'text-red-600' :
+                                pl > 0 ? 'text-profit' :
+                                pl < 0 ? 'text-loss' :
                                 'text-slate-600'
                               }`} title={trade.commission != null ? `Commission: ${trade.commission}` : undefined}>
                                 {pl > 0 ? '+' : ''}{pl.toFixed(2)}
@@ -1215,7 +1227,7 @@ export default function JournalSimple({ mode = "all" }) {
                             <Button size="sm" variant="outline" onClick={() => setEditingTrade(trade)} className="h-5 w-5 p-0">
                               <Edit className="w-3 h-3" />
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-red-600 h-5 w-5 p-0">
+                            <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-loss h-5 w-5 p-0">
                               <Trash2 className="w-3 h-3" />
                             </Button>
                           </div>
@@ -1223,6 +1235,7 @@ export default function JournalSimple({ mode = "all" }) {
                       )}
                       <td className="text-center px-1 py-1">
                         <div 
+                          data-row-action
                           onClick={() => toggleTradeSelection(trade.id)}
                           className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
                             selectedTrades.has(trade.id)
@@ -1306,7 +1319,11 @@ export default function JournalSimple({ mode = "all" }) {
                     </thead>
                     <tbody>
                       {plannedTrades.map((trade) => (
-                        <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors">
+                        <tr
+                          key={trade.id}
+                          className="border-b border-slate-100 dark:border-slate-700 hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors cursor-pointer"
+                          onClick={(event) => handleRowPreview(trade, event)}
+                        >
                           {visibleColumns.date && (
                             <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{fmtDate(trade.date)}</td>
                           )}
@@ -1365,7 +1382,7 @@ export default function JournalSimple({ mode = "all" }) {
                                 >
                                   <Edit className="w-3 h-3" />
                                 </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-red-600 h-5 w-5 p-0">
+                                <Button size="sm" variant="outline" onClick={() => handleDelete(trade.id)} className="text-loss h-5 w-5 p-0">
                                   <Trash2 className="w-3 h-3" />
                                 </Button>
                               </div>
@@ -1386,8 +1403,8 @@ export default function JournalSimple({ mode = "all" }) {
                   />
                 </div>
                 {plannedTrades.length === 0 && (
-                  <div className="hidden md:block text-center py-8">
-                    <p className="text-muted-foreground">{t('noTradesToDisplay')}</p>
+                  <div className="hidden md:block">
+                    <EmptyState description={t('noTradesToDisplay')} />
                   </div>
                 )}
               </CardContent>
@@ -1456,27 +1473,25 @@ export default function JournalSimple({ mode = "all" }) {
           </DialogContent>
         </Dialog>
 
-        {/* View Trade Dialog */}
-        <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
-          <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-card text-card-foreground border-border max-md:!left-0 max-md:!top-0 max-md:!translate-x-0 max-md:!translate-y-0 max-md:!w-full max-md:!max-w-none max-md:!h-[100dvh] max-md:!max-h-[100dvh] max-md:!rounded-none">
-            <DialogHeader className="cyber-dialog-header sticky top-0 z-10 text-white px-6 py-4 border-b">
-              <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
-            </DialogHeader>
-            <div className="p-6 bg-card">
-              {viewingTrade && (
-                <Suspense fallback={<FormFallback />}>
-                <TradeDetailView
-                  trade={viewingTrade}
-                  onEdit={(tradeToEdit) => {
-                    setViewingTrade(null);
-                    setEditingTrade(tradeToEdit);
-                  }}
-                />
-                </Suspense>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+        <TradePreviewPanel
+          open={viewingTrade !== null}
+          trade={viewingTrade}
+          trades={displayTrades}
+          strategy={strategies.find((s) => String(s.id) === String(viewingTrade?.strategy_id)) || null}
+          onOpenChange={(next) => {
+            if (!next) setViewingTrade(null);
+          }}
+          onSelectTrade={handleViewTrade}
+          onEdit={(tradeToEdit) => {
+            if (!tradeToEdit?.id) return;
+            setViewingTrade(null);
+            goToTradeDetails(navigate, tradeToEdit, displayTrades);
+          }}
+          onPatched={(patch) => {
+            setViewingTrade((prev) => (prev ? { ...prev, ...patch } : prev));
+            queryClient.invalidateQueries({ queryKey: ["trades", user?.id] });
+          }}
+        />
 
         <ImageViewer open={viewerOpen} onOpenChange={setViewerOpen} imageUrl={viewerImage} />
 

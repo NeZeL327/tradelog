@@ -15,7 +15,7 @@ export default function AnimatedPublicBackground() {
 
       {/* Dwa orby – dobrze widoczne, wolny drift */}
       <motion.div
-        className="absolute -top-24 -right-20 w-[32rem] h-[32rem] rounded-full bg-emerald-500/35 blur-[75px]"
+        className="absolute -top-24 -right-20 w-[32rem] h-[32rem] rounded-full bg-profit/35 blur-[75px]"
         animate={{
           x: [0, 28, 0],
           y: [0, -20, 0],
