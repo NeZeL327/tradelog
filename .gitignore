@@ -1,7 +1,10 @@
 #env
 .env
 .env.*
+!.env.example
+!functions/.env.example
 firebase-key.json
+.firebase/
 *-firebase-adminsdk-*.json
 
 # Local agent / temp artifacts
