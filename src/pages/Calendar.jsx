@@ -5,19 +5,23 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Calendar as CalendarIcon, Eye } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek } from "date-fns";
 import { pl, enUS } from "date-fns/locale";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, getTradeRealizedPL, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass, tradeOutcomeDisplay } from "@/lib/utils";
 import TradeCard from "../components/TradeCard";
 import TradeFormNew from "../components/TradeFormNew";
+import TradeDetailView from "../components/TradeDetailView";
+import { formatTradeDate, formatTradeClock, getDateFormat } from "@/lib/userSettings";
 
 export default function Calendar() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const locale = language === 'pl' ? pl : enUS;
+  const dateFormat = getDateFormat();
+  const fmtDate = (d) => formatTradeDate(d, dateFormat);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [viewingTrade, setViewingTrade] = useState(null);
@@ -27,18 +31,28 @@ export default function Calendar() {
     const normalized = String(status || "").toLowerCase();
     if (["open", "otwarta", "aktywna"].includes(normalized)) return "open";
     if (["closed", "wykonana", "zamknięta", "zamknieta", "executed"].includes(normalized)) return "closed";
+    if (["breakeven", "be", "na zero"].includes(normalized)) return "breakeven";
     if (["planned", "planowana"].includes(normalized)) return "planned";
     return "default";
   };
 
   const isCalendarVisibleTrade = (trade) => {
     const status = normalizeTradeStatus(trade?.status);
-    return status === "open" || status === "closed";
+    return status === "open" || status === "closed" || status === "breakeven";
+  };
+
+  // Hide trades belonging to inactive accounts everywhere in the calendar view.
+  const isFromActiveAccount = (trade) => {
+    if (!trade?.account_id) return true;
+    const account = accounts.find((a) => String(a.id) === String(trade.account_id));
+    if (!account) return true;
+    return account.is_active !== false && account.status !== 'Inactive';
   };
 
   const getTradeStatusLabel = (trade) => {
     const status = normalizeTradeStatus(trade?.status);
     if (status === "closed") return t('closedStatus') || 'Closed';
+    if (status === "breakeven") return t('breakevenStatus') || 'Breakeven';
     return t('openStatus') || 'Open';
   };
 
@@ -59,10 +73,10 @@ export default function Calendar() {
 
   const handleViewTrade = (trade) => {
     if (!trade) return;
-    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && isCalendarVisibleTrade(t));
+    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && isCalendarVisibleTrade(t) && isFromActiveAccount(t));
     const wins = symbolTrades.filter(t => t.outcome === "Win").length;
     const total = symbolTrades.length;
-    const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+    const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
     const avgPLForSymbol = total ? (totalPLForSymbol / total) : 0;
 
     const account = accounts.find(a => String(a.id) === String(trade.account_id));
@@ -89,8 +103,8 @@ export default function Calendar() {
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
-  // Group trades by date
-  const calendarVisibleTrades = trades.filter(isCalendarVisibleTrade);
+  // Group trades by date — exclude trades from inactive accounts entirely.
+  const calendarVisibleTrades = trades.filter((t) => isCalendarVisibleTrade(t) && isFromActiveAccount(t));
 
   const tradesByDate = {};
   calendarVisibleTrades.forEach(trade => {
@@ -111,7 +125,7 @@ export default function Calendar() {
     const dayTrades = tradesByDate[dateStr] || [];
     const wins = dayTrades.filter(t => t.outcome === "Win").length;
     const losses = dayTrades.filter(t => t.outcome === "Loss").length;
-    const totalPL = dayTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+    const totalPL = dayTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
     
     return { trades: dayTrades.length, wins, losses, totalPL };
   };
@@ -128,36 +142,36 @@ export default function Calendar() {
     : [t('monday'), t('tuesday'), t('wednesday'), t('thursday'), t('friday'), t('saturday'), t('sunday')];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900">
+    <div className="w-full min-h-0 space-y-6 dashboard-surface">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{t('tradingCalendar')}</h1>
-            <p className="text-slate-600 dark:text-slate-400">{t('browseTradesInCalendar')}</p>
+            <h1 className="cyber-page-title">{t('tradingCalendar')}</h1>
+            <p className="cyber-page-sub">{t('browseTradesInCalendar')}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Calendar */}
-          <Card className="lg:col-span-2 bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+          <Card className="lg:col-span-2 shadow-md">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+                <Button variant="outline" size="icon" onClick={handlePrevMonth} className="cyber-btn-outline">
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
                 
                 <div className="text-center">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-cyan-100">
                     {format(currentDate, 'LLLL yyyy', { locale })}
                   </h2>
                 </div>
 
-                <Button variant="outline" size="icon" onClick={handleNextMonth}>
+                <Button variant="outline" size="icon" onClick={handleNextMonth} className="cyber-btn-outline">
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
               
-              <Button onClick={handleToday} variant="outline" className="w-full mt-4">
+              <Button onClick={handleToday} variant="outline" className="w-full mt-4 cyber-btn-outline">
                 <CalendarIcon className="w-4 h-4 mr-2" />
                 {t('today')}
               </Button>
@@ -187,8 +201,8 @@ export default function Calendar() {
                       className={`
                         calendar-day relative p-3 rounded-lg transition-all duration-200 min-h-[80px]
                         ${!isCurrentMonth ? 'opacity-30 calendar-day-outside' : ''}
-                        ${isSelected ? 'ring-2 ring-blue-600 bg-blue-50 dark:bg-blue-950 calendar-day-selected' : 'hover:bg-slate-50 dark:hover:bg-slate-700'}
-                        ${isTodayDay && !isSelected ? 'ring-2 ring-purple-400 calendar-day-today' : ''}
+                        ${isSelected ? 'ring-2 ring-cyan-500/70 bg-cyan-400/10 dark:bg-cyan-950/50 calendar-day-selected' : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'}
+                        ${isTodayDay && !isSelected ? 'ring-2 ring-cyan-400/60 calendar-day-today' : ''}
                         ${hasTrades ? 'cursor-pointer' : 'cursor-default'}
                       `}
                     >
@@ -222,7 +236,7 @@ export default function Calendar() {
           </Card>
 
           {/* Selected Day Details */}
-          <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+          <Card className="shadow-md">
             <CardHeader>
               <CardTitle className="dark:text-white">
                 {selectedDate 
@@ -240,17 +254,17 @@ export default function Calendar() {
                       <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{selectedTrades.length}</p>
                     </div>
                     <div className={`p-3 rounded-lg text-center ${
-                      selectedTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) >= 0 
+                      selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) >= 0 
                         ? 'bg-green-50 dark:bg-green-950' 
                         : 'bg-red-50 dark:bg-red-950'
                     }`}>
                       <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">P&L</p>
                       <p className={`text-xl font-bold ${
-                        selectedTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0) >= 0 
+                        selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) >= 0 
                           ? 'text-green-600 dark:text-green-400' 
                           : 'text-red-600 dark:text-red-400'
                       }`}>
-                        {selectedTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0).toFixed(2)}
+                        {selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -262,11 +276,11 @@ export default function Calendar() {
                       const strategy = strategies.find(s => s.id === trade.strategy_id);
                       
                       return (
-                        <div key={trade.id} className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+                        <div key={trade.id} className="p-4 bg-slate-50 dark:bg-card rounded-lg border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
                           <div className="flex items-start justify-between mb-2">
                             <div>
                               <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">{trade.symbol}</h3>
-                              <p className="text-xs text-slate-600 dark:text-slate-400">{trade.open_time || trade.time || '--:--'}</p>
+                              <p className="text-xs text-slate-600 dark:text-slate-400">{formatTradeClock(trade, "entry") || trade.open_time || trade.time || '--:--'}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <Badge className={tradeStatusBadgeClass(trade.status)}>
@@ -310,7 +324,10 @@ export default function Calendar() {
                             )}
                           </div>
 
-                          {trade.profit_loss != null && (
+                          {(() => {
+                            const pl = getTradeRealizedPL(trade);
+                            if (pl == null) return null;
+                            return (
                             <div className={`mt-3 p-2 rounded-lg text-center ${tradeOutcomeToneClass(trade.outcome)}`}>
                               <div className="flex items-center justify-center gap-2">
                                 {trade.outcome === "Win" ? (
@@ -323,11 +340,12 @@ export default function Calendar() {
                                   trade.outcome === "Loss" ? 'text-rose-600 dark:text-rose-300' : 
                                   'text-amber-600 dark:text-amber-300'
                                 }`}>
-                                  {parseFloat(trade.profit_loss) > 0 ? '+' : ''}{parseFloat(trade.profit_loss).toFixed(2)}
+                                  {pl > 0 ? '+' : ''}{pl.toFixed(2)}
                                 </span>
                               </div>
                             </div>
-                          )}
+                            );
+                          })()}
 
                           {trade.notes && (
                             <p className="text-xs text-slate-600 dark:text-slate-400 mt-3 line-clamp-2">
@@ -355,7 +373,7 @@ export default function Calendar() {
         </div>
 
         {/* Month Summary */}
-        <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+        <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="dark:text-white">{t('monthSummary')} - {format(currentDate, 'LLLL yyyy', { locale })}</CardTitle>
           </CardHeader>
@@ -368,12 +386,13 @@ export default function Calendar() {
                 });
                 const wins = monthTrades.filter(t => t.outcome === "Win").length;
                 const losses = monthTrades.filter(t => t.outcome === "Loss").length;
-                const totalPL = monthTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
-                const winRate = monthTrades.length > 0 ? ((wins / monthTrades.length) * 100).toFixed(1) : 0;
+                const totalPL = monthTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
+                const decided = wins + losses;
+                const winRate = decided > 0 ? ((wins / decided) * 100).toFixed(1) : 0;
 
                 return (
                   <>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl text-center">
+                    <div className="p-4 bg-slate-50 dark:bg-card rounded-xl text-center">
                       <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{t('trades')}</p>
                       <p className="text-3xl font-bold text-slate-900 dark:text-white">{monthTrades.length}</p>
                     </div>
@@ -399,14 +418,14 @@ export default function Calendar() {
         </Card>
 
         {/* Executed Trades List */}
-        <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+        <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="dark:text-white">{t('completedTrades')} - {format(currentDate, 'LLLL yyyy', { locale })}</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+                <thead className="bg-slate-50 dark:bg-card border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{language === 'pl' ? 'Data' : 'Date'}</th>
                     <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('symbol')}</th>
@@ -425,6 +444,9 @@ export default function Calendar() {
                     const isClosedStatus = (status) => [
                       "Closed",
                       "closed",
+                      "Breakeven",
+                      "breakeven",
+                      "BE",
                       "Wykonana",
                       "Zamknięta",
                       "Zamknieta",
@@ -435,7 +457,7 @@ export default function Calendar() {
                     const monthExecutedTrades = trades
                       .filter(t => {
                         const tradeDate = new Date(t.date);
-                        return isSameMonth(tradeDate, currentDate) && isClosedStatus(t.status);
+                        return isSameMonth(tradeDate, currentDate) && isClosedStatus(t.status) && isFromActiveAccount(t);
                       })
                       .sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -446,8 +468,8 @@ export default function Calendar() {
                       return (
                         <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                           <td className="p-4 text-sm text-slate-900 dark:text-slate-100">
-                            {trade.date}
-                            {trade.open_time && <div className="text-xs text-slate-500 dark:text-slate-400">{t('open')}: {trade.open_time}</div>}
+                            {fmtDate(trade.date)}
+                            {trade.open_time && <div className="text-xs text-slate-500 dark:text-slate-400">{t('open')}: {formatTradeClock(trade, "entry") || trade.open_time}</div>}
                             {trade.close_time && <div className="text-xs text-slate-500 dark:text-slate-400">{t('close')}: {trade.close_time}</div>}
                           </td>
                           <td className="p-4">
@@ -464,29 +486,31 @@ export default function Calendar() {
                           <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.entry_price}</td>
                           <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.exit_price || '-'}</td>
                           <td className="p-4">
-                            {trade.profit_loss != null ? (
+                            {(() => {
+                              const pl = getTradeRealizedPL(trade);
+                              if (pl == null) return <span className="text-slate-400">-</span>;
+                              return (
                               <div className="flex items-center gap-1">
-                                {parseFloat(trade.profit_loss) > 0 ? (
+                                {pl > 0 ? (
                                   <TrendingUp className="w-4 h-4 text-green-600" />
-                                ) : parseFloat(trade.profit_loss) < 0 ? (
+                                ) : pl < 0 ? (
                                   <TrendingDown className="w-4 h-4 text-red-600" />
                                 ) : null}
                                 <span className={`font-semibold ${
-                                  parseFloat(trade.profit_loss) > 0 ? 'text-green-600' : 
-                                  parseFloat(trade.profit_loss) < 0 ? 'text-red-600' : 
+                                  pl > 0 ? 'text-green-600' : 
+                                  pl < 0 ? 'text-red-600' : 
                                   'text-slate-600'
                                 }`}>
-                                  {parseFloat(trade.profit_loss) > 0 ? '+' : ''}{parseFloat(trade.profit_loss).toFixed(2)}
+                                  {pl > 0 ? '+' : ''}{pl.toFixed(2)}
                                 </span>
                               </div>
-                            ) : (
-                              <span className="text-slate-400">-</span>
-                            )}
+                              );
+                            })()}
                           </td>
                           <td className="p-4">
                             {trade.outcome && (
                               <Badge variant="outline" className={tradeOutcomeBadgeClass(trade.outcome)}>
-                                {trade.outcome}
+                                {tradeOutcomeDisplay(trade.outcome)}
                               </Badge>
                             )}
                           </td>
@@ -513,6 +537,9 @@ export default function Calendar() {
                 const isClosedStatus = (status) => [
                   "Closed",
                   "closed",
+                  "Breakeven",
+                  "breakeven",
+                  "BE",
                   "Wykonana",
                   "Zamknięta",
                   "Zamknieta",
@@ -522,7 +549,7 @@ export default function Calendar() {
 
                 const monthExecutedTrades = trades.filter(t => {
                   const tradeDate = new Date(t.date);
-                  return isSameMonth(tradeDate, currentDate) && isClosedStatus(t.status);
+                  return isSameMonth(tradeDate, currentDate) && isClosedStatus(t.status) && isFromActiveAccount(t);
                 });
                 
                 return monthExecutedTrades.length === 0 && (
@@ -538,13 +565,18 @@ export default function Calendar() {
 
       {/* Edit Trade Dialog */}
       <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0">
-          <div className="sticky top-0 bg-white p-6 border-b">
+        <DialogContent
+          className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0"
+          {...preventDialogDismissProps}
+        >
+          <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
             <DialogTitle>Edit Trade</DialogTitle>
           </div>
-          <div className="p-6">
+          <div className="p-4">
             {editingTrade && (
               <TradeFormNew
+                key={editingTrade.id}
+                embedded
                 trade={editingTrade}
                 onSuccess={() => {
                   refetch();
@@ -559,13 +591,13 @@ export default function Calendar() {
 
       {/* Trade Details Dialog */}
       <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-[#1a1a2e] border-slate-200 dark:border-slate-700">
-          <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 text-white px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+        <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-700">
+          <DialogHeader className="cyber-dialog-header sticky top-0 z-10 text-white px-6 py-4 border-b">
             <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
           </DialogHeader>
-          <div className="p-6 bg-white dark:bg-[#1a1a2e]">
+          <div className="p-6 bg-white dark:bg-card">
             {viewingTrade && (
-              <TradeCard
+              <TradeDetailView
                 trade={viewingTrade}
                 onEdit={(tradeToEdit) => {
                   setViewingTrade(null);

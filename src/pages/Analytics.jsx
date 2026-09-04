@@ -1,17 +1,50 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
-import { directionChartColor, isClosedTrade } from '@/lib/utils';
+import { directionChartColor, getTradeRealizedPL, isClosedTrade, tradeOutcomeDisplay } from '@/lib/utils';
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, TrendingUp, AlertCircle, Wallet, Activity, X, ChevronDown } from "lucide-react";
+import { Brain, TrendingUp, AlertCircle, Wallet, Activity, X, ChevronDown, Clock, ListChecks, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, ComposedChart } from "recharts";
 import { ExportButton } from "../components/ExportButton";
 import { ImportButton } from "../components/ImportButton";
 import { useLanguage } from "@/components/LanguageProvider";
+import { normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
+import { getTradeEntryMinutes } from "@/lib/userSettings";
+import { aggregateTagPerformance } from "@/lib/tradeTags";
+
+const decidedWinRate = (wins, losses) => {
+  const decided = wins + losses;
+  return decided > 0 ? Number(((wins / decided) * 100).toFixed(1)) : 0;
+};
+
+const tradeChronoKey = (trade) => {
+  const date = String(trade?.date || "").slice(0, 10);
+  const raw = String(trade?.entry_time || trade?.open_time || trade?.time || "00:00:00");
+  const m = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  const hh = m ? String(Number(m[1])).padStart(2, "0") : "00";
+  const mm = m ? m[2] : "00";
+  const ss = m?.[3] || "00";
+  return `${date}T${hh}:${mm}:${ss}`;
+};
+
+const sortTradesChronoAsc = (list) =>
+  [...list].sort((a, b) => tradeChronoKey(a).localeCompare(tradeChronoKey(b)));
+
+const weekStartKeyLocal = (dateStr) => {
+  const s = String(dateStr || "").slice(0, 10);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return "";
+  const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  dt.setDate(dt.getDate() - dt.getDay());
+  const y = dt.getFullYear();
+  const mo = String(dt.getMonth() + 1).padStart(2, "0");
+  const d = String(dt.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${d}`;
+};
 
 export default function Analytics() {
   const { t } = useLanguage();
@@ -38,7 +71,7 @@ export default function Analytics() {
   const timeframeDropdownRef = useRef(null);
   const [selectedSymbol, setSelectedSymbol] = useState(null);
   const [selectedStrategy, setSelectedStrategy] = useState(null);
-  const [timePeriod, setTimePeriod] = useState("daily");
+  const [timePeriod, setTimePeriod] = useState("weekly");
   const [activeTab, setActiveTab] = useState("overview");
 
   const { data: trades = [], isLoading } = useQuery({
@@ -52,8 +85,16 @@ export default function Analytics() {
   });
 
   const activeAccounts = accounts.filter((account) => account.is_active !== false && account.status !== 'Inactive');
-  const activeAccountIds = new Set(activeAccounts.map((account) => String(account.id)));
-  const tradesFromActiveAccounts = trades.filter((trade) => activeAccountIds.has(String(trade.account_id)));
+  const inactiveAccountIds = new Set(
+    accounts
+      .filter((account) => account.is_active === false || account.status === 'Inactive')
+      .map((account) => String(account.id))
+  );
+  // Include trades without account_id; exclude only inactive accounts (same as Journal/Dashboard)
+  const tradesFromActiveAccounts = trades.filter((trade) => {
+    if (!trade.account_id) return true;
+    return !inactiveAccountIds.has(String(trade.account_id));
+  });
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies'],
@@ -93,7 +134,10 @@ export default function Analytics() {
 
   const uniqueSymbols = [...new Set(tradesFromActiveAccounts.map(t => t.symbol).filter(Boolean))];
   const uniqueDirections = [...new Set(tradesFromActiveAccounts.map(t => normalizeDirection(t.direction)).filter(Boolean))];
-  const uniqueOutcomes = [...new Set(tradesFromActiveAccounts.map(t => t.outcome).filter(Boolean))];
+  const uniqueOutcomes = [...new Set([
+    ...["Win", "Loss", "Breakeven"],
+    ...tradesFromActiveAccounts.map(t => t.outcome).filter(Boolean),
+  ])];
   const uniqueTimeframes = [...new Set(tradesFromActiveAccounts.map(t => t.timeframe).filter(Boolean))];
 
   const toggleMultiFilter = (setter, value) => {
@@ -129,7 +173,7 @@ export default function Analytics() {
     (value) => strategies.find((strategy) => String(strategy.id) === String(value))?.name
   );
   const selectedDirectionsLabel = getMultiFilterLabel(filterDirections, t('all'), (value) => value);
-  const selectedOutcomesLabel = getMultiFilterLabel(filterOutcomes, t('all'), (value) => value);
+  const selectedOutcomesLabel = getMultiFilterLabel(filterOutcomes, t('all'), (value) => tradeOutcomeDisplay(value));
   const selectedTimeframesLabel = getMultiFilterLabel(filterTimeframes, t('all'), (value) => value);
 
   // Filter trades by selected filters
@@ -146,18 +190,21 @@ export default function Analytics() {
   // Symbol analysis
   const symbolStats = {};
   filteredTrades.forEach(trade => {
+    if (!trade.symbol) return;
     if (!symbolStats[trade.symbol]) {
-      symbolStats[trade.symbol] = { wins: 0, total: 0, pl: 0 };
+      symbolStats[trade.symbol] = { wins: 0, losses: 0, total: 0, pl: 0 };
     }
     symbolStats[trade.symbol].total++;
     if (trade.outcome === "Win") symbolStats[trade.symbol].wins++;
-    symbolStats[trade.symbol].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") symbolStats[trade.symbol].losses++;
+    if (trade.outcome === "Loss") symbolStats[trade.symbol].losses++;
+    symbolStats[trade.symbol].pl += (getTradeRealizedPL(trade) ?? 0);
   });
 
   const symbolData = Object.entries(symbolStats)
     .map(([symbol, stats]) => ({
       symbol,
-      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+      winRate: decidedWinRate(stats.wins, stats.losses),
       avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
       totalPL: Number(stats.pl.toFixed(2)),
       trades: stats.total
@@ -168,20 +215,22 @@ export default function Analytics() {
   // Strategy analysis
   const strategyStats = {};
   filteredTrades.forEach(trade => {
-    const strategy = strategies.find(s => s.id === trade.strategy_id);
+    const strategy = strategies.find(s => String(s.id) === String(trade.strategy_id));
     const strategyName = strategy?.name || "Bez strategii";
     
     if (!strategyStats[strategyName]) {
-      strategyStats[strategyName] = { wins: 0, total: 0, pl: 0 };
+      strategyStats[strategyName] = { wins: 0, losses: 0, total: 0, pl: 0 };
     }
     strategyStats[strategyName].total++;
     if (trade.outcome === "Win") strategyStats[strategyName].wins++;
-    strategyStats[strategyName].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") strategyStats[strategyName].losses++;
+    if (trade.outcome === "Loss") strategyStats[strategyName].losses++;
+    strategyStats[strategyName].pl += (getTradeRealizedPL(trade) ?? 0);
   });
 
   const strategyData = Object.entries(strategyStats).map(([name, stats]) => ({
     name,
-    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    winRate: decidedWinRate(stats.wins, stats.losses),
     avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
     totalPL: Number(stats.pl.toFixed(2)),
     trades: stats.total
@@ -192,35 +241,39 @@ export default function Analytics() {
   filteredTrades.forEach(trade => {
     if (trade.timeframe) {
       if (!timeframeStats[trade.timeframe]) {
-        timeframeStats[trade.timeframe] = { wins: 0, total: 0, pl: 0 };
+        timeframeStats[trade.timeframe] = { wins: 0, losses: 0, total: 0, pl: 0 };
       }
       timeframeStats[trade.timeframe].total++;
       if (trade.outcome === "Win") timeframeStats[trade.timeframe].wins++;
-      timeframeStats[trade.timeframe].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") timeframeStats[trade.timeframe].losses++;
+      if (trade.outcome === "Loss") timeframeStats[trade.timeframe].losses++;
+      timeframeStats[trade.timeframe].pl += (getTradeRealizedPL(trade) ?? 0);
     }
   });
 
   const timeframeData = Object.entries(timeframeStats).map(([tf, stats]) => ({
     timeframe: tf,
-    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    winRate: decidedWinRate(stats.wins, stats.losses),
     avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
     trades: stats.total
   }));
 
   // Direction analysis
-  const directionStats = { Long: { wins: 0, total: 0, pl: 0 }, Short: { wins: 0, total: 0, pl: 0 } };
+  const directionStats = { Long: { wins: 0, losses: 0, total: 0, pl: 0 }, Short: { wins: 0, losses: 0, total: 0, pl: 0 } };
   filteredTrades.forEach(trade => {
     const direction = normalizeDirection(trade.direction);
     if (directionStats[direction]) {
       directionStats[direction].total++;
       if (trade.outcome === "Win") directionStats[direction].wins++;
-      directionStats[direction].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") directionStats[direction].losses++;
+      if (trade.outcome === "Loss") directionStats[direction].losses++;
+      directionStats[direction].pl += (getTradeRealizedPL(trade) ?? 0);
     }
   });
 
   const directionData = Object.entries(directionStats).map(([dir, stats]) => ({
     direction: dir,
-    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    winRate: decidedWinRate(stats.wins, stats.losses),
     avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
     totalPL: Number(stats.pl.toFixed(2)),
     trades: stats.total
@@ -231,17 +284,19 @@ export default function Analytics() {
   filteredTrades.forEach(trade => {
     if (trade.session) {
       if (!sessionStats[trade.session]) {
-        sessionStats[trade.session] = { wins: 0, total: 0, pl: 0 };
+        sessionStats[trade.session] = { wins: 0, losses: 0, total: 0, pl: 0 };
       }
       sessionStats[trade.session].total++;
       if (trade.outcome === "Win") sessionStats[trade.session].wins++;
-      sessionStats[trade.session].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") sessionStats[trade.session].losses++;
+      if (trade.outcome === "Loss") sessionStats[trade.session].losses++;
+      sessionStats[trade.session].pl += (getTradeRealizedPL(trade) ?? 0);
     }
   });
 
   const sessionData = Object.entries(sessionStats).map(([session, stats]) => ({
     session,
-    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    winRate: decidedWinRate(stats.wins, stats.losses),
     avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
     trades: stats.total
   }));
@@ -251,17 +306,19 @@ export default function Analytics() {
   filteredTrades.forEach(trade => {
     if (trade.setup_quality) {
       if (!setupStats[trade.setup_quality]) {
-        setupStats[trade.setup_quality] = { wins: 0, total: 0, pl: 0 };
+        setupStats[trade.setup_quality] = { wins: 0, losses: 0, total: 0, pl: 0 };
       }
       setupStats[trade.setup_quality].total++;
       if (trade.outcome === "Win") setupStats[trade.setup_quality].wins++;
-      setupStats[trade.setup_quality].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") setupStats[trade.setup_quality].losses++;
+      if (trade.outcome === "Loss") setupStats[trade.setup_quality].losses++;
+      setupStats[trade.setup_quality].pl += (getTradeRealizedPL(trade) ?? 0);
     }
   });
 
   const setupData = Object.entries(setupStats).map(([quality, stats]) => ({
     quality,
-    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    winRate: decidedWinRate(stats.wins, stats.losses),
     avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
     trades: stats.total
   })).sort((a, b) => a.quality.localeCompare(b.quality));
@@ -271,27 +328,238 @@ export default function Analytics() {
   filteredTrades.forEach(trade => {
     if (trade.emotional_state) {
       if (!emotionalStats[trade.emotional_state]) {
-        emotionalStats[trade.emotional_state] = { wins: 0, total: 0, pl: 0 };
+        emotionalStats[trade.emotional_state] = { wins: 0, losses: 0, total: 0, pl: 0 };
       }
       emotionalStats[trade.emotional_state].total++;
       if (trade.outcome === "Win") emotionalStats[trade.emotional_state].wins++;
-      emotionalStats[trade.emotional_state].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") emotionalStats[trade.emotional_state].losses++;
+      if (trade.outcome === "Loss") emotionalStats[trade.emotional_state].losses++;
+      emotionalStats[trade.emotional_state].pl += (getTradeRealizedPL(trade) ?? 0);
     }
   });
 
   const emotionalData = Object.entries(emotionalStats).map(([state, stats]) => ({
     state,
-    winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+    winRate: decidedWinRate(stats.wins, stats.losses),
     avgPL: stats.total > 0 ? Number((stats.pl / stats.total).toFixed(2)) : 0,
     trades: stats.total
   }));
 
-  // Equity curve
+  // === Dziennik emocji (przed / w trakcie / po) z formularza trejdu ===
+  const emoStages = [
+    { key: 'before', label: t('emoStageBefore') },
+    { key: 'during', label: t('emoStageDuring') },
+    { key: 'after', label: t('emoStageAfter') },
+  ];
+
+  const tradesWithEmotions = filteredTrades.filter((tr) => countFilledEmotionStages(tr.emotions) > 0);
+
+  // Emocja (tag) -> skuteczność. Liczona raz na trejd, nawet jeśli tag powtarza się w etapach.
+  const emoTagMap = {};
+  let ratingSum = 0;
+  let ratingCount = 0;
+  tradesWithEmotions.forEach((tr) => {
+    const em = normalizeEmotions(tr.emotions);
+    const pl = getTradeRealizedPL(tr) ?? 0;
+    const isWin = tr.outcome === 'Win';
+    const seen = new Set();
+    emoStages.forEach((s) => {
+      const st = em[s.key];
+      if (st.rating > 0) { ratingSum += st.rating; ratingCount++; }
+      st.tags.forEach((tag) => {
+        if (seen.has(tag)) return;
+        seen.add(tag);
+        if (!emoTagMap[tag]) emoTagMap[tag] = { tag, wins: 0, losses: 0, total: 0, pl: 0 };
+        emoTagMap[tag].total++;
+        if (isWin) emoTagMap[tag].wins++;
+        else if (tr.outcome === 'Loss') emoTagMap[tag].losses++;
+        emoTagMap[tag].pl += pl;
+      });
+    });
+  });
+
+  const emotionPerf = Object.values(emoTagMap)
+    .map((x) => ({
+      tag: x.tag,
+      winRate: decidedWinRate(x.wins, x.losses),
+      avgPL: x.total > 0 ? Number((x.pl / x.total).toFixed(2)) : 0,
+      totalPL: Number(x.pl.toFixed(2)),
+      trades: x.total,
+    }))
+    .sort((a, b) => a.avgPL - b.avgPL); // od najgorszej do najlepszej
+
+  const avgEmotionRating = ratingCount > 0 ? Number((ratingSum / ratingCount).toFixed(1)) : 0;
+
+  // Średnia ocena emocji wg etapu: wygrane vs przegrane
+  const stageRatingByOutcome = emoStages.map((s) => {
+    let winSum = 0, winN = 0, lossSum = 0, lossN = 0, beSum = 0, beN = 0;
+    tradesWithEmotions.forEach((tr) => {
+      const st = normalizeEmotions(tr.emotions)[s.key];
+      if (st.rating > 0) {
+        if (tr.outcome === 'Win') { winSum += st.rating; winN++; }
+        else if (tr.outcome === 'Loss') { lossSum += st.rating; lossN++; }
+        else if (tr.outcome === 'Breakeven') { beSum += st.rating; beN++; }
+      }
+    });
+    return {
+      stage: s.label,
+      win: winN > 0 ? Number((winSum / winN).toFixed(2)) : 0,
+      loss: lossN > 0 ? Number((lossSum / lossN).toFixed(2)) : 0,
+      breakeven: beN > 0 ? Number((beSum / beN).toFixed(2)) : 0,
+    };
+  });
+
+  // Tiltometr w czasie — średnia ocena emocji per trejd, chronologicznie
+  const tiltOverTime = sortTradesChronoAsc(tradesWithEmotions).map((tr, i) => {
+    const em = normalizeEmotions(tr.emotions);
+    const vals = emoStages.map((s) => em[s.key].rating).filter((r) => r > 0);
+    const avg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    return { idx: i + 1, rating: Number(avg.toFixed(2)), date: tr.date };
+  });
+
+  // Najczęstsze emocje wg etapu (top 5 każdy)
+  const topTagsByStage = emoStages.map((s) => {
+    const m = {};
+    tradesWithEmotions.forEach((tr) => {
+      const st = normalizeEmotions(tr.emotions)[s.key];
+      st.tags.forEach((tag) => {
+        if (!m[tag]) m[tag] = { tag, wins: 0, losses: 0, total: 0 };
+        m[tag].total++;
+        if (tr.outcome === 'Win') m[tag].wins++;
+        else if (tr.outcome === 'Loss') m[tag].losses++;
+      });
+    });
+    const items = Object.values(m)
+      .map((x) => ({ ...x, winRate: Math.round(decidedWinRate(x.wins, x.losses)) }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+    return { stage: s.label, items };
+  });
+
+  const worstEmotion = emotionPerf.length ? emotionPerf[0] : null;
+  const bestEmotion = emotionPerf.length ? emotionPerf[emotionPerf.length - 1] : null;
+  const emotionCoverage = filteredTrades.length > 0
+    ? Math.round((tradesWithEmotions.length / filteredTrades.length) * 100)
+    : 0;
+
+  // Warunki wejścia + błędy — z zaznaczonych chipów na trejdach
+  const confluenceAgg = aggregateTagPerformance(filteredTrades, "confluences", {
+    decidedWinRate,
+    getPl: (tr) => getTradeRealizedPL(tr) ?? 0,
+  });
+  const mistakeAgg = aggregateTagPerformance(filteredTrades, "mistakes", {
+    decidedWinRate,
+    getPl: (tr) => getTradeRealizedPL(tr) ?? 0,
+  });
+  const confluencePerf = [...confluenceAgg.rows].sort((a, b) => a.avgPL - b.avgPL);
+  const mistakePerf = [...mistakeAgg.rows].sort((a, b) => a.avgPL - b.avgPL);
+  const confluenceByFreq = confluenceAgg.rows;
+  const mistakeByFreq = mistakeAgg.rows;
+  const bestConfluence = confluencePerf.length ? confluencePerf[confluencePerf.length - 1] : null;
+  const worstConfluence = confluencePerf.length ? confluencePerf[0] : null;
+  const bestMistakeAvoid = mistakePerf.length ? mistakePerf[mistakePerf.length - 1] : null;
+  const costliestMistake = mistakePerf.length ? mistakePerf[0] : null;
+  const confluenceCoverage = filteredTrades.length > 0
+    ? Math.round((confluenceAgg.taggedTrades / filteredTrades.length) * 100)
+    : 0;
+  const mistakeCoverage = filteredTrades.length > 0
+    ? Math.round((mistakeAgg.taggedTrades / filteredTrades.length) * 100)
+    : 0;
+
+  // === Poziom pewności setupu (1–5⭐) z formularza trejdu ===
+  const confidenceMap = {};
+  let confSum = 0;
+  let confCount = 0;
+  filteredTrades.forEach((tr) => {
+    const level = Number(tr.setup_confidence) || 0;
+    if (level < 1 || level > 5) return;
+    confSum += level;
+    confCount++;
+    if (!confidenceMap[level]) confidenceMap[level] = { level, wins: 0, losses: 0, total: 0, pl: 0 };
+    confidenceMap[level].total++;
+    if (tr.outcome === 'Win') confidenceMap[level].wins++;
+    if (tr.outcome === 'Loss') confidenceMap[level].losses++;
+    confidenceMap[level].pl += getTradeRealizedPL(tr) ?? 0;
+  });
+
+  const confidenceData = [1, 2, 3, 4, 5].map((level) => {
+    const s = confidenceMap[level];
+    return {
+      level: `${level}⭐`,
+      winRate: s ? decidedWinRate(s.wins, s.losses) : 0,
+      avgPL: s && s.total > 0 ? Number((s.pl / s.total).toFixed(2)) : 0,
+      trades: s ? s.total : 0,
+    };
+  });
+
+  const hasConfidenceData = confCount > 0;
+  const avgConfidence = confCount > 0 ? Number((confSum / confCount).toFixed(1)) : 0;
+
+  // === Analiza czasu wejścia (przedziały 15-minutowe + godzinowe) ===
+  const parseEntryMinutes = (tr) => getTradeEntryMinutes(tr);
+
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const fmtSlot = (slotStart) => {
+    const end = slotStart + 15;
+    return `${pad2(Math.floor(slotStart / 60))}:${pad2(slotStart % 60)}–${pad2(Math.floor(end / 60) % 24)}:${pad2(end % 60)}`;
+  };
+
+  const timeSlotMap = {};
+  const hourMap = {};
+  filteredTrades.forEach((tr) => {
+    const mins = parseEntryMinutes(tr);
+    if (mins == null) return;
+    const pl = getTradeRealizedPL(tr) ?? 0;
+
+    const slot = Math.floor(mins / 15) * 15;
+    if (!timeSlotMap[slot]) timeSlotMap[slot] = { slot, wins: 0, losses: 0, total: 0, pl: 0 };
+    timeSlotMap[slot].total++;
+    if (tr.outcome === 'Win') timeSlotMap[slot].wins++;
+    if (tr.outcome === 'Loss') timeSlotMap[slot].losses++;
+    timeSlotMap[slot].pl += pl;
+
+    const hour = Math.floor(mins / 60);
+    if (!hourMap[hour]) hourMap[hour] = { hour, wins: 0, losses: 0, total: 0, pl: 0 };
+    hourMap[hour].total++;
+    if (tr.outcome === 'Win') hourMap[hour].wins++;
+    if (tr.outcome === 'Loss') hourMap[hour].losses++;
+    hourMap[hour].pl += pl;
+  });
+
+  const timeSlotData = Object.values(timeSlotMap)
+    .sort((a, b) => a.slot - b.slot)
+    .map((s) => ({
+      slot: fmtSlot(s.slot),
+      slotStart: s.slot,
+      winRate: decidedWinRate(s.wins, s.losses),
+      avgPL: s.total > 0 ? Number((s.pl / s.total).toFixed(2)) : 0,
+      totalPL: Number(s.pl.toFixed(2)),
+      trades: s.total,
+    }));
+
+  const hourData = Object.values(hourMap)
+    .sort((a, b) => a.hour - b.hour)
+    .map((s) => ({
+      hour: `${pad2(s.hour)}:00`,
+      winRate: decidedWinRate(s.wins, s.losses),
+      avgPL: s.total > 0 ? Number((s.pl / s.total).toFixed(2)) : 0,
+      totalPL: Number(s.pl.toFixed(2)),
+      trades: s.total,
+    }));
+
+  const tradesWithTime = timeSlotData.reduce((sum, s) => sum + s.trades, 0);
+  const rankedSlots = timeSlotData.filter((s) => s.trades >= 2);
+  const bestSlot = rankedSlots.length ? rankedSlots.reduce((a, b) => (b.avgPL > a.avgPL ? b : a)) : null;
+  const worstSlot = rankedSlots.length ? rankedSlots.reduce((a, b) => (b.avgPL < a.avgPL ? b : a)) : null;
+  const rankedHours = hourData.filter((h) => h.trades >= 2);
+  const bestHour = rankedHours.length ? rankedHours.reduce((a, b) => (b.winRate > a.winRate ? b : a)) : null;
+
+  // Equity curve — chronological by date + entry time
   let cumulative = 0;
   const equityCurve = [
     { trade: 0, equity: 0, date: '' },
-    ...filteredTrades.slice().reverse().map((trade, index) => {
-      cumulative += parseFloat(trade.profit_loss) || 0;
+    ...sortTradesChronoAsc(filteredTrades).map((trade, index) => {
+      cumulative += (getTradeRealizedPL(trade) ?? 0);
       return {
         trade: index + 1,
         equity: Math.round(cumulative * 100) / 100,
@@ -303,26 +571,28 @@ export default function Analytics() {
   // Period performance (daily, weekly, monthly, yearly)
   const periodStats = {};
   filteredTrades.forEach(trade => {
+    if (!trade?.date) return;
+    const dateKey = String(trade.date).slice(0, 10);
     let period;
     if (timePeriod === "daily") {
-      period = trade.date.substring(0, 10); // YYYY-MM-DD
+      period = dateKey;
     } else if (timePeriod === "weekly") {
-      const date = new Date(trade.date);
-      const weekStart = new Date(date);
-      weekStart.setDate(date.getDate() - date.getDay());
-      period = weekStart.toISOString().substring(0, 10);
+      period = weekStartKeyLocal(dateKey);
     } else if (timePeriod === "monthly") {
-      period = trade.date.substring(0, 7); // YYYY-MM
+      period = dateKey.substring(0, 7);
     } else if (timePeriod === "yearly") {
-      period = trade.date.substring(0, 4); // YYYY
+      period = dateKey.substring(0, 4);
     }
-    
+    if (!period) return;
+
     if (!periodStats[period]) {
-      periodStats[period] = { wins: 0, total: 0, pl: 0 };
+      periodStats[period] = { wins: 0, losses: 0, total: 0, pl: 0 };
     }
     periodStats[period].total++;
     if (trade.outcome === "Win") periodStats[period].wins++;
-    periodStats[period].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") periodStats[period].losses++;
+    if (trade.outcome === "Loss") periodStats[period].losses++;
+    periodStats[period].pl += (getTradeRealizedPL(trade) ?? 0);
   });
 
   const periodData = Object.entries(periodStats)
@@ -330,7 +600,7 @@ export default function Analytics() {
       period,
       pl: Math.round(stats.pl * 100) / 100,
       trades: stats.total,
-      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0
+      winRate: decidedWinRate(stats.wins, stats.losses)
     }))
     .sort((a, b) => a.period.localeCompare(b.period));
 
@@ -341,17 +611,20 @@ export default function Analytics() {
     ? periodData.reduce((best, current) => (current.winRate > best.winRate ? current : best), periodData[0])
     : null;
 
-  // Account comparison
+  // Account comparison — respect page filters
   const accountData = activeAccounts.map(account => {
-    const accountTrades = trades.filter(t => t.account_id === account.id && isClosedTrade(t));
+    const accountTrades = filteredTrades.filter(t => String(t.account_id) === String(account.id));
     const wins = accountTrades.filter(t => t.outcome === "Win").length;
-    const totalPL = accountTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
-    
+    const losses = accountTrades.filter(t => t.outcome === "Loss").length;
+    const totalPL = accountTrades.reduce((sum, t) => sum + ((getTradeRealizedPL(t) ?? 0)), 0);
+
     return {
       name: account.name,
-      winRate: accountTrades.length > 0 ? Number(((wins / accountTrades.length) * 100).toFixed(1)) : 0,
-      totalPL: Number(totalPL.toFixed(2)),
       trades: accountTrades.length,
+      wins,
+      winRate: decidedWinRate(wins, losses),
+      totalPL: Number(totalPL.toFixed(2)),
+      avgPL: accountTrades.length > 0 ? Number((totalPL / accountTrades.length).toFixed(2)) : 0,
       roi: account.initial_balance > 0 ? Number(((totalPL / parseFloat(account.initial_balance)) * 100).toFixed(2)) : 0
     };
   }).filter(a => a.trades > 0);
@@ -371,7 +644,9 @@ export default function Analytics() {
     losses: filteredTrades.filter(t => t.outcome === 'Loss').length,
     breakeven: filteredTrades.filter(t => t.outcome === 'Breakeven').length
   };
+  const outcomeDecided = outcomeCounts.wins + outcomeCounts.losses;
   const outcomeTotal = outcomeCounts.wins + outcomeCounts.losses + outcomeCounts.breakeven;
+  const outcomeWinRate = outcomeDecided > 0 ? (outcomeCounts.wins / outcomeDecided) * 100 : 0;
   const outcomeChartData = [
     {
       name: t('wins'),
@@ -383,7 +658,7 @@ export default function Analytics() {
       name: t('breakeven'),
       count: outcomeCounts.breakeven,
       rate: outcomeTotal ? (outcomeCounts.breakeven / outcomeTotal) * 100 : 0,
-      fill: '#94a3b8'
+      fill: '#f59e0b'
     },
     {
       name: t('losses'),
@@ -408,12 +683,12 @@ export default function Analytics() {
     : null;
 
   return (
-    <div className="analytics-page min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e] p-2 sm:p-3">
+    <div className="analytics-page w-full min-h-0 space-y-6 dashboard-surface">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{t('advancedAnalytics')}</h1>
-            <p className="text-slate-600 dark:text-slate-400">{t('detailedAnalysisOfAllAspects')}</p>
+            <h1 className="cyber-page-title">{t('advancedAnalytics')}</h1>
+            <p className="cyber-page-sub">{t('detailedAnalysisOfAllAspects')}</p>
           </div>
           
           <div className="flex gap-3 items-center">
@@ -428,27 +703,27 @@ export default function Analytics() {
               strategies={strategies} 
               type="analytics"
               analytics={{
-                totalPL: filteredTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0),
-                winRate: filteredTrades.length > 0 ? (filteredTrades.filter(t => t.outcome === "Win").length / filteredTrades.filter(t => t.outcome).length) * 100 : 0,
+                totalPL: filteredTrades.reduce((sum, t) => sum + ((getTradeRealizedPL(t) ?? 0)), 0),
+                winRate: outcomeWinRate,
                 profitFactor: (() => {
-                  const wins = filteredTrades.filter(t => parseFloat(t.profit_loss) > 0).reduce((sum, t) => sum + parseFloat(t.profit_loss), 0);
-                  const losses = Math.abs(filteredTrades.filter(t => parseFloat(t.profit_loss) < 0).reduce((sum, t) => sum + parseFloat(t.profit_loss), 0));
+                  const wins = filteredTrades.filter(t => (getTradeRealizedPL(t) ?? 0) > 0).reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
+                  const losses = Math.abs(filteredTrades.filter(t => (getTradeRealizedPL(t) ?? 0) < 0).reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0));
                   return losses > 0 ? wins / losses : wins > 0 ? 999 : 0;
                 })(),
                 avgWin: (() => {
-                  const winTrades = filteredTrades.filter(t => parseFloat(t.profit_loss) > 0);
-                  return winTrades.length > 0 ? winTrades.reduce((sum, t) => sum + parseFloat(t.profit_loss), 0) / winTrades.length : 0;
+                  const winTrades = filteredTrades.filter(t => (getTradeRealizedPL(t) ?? 0) > 0);
+                  return winTrades.length > 0 ? winTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / winTrades.length : 0;
                 })(),
                 avgLoss: (() => {
-                  const lossTrades = filteredTrades.filter(t => parseFloat(t.profit_loss) < 0);
-                  return lossTrades.length > 0 ? lossTrades.reduce((sum, t) => sum + parseFloat(t.profit_loss), 0) / lossTrades.length : 0;
+                  const lossTrades = filteredTrades.filter(t => (getTradeRealizedPL(t) ?? 0) < 0);
+                  return lossTrades.length > 0 ? lossTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) / lossTrades.length : 0;
                 })()
               }}
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-3 items-end">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 items-end">
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 text-center">{t('account')}</span>
             <div className="relative" ref={accountDropdownRef}>
@@ -469,7 +744,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('allAccounts')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -489,7 +764,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{acc.name}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -525,7 +800,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -545,7 +820,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{sym}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -578,7 +853,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes('all') ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes('all') ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {filterStrategies.includes('all') && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -593,7 +868,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes(String(strategy.id)) ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{strategy.name}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes(String(strategy.id)) ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes(String(strategy.id)) ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {filterStrategies.includes(String(strategy.id)) && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -627,7 +902,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -647,7 +922,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{dir}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -683,7 +958,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -702,8 +977,8 @@ export default function Analytics() {
                       onClick={() => toggleMultiFilter(setFilterOutcomes, out)}
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
-                      <span className="truncate">{out}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className="truncate">{tradeOutcomeDisplay(out)}</span>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -739,7 +1014,7 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                       {isSelected && (
                         <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -759,7 +1034,7 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{tf}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-slate-800/50'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-slate-50 dark:border-slate-500 dark:bg-muted/50'}`}>
                         {isSelected && (
                           <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -787,6 +1062,8 @@ export default function Analytics() {
                 setFilterOutcomes(["all"]);
                 setFilterTimeframes(["all"]);
                 setSelectedAccounts(["all"]);
+                setSelectedSymbol(null);
+                setSelectedStrategy(null);
               }}
             >
               {t('reset')}
@@ -794,20 +1071,53 @@ export default function Analytics() {
           </div>
         </div>
 
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="border-emerald-200/70 dark:border-emerald-900/50 bg-gradient-to-br from-emerald-50/80 to-white dark:from-emerald-950/30 dark:to-card shadow-sm">
+            <CardContent className="p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{t('wins')}</p>
+              <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{outcomeCounts.wins}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {outcomeTotal ? `${((outcomeCounts.wins / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-amber-200/70 dark:border-amber-900/50 bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-950/30 dark:to-card shadow-sm">
+            <CardContent className="p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">BE</p>
+              <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">{outcomeCounts.breakeven}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {outcomeTotal ? `${((outcomeCounts.breakeven / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
+              </p>
+            </CardContent>
+          </Card>
+          <Card className="border-rose-200/70 dark:border-rose-900/50 bg-gradient-to-br from-rose-50/80 to-white dark:from-rose-950/30 dark:to-card shadow-sm">
+            <CardContent className="p-4 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">{t('losses')}</p>
+              <p className="text-3xl font-bold text-rose-600 dark:text-rose-400 mt-1">{outcomeCounts.losses}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {outcomeTotal ? `${((outcomeCounts.losses / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-white dark:bg-[#1a1a2e] shadow-lg">
-            <TabsTrigger value="overview">{t('overview')}</TabsTrigger>
-            <TabsTrigger value="symbols">{t('symbols')}</TabsTrigger>
-            <TabsTrigger value="strategies">{t('strategiesAnalytics')}</TabsTrigger>
-            <TabsTrigger value="accounts">{t('accountsAnalytics')}</TabsTrigger>
-            <TabsTrigger value="psychology">{t('psychology')}</TabsTrigger>
+          <TabsList className="flex w-full h-auto flex-wrap gap-1 p-1 bg-white dark:bg-card shadow-lg md:flex-nowrap md:overflow-x-auto">
+            <TabsTrigger value="overview" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('overview')}</TabsTrigger>
+            <TabsTrigger value="symbols" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('symbols')}</TabsTrigger>
+            <TabsTrigger value="strategies" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('strategiesAnalytics')}</TabsTrigger>
+            <TabsTrigger value="accounts" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('accountsAnalytics')}</TabsTrigger>
+            <TabsTrigger value="time" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('timeTab')}</TabsTrigger>
+            <TabsTrigger value="psychology" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('psychology')}</TabsTrigger>
+            <TabsTrigger value="confluences" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('entryConditionsTab')}</TabsTrigger>
+            <TabsTrigger value="mistakes" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('mistakesTab')}</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             {/* Outcome + Direction Analysis */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-gradient-to-br from-white via-white to-slate-50 dark:from-[#151527] dark:via-[#14141f] dark:to-[#0f172a] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-gradient-to-br from-white via-white to-slate-50 dark:from-card dark:via-card dark:to-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('outcomeDistribution')}</CardTitle>
                 </CardHeader>
@@ -851,7 +1161,7 @@ export default function Analytics() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-slate-900/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
+                  <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-card/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
                     {outcomeTop
                       ? `${t('insightOutcomeMost')} ${outcomeTop.name}`
                       : t('insightOutcomeEmpty')}
@@ -859,7 +1169,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-white via-white to-slate-50 dark:from-[#151527] dark:via-[#14141f] dark:to-[#0f172a] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-gradient-to-br from-white via-white to-slate-50 dark:from-card dark:via-card dark:to-card shadow-xl border border-slate-200 dark:border-border">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('directionDistribution')}</CardTitle>
                 </CardHeader>
@@ -902,7 +1212,7 @@ export default function Analytics() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-slate-900/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
+                  <div className="rounded-lg border border-slate-200/60 bg-white/70 dark:bg-card/40 dark:border-slate-700/60 px-3 py-2 text-xs text-slate-600 dark:text-slate-300">
                     {directionTop
                       ? `${t('insightDirectionBest')} ${directionTop.direction} · ${directionTop.winRate}% ${t('winRate')}`
                       : t('insightDirectionEmpty')}
@@ -912,7 +1222,7 @@ export default function Analytics() {
             </div>
 
             {/* Equity Curve */}
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40] overflow-hidden">
+            <Card className="shadow-md overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 dark:text-white">
                   <Activity className="w-5 h-5" />
@@ -945,17 +1255,18 @@ export default function Analytics() {
             </Card>
 
             {/* Period Performance */}
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40] overflow-hidden">
+            <Card className="shadow-md overflow-hidden">
               <CardHeader>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <CardTitle className="dark:text-white">
-                    {t('results')} {timePeriod === "weekly" ? t('weekly') : timePeriod === "monthly" ? t('monthly') : t('yearly')}
+                    {t('results')} {timePeriod === "daily" ? (t('daily') || 'Daily') : timePeriod === "weekly" ? t('weekly') : timePeriod === "monthly" ? t('monthly') : t('yearly')}
                   </CardTitle>
                   <Select value={timePeriod} onValueChange={setTimePeriod}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="daily">{t('daily') || 'Daily'}</SelectItem>
                       <SelectItem value="weekly">{t('weekly')}</SelectItem>
                       <SelectItem value="monthly">{t('monthly')}</SelectItem>
                       <SelectItem value="yearly">{t('yearly')}</SelectItem>
@@ -1009,7 +1320,7 @@ export default function Analytics() {
 
             {/* Direction & Timeframe */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('longVsShort')}</CardTitle>
                 </CardHeader>
@@ -1038,7 +1349,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('timeframeAnalysis')}</CardTitle>
                 </CardHeader>
@@ -1066,7 +1377,7 @@ export default function Analytics() {
 
             {/* Session Analysis */}
             {sessionData.length > 0 && (
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">{t('sessionsAnalysis')}</CardTitle>
                 </CardHeader>
@@ -1096,7 +1407,7 @@ export default function Analytics() {
 
           {/* Symbols Tab */}
           <TabsContent value="symbols" className="space-y-6">
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('top10Symbols')}</CardTitle>
               </CardHeader>
@@ -1126,8 +1437,8 @@ export default function Analytics() {
               {symbolData.map((symbol) => (
                 <Card 
                   key={symbol.symbol} 
-                  className={`bg-white dark:bg-[#1a1a2e] shadow-lg border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
-                    selectedSymbol === symbol.symbol ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-[#2d2d40]'
+                  className={`shadow-md border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
+                    selectedSymbol === symbol.symbol ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-border'
                   }`}
                   onClick={() => setSelectedSymbol(symbol.symbol)}
                 >
@@ -1185,19 +1496,20 @@ export default function Analytics() {
                     // Account breakdown
                     const accountBreakdown = {};
                     symbolTrades.forEach(trade => {
-                      const account = accounts.find(a => a.id === trade.account_id);
+                      const account = accounts.find(a => String(a.id) === String(trade.account_id));
                       const accountName = account?.name || "Nieznane";
                       if (!accountBreakdown[accountName]) {
-                        accountBreakdown[accountName] = { wins: 0, total: 0, pl: 0 };
+                        accountBreakdown[accountName] = { wins: 0, losses: 0, total: 0, pl: 0 };
                       }
                       accountBreakdown[accountName].total++;
                       if (trade.outcome === "Win") accountBreakdown[accountName].wins++;
-                      accountBreakdown[accountName].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") accountBreakdown[accountName].losses++;
+                      accountBreakdown[accountName].pl += (getTradeRealizedPL(trade) ?? 0);
                     });
 
                     const accountBreakdownData = Object.entries(accountBreakdown).map(([name, stats]) => ({
                       name,
-                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      winRate: decidedWinRate(stats.wins, stats.losses),
                       pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
                     }));
@@ -1205,31 +1517,33 @@ export default function Analytics() {
                     // Strategy breakdown
                     const strategyBreakdown = {};
                     symbolTrades.forEach(trade => {
-                      const strategy = strategies.find(s => s.id === trade.strategy_id);
+                      const strategy = strategies.find(s => String(s.id) === String(trade.strategy_id));
                       const strategyName = strategy?.name || "Bez strategii";
                       if (!strategyBreakdown[strategyName]) {
-                        strategyBreakdown[strategyName] = { wins: 0, total: 0, pl: 0 };
+                        strategyBreakdown[strategyName] = { wins: 0, losses: 0, total: 0, pl: 0 };
                       }
                       strategyBreakdown[strategyName].total++;
                       if (trade.outcome === "Win") strategyBreakdown[strategyName].wins++;
-                      strategyBreakdown[strategyName].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") strategyBreakdown[strategyName].losses++;
+                      strategyBreakdown[strategyName].pl += (getTradeRealizedPL(trade) ?? 0);
                     });
 
                     const strategyBreakdownData = Object.entries(strategyBreakdown).map(([name, stats]) => ({
                       name,
-                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      winRate: decidedWinRate(stats.wins, stats.losses),
                       pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
                     }));
 
                     // Direction breakdown
-                    const directionBreakdown = { Long: { wins: 0, total: 0, pl: 0 }, Short: { wins: 0, total: 0, pl: 0 } };
+                    const directionBreakdown = { Long: { wins: 0, losses: 0, total: 0, pl: 0 }, Short: { wins: 0, losses: 0, total: 0, pl: 0 } };
                     symbolTrades.forEach(trade => {
                       const direction = normalizeDirection(trade.direction);
                       if (directionBreakdown[direction]) {
                         directionBreakdown[direction].total++;
                         if (trade.outcome === "Win") directionBreakdown[direction].wins++;
-                        directionBreakdown[direction].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") directionBreakdown[direction].losses++;
+                        directionBreakdown[direction].pl += (getTradeRealizedPL(trade) ?? 0);
                       }
                     });
 
@@ -1237,7 +1551,7 @@ export default function Analytics() {
                       .filter(([_, stats]) => stats.total > 0)
                       .map(([dir, stats]) => ({
                         direction: dir,
-                        winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                        winRate: decidedWinRate(stats.wins, stats.losses),
                         pl: Number(stats.pl.toFixed(2)),
                         trades: stats.total
                       }));
@@ -1247,24 +1561,25 @@ export default function Analytics() {
                     symbolTrades.forEach(trade => {
                       if (trade.timeframe) {
                         if (!timeframeBreakdown[trade.timeframe]) {
-                          timeframeBreakdown[trade.timeframe] = { wins: 0, total: 0, pl: 0 };
+                          timeframeBreakdown[trade.timeframe] = { wins: 0, losses: 0, total: 0, pl: 0 };
                         }
                         timeframeBreakdown[trade.timeframe].total++;
                         if (trade.outcome === "Win") timeframeBreakdown[trade.timeframe].wins++;
-                        timeframeBreakdown[trade.timeframe].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") timeframeBreakdown[trade.timeframe].losses++;
+                        timeframeBreakdown[trade.timeframe].pl += (getTradeRealizedPL(trade) ?? 0);
                       }
                     });
 
                     const timeframeBreakdownData = Object.entries(timeframeBreakdown).map(([tf, stats]) => ({
                       timeframe: tf,
-                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      winRate: decidedWinRate(stats.wins, stats.losses),
                       pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
                     }));
 
                     // Best and worst trades
                     const sortedTrades = [...symbolTrades].sort((a, b) => 
-                      (parseFloat(b.profit_loss) || 0) - (parseFloat(a.profit_loss) || 0)
+                      ((getTradeRealizedPL(b) ?? 0) || 0) - ((getTradeRealizedPL(a) ?? 0) || 0)
                     );
                     const bestTrade = sortedTrades[0];
                     const worstTrade = sortedTrades[sortedTrades.length - 1];
@@ -1301,7 +1616,7 @@ export default function Analytics() {
                           </Card>
 
                           {/* Strategy Breakdown */}
-                          <Card className="bg-white dark:bg-slate-900">
+                          <Card>
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2 dark:text-white">
                                 <Brain className="w-4 h-4" />
@@ -1311,7 +1626,7 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2">
                                 {strategyBreakdownData.map(item => (
-                                  <div key={item.name} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                                  <div key={item.name} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-muted rounded-lg">
                                     <div>
                                       <p className="font-semibold text-sm text-slate-900 dark:text-white">{item.name}</p>
                                       <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} transakcji</p>
@@ -1409,7 +1724,7 @@ export default function Analytics() {
                                 <div className="flex justify-between">
                                   <span className="text-sm text-slate-600 dark:text-slate-400">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                                    +{parseFloat(bestTrade.profit_loss).toFixed(2)}
+                                    {(() => { const pl = getTradeRealizedPL(bestTrade) ?? 0; return `${pl >= 0 ? '+' : ''}${pl.toFixed(2)}`; })()}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
@@ -1420,7 +1735,7 @@ export default function Analytics() {
                             </Card>
                           )}
 
-                          {worstTrade && parseFloat(worstTrade.profit_loss) < 0 && (
+                          {worstTrade && (getTradeRealizedPL(worstTrade) ?? 0) < 0 && (
                             <Card className="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950 border border-red-200 dark:border-red-800">
                               <CardHeader>
                                 <CardTitle className="text-base text-red-900 dark:text-red-300 flex items-center gap-2">
@@ -1440,7 +1755,7 @@ export default function Analytics() {
                                 <div className="flex justify-between">
                                   <span className="text-sm text-slate-600 dark:text-slate-400">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-red-600 dark:text-red-400">
-                                    {parseFloat(worstTrade.profit_loss).toFixed(2)}
+                                    {(getTradeRealizedPL(worstTrade) ?? 0).toFixed(2)}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
@@ -1461,7 +1776,7 @@ export default function Analytics() {
 
           {/* Strategies Tab */}
           <TabsContent value="strategies" className="space-y-6">
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('strategiesComparison')}</CardTitle>
               </CardHeader>
@@ -1492,8 +1807,8 @@ export default function Analytics() {
               {strategyData.map((strategy) => (
                 <Card 
                   key={strategy.name} 
-                  className={`bg-white dark:bg-[#1a1a2e] shadow-lg border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
-                    selectedStrategy === strategy.name ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-[#2d2d40]'
+                  className={`shadow-md border cursor-pointer transition-all hover:shadow-xl hover:scale-105 ${
+                    selectedStrategy === strategy.name ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 dark:border-border'
                   }`}
                   onClick={() => setSelectedStrategy(strategy.name)}
                 >
@@ -1513,13 +1828,13 @@ export default function Analytics() {
                         <p className="text-xs text-slate-600 dark:text-slate-400">{t('avgPLLabel')}</p>
                         </div>
                         </div>
-                        <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                        <div className="flex justify-between p-3 bg-slate-50 dark:bg-card rounded-lg">
                         <span className="text-sm text-slate-600 dark:text-slate-400">{t('totalPLLabel')}:</span>
                       <span className={`font-bold ${strategy.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {strategy.totalPL > 0 ? '+' : ''}{strategy.totalPL.toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                    <div className="flex justify-between p-3 bg-slate-50 dark:bg-card rounded-lg">
                       <span className="text-sm text-slate-600 dark:text-slate-400">{t('trades')}:</span>
                       <span className="font-bold text-slate-900 dark:text-white">{strategy.trades}</span>
                     </div>
@@ -1549,26 +1864,27 @@ export default function Analytics() {
                 <CardContent className="space-y-6">
                   {(() => {
                     const strategyTrades = filteredTrades.filter(t => {
-                      const strategy = strategies.find(s => s.id === t.strategy_id);
+                      const strategy = strategies.find(s => String(s.id) === String(t.strategy_id));
                       return (strategy?.name || "Bez strategii") === selectedStrategy;
                     });
                     
                     // Account breakdown
                     const accountBreakdown = {};
                     strategyTrades.forEach(trade => {
-                      const account = accounts.find(a => a.id === trade.account_id);
+                      const account = accounts.find(a => String(a.id) === String(trade.account_id));
                       const accountName = account?.name || "Nieznane";
                       if (!accountBreakdown[accountName]) {
-                        accountBreakdown[accountName] = { wins: 0, total: 0, pl: 0 };
+                        accountBreakdown[accountName] = { wins: 0, losses: 0, total: 0, pl: 0 };
                       }
                       accountBreakdown[accountName].total++;
                       if (trade.outcome === "Win") accountBreakdown[accountName].wins++;
-                      accountBreakdown[accountName].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") accountBreakdown[accountName].losses++;
+                      accountBreakdown[accountName].pl += (getTradeRealizedPL(trade) ?? 0);
                     });
 
                     const accountBreakdownData = Object.entries(accountBreakdown).map(([name, stats]) => ({
                       name,
-                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      winRate: decidedWinRate(stats.wins, stats.losses),
                       pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
                     }));
@@ -1577,28 +1893,30 @@ export default function Analytics() {
                     const symbolBreakdown = {};
                     strategyTrades.forEach(trade => {
                       if (!symbolBreakdown[trade.symbol]) {
-                        symbolBreakdown[trade.symbol] = { wins: 0, total: 0, pl: 0 };
+                        symbolBreakdown[trade.symbol] = { wins: 0, losses: 0, total: 0, pl: 0 };
                       }
                       symbolBreakdown[trade.symbol].total++;
                       if (trade.outcome === "Win") symbolBreakdown[trade.symbol].wins++;
-                      symbolBreakdown[trade.symbol].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") symbolBreakdown[trade.symbol].losses++;
+                      symbolBreakdown[trade.symbol].pl += (getTradeRealizedPL(trade) ?? 0);
                     });
 
                     const symbolBreakdownData = Object.entries(symbolBreakdown).map(([symbol, stats]) => ({
                       symbol,
-                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      winRate: decidedWinRate(stats.wins, stats.losses),
                       pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
                     })).sort((a, b) => b.pl - a.pl);
 
                     // Direction breakdown
-                    const directionBreakdown = { Long: { wins: 0, total: 0, pl: 0 }, Short: { wins: 0, total: 0, pl: 0 } };
+                    const directionBreakdown = { Long: { wins: 0, losses: 0, total: 0, pl: 0 }, Short: { wins: 0, losses: 0, total: 0, pl: 0 } };
                     strategyTrades.forEach(trade => {
                       const direction = normalizeDirection(trade.direction);
                       if (directionBreakdown[direction]) {
                         directionBreakdown[direction].total++;
                         if (trade.outcome === "Win") directionBreakdown[direction].wins++;
-                        directionBreakdown[direction].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") directionBreakdown[direction].losses++;
+                        directionBreakdown[direction].pl += (getTradeRealizedPL(trade) ?? 0);
                       }
                     });
 
@@ -1606,7 +1924,7 @@ export default function Analytics() {
                       .filter(([_, stats]) => stats.total > 0)
                       .map(([dir, stats]) => ({
                         direction: dir,
-                        winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                        winRate: decidedWinRate(stats.wins, stats.losses),
                         pl: Number(stats.pl.toFixed(2)),
                         trades: stats.total
                       }));
@@ -1616,24 +1934,25 @@ export default function Analytics() {
                     strategyTrades.forEach(trade => {
                       if (trade.timeframe) {
                         if (!timeframeBreakdown[trade.timeframe]) {
-                          timeframeBreakdown[trade.timeframe] = { wins: 0, total: 0, pl: 0 };
+                          timeframeBreakdown[trade.timeframe] = { wins: 0, losses: 0, total: 0, pl: 0 };
                         }
                         timeframeBreakdown[trade.timeframe].total++;
                         if (trade.outcome === "Win") timeframeBreakdown[trade.timeframe].wins++;
-                        timeframeBreakdown[trade.timeframe].pl += parseFloat(trade.profit_loss) || 0;
+                      if (trade.outcome === "Loss") timeframeBreakdown[trade.timeframe].losses++;
+                        timeframeBreakdown[trade.timeframe].pl += (getTradeRealizedPL(trade) ?? 0);
                       }
                     });
 
                     const timeframeBreakdownData = Object.entries(timeframeBreakdown).map(([tf, stats]) => ({
                       timeframe: tf,
-                      winRate: stats.total > 0 ? Number(((stats.wins / stats.total) * 100).toFixed(1)) : 0,
+                      winRate: decidedWinRate(stats.wins, stats.losses),
                       pl: Number(stats.pl.toFixed(2)),
                       trades: stats.total
                     }));
 
                     // Best and worst trades
                     const sortedTrades = [...strategyTrades].sort((a, b) => 
-                      (parseFloat(b.profit_loss) || 0) - (parseFloat(a.profit_loss) || 0)
+                      ((getTradeRealizedPL(b) ?? 0) || 0) - ((getTradeRealizedPL(a) ?? 0) || 0)
                     );
                     const bestTrade = sortedTrades[0];
                     const worstTrade = sortedTrades[sortedTrades.length - 1];
@@ -1670,7 +1989,7 @@ export default function Analytics() {
                           </Card>
 
                           {/* Symbol Breakdown */}
-                          <Card className="bg-white dark:bg-slate-900">
+                          <Card>
                             <CardHeader>
                               <CardTitle className="text-base flex items-center gap-2 dark:text-white">
                                 <TrendingUp className="w-4 h-4" />
@@ -1680,7 +1999,7 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2 max-h-64 overflow-y-auto">
                               {symbolBreakdownData.map(item => (
-                               <div key={item.symbol} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                               <div key={item.symbol} className="flex justify-between items-center p-2 bg-slate-50 dark:bg-muted rounded-lg">
                                  <div>
                                    <p className="font-semibold text-sm text-slate-900 dark:text-white">{item.symbol}</p>
                                    <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} {t('trades')}</p>
@@ -1782,14 +2101,14 @@ export default function Analytics() {
                                 <div className="flex justify-between">
                                   <span className="text-sm text-slate-600 dark:text-slate-400">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                                    +{parseFloat(bestTrade.profit_loss).toFixed(2)}
+                                    {(() => { const pl = getTradeRealizedPL(bestTrade) ?? 0; return `${pl >= 0 ? '+' : ''}${pl.toFixed(2)}`; })()}
                                   </span>
                                 </div>
                               </CardContent>
                             </Card>
                           )}
 
-                          {worstTrade && parseFloat(worstTrade.profit_loss) < 0 && (
+                          {worstTrade && (getTradeRealizedPL(worstTrade) ?? 0) < 0 && (
                             <Card className="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950 dark:to-rose-950 border border-red-200 dark:border-red-800">
                               <CardHeader>
                                 <CardTitle className="text-base text-red-900 dark:text-red-300 flex items-center gap-2">
@@ -1813,7 +2132,7 @@ export default function Analytics() {
                                 <div className="flex justify-between">
                                   <span className="text-sm text-slate-600 dark:text-slate-400">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-red-600 dark:text-red-400">
-                                    {parseFloat(worstTrade.profit_loss).toFixed(2)}
+                                    {(getTradeRealizedPL(worstTrade) ?? 0).toFixed(2)}
                                   </span>
                                 </div>
                               </CardContent>
@@ -1832,7 +2151,7 @@ export default function Analytics() {
           <TabsContent value="accounts" className="space-y-6">
             {/* Account Type Distribution */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">Rozkład typów kont</CardTitle>
                 </CardHeader>
@@ -1874,7 +2193,7 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="shadow-md">
                 <CardHeader>
                   <CardTitle className="dark:text-white">Status kont</CardTitle>
                 </CardHeader>
@@ -1903,7 +2222,7 @@ export default function Analytics() {
               </Card>
             </div>
 
-            <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="dark:text-white">{t('accountsComparison')}</CardTitle>
               </CardHeader>
@@ -1932,7 +2251,7 @@ export default function Analytics() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {accountData.map((account) => (
-                <Card key={account.name} className="bg-gradient-to-br from-white to-slate-50 dark:from-[#1a1a2e] dark:to-[#14141f] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+                <Card key={account.name} className="bg-gradient-to-br from-white to-slate-50 dark:from-card dark:to-background shadow-xl border border-slate-200 dark:border-border">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 dark:text-white">
                       <Wallet className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -1952,7 +2271,7 @@ export default function Analytics() {
                         <p className="text-xs text-slate-600 dark:text-slate-400">{t('roi')}</p>
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-100 dark:bg-slate-900 rounded-lg">
+                    <div className="p-3 bg-slate-100 dark:bg-card rounded-lg">
                       <div className="flex justify-between mb-1">
                         <span className="text-sm text-slate-600 dark:text-slate-400">{t('totalPLLabel')}:</span>
                         <span className={`font-bold ${account.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -1971,25 +2290,377 @@ export default function Analytics() {
           </TabsContent>
 
           {/* Psychology Tab */}
+          <TabsContent value="time" className="space-y-6">
+            {tradesWithTime === 0 ? (
+              <Card className="shadow-md">
+                <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
+                  <Clock className="w-10 h-10 text-cyan-400" />
+                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noTimeData')}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* KPI czasu */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card className="bg-gradient-to-br from-cyan-50 to-sky-50 dark:from-cyan-950 dark:to-sky-950 border border-cyan-200 dark:border-cyan-800 shadow-lg">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-cyan-700 dark:text-cyan-300">{t('tradesWithTime')}</span>
+                        <Clock className="w-4 h-4 text-cyan-500" />
+                      </div>
+                      <p className="mt-2 text-2xl font-bold text-cyan-900 dark:text-cyan-200">
+                        {tradesWithTime}<span className="text-base text-cyan-500">/{filteredTrades.length}</span>
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('bestSlot')}</span>
+                        <TrendingUp className="w-4 h-4 text-emerald-500" />
+                      </div>
+                      <p className="mt-2 text-lg font-bold text-emerald-900 dark:text-emerald-200">{bestSlot ? bestSlot.slot : '—'}</p>
+                      <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
+                        {bestSlot ? `${bestSlot.avgPL >= 0 ? '+' : ''}${bestSlot.avgPL} ${t('avg')} · ${bestSlot.winRate}%` : t('noData')}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('worstSlot')}</span>
+                        <AlertCircle className="w-4 h-4 text-rose-500" />
+                      </div>
+                      <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200">{worstSlot ? worstSlot.slot : '—'}</p>
+                      <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                        {worstSlot ? `${worstSlot.avgPL} ${t('avg')} · ${worstSlot.winRate}%` : t('noData')}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 border border-indigo-200 dark:border-indigo-800 shadow-lg">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">{t('bestHour')}</span>
+                        <Activity className="w-4 h-4 text-indigo-500" />
+                      </div>
+                      <p className="mt-2 text-2xl font-bold text-indigo-900 dark:text-indigo-200">{bestHour ? bestHour.hour : '—'}</p>
+                      <p className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80">
+                        {bestHour ? `${bestHour.winRate}% · ${bestHour.trades} ${t('trades')}` : t('noData')}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Wg godziny */}
+                <Card className="shadow-md">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('byHourTitle')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('byHourDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="overflow-hidden p-4">
+                    <div className="w-full overflow-hidden px-2 py-2">
+                      <ResponsiveContainer width="100%" height={320}>
+                        <ComposedChart data={hourData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                          <defs>
+                            <linearGradient id="hourPLGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
+                              <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="hour" stroke="#64748b" />
+                          <YAxis yAxisId="left" stroke="#06b6d4" width={50} domain={[0, 100]} />
+                          <YAxis yAxisId="right" orientation="right" stroke="#22c55e" width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                            itemStyle={{ color: '#e2e8f0' }}
+                            labelStyle={{ color: '#f1f5f9' }}
+                          />
+                          <Legend />
+                          <Area yAxisId="right" type="monotone" dataKey="avgPL" name={t('avgPLLabel')} stroke="#22c55e" strokeWidth={2.5} fill="url(#hourPLGradient)" dot={{ r: 3, fill: '#22c55e' }} activeDot={{ r: 5 }} />
+                          <Line yAxisId="left" type="monotone" dataKey="winRate" name={`${t('winRate')} (%)`} stroke="#06b6d4" strokeWidth={2.5} dot={{ r: 3, fill: '#06b6d4' }} activeDot={{ r: 5 }} />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Wg przedziału 15-minutowego */}
+                <Card className="shadow-md">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('bySlotTitle')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('bySlotDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="overflow-hidden p-4">
+                    <div className="w-full overflow-x-auto py-2">
+                      <ResponsiveContainer width="100%" height={Math.max(320, timeSlotData.length * 30)} minWidth={320}>
+                        <BarChart data={timeSlotData} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis type="number" stroke="#64748b" />
+                          <YAxis type="category" dataKey="slot" stroke="#64748b" width={110} tick={{ fontSize: 11 }} />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                            itemStyle={{ color: '#e2e8f0' }}
+                            labelStyle={{ color: '#f1f5f9' }}
+                          />
+                          <Legend />
+                          <Bar dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
+                            {timeSlotData.map((d, i) => (
+                              <Cell key={i} fill={d.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
+                            ))}
+                          </Bar>
+                          <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill="#06b6d4" radius={[0, 6, 6, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                            <th className="text-left py-2 px-2">{t('timeSlot')}</th>
+                            <th className="text-right py-2 px-2">{t('trades')}</th>
+                            <th className="text-right py-2 px-2">{t('winRate')}</th>
+                            <th className="text-right py-2 px-2">{t('avg')}</th>
+                            <th className="text-right py-2 px-2">{t('total')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {timeSlotData.map((s) => (
+                            <tr key={s.slotStart} className="border-b border-slate-100 dark:border-slate-800">
+                              <td className="py-1.5 px-2 font-medium text-slate-800 dark:text-slate-200">{s.slot}</td>
+                              <td className="py-1.5 px-2 text-right text-slate-600 dark:text-slate-400">{s.trades}</td>
+                              <td className={`py-1.5 px-2 text-right font-semibold ${s.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{s.winRate}%</td>
+                              <td className={`py-1.5 px-2 text-right ${s.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{s.avgPL >= 0 ? '+' : ''}{s.avgPL}</td>
+                              <td className={`py-1.5 px-2 text-right font-semibold ${s.totalPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{s.totalPL >= 0 ? '+' : ''}{s.totalPL}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+
           <TabsContent value="psychology" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+            {/* Tiltometr — kluczowe wskaźniki psychologiczne */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950 border border-indigo-200 dark:border-indigo-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">{t('emotionControl')}</span>
+                    <Brain className="w-4 h-4 text-indigo-500" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-indigo-900 dark:text-indigo-200">
+                    {avgEmotionRating > 0 ? `${avgEmotionRating}/5` : '—'}
+                  </p>
+                  <p className="text-[11px] text-indigo-600/80 dark:text-indigo-400/80">{t('emotionControlDesc')}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950 dark:to-cyan-950 border border-sky-200 dark:border-sky-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-sky-700 dark:text-sky-300">{t('emotionCoverage')}</span>
+                    <Activity className="w-4 h-4 text-sky-500" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-sky-900 dark:text-sky-200">
+                    {tradesWithEmotions.length}<span className="text-base text-sky-500">/{filteredTrades.length}</span>
+                  </p>
+                  <p className="text-[11px] text-sky-600/80 dark:text-sky-400/80">{emotionCoverage}% {t('emotionCoverageDesc')}</p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('costliestEmotion')}</span>
+                    <AlertCircle className="w-4 h-4 text-rose-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200 truncate" title={worstEmotion?.tag}>
+                    {worstEmotion && worstEmotion.avgPL < 0 ? worstEmotion.tag : '—'}
+                  </p>
+                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                    {worstEmotion && worstEmotion.avgPL < 0 ? `${worstEmotion.avgPL} ${t('perTrade')}` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('bestEmotionLabel')}</span>
+                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-emerald-900 dark:text-emerald-200 truncate" title={bestEmotion?.tag}>
+                    {bestEmotion && bestEmotion.avgPL > 0 ? bestEmotion.tag : '—'}
+                  </p>
+                  <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
+                    {bestEmotion && bestEmotion.avgPL > 0 ? `+${bestEmotion.avgPL} ${t('perTrade')}` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {tradesWithEmotions.length === 0 ? (
+              <Card className="shadow-md">
+                <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
+                  <Brain className="w-10 h-10 text-purple-400" />
+                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noEmotionData')}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Emocje a wynik */}
+                  <Card className="shadow-md">
+                    <CardHeader>
+                      <CardTitle className="dark:text-white">{t('emotionVsResult')}</CardTitle>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('emotionVsResultDesc')}</p>
+                    </CardHeader>
+                    <CardContent className="overflow-hidden p-4">
+                      <div className="w-full overflow-hidden px-2 py-2">
+                        <ResponsiveContainer width="100%" height={Math.max(320, emotionPerf.length * 46)}>
+                          <BarChart data={emotionPerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis type="number" stroke="#64748b" />
+                            <YAxis type="category" dataKey="tag" stroke="#64748b" width={150} tick={{ fontSize: 11 }} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                              itemStyle={{ color: '#e2e8f0' }}
+                              labelStyle={{ color: '#f1f5f9' }}
+                            />
+                            <Legend />
+                            <Bar dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
+                              {emotionPerf.map((e, i) => (
+                                <Cell key={i} fill={e.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
+                              ))}
+                            </Bar>
+                            <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill="#8b5cf6" radius={[0, 6, 6, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Ocena wg etapu: wygrane vs przegrane */}
+                  <Card className="shadow-md">
+                    <CardHeader>
+                      <CardTitle className="dark:text-white">{t('ratingByOutcomeTitle')}</CardTitle>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('ratingByOutcomeDesc')}</p>
+                    </CardHeader>
+                    <CardContent className="overflow-hidden p-4">
+                      <div className="w-full overflow-hidden px-2 py-2">
+                        <ResponsiveContainer width="100%" height={340}>
+                          <BarChart data={stageRatingByOutcome} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis dataKey="stage" stroke="#64748b" />
+                            <YAxis stroke="#64748b" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} width={40} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                              itemStyle={{ color: '#e2e8f0' }}
+                              labelStyle={{ color: '#f1f5f9' }}
+                            />
+                            <Legend />
+                            <Bar dataKey="win" name={t('ratingWin')} fill="#22c55e" radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="breakeven" name={t('ratingBreakeven')} fill="#f59e0b" radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="loss" name={t('ratingLoss')} fill="#ef4444" radius={[6, 6, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Tiltometr w czasie */}
+                  <Card className="shadow-md">
+                    <CardHeader>
+                      <CardTitle className="dark:text-white">{t('tiltMeterTitle')}</CardTitle>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{t('tiltMeterDesc')}</p>
+                    </CardHeader>
+                    <CardContent className="overflow-hidden p-4">
+                      <div className="w-full overflow-hidden px-2 py-2">
+                        <ResponsiveContainer width="100%" height={320}>
+                          <AreaChart data={tiltOverTime} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                            <defs>
+                              <linearGradient id="tiltGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.5} />
+                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis dataKey="idx" stroke="#64748b" />
+                            <YAxis stroke="#64748b" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} width={40} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                              itemStyle={{ color: '#e2e8f0' }}
+                              labelStyle={{ color: '#f1f5f9' }}
+                            />
+                            <Area type="monotone" dataKey="rating" name={t('emotionRatingShort')} stroke="#8b5cf6" strokeWidth={2} fill="url(#tiltGradient)" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Najczęstsze emocje wg etapu */}
+                  <Card className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950 dark:to-purple-950 border border-pink-200 dark:border-pink-800 shadow-xl">
+                    <CardHeader>
+                      <CardTitle className="text-purple-900 dark:text-purple-300">{t('topEmotionsTitle')}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {topTagsByStage.map((stage) => (
+                        <div key={stage.stage}>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-purple-700/80 dark:text-purple-300/80 mb-2">{stage.stage}</p>
+                          {stage.items.length === 0 ? (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 pl-1">{t('noData')}</p>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {stage.items.map((it) => (
+                                <div key={it.tag} className="flex justify-between items-center px-3 py-1.5 bg-white/70 dark:bg-muted/70 rounded-lg">
+                                  <span className="text-sm text-slate-800 dark:text-slate-200 truncate">{it.tag}</span>
+                                  <span className="flex items-center gap-3 shrink-0">
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">×{it.total}</span>
+                                    <span className={`text-xs font-semibold ${it.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{it.winRate}%</span>
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
+
+            {/* Pewność setupu a wynik */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2 shadow-md">
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{t('setupQuality')}</CardTitle>
+                  <CardTitle className="dark:text-white">{t('confidenceVsResultTitle')}</CardTitle>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{t('confidenceVsResultDesc')}</p>
                 </CardHeader>
                 <CardContent className="overflow-hidden p-4">
-                  {setupData.length === 0 ? (
-                    <div className="h-[340px] flex items-center justify-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                      {t('noData')}
+                  {!hasConfidenceData ? (
+                    <div className="h-[320px] flex items-center justify-center text-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 px-6">
+                      {t('noConfidenceData')}
                     </div>
                   ) : (
-                    <div className="w-full overflow-hidden px-4 py-2">
-                      <ResponsiveContainer width="100%" height={340}>
-                        <BarChart data={setupData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                    <div className="w-full overflow-hidden px-2 py-2">
+                      <ResponsiveContainer width="100%" height={320}>
+                        <BarChart data={confidenceData} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="quality" stroke="#64748b" />
-                          <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                          <XAxis dataKey="level" stroke="#64748b" />
+                          <YAxis yAxisId="left" stroke="#64748b" width={50} domain={[0, 100]} />
+                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={55} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
                           <Tooltip
                             contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
                             itemStyle={{ color: '#e2e8f0' }}
@@ -1997,7 +2668,11 @@ export default function Analytics() {
                           />
                           <Legend />
                           <Bar dataKey="winRate" yAxisId="left" fill="#f59e0b" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                          <Bar dataKey="avgPL" yAxisId="right" fill="#22c55e" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="avgPL" yAxisId="right" name={t('avgPLLabel')} radius={[8, 8, 0, 0]}>
+                            {confidenceData.map((d, i) => (
+                              <Cell key={i} fill={d.avgPL >= 0 ? '#22c55e' : '#ef4444'} />
+                            ))}
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -2005,94 +2680,324 @@ export default function Analytics() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl border border-slate-200 dark:border-[#2d2d40]">
+              <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 border border-amber-200 dark:border-amber-800 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="dark:text-white">{t('emotionalState')}</CardTitle>
+                  <CardTitle className="text-amber-900 dark:text-amber-300 flex items-center justify-between">
+                    <span>{t('avgConfidence')}</span>
+                    <span className="text-2xl">{hasConfidenceData ? `${avgConfidence}⭐` : '—'}</span>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="overflow-hidden p-4">
-                  {emotionalData.length === 0 ? (
-                    <div className="h-[360px] flex items-center justify-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                      {t('noData')}
-                    </div>
+                <CardContent className="space-y-2">
+                  {!hasConfidenceData ? (
+                    <p className="text-xs text-amber-700 dark:text-amber-300">{t('noConfidenceData')}</p>
                   ) : (
-                    <div className="w-full overflow-hidden px-4 py-2">
-                      <ResponsiveContainer width="100%" height={360}>
-                        <BarChart data={emotionalData} margin={{ top: 30, right: 35, left: 20, bottom: 100 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                          <XAxis dataKey="state" stroke="#64748b" angle={-45} textAnchor="end" height={95} />
-                          <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                          <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
-                            itemStyle={{ color: '#e2e8f0' }}
-                            labelStyle={{ color: '#f1f5f9' }}
-                          />
-                          <Legend />
-                          <Bar dataKey="winRate" yAxisId="left" fill="#ec4899" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                          <Bar dataKey="avgPL" yAxisId="right" fill="#8b5cf6" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    confidenceData.filter((d) => d.trades > 0).map((d) => (
+                      <div key={d.level} className="flex justify-between items-center px-3 py-2 bg-white/70 dark:bg-muted/70 rounded-lg">
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{d.level}</span>
+                        <span className="flex items-center gap-3 shrink-0">
+                          <span className="text-xs text-slate-500 dark:text-slate-400">×{d.trades}</span>
+                          <span className={`text-xs font-semibold ${d.winRate >= 50 ? 'text-green-600' : 'text-red-600'}`}>{d.winRate}%</span>
+                          <span className={`text-xs font-semibold ${d.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>{d.avgPL >= 0 ? '+' : ''}{d.avgPL}</span>
+                        </span>
+                      </div>
+                    ))
                   )}
                 </CardContent>
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950 dark:to-orange-950 border border-amber-200 dark:border-amber-800 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-amber-900 dark:text-amber-300">{t('setupQualityDetails')}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {setupData.length === 0 && (
-                    <div className="rounded-lg border border-dashed border-amber-300 dark:border-amber-700 p-4 text-sm text-amber-700 dark:text-amber-300">
-                      {t('noData')}
-                    </div>
-                  )}
-                  {setupData.map((item) => (
-                    <div key={item.quality} className="flex justify-between items-center p-3 bg-white/70 dark:bg-slate-800/70 rounded-lg">
-                      <div>
-                        <span className="font-semibold text-slate-900 dark:text-white">{item.quality}</span>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} {t('trades')}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-blue-600 dark:text-blue-400">{item.winRate}%</p>
-                        <p className={`text-xs ${item.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {t('avg')}: {item.avgPL.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+            {/* Jakość setupu (uzupełniająco) */}
+            <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle className="dark:text-white">{t('setupQuality')}</CardTitle>
+              </CardHeader>
+              <CardContent className="overflow-hidden p-4">
+                {setupData.length === 0 ? (
+                  <div className="h-[300px] flex items-center justify-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400">
+                    {t('noData')}
+                  </div>
+                ) : (
+                  <div className="w-full overflow-hidden px-4 py-2">
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={setupData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="quality" stroke="#64748b" />
+                        <YAxis yAxisId="left" stroke="#64748b" width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#64748b" width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                          labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Legend />
+                        <Bar dataKey="winRate" yAxisId="left" fill="#f59e0b" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" yAxisId="right" fill="#22c55e" name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="confluences" className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('tagCoverage')}</span>
+                    <ListChecks className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-emerald-900 dark:text-emerald-200">
+                    {confluenceAgg.taggedTrades}<span className="text-base text-emerald-500">/{filteredTrades.length}</span>
+                  </p>
+                  <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">{confluenceCoverage}% {t('entryConditionsCoverageDesc')}</p>
                 </CardContent>
               </Card>
-
-              <Card className="bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950 dark:to-purple-950 border border-pink-200 dark:border-pink-800 shadow-xl">
-                <CardHeader>
-                  <CardTitle className="text-purple-900 dark:text-purple-300">{t('emotionalAnalysis')}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {emotionalData.length === 0 && (
-                    <div className="rounded-lg border border-dashed border-purple-300 dark:border-purple-700 p-4 text-sm text-purple-700 dark:text-purple-300">
-                      {t('noData')}
-                    </div>
-                  )}
-                  {emotionalData.map((item) => (
-                    <div key={item.state} className="flex justify-between items-center p-3 bg-white/70 dark:bg-slate-800/70 rounded-lg">
-                      <div>
-                        <span className="font-semibold text-slate-900 dark:text-white">{item.state}</span>
-                        <p className="text-xs text-slate-600 dark:text-slate-400">{item.trades} {t('trades')}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-blue-600 dark:text-blue-400">{item.winRate}%</p>
-                        <p className={`text-xs ${item.avgPL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {t('avg')}: {item.avgPL.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+              <Card className="bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-950 dark:to-cyan-950 border border-sky-200 dark:border-sky-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-sky-700 dark:text-sky-300">{t('mostFrequentTag')}</span>
+                    <Activity className="w-4 h-4 text-sky-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-sky-900 dark:text-sky-200 truncate" title={confluenceByFreq[0]?.tag}>
+                    {confluenceByFreq[0]?.tag || "—"}
+                  </p>
+                  <p className="text-[11px] text-sky-600/80 dark:text-sky-400/80">
+                    {confluenceByFreq[0] ? `${confluenceByFreq[0].trades} ${t('trades')}` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('weakestCondition')}</span>
+                    <AlertCircle className="w-4 h-4 text-rose-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200 truncate" title={worstConfluence?.tag}>
+                    {worstConfluence && worstConfluence.avgPL < 0 ? worstConfluence.tag : "—"}
+                  </p>
+                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                    {worstConfluence && worstConfluence.avgPL < 0 ? `${worstConfluence.avgPL} ${t('perTrade')}` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 border border-emerald-200 dark:border-emerald-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t('strongestCondition')}</span>
+                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-emerald-900 dark:text-emerald-200 truncate" title={bestConfluence?.tag}>
+                    {bestConfluence && bestConfluence.avgPL > 0 ? bestConfluence.tag : "—"}
+                  </p>
+                  <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
+                    {bestConfluence && bestConfluence.avgPL > 0 ? `+${bestConfluence.avgPL} ${t('perTrade')}` : t('noData')}
+                  </p>
                 </CardContent>
               </Card>
             </div>
+
+            {confluencePerf.length === 0 ? (
+              <Card className="shadow-md">
+                <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
+                  <ListChecks className="w-10 h-10 text-emerald-400" />
+                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noEntryConditionData')}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="shadow-md">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('conditionVsResult')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('conditionVsResultDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="overflow-hidden p-4">
+                    <ResponsiveContainer width="100%" height={Math.max(320, confluencePerf.length * 44)}>
+                      <BarChart data={confluencePerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis type="number" stroke="#64748b" />
+                        <YAxis type="category" dataKey="tag" stroke="#64748b" width={140} tick={{ fontSize: 11 }} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "8px", color: "#e2e8f0" }}
+                          itemStyle={{ color: "#e2e8f0" }}
+                          labelStyle={{ color: "#f1f5f9" }}
+                        />
+                        <Legend />
+                        <Bar dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
+                          {confluencePerf.map((e, i) => (
+                            <Cell key={i} fill={e.avgPL >= 0 ? "#22c55e" : "#ef4444"} />
+                          ))}
+                        </Bar>
+                        <Bar dataKey="winRate" name={`${t("winRate")} (%)`} fill="#10b981" radius={[0, 6, 6, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-md overflow-hidden">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('conditionTableTitle')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('conditionTableDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="p-0 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-700 bg-muted/30 text-xs text-muted-foreground">
+                          <th className="text-left py-2 px-3 font-medium">{t('entryConditionsTab')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('trades')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('winRate')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('avg')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('total')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {confluenceByFreq.map((row) => (
+                          <tr key={row.tag} className="border-b border-slate-100 dark:border-slate-800">
+                            <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
+                            <td className="py-2 px-3 text-right tabular-nums text-slate-600 dark:text-slate-400">{row.trades}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-green-600" : "text-red-600"}`}>{row.winRate}%</td>
+                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="mistakes" className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-rose-50 to-orange-50 dark:from-rose-950 dark:to-orange-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('tagCoverage')}</span>
+                    <AlertTriangle className="w-4 h-4 text-rose-500" />
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-rose-900 dark:text-rose-200">
+                    {mistakeAgg.taggedTrades}<span className="text-base text-rose-500">/{filteredTrades.length}</span>
+                  </p>
+                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">{mistakeCoverage}% {t('mistakesCoverageDesc')}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950 dark:to-yellow-950 border border-amber-200 dark:border-amber-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{t('mostFrequentMistake')}</span>
+                    <Activity className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-amber-900 dark:text-amber-200 truncate" title={mistakeByFreq[0]?.tag}>
+                    {mistakeByFreq[0]?.tag || "—"}
+                  </p>
+                  <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80">
+                    {mistakeByFreq[0] ? `${mistakeByFreq[0].trades}×` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950 dark:to-red-950 border border-rose-200 dark:border-rose-800 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-rose-700 dark:text-rose-300">{t('costliestMistake')}</span>
+                    <AlertCircle className="w-4 h-4 text-rose-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-rose-900 dark:text-rose-200 truncate" title={costliestMistake?.tag}>
+                    {costliestMistake && costliestMistake.avgPL < 0 ? costliestMistake.tag : "—"}
+                  </p>
+                  <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                    {costliestMistake && costliestMistake.avgPL < 0
+                      ? `${costliestMistake.avgPL} ${t('perTrade')} · Σ ${costliestMistake.totalPL}`
+                      : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{t('leastHarmfulMistake')}</span>
+                    <TrendingUp className="w-4 h-4 text-slate-500" />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-slate-900 dark:text-slate-200 truncate" title={bestMistakeAvoid?.tag}>
+                    {bestMistakeAvoid?.tag || "—"}
+                  </p>
+                  <p className="text-[11px] text-slate-600/80 dark:text-slate-400/80">
+                    {bestMistakeAvoid ? `${bestMistakeAvoid.avgPL >= 0 ? "+" : ""}${bestMistakeAvoid.avgPL} ${t('perTrade')}` : t('noData')}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {mistakePerf.length === 0 ? (
+              <Card className="shadow-md">
+                <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
+                  <AlertTriangle className="w-10 h-10 text-rose-400" />
+                  <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">{t('noMistakeData')}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="shadow-md">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('mistakeVsResult')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('mistakeVsResultDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="overflow-hidden p-4">
+                    <ResponsiveContainer width="100%" height={Math.max(320, mistakePerf.length * 44)}>
+                      <BarChart data={mistakePerf} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis type="number" stroke="#64748b" />
+                        <YAxis type="category" dataKey="tag" stroke="#64748b" width={140} tick={{ fontSize: 11 }} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: "#1e293b", border: "1px solid #334155", borderRadius: "8px", color: "#e2e8f0" }}
+                          itemStyle={{ color: "#e2e8f0" }}
+                          labelStyle={{ color: "#f1f5f9" }}
+                        />
+                        <Legend />
+                        <Bar dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
+                          {mistakePerf.map((e, i) => (
+                            <Cell key={i} fill={e.avgPL >= 0 ? "#22c55e" : "#ef4444"} />
+                          ))}
+                        </Bar>
+                        <Bar dataKey="winRate" name={`${t("winRate")} (%)`} fill="#f43f5e" radius={[0, 6, 6, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-md overflow-hidden">
+                  <CardHeader>
+                    <CardTitle className="dark:text-white">{t('mistakeTableTitle')}</CardTitle>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('mistakeTableDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="p-0 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-700 bg-muted/30 text-xs text-muted-foreground">
+                          <th className="text-left py-2 px-3 font-medium">{t('mistakesTab')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('trades')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('winRate')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('avg')}</th>
+                          <th className="text-right py-2 px-3 font-medium">{t('total')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mistakeByFreq.map((row) => (
+                          <tr key={row.tag} className="border-b border-slate-100 dark:border-slate-800">
+                            <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
+                            <td className="py-2 px-3 text-right tabular-nums text-slate-600 dark:text-slate-400">{row.trades}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-green-600" : "text-red-600"}`}>{row.winRate}%</td>
+                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-green-600" : "text-red-600"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

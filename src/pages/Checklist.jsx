@@ -185,12 +185,12 @@ export default function Checklist() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-4 sm:p-6">
+    <div className="w-full min-h-0 space-y-6 dashboard-surface">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">{t("notesChecklists") || "Checklisty"}</h1>
-            <p className="text-slate-600 dark:text-slate-400">Tworz boxy checklist i przypinaj pojedynczo do prawego panelu.</p>
+            <h1 className="cyber-page-title text-3xl sm:text-4xl">{t("notesChecklists") || "Checklisty"}</h1>
+            <p className="cyber-page-sub">Tworz boxy checklist i przypinaj pojedynczo do prawego panelu.</p>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="secondary">{items.length} box</Badge>
@@ -198,7 +198,7 @@ export default function Checklist() {
           </div>
         </div>
 
-        <Card className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+        <Card className="shadow-md">
           <CardContent className="pt-6">
             <div className="flex gap-2">
               <Input
@@ -211,7 +211,7 @@ export default function Checklist() {
                   }
                 }}
               />
-              <Button onClick={createCard} className="gap-2">
+              <Button onClick={createCard} className="gap-2 cyber-primary-btn">
                 <Plus className="h-4 w-4" />
                 Dodaj box
               </Button>
@@ -220,7 +220,7 @@ export default function Checklist() {
         </Card>
 
         {items.length === 0 && (
-          <Card className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <Card className="shadow-md">
             <CardContent className="py-12 text-center text-slate-500">
               <CheckSquare className="h-12 w-12 mx-auto mb-3 opacity-50" />
               Brak checklist. Dodaj pierwszy box.

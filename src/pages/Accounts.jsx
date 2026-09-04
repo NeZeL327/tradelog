@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
 import { getTradingAccounts, createTradingAccount, deleteTradingAccount, updateTradingAccount, getTrades } from "@/lib/localStorage";
-import { isClosedTrade } from "@/lib/utils";
+import { getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -115,7 +115,7 @@ export default function Accounts() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-6">
+      <div className="w-full min-h-[40vh] dashboard-surface p-6">
         <div className="max-w-none mx-0 space-y-6">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">Wymagane logowanie</h1>
@@ -128,7 +128,7 @@ export default function Accounts() {
 
   if (isLoading || isTradesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-6">
+      <div className="w-full min-h-[40vh] dashboard-surface p-6">
         <div className="max-w-none mx-0 space-y-6">
           <div className="text-center">
             <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin mx-auto"></div>
@@ -147,16 +147,16 @@ export default function Accounts() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-900 p-4 sm:p-6">
+    <div className="w-full min-h-0 dashboard-surface space-y-6">
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1">
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-2">Konta tradingowe</h1>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">Zarządzaj swoimi kontami handlowymi</p>
+            <h1 className="cyber-page-title">Konta tradingowe</h1>
+            <p className="cyber-page-sub text-sm">Zarządzaj swoimi kontami handlowymi</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Select value={accountVisibilityFilter} onValueChange={setAccountVisibilityFilter}>
-              <SelectTrigger className="w-[190px] bg-white dark:bg-slate-800">
+              <SelectTrigger className="w-[190px] bg-white dark:bg-muted">
                 <SelectValue placeholder="Filtr kont" />
               </SelectTrigger>
               <SelectContent>
@@ -171,7 +171,7 @@ export default function Accounts() {
               if (!open) setEditingAccount(null);
             }}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 gap-2 whitespace-nowrap">
+                <Button className="cyber-primary-btn gap-2 whitespace-nowrap">
                   <Plus className="w-4 h-4" />
                   Dodaj konto
                 </Button>
@@ -210,7 +210,7 @@ export default function Accounts() {
               if (!open) setEditingAccount(null);
             }}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
+                <Button className="cyber-primary-btn gap-2">
                   <Plus className="w-4 h-4" />
                   Dodaj pierwsze konto
                 </Button>
@@ -295,7 +295,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
   const accountTrades = trades.filter(
     (trade) => String(trade.account_id) === String(account.id) && isClosedTrade(trade)
   );
-  const realizedPL = accountTrades.reduce((sum, trade) => sum + (parseFloat(trade.profit_loss) || 0), 0);
+  const realizedPL = accountTrades.reduce((sum, trade) => sum + (getTradeRealizedPL(trade) ?? 0), 0);
   const balanceBasedPL = Number.isFinite(currentBalance) ? currentBalance - initialBalance : 0;
   const profitLoss = accountTrades.length > 0 ? realizedPL : balanceBasedPL;
   const displayedBalance = Number.isFinite(currentBalance) ? currentBalance : initialBalance + realizedPL;
@@ -328,11 +328,11 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
   };
 
   const getAccountTypeColor = () => {
-    return "border-l-4 bg-white/80 dark:bg-[#14141f]/80 backdrop-blur border border-slate-200/60 dark:border-[#2d2d40] shadow-lg hover:shadow-xl";
+    return "border-l-4 bg-white/80 dark:bg-card/80 backdrop-blur border border-slate-200/60 dark:border-border shadow-lg hover:shadow-xl";
   };
 
   const getAccountDividerColor = () => {
-    return 'border-slate-200/60 dark:border-[#2d2d40]';
+    return 'border-slate-200/60 dark:border-border';
   };
 
   const getAccountTypeBadge = () => {
@@ -371,7 +371,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             </div>
           </div>
           <div className="flex gap-1 flex-shrink-0">
-            <div className="flex items-center gap-1 px-1.5 border rounded-md bg-white/70 dark:bg-slate-900/50">
+            <div className="flex items-center gap-1 px-1.5 border rounded-md bg-white/70 dark:bg-card/50">
               <Power className={`w-3 h-3 shrink-0 ${isAccountActive ? 'text-green-600' : 'text-slate-400'}`} />
               <button
                 type="button"
@@ -386,12 +386,14 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
                 />
               </button>
             </div>
-            <AccountImportButton 
-              account={account} 
+            <AccountImportButton
+              account={account}
+              existingTrades={trades}
               onImportSuccess={() => {
                 queryClient.invalidateQueries({ queryKey: ['trades', user?.id] });
-                toast.success('Transakcje zaimportowane pomyślnie');
-              }} 
+                queryClient.invalidateQueries({ queryKey: ['trades'] });
+                queryClient.refetchQueries({ queryKey: ['trades', user?.id] });
+              }}
             />
             <Button size="sm" variant="outline" onClick={() => onEdit(account)} className="h-8 w-8 p-0">
               <Edit className="w-3.5 h-3.5" />
@@ -575,7 +577,7 @@ function AccountForm({ account, onSubmit, onCancel, isLoading }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      <Card className="bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700">
+      <Card className="bg-white dark:bg-muted shadow-xl border border-slate-200 dark:border-slate-700">
         <CardHeader>
           <CardTitle className="dark:text-white">{account ? "Edytuj konto" : "Nowe konto"}</CardTitle>
         </CardHeader>

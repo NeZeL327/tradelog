@@ -86,7 +86,15 @@ export const createPortalSession = functions.https.onRequest(async (req, res) =>
     });
     res.json({ url: portal.url });
   } catch (error) {
-    res.status(500).json({ error: "Unable to create portal session" });
+    console.error("createPortalSession error:", error?.message, error?.code, error?.type);
+    res.status(500).json({
+      error: "Unable to create portal session",
+      detail: error?.message || "unknown",
+      code: error?.code || null,
+      hint: error?.message?.includes("configuration")
+        ? "Customer Portal is not configured. Activate it at https://dashboard.stripe.com/test/settings/billing/portal"
+        : null
+    });
   }
 });
 

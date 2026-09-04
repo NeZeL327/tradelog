@@ -218,7 +218,7 @@ css
 }
 
 body {
-  background-color: hsl(var(--background));
+  background-color: hsl(var(--app-shell));
   color: hsl(var(--foreground));
   font-size: 80%;
 }

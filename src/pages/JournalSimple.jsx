@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, deleteTrade, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,10 +19,13 @@ import {
   ArrowUpDown,
   Eye,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  CalendarRange
 } from "lucide-react";
 import { parseISO, isSameDay, isSameWeek, isSameMonth } from "date-fns";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,21 +36,131 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import TradeFormNew from "../components/TradeFormNew";
-import TradeCard from "../components/TradeCard";
-import { ExportButton } from "../components/ExportButton";
+import JournalMobileList from "../components/JournalMobileList";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, getTradeRealizedPL, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
+import { formatTradeDate, formatTradeClock, formatTradeClockDate, getDateFormat } from "@/lib/userSettings";
+
+const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
+const DAYS_PL = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
+
+const TradeFormNew = lazy(() => import("../components/TradeFormNew"));
+const TradeDetailView = lazy(() => import("../components/TradeDetailView"));
+
+const FormFallback = () => (
+  <div className="flex justify-center py-10">
+    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+  </div>
+);
+
+/** Normalize HH:MM[:SS] so string compare works (9:00 vs 15:00). */
+function padTradeTime(time) {
+  const match = String(time || "").trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!match) return "00:00:00";
+  return `${String(Number(match[1])).padStart(2, "0")}:${match[2]}:${match[3] || "00"}`;
+}
+
+/** Sort key: entry/exit date + time (newest-first when compared descending). */
+function tradeDateTimeSortKey(trade, which = "entry") {
+  if (which === "exit") {
+    const date = String(trade?.close_date || trade?.date || "").slice(0, 10);
+    return `${date}T${padTradeTime(trade?.exit_time)}`;
+  }
+  const date = String(trade?.date || "").slice(0, 10);
+  return `${date}T${padTradeTime(trade?.entry_time || trade?.open_time || trade?.time)}`;
+}
+
+function MiniCalendar({ from, to, onSelect }) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const [view, setView] = useState(() => {
+    const base = from ? new Date(from + "T00:00:00") : new Date();
+    return { year: base.getFullYear(), month: base.getMonth() };
+  });
+
+  const prevMonth = () => setView(p => p.month === 0 ? { year: p.year - 1, month: 11 } : { ...p, month: p.month - 1 });
+  const nextMonth = () => setView(p => p.month === 11 ? { year: p.year + 1, month: 0 } : { ...p, month: p.month + 1 });
+
+  const toStr = (d) => `${view.year}-${String(view.month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+  const firstDow = (() => { const d = new Date(view.year, view.month, 1).getDay(); return d === 0 ? 6 : d - 1; })();
+  const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
+  const cells = [...Array(firstDow).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+
+  const handleDay = (d) => {
+    if (!d) return;
+    const s = toStr(d);
+    if (!from || (from && to)) {
+      onSelect(s, "");
+    } else if (s < from) {
+      onSelect(s, from);
+    } else {
+      onSelect(from, s);
+    }
+  };
+
+  return (
+    <div className="w-[224px] select-none">
+      <div className="flex items-center justify-between mb-2">
+        <button type="button" onClick={prevMonth} className="p-1 rounded hover:bg-cyan-500/10 dark:hover:bg-cyan-500/15 text-slate-500 dark:text-cyan-300/80">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <span className="text-sm font-semibold text-slate-800 dark:text-cyan-100">
+          {MONTHS_PL[view.month]} {view.year}
+        </span>
+        <button type="button" onClick={nextMonth} className="p-1 rounded hover:bg-cyan-500/10 dark:hover:bg-cyan-500/15 text-slate-500 dark:text-cyan-300/80">
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+      <div className="grid grid-cols-7 mb-1">
+        {DAYS_PL.map(d => (
+          <div key={d} className="text-center text-[10px] font-medium text-slate-400 py-0.5">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-y-0.5">
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />;
+          const s = toStr(d);
+          const isFrom = s === from;
+          const isTo = s === to;
+          const inRange = from && to && s > from && s < to;
+          const isNow = s === todayStr;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => handleDay(d)}
+              className={[
+                "text-xs h-7 w-full rounded transition-colors",
+                isFrom || isTo ? "bg-cyan-600 dark:bg-cyan-500 text-white font-semibold" : "",
+                inRange ? "bg-cyan-100 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-200 rounded-none" : "",
+                isNow && !isFrom && !isTo ? "font-bold text-cyan-600 dark:text-cyan-400" : "",
+                !isFrom && !isTo && !inRange ? "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700" : "",
+              ].join(" ").trim()}
+            >
+              {d}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function JournalSimple({ mode = "all" }) {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isPlannedMode = mode === "planned";
+  const isMissedMode = mode === "missed";
+  const isSingleStatusMode = isPlannedMode || isMissedMode;
+  const fixedStatus = isPlannedMode ? "Planned" : isMissedMode ? "Missed" : null;
+  const dateFormat = useMemo(() => getDateFormat(), []);
+  const fmtDate = (d) => formatTradeDate(d, dateFormat);
   const journalFiltersStorageKey = `journal_filters_${user?.id || 'guest'}_${mode}`;
   const hasLoadedJournalFilters = useRef(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilters, setStatusFilters] = useState(isPlannedMode ? ["Planned"] : ["all"]);
+  const [statusFilters, setStatusFilters] = useState(isSingleStatusMode ? [fixedStatus] : ["all"]);
   const [timeFilters, setTimeFilters] = useState(["all"]);
   const [timeFilterOpen, setTimeFilterOpen] = useState(false);
   const timeFilterRef = useRef(null);
@@ -64,6 +178,9 @@ export default function JournalSimple({ mode = "all" }) {
   const [plannedOpen, setPlannedOpen] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState(new Set());
   const [deleteDialog, setDeleteDialog] = useState({ open: false, mode: null, tradeId: null, count: 0 });
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const datePickerRef = useRef(null);
   const [visibleColumns, setVisibleColumns] = useState({
     status: true,
     date: true,
@@ -81,9 +198,17 @@ export default function JournalSimple({ mode = "all" }) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    if (searchParams.get("add") !== "1") return;
+    setShowAddForm(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("add");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
     hasLoadedJournalFilters.current = false;
 
-    const defaultStatusFilters = isPlannedMode ? ["Planned"] : ["all"];
+    const defaultStatusFilters = isSingleStatusMode ? [fixedStatus] : ["all"];
     setSearchTerm("");
     setStatusFilters(defaultStatusFilters);
     setTimeFilters(["all"]);
@@ -111,7 +236,7 @@ export default function JournalSimple({ mode = "all" }) {
           setOutcomeFilters(parsed.outcomeFilters.map((value) => String(value)));
         }
 
-        if (!isPlannedMode && Array.isArray(parsed.statusFilters) && parsed.statusFilters.length > 0) {
+        if (!isSingleStatusMode && Array.isArray(parsed.statusFilters) && parsed.statusFilters.length > 0) {
           setStatusFilters(parsed.statusFilters.map((value) => String(value)));
         }
       }
@@ -120,7 +245,7 @@ export default function JournalSimple({ mode = "all" }) {
     } finally {
       hasLoadedJournalFilters.current = true;
     }
-  }, [journalFiltersStorageKey, isPlannedMode]);
+  }, [journalFiltersStorageKey, isSingleStatusMode, fixedStatus]);
 
   useEffect(() => {
     if (!hasLoadedJournalFilters.current) return;
@@ -130,7 +255,7 @@ export default function JournalSimple({ mode = "all" }) {
         journalFiltersStorageKey,
         JSON.stringify({
           searchTerm,
-          statusFilters: isPlannedMode ? ["Planned"] : statusFilters,
+          statusFilters: isSingleStatusMode ? [fixedStatus] : statusFilters,
           timeFilters,
           accountFilters,
           outcomeFilters
@@ -141,7 +266,8 @@ export default function JournalSimple({ mode = "all" }) {
     }
   }, [
     journalFiltersStorageKey,
-    isPlannedMode,
+    isSingleStatusMode,
+    fixedStatus,
     searchTerm,
     statusFilters,
     timeFilters,
@@ -149,11 +275,12 @@ export default function JournalSimple({ mode = "all" }) {
     outcomeFilters
   ]);
 
-  const { data: trades = [], isLoading, refetch } = useQuery({
+  const { data: trades = [], isFetching, isError, refetch } = useQuery({
     queryKey: ['trades', user?.id],
     queryFn: () => getTrades(user?.id),
     enabled: !!user?.id,
-    staleTime: 1000
+    staleTime: 1000,
+    placeholderData: [],
   });
 
   const { data: accounts = [] } = useQuery({
@@ -164,7 +291,13 @@ export default function JournalSimple({ mode = "all" }) {
 
   const activeAccounts = accounts.filter((account) => account.is_active !== false && account.status !== 'Inactive');
   const activeAccountIds = new Set(activeAccounts.map((account) => String(account.id)));
-  const tradesFromActiveAccounts = trades.filter((trade) => activeAccountIds.has(String(trade.account_id)));
+  const inactiveAccountIds = new Set(
+    accounts.filter(a => a.is_active === false || a.status === 'Inactive').map(a => String(a.id))
+  );
+  const tradesFromActiveAccounts = trades.filter((trade) => {
+    if (!trade.account_id) return true;
+    return !inactiveAccountIds.has(String(trade.account_id));
+  });
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies', user?.id],
@@ -240,7 +373,7 @@ export default function JournalSimple({ mode = "all" }) {
     const symbolTrades = tradesFromActiveAccounts.filter(t => t.symbol === trade.symbol && isClosedTrade(t));
     const wins = symbolTrades.filter(t => t.outcome === "Win").length;
     const total = symbolTrades.length;
-    const totalPL = symbolTrades.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0);
+    const totalPL = symbolTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
     const avgPL = total ? (totalPL / total) : 0;
 
     const account = accounts.find(a => String(a.id) === String(trade.account_id));
@@ -261,19 +394,32 @@ export default function JournalSimple({ mode = "all" }) {
 
   const sortTrades = (list) => {
     return [...list].sort((a, b) => {
-      let aVal = a[sortField];
-      let bVal = b[sortField];
+      let cmp = 0;
 
       if (sortField === "profit_loss") {
-        aVal = parseFloat(aVal) || 0;
-        bVal = parseFloat(bVal) || 0;
+        const aVal = getTradeRealizedPL(a) ?? 0;
+        const bVal = getTradeRealizedPL(b) ?? 0;
+        cmp = aVal === bVal ? 0 : aVal > bVal ? 1 : -1;
+      } else if (sortField === "date") {
+        cmp = tradeDateTimeSortKey(a, "entry").localeCompare(tradeDateTimeSortKey(b, "entry"));
+        if (cmp === 0) {
+          cmp = tradeDateTimeSortKey(a, "exit").localeCompare(tradeDateTimeSortKey(b, "exit"));
+        }
+      } else {
+        const aVal = a[sortField];
+        const bVal = b[sortField];
+        if (aVal == null && bVal == null) cmp = 0;
+        else if (aVal == null) cmp = -1;
+        else if (bVal == null) cmp = 1;
+        else if (aVal === bVal) cmp = 0;
+        else cmp = aVal > bVal ? 1 : -1;
+        if (cmp === 0) {
+          cmp = tradeDateTimeSortKey(a, "entry").localeCompare(tradeDateTimeSortKey(b, "entry"));
+        }
       }
 
-      if (sortOrder === "asc") {
-        return aVal > bVal ? 1 : -1;
-      } else {
-        return aVal < bVal ? 1 : -1;
-      }
+      if (cmp === 0) return 0;
+      return sortOrder === "asc" ? cmp : -cmp;
     });
   };
 
@@ -314,6 +460,17 @@ export default function JournalSimple({ mode = "all" }) {
   }, [accountFilterOpen]);
 
   useEffect(() => {
+    if (!datePickerOpen) return;
+    const handleClickOutside = (event) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+        setDatePickerOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [datePickerOpen]);
+
+  useEffect(() => {
     const validIds = new Set(activeAccounts.map((account) => String(account.id)));
     setAccountFilters((prev) => {
       if (prev.includes("all")) return prev;
@@ -324,9 +481,14 @@ export default function JournalSimple({ mode = "all" }) {
 
   // Filter and search (base)
   const baseFilteredTrades = tradesFromActiveAccounts.filter(t => {
-    if (searchTerm && !t.symbol.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (searchTerm && !(t.symbol || "").toLowerCase().includes(searchTerm.toLowerCase())) return false;
 
-    if (!timeFilters.includes("all")) {
+    if (dateRange.from) {
+      if (!t.date) return false;
+      const tradeDate = t.date;
+      if (tradeDate < dateRange.from) return false;
+      if (dateRange.to && tradeDate > dateRange.to) return false;
+    } else if (!timeFilters.includes("all")) {
       if (!t.date) return false;
       const tradeDate = parseISO(t.date);
       const now = new Date();
@@ -339,7 +501,7 @@ export default function JournalSimple({ mode = "all" }) {
       if (!matchesSelectedTime) return false;
     }
 
-    if (!accountFilters.includes("all")) {
+    if (!accountFilters.includes("all") && t.account_id) {
       const tradeAccountId = String(t.account_id);
       const matchesAccount = accountFilters.some((selectedAccountId) => String(selectedAccountId) === tradeAccountId);
       if (!matchesAccount) return false;
@@ -350,7 +512,7 @@ export default function JournalSimple({ mode = "all" }) {
 
   const statusFilteredTrades = statusFilters.includes("all")
     ? baseFilteredTrades
-    : baseFilteredTrades.filter(t => statusFilters.includes(t.status));
+    : baseFilteredTrades.filter(t => statusFilters.some(f => tradeStatusMatchesFilter(t.status, f)));
 
   const outcomeFilteredTrades = outcomeFilters.includes("all")
     ? statusFilteredTrades
@@ -358,8 +520,13 @@ export default function JournalSimple({ mode = "all" }) {
 
   const filteredTrades = sortTrades(outcomeFilteredTrades);
   const plannedTrades = sortTrades(baseFilteredTrades.filter(t => t.status === "Planned"));
-  const executedTrades = filteredTrades.filter(t => t.status !== "Planned");
-  const displayTrades = isPlannedMode ? plannedTrades : executedTrades;
+  const missedTrades = sortTrades(baseFilteredTrades.filter(t => t.status === "Missed"));
+  const executedTrades = filteredTrades.filter(t => t.status !== "Planned" && t.status !== "Missed");
+  const displayTrades = isPlannedMode
+    ? plannedTrades
+    : isMissedMode
+      ? missedTrades
+      : executedTrades;
   const toggleStatusFilter = (value) => {
     setStatusFilters(prev => {
       if (value === "all") return ["all"];
@@ -410,6 +577,14 @@ export default function JournalSimple({ mode = "all" }) {
     ? timeFilterLabels.all
     : timeFilters.map((filterKey) => timeFilterLabels[filterKey]).join(", ");
 
+  const dateRangeActive = !!dateRange.from;
+
+  const dateRangeLabel = dateRange.from
+    ? dateRange.to && dateRange.to !== dateRange.from
+      ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
+      : dateRange.from.split("-").reverse().join(".")
+    : "Zakres dat";
+
   const accountNameById = useMemo(() => {
     const map = {};
     accounts.forEach((account) => {
@@ -427,24 +602,22 @@ export default function JournalSimple({ mode = "all" }) {
   }, [strategies]);
 
 
-  const statsSource = isPlannedMode ? plannedTrades : baseFilteredTrades.filter(isClosedTrade);
+  const statsSource = isPlannedMode
+    ? plannedTrades
+    : isMissedMode
+      ? missedTrades
+      : baseFilteredTrades.filter(isClosedTrade);
   const stats = {
     total: statsSource.length,
     open: baseFilteredTrades.filter(t => t.status === "Open").length,
     closed: baseFilteredTrades.filter(isClosedTrade).length,
     planned: baseFilteredTrades.filter(t => t.status === "Planned").length,
+    missed: baseFilteredTrades.filter(t => t.status === "Missed").length,
     wins: statsSource.filter(t => t.outcome === "Win").length,
     losses: statsSource.filter(t => t.outcome === "Loss").length,
-    totalPL: statsSource.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0)
+    breakeven: statsSource.filter(t => t.outcome === "Breakeven").length,
+    totalPL: statsSource.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0)
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"></div>
-      </div>
-    );
-  }
 
   if (!user?.id) {
     return (
@@ -457,14 +630,26 @@ export default function JournalSimple({ mode = "all" }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-[#0f0f16] dark:via-[#14141f] dark:to-[#1a1a2e]">
+    <div className="w-full min-h-0 space-y-4 dashboard-surface">
       <div className="w-full mx-auto space-y-4">
+        {isFetching && trades.length === 0 && (
+          <p className="text-sm text-muted-foreground">Ładowanie transakcji…</p>
+        )}
+        {isError && (
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="text-sm text-rose-500 underline"
+          >
+            Nie udało się załadować dziennika. Kliknij, żeby spróbować ponownie.
+          </button>
+        )}
         {/* Bulk Actions Bar */}
         {selectedTrades.size > 0 && (
-          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-white dark:bg-slate-800 shadow-2xl rounded-xl border border-slate-200 dark:border-slate-700 px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4 animate-in slide-in-from-top-5">
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-card shadow-2xl rounded-xl border border-cyan-500/25 dark:border-cyan-500/30 px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4 animate-in slide-in-from-top-5 backdrop-blur-md">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                <span className="text-xs md:text-sm font-bold text-blue-600 dark:text-blue-300">{selectedTrades.size}</span>
+              <div className="w-8 h-8 rounded-full bg-cyan-500/15 dark:bg-cyan-500/20 flex items-center justify-center ring-1 ring-cyan-500/30">
+                <span className="text-xs md:text-sm font-bold text-cyan-700 dark:text-cyan-200">{selectedTrades.size}</span>
               </div>
               <span className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
                 {selectedTrades.size} {selectedTrades.size === 1 ? 'trade' : 'trades'} selected
@@ -492,108 +677,98 @@ export default function JournalSimple({ mode = "all" }) {
         )}
 
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : 'Trade Journal'}</h1>
-            <p className="text-slate-600 dark:text-slate-400">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : 'Track and analyze your trading performance'}</p>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+          <div className="min-w-0">
+            <h1 className="cyber-page-title">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : isMissedMode ? (t('missedTrades') || 'Missed Trades') : 'Trade Journal'}</h1>
+            <p className="cyber-page-sub">{isPlannedMode ? (t('plannedTrades') || 'Planned Trades') : isMissedMode ? (t('missedTrades') || 'Missed Trades') : 'Track and analyze your trading performance'}</p>
           </div>
           <div className="flex gap-3">
-            <ExportButton
-              trades={displayTrades}
-              accounts={accounts}
-              strategies={strategies}
-              analytics={{
-                totalTrades: statsSource.length,
-                totalPL: statsSource.reduce((sum, t) => sum + (parseFloat(t.profit_loss) || 0), 0),
-                winRate: statsSource.length
-                  ? (statsSource.filter(t => t.outcome === "Win").length / statsSource.length) * 100
-                  : 0,
-                profitFactor: 0,
-                avgWin: 0,
-                avgLoss: 0
-              }}
-              type="journal"
-            />
-            <Button 
+            <Button
               onClick={() => setShowAddForm(true)}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              className="h-10 px-4 gap-2 rounded-xl shadow-md cyber-primary-btn w-full sm:w-auto"
+              title={t('addTrade')}
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Trade
+              <Plus className="w-5 h-5 shrink-0" />
+              <span className="font-semibold">{t('addTrade')}</span>
             </Button>
           </div>
         </div>
 
-        {/* Stats */}
-        {!isPlannedMode && (
-        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
-          <Card
-            className={`bg-white dark:bg-[#1a1a2e] shadow-lg cursor-pointer ${statusFilters.includes("all") && outcomeFilters.includes("all") ? "ring-2 ring-blue-500" : ""}`}
-            onClick={() => { setStatusFilters(["all"]); setOutcomeFilters(["all"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">{t('totalTradesLabel')}</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
-            </CardContent>
-          </Card>
-          <Card
-            className={`bg-blue-50 dark:bg-blue-950 shadow-lg border-blue-200 dark:border-blue-800 cursor-pointer ${statusFilters.includes("Open") ? "ring-2 ring-blue-500" : ""}`}
-            onClick={() => { setStatusFilters(["Open"]); setOutcomeFilters(["all"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-blue-700 dark:text-blue-400 mb-1">{t('openStatus')}</p>
-              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{stats.open}</p>
-            </CardContent>
-          </Card>
-          <Card
-            className={`bg-green-50 dark:bg-green-950 shadow-lg border-green-200 dark:border-green-800 cursor-pointer ${statusFilters.includes("Closed") ? "ring-2 ring-green-500" : ""}`}
-            onClick={() => { setStatusFilters(["Closed"]); setOutcomeFilters(["all"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-green-700 dark:text-green-400 mb-1">{t('closedStatus')}</p>
-              <p className="text-2xl font-bold text-green-700 dark:text-green-400">{stats.closed}</p>
-            </CardContent>
-          </Card>
-          <Card
-            className={`bg-yellow-50 dark:bg-yellow-950 shadow-lg border-yellow-200 dark:border-yellow-800 cursor-pointer ${outcomeFilters.includes("Win") ? "ring-2 ring-yellow-500" : ""}`}
-            onClick={() => { setStatusFilters(["all"]); setOutcomeFilters(["Win"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-yellow-700 dark:text-yellow-400 mb-1">{t('wins')}</p>
-              <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{stats.wins}</p>
-            </CardContent>
-          </Card>
-          <Card
-            className={`bg-red-50 dark:bg-red-950 shadow-lg border-red-200 dark:border-red-800 cursor-pointer ${outcomeFilters.includes("Loss") ? "ring-2 ring-red-500" : ""}`}
-            onClick={() => { setStatusFilters(["all"]); setOutcomeFilters(["Loss"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-red-700 dark:text-red-400 mb-1">{t('losses')}</p>
-              <p className="text-2xl font-bold text-red-700 dark:text-red-400">{stats.losses}</p>
-            </CardContent>
-          </Card>
-          <Card
-            className={`bg-amber-50 dark:bg-amber-950 shadow-lg border-amber-200 dark:border-amber-800 cursor-pointer ${statusFilters.includes("Planned") ? "ring-2 ring-amber-500" : ""}`}
-            onClick={() => { setStatusFilters(["Planned"]); setOutcomeFilters(["all"]); }}
-          >
-            <CardContent className="p-4">
-              <p className="text-sm text-amber-700 dark:text-amber-400 mb-1">{t('planned')}</p>
-              <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">{stats.planned}</p>
-            </CardContent>
-          </Card>
-          <Card className={`shadow-lg ${stats.totalPL >= 0 ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800'}`}>
-            <CardContent className="p-4">
-              <p className={`text-sm mb-1 ${stats.totalPL >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>{t('totalPL')}</p>
-              <p className={`text-2xl font-bold ${stats.totalPL >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                {stats.totalPL >= 0 ? '+' : ''}{stats.totalPL.toFixed(2)}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-        )}
+        {/* Stats — browser-style tabs */}
+        {!isSingleStatusMode && (() => {
+          const isAll = statusFilters.includes("all") && outcomeFilters.includes("all");
+          const tabs = [
+            { key: "all",    label: t('totalTradesLabel'), count: stats.total,   active: isAll,                              accent: "slate",   onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["all"]); } },
+            { key: "open",   label: t('openStatus'),       count: stats.open,    active: statusFilters.includes("Open"),     accent: "blue",    onClick: () => { setStatusFilters(["Open"]);   setOutcomeFilters(["all"]); } },
+            { key: "closed", label: t('closedStatus'),     count: stats.closed,  active: statusFilters.includes("Closed"),   accent: "emerald", onClick: () => { setStatusFilters(["Closed"]); setOutcomeFilters(["all"]); } },
+            { key: "wins",   label: t('wins'),             count: stats.wins,    active: outcomeFilters.includes("Win"),     accent: "yellow",  onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Win"]); } },
+            { key: "be",     label: "BE",                  count: stats.breakeven, active: outcomeFilters.includes("Breakeven"), accent: "orange",  onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Breakeven"]); } },
+            { key: "losses", label: t('losses'),           count: stats.losses,  active: outcomeFilters.includes("Loss"),    accent: "red",     onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Loss"]); } },
+            { key: "planned",label: t('planned'),          count: stats.planned, active: statusFilters.includes("Planned"),  accent: "amber",   onClick: () => { setStatusFilters(["Planned"]); setOutcomeFilters(["all"]); } },
+          ];
+          const accentMap = {
+            slate:   { dot: "bg-slate-400",   text: "text-slate-700 dark:text-slate-200",   badgeActive: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100" },
+            blue:    { dot: "bg-blue-500",    text: "text-blue-700 dark:text-blue-300",     badgeActive: "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-200" },
+            emerald: { dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300", badgeActive: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200" },
+            yellow:  { dot: "bg-yellow-500",  text: "text-yellow-700 dark:text-yellow-300", badgeActive: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/60 dark:text-yellow-200" },
+            orange:  { dot: "bg-orange-500",  text: "text-orange-700 dark:text-orange-300", badgeActive: "bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-200" },
+            red:     { dot: "bg-red-500",     text: "text-red-700 dark:text-red-300",       badgeActive: "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-200" },
+            amber:   { dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-300",   badgeActive: "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200" },
+          };
+          return (
+            <div className="flex flex-col lg:flex-row lg:items-end gap-3">
+              <div
+                role="tablist"
+                className="flex-1 app-h-scroll items-end gap-1 border-b border-slate-200 dark:border-slate-700/70 px-1 lg:flex-wrap lg:overflow-visible"
+              >
+                {tabs.map((tab) => {
+                  const a = accentMap[tab.accent];
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      role="tab"
+                      aria-selected={tab.active}
+                      onClick={tab.onClick}
+                      className={`group relative shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-t-xl border border-b-0 transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
+                        tab.active
+                          ? `bg-card border-slate-200 dark:border-slate-700 shadow-[0_-2px_6px_-2px_rgba(0,0,0,0.08)] -mb-px ${a.text}`
+                          : "bg-slate-100/70 dark:bg-slate-800/40 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-100 hover:-translate-y-0.5"
+                      }`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${a.dot} ${tab.active ? "opacity-100" : "opacity-60"}`} />
+                      <span className="text-xs sm:text-sm font-semibold tracking-tight whitespace-nowrap">{tab.label}</span>
+                      <span
+                        className={`ml-0.5 min-w-[1.5rem] text-center text-[11px] font-bold px-1.5 py-0.5 rounded-full transition-colors ${
+                          tab.active ? a.badgeActive : "bg-slate-200/80 text-slate-600 dark:bg-slate-700/60 dark:text-slate-300"
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div
+                className={`shrink-0 rounded-xl border px-4 py-2.5 shadow-sm transition-colors ${
+                  stats.totalPL >= 0
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800'
+                    : 'bg-red-50 dark:bg-red-950/60 border-red-200 dark:border-red-800'
+                }`}
+              >
+                <p className={`text-[11px] font-semibold uppercase tracking-wide ${stats.totalPL >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
+                  {t('totalPL')}
+                </p>
+                <p data-private className={`text-xl font-bold leading-tight ${stats.totalPL >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
+                  {stats.totalPL >= 0 ? '+' : ''}{stats.totalPL.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Filters */}
-        <Card className="bg-white dark:bg-slate-800 shadow-lg">
+        <Card className="shadow-md">
           <CardContent className="p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
@@ -607,14 +782,14 @@ export default function JournalSimple({ mode = "all" }) {
                   />
                 </div>
               </div>
-              {!isPlannedMode && (
-              <div className="flex flex-wrap gap-3 items-center">
-                <label className="flex items-center gap-2 cursor-pointer">
+              {!isSingleStatusMode && (
+              <div className="flex flex-wrap gap-2 sm:gap-3 items-center w-full md:w-auto">
+                <label className="flex items-center gap-2 cursor-pointer min-h-10">
                   <div 
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("all")
                         ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
                     onClick={() => { toggleStatusFilter("all"); setOutcomeFilters(["all"]); }}
                   >
@@ -631,7 +806,7 @@ export default function JournalSimple({ mode = "all" }) {
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("Open")
                         ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
                     onClick={() => { toggleStatusFilter("Open"); setOutcomeFilters(["all"]); }}
                   >
@@ -648,7 +823,7 @@ export default function JournalSimple({ mode = "all" }) {
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("Closed")
                         ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
                     onClick={() => { toggleStatusFilter("Closed"); setOutcomeFilters(["all"]); }}
                   >
@@ -665,7 +840,7 @@ export default function JournalSimple({ mode = "all" }) {
                     className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
                       statusFilters.includes("Planned")
                         ? 'bg-blue-600 border-blue-600'
-                        : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                        : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                     }`}
                     onClick={() => { toggleStatusFilter("Planned"); setOutcomeFilters(["all"]); }}
                   >
@@ -679,11 +854,11 @@ export default function JournalSimple({ mode = "all" }) {
                 </label>
               </div>
               )}
-              <div className="relative" ref={accountFilterRef}>
+              <div className="relative w-full sm:w-auto" ref={accountFilterRef}>
                 <button
                   type="button"
                   onClick={() => setAccountFilterOpen((prev) => !prev)}
-                  className="relative w-[220px] h-10 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200 flex items-center justify-center"
+                  className="relative w-full sm:w-[220px] h-10 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-card dark:text-slate-200 flex items-center justify-center"
                 >
                   <span className="truncate text-center w-full pr-4">
                     {activeAccountFilterLabel || (t('allAccounts') || 'All Accounts')}
@@ -691,7 +866,7 @@ export default function JournalSimple({ mode = "all" }) {
                   {accountFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
                 </button>
                 {accountFilterOpen && (
-                  <div className="absolute left-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1a2e] shadow-lg p-2 max-h-64 overflow-y-auto">
+                  <div className="absolute left-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-lg p-2 max-h-64 overflow-y-auto">
                     <button
                       type="button"
                       onClick={() => {
@@ -704,7 +879,7 @@ export default function JournalSimple({ mode = "all" }) {
                         className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
                           accountFilters.includes("all")
                             ? 'bg-blue-600 border-blue-600'
-                            : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500'
+                            : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500'
                         }`}
                       >
                         {accountFilters.includes("all") && (
@@ -730,7 +905,7 @@ export default function JournalSimple({ mode = "all" }) {
                             className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
                               isSelected
                                 ? 'bg-blue-600 border-blue-600'
-                                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500'
+                                : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500'
                             }`}
                           >
                             {isSelected && (
@@ -745,17 +920,17 @@ export default function JournalSimple({ mode = "all" }) {
                   </div>
                 )}
               </div>
-              <div className="relative ml-auto" ref={timeFilterRef}>
+              <div className="relative w-full sm:w-auto sm:ml-auto" ref={timeFilterRef}>
                 <button
                   type="button"
                   onClick={() => setTimeFilterOpen((prev) => !prev)}
-                  className="relative min-w-[220px] px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-[#1a1a2e] dark:text-slate-200 flex items-center justify-center"
+                  className="relative w-full sm:min-w-[160px] h-10 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-card dark:text-slate-200 flex items-center justify-center"
                 >
                   <span className="truncate text-center w-full pr-4">{activeTimeFilterLabel}</span>
                   {timeFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
                 </button>
                 {timeFilterOpen && (
-                  <div className="absolute right-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#1a1a2e] shadow-lg p-2">
+                  <div className="absolute right-0 mt-2 z-20 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-lg p-2">
                     {[
                       { value: "all", label: timeFilterLabels.all },
                       { value: "day", label: timeFilterLabels.day },
@@ -767,7 +942,10 @@ export default function JournalSimple({ mode = "all" }) {
                         <button
                           key={option.value}
                           type="button"
-                          onClick={() => toggleTimeFilter(option.value)}
+                          onClick={() => {
+                            toggleTimeFilter(option.value);
+                            setDateRange({ from: undefined, to: undefined });
+                          }}
                           className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
                         >
                           <span className="text-sm text-slate-700 dark:text-slate-200">{option.label}</span>
@@ -775,7 +953,7 @@ export default function JournalSimple({ mode = "all" }) {
                             className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
                               isChecked
                                 ? 'bg-blue-600 border-blue-600'
-                                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500'
+                                : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500'
                             }`}
                           >
                             {isChecked && (
@@ -790,16 +968,64 @@ export default function JournalSimple({ mode = "all" }) {
                   </div>
                 )}
               </div>
+
+              {/* Date range picker */}
+              <div className="relative" ref={datePickerRef}>
+                <button
+                  type="button"
+                  onClick={() => setDatePickerOpen((prev) => !prev)}
+                  className={`relative flex items-center gap-2 px-3 py-2 h-10 border rounded-md text-sm transition-colors ${
+                    dateRangeActive
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300"
+                      : "border-gray-300 dark:border-gray-600 dark:bg-card dark:text-slate-200"
+                  }`}
+                >
+                  <CalendarRange className="w-4 h-4 shrink-0" />
+                  <span className="truncate max-w-[150px]">{dateRangeLabel}</span>
+                  {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+                {datePickerOpen && (
+                  <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-30 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-card shadow-xl p-3">
+                    <MiniCalendar
+                      from={dateRange.from}
+                      to={dateRange.to}
+                      onSelect={(f, t) => {
+                        setDateRange({ from: f, to: t });
+                        setTimeFilters(["all"]);
+                      }}
+                    />
+                    {(dateRange.from || dateRange.to) && (
+                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400">
+                          {dateRange.from && dateRange.to
+                            ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
+                            : dateRange.from
+                              ? `Od ${dateRange.from.split("-").reverse().join(".")}`
+                              : ""}
+                        </span>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => { setDateRange({ from: "", to: "" }); }} className="text-[11px] text-slate-400 hover:text-red-500 px-2 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                            Wyczyść
+                          </button>
+                          <button type="button" onClick={() => setDatePickerOpen(false)} className="text-[11px] text-white bg-blue-600 hover:bg-blue-700 px-3 py-0.5 rounded">
+                            Zamknij
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {(isPlannedMode || statusFilters.includes("all") || statusFilters.some(s => s !== "Planned")) && (
-          <Card className="bg-white dark:bg-[#1a1a2e] shadow-xl">
+        {(isSingleStatusMode || statusFilters.includes("all") || statusFilters.some(s => s !== "Planned" && s !== "Missed")) && (
+          <Card className="bg-white dark:bg-card shadow-xl">
             <CardContent className="p-0">
-              <div className="overflow-x-auto w-full">
+              <div className="hidden md:block overflow-x-auto w-full">
                 <table className="w-full table-fixed text-xs border-collapse [&_th]:px-1 [&_td]:px-1 [&_th]:py-1 [&_td]:py-1 [&_th]:leading-tight [&_td]:leading-tight [&_th]:overflow-hidden [&_th]:text-ellipsis [&_td]:overflow-hidden [&_td]:text-ellipsis [&_button]:min-h-0 [&_button]:min-w-0">
-                <thead className="bg-slate-50 dark:bg-[#14141f] border-b border-slate-200 dark:border-[#2d2d40]">
+                <thead className="bg-slate-50 dark:bg-card border-b border-slate-200 dark:border-border">
                   <tr>
                     {visibleColumns.status && (
                       <th className="text-left px-1.5 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{t('statusLabel')}</th>
@@ -850,7 +1076,7 @@ export default function JournalSimple({ mode = "all" }) {
                         className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
                           displayTrades.length > 0 && selectedTrades.size === displayTrades.length
                             ? 'bg-blue-600 border-blue-600'
-                            : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                            : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                         }`}
                       >
                         {displayTrades.length > 0 && selectedTrades.size === displayTrades.length && (
@@ -869,7 +1095,7 @@ export default function JournalSimple({ mode = "all" }) {
                         <td className="px-1.5 py-1">
                           <Badge className={`${tradeStatusBadgeClass(trade.status)} text-xs font-semibold px-1.5 py-0.5 border`}> 
                             {trade.status === "Open" ? <Clock className="w-3 h-3 mr-0.5" /> : <CheckCircle className="w-3 h-3 mr-0.5" />}
-                            {trade.status}
+                            {tradeStatusDisplay(trade.status)}
                           </Badge>
                         </td>
                       )}
@@ -877,7 +1103,14 @@ export default function JournalSimple({ mode = "all" }) {
                         {accountNameById[String(trade.account_id)] || '-'}
                       </td>
                       {visibleColumns.date && (
-                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.date}</td>
+                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          <div>{formatTradeClockDate(trade, "entry", dateFormat) || fmtDate(trade.date)}</div>
+                          {(trade.entry_time || trade.time) && (
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                              {formatTradeClock(trade, "entry")}
+                            </div>
+                          )}
+                        </td>
                       )}
                       {visibleColumns.symbol && (
                         <td className="px-1.5 py-1 text-sm font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.symbol}</td>
@@ -893,41 +1126,61 @@ export default function JournalSimple({ mode = "all" }) {
                         {strategyNameById[String(trade.strategy_id)] || '-'}
                       </td>
                       {visibleColumns.entry && (
-                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
+                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          <div>{trade.entry_price ?? '-'}</div>
+                          {(trade.entry_time || trade.time) && (
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                              {formatTradeClock(trade, "entry")}
+                            </div>
+                          )}
+                        </td>
                       )}
-                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
-                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
+                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? trade.stop_loss_amount ?? trade.stop_loss ?? '-'}</td>
+                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? trade.take_profit_amount ?? trade.take_profit ?? '-'}</td>
                       {visibleColumns.exit && (
-                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.exit_price || '-'}</td>
+                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          <div>{trade.exit_price ?? '-'}</div>
+                          {(trade.exit_time || (trade.close_date && trade.close_date !== trade.date)) && (
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                              {trade.close_date && trade.close_date !== trade.date
+                                ? `${formatTradeClockDate(trade, "exit", dateFormat)} `
+                                : ""}
+                              {trade.exit_time ? formatTradeClock(trade, "exit") : ""}
+                            </div>
+                          )}
+                        </td>
                       )}
                       {visibleColumns.position && (
                         <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap max-w-[72px] truncate" title={String(trade.position_size || '')}>{trade.position_size}</td>
                       )}
                       {visibleColumns.pl && (
                         <td className="px-1.5 py-1">
-                          {trade.profit_loss != null ? (
-                            <div className="flex items-center gap-0.5">
-                              {parseFloat(trade.profit_loss || 0) > 0 ? (
+                          {trade.profit_loss != null ? (() => {
+                            const pl = getTradeRealizedPL(trade) ?? 0;
+                            return (
+                            <div data-private className="flex items-center gap-0.5">
+                              {pl > 0 ? (
                                 <TrendingUp className="w-3 h-3 text-green-600" />
-                              ) : parseFloat(trade.profit_loss || 0) < 0 ? (
+                              ) : pl < 0 ? (
                                 <TrendingDown className="w-3 h-3 text-red-600" />
                               ) : null}
                               <span className={`text-sm font-semibold ${
-                                parseFloat(trade.profit_loss || 0) > 0 ? 'text-green-600' :
-                                parseFloat(trade.profit_loss || 0) < 0 ? 'text-red-600' :
+                                pl > 0 ? 'text-green-600' :
+                                pl < 0 ? 'text-red-600' :
                                 'text-slate-600'
-                              }`}>
-                                {parseFloat(trade.profit_loss || 0) > 0 ? '+' : ''}{parseFloat(trade.profit_loss || 0).toFixed(2)}
+                              }`} title={trade.commission != null ? `Commission: ${trade.commission}` : undefined}>
+                                {pl > 0 ? '+' : ''}{pl.toFixed(2)}
                               </span>
                             </div>
-                          ) : <span className="text-sm text-slate-400">-</span>}
+                            );
+                          })() : <span className="text-sm text-slate-400">-</span>}
                         </td>
                       )}
                       {visibleColumns.outcome && (
                         <td className="px-1 py-1">
                           {trade.outcome && (
                             <Badge variant="outline" className={`text-xs font-semibold px-1.5 py-0.5 border ${tradeOutcomeBadgeClass(trade.outcome)}`}>
-                              {trade.outcome}
+                              {tradeOutcomeDisplay(trade.outcome)}
                             </Badge>
                           )}
                         </td>
@@ -939,7 +1192,7 @@ export default function JournalSimple({ mode = "all" }) {
                               <button
                                 key={`${trade.id}-shot-${index}`}
                                 type="button"
-                                className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 shrink-0"
+                                className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-muted shrink-0"
                                 onClick={() => openQuickImage(imageUrl)}
                                 title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
                               >
@@ -972,7 +1225,7 @@ export default function JournalSimple({ mode = "all" }) {
                           className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
                             selectedTrades.has(trade.id)
                               ? 'bg-blue-600 border-blue-600'
-                              : 'bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
+                              : 'bg-slate-50 dark:bg-muted/50 border-slate-400 dark:border-slate-500 hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-700/70'
                           }`}
                         >
                           {selectedTrades.has(trade.id) && (
@@ -987,9 +1240,18 @@ export default function JournalSimple({ mode = "all" }) {
                 </tbody>
               </table>
             </div>
+              <div className="md:hidden p-3">
+                <JournalMobileList
+                  trades={displayTrades}
+                  t={t}
+                  accountNameById={accountNameById}
+                  strategyNameById={strategyNameById}
+                  onView={handleViewTrade}
+                />
+              </div>
 
               {displayTrades.length === 0 && (
-                <div className="text-center py-12">
+                <div className="hidden md:block text-center py-12">
                   <p className="text-slate-500">No trades to display</p>
                 </div>
               )}
@@ -997,8 +1259,8 @@ export default function JournalSimple({ mode = "all" }) {
           </Card>
         )}
 
-        {!isPlannedMode && (statusFilters.includes("all") || statusFilters.includes("Planned")) && (
-          <Card className="bg-yellow-50 dark:bg-[#2e2e1a] shadow-xl">
+        {!isSingleStatusMode && (statusFilters.includes("all") || statusFilters.includes("Planned")) && (
+          <Card className="bg-yellow-50 dark:bg-yellow-950/40 shadow-xl">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-yellow-700">{t('plannedTrades')}</CardTitle>
               <Button
@@ -1013,7 +1275,7 @@ export default function JournalSimple({ mode = "all" }) {
             </CardHeader>
             {plannedOpen ? (
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full table-fixed divide-y divide-slate-200 dark:divide-[#23233a] text-xs [&_th]:px-1 [&_td]:px-1 [&_th]:py-1 [&_td]:py-1 [&_th]:leading-tight [&_td]:leading-tight [&_th]:overflow-hidden [&_th]:text-ellipsis [&_td]:overflow-hidden [&_td]:text-ellipsis [&_button]:min-h-0 [&_button]:min-w-0">
                     <thead>
                       <tr>
@@ -1044,7 +1306,7 @@ export default function JournalSimple({ mode = "all" }) {
                       {plannedTrades.map((trade) => (
                         <tr key={trade.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors">
                           {visibleColumns.date && (
-                            <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.date}</td>
+                            <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{fmtDate(trade.date)}</td>
                           )}
                           <td className="px-1 py-1 text-xs text-slate-900 dark:text-slate-100 max-w-[92px] truncate" title={accountNameById[String(trade.account_id)] || '-'}>
                             {accountNameById[String(trade.account_id)] || '-'}
@@ -1075,7 +1337,7 @@ export default function JournalSimple({ mode = "all" }) {
                                   <button
                                     key={`${trade.id}-planned-shot-${index}`}
                                     type="button"
-                                    className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-800 shrink-0"
+                                    className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-muted shrink-0"
                                     onClick={() => openQuickImage(imageUrl)}
                                     title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
                                   >
@@ -1112,8 +1374,17 @@ export default function JournalSimple({ mode = "all" }) {
                     </tbody>
                   </table>
                 </div>
+                <div className="md:hidden p-3">
+                  <JournalMobileList
+                    trades={plannedTrades}
+                    t={t}
+                    accountNameById={accountNameById}
+                    strategyNameById={strategyNameById}
+                    onView={handleViewTrade}
+                  />
+                </div>
                 {plannedTrades.length === 0 && (
-                  <div className="text-center py-8">
+                  <div className="hidden md:block text-center py-8">
                     <p className="text-slate-500">{t('noTradesToDisplay')}</p>
                   </div>
                 )}
@@ -1132,34 +1403,44 @@ export default function JournalSimple({ mode = "all" }) {
         {/* Add Trade Dialog */}
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
           <DialogContent
-            className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0"
-            onPointerDownOutside={(event) => event.preventDefault()}
+            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0 max-md:!left-0 max-md:!top-0 max-md:!translate-x-0 max-md:!translate-y-0 max-md:!w-full max-md:!max-w-none max-md:!h-[100dvh] max-md:!max-h-[100dvh] max-md:!rounded-none"
+            {...preventDialogDismissProps}
             onEscapeKeyDown={(event) => event.preventDefault()}
           >
-            <div className="sticky top-0 bg-white p-6 border-b">
-              <DialogTitle>Add New Trade</DialogTitle>
+            <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
+              <DialogTitle>{t('addTrade')}</DialogTitle>
             </div>
-            <div className="p-6">
+            <div className="p-4">
+              <Suspense fallback={<FormFallback />}>
               <TradeFormNew
+                embedded
+                defaultStatus={isPlannedMode ? "Planned" : isMissedMode ? "Missed" : "Open"}
                 onSuccess={() => {
                   refetch();
                   setShowAddForm(false);
                 }}
                 onClose={() => setShowAddForm(false)}
               />
+              </Suspense>
             </div>
           </DialogContent>
         </Dialog>
 
         {/* Edit Trade Dialog */}
         <Dialog open={editingTrade !== null} onOpenChange={() => setEditingTrade(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0">
-            <div className="sticky top-0 bg-white p-6 border-b">
+          <DialogContent
+            className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-0 max-md:!left-0 max-md:!top-0 max-md:!translate-x-0 max-md:!translate-y-0 max-md:!w-full max-md:!max-w-none max-md:!h-[100dvh] max-md:!max-h-[100dvh] max-md:!rounded-none"
+            {...preventDialogDismissProps}
+          >
+            <div className="sticky top-0 z-10 bg-white dark:bg-card px-4 py-3 pr-12 border-b border-border">
               <DialogTitle>Edit Trade</DialogTitle>
             </div>
-            <div className="p-6">
+            <div className="p-4">
               {editingTrade && (
+                <Suspense fallback={<FormFallback />}>
                 <TradeFormNew
+                  key={editingTrade.id}
+                  embedded
                   trade={editingTrade}
                   onSuccess={() => {
                     refetch();
@@ -1167,6 +1448,7 @@ export default function JournalSimple({ mode = "all" }) {
                   }}
                   onClose={() => setEditingTrade(null)}
                 />
+                </Suspense>
               )}
             </div>
           </DialogContent>
@@ -1174,19 +1456,21 @@ export default function JournalSimple({ mode = "all" }) {
 
         {/* View Trade Dialog */}
         <Dialog open={viewingTrade !== null} onOpenChange={() => setViewingTrade(null)}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-[#1a1a2e] border-slate-200 dark:border-slate-700">
-            <DialogHeader className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-700 dark:to-indigo-800 text-white px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+          <DialogContent className="max-w-6xl w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto gap-0 p-0 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-700 max-md:!left-0 max-md:!top-0 max-md:!translate-x-0 max-md:!translate-y-0 max-md:!w-full max-md:!max-w-none max-md:!h-[100dvh] max-md:!max-h-[100dvh] max-md:!rounded-none">
+            <DialogHeader className="cyber-dialog-header sticky top-0 z-10 text-white px-6 py-4 border-b">
               <DialogTitle className="text-white text-xl font-bold">Trade Details</DialogTitle>
             </DialogHeader>
-            <div className="p-6 bg-white dark:bg-[#1a1a2e]">
+            <div className="p-6 bg-white dark:bg-card">
               {viewingTrade && (
-                <TradeCard
+                <Suspense fallback={<FormFallback />}>
+                <TradeDetailView
                   trade={viewingTrade}
                   onEdit={(tradeToEdit) => {
                     setViewingTrade(null);
                     setEditingTrade(tradeToEdit);
                   }}
                 />
+                </Suspense>
               )}
             </div>
           </DialogContent>
@@ -1202,7 +1486,7 @@ export default function JournalSimple({ mode = "all" }) {
             }
           }}
         >
-          <AlertDialogContent className="bg-white dark:bg-[#1a1a2e] border-slate-200 dark:border-slate-700">
+          <AlertDialogContent className="bg-white dark:bg-card border-slate-200 dark:border-slate-700">
             <AlertDialogHeader>
               <AlertDialogTitle className="text-slate-900 dark:text-white">
                 {deleteDialog.mode === "bulk" ? "Usunąć zaznaczone transakcje?" : "Usunąć transakcję?"}
@@ -1214,7 +1498,7 @@ export default function JournalSimple({ mode = "all" }) {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700">
+              <AlertDialogCancel className="dark:bg-card dark:text-slate-200 dark:border-slate-700">
                 Anuluj
               </AlertDialogCancel>
               <AlertDialogAction

@@ -27,9 +27,9 @@ export default function About() {
   ];
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicNavbar variant="hero" />
-      <div className="public-trading-bg min-h-screen pt-24 pb-12 transition-colors duration-300">
+      <div className="public-trading-bg flex-1 flex flex-col pt-24 pb-12 transition-colors duration-300">
         <div className="container mx-auto px-4 max-w-6xl">
           {/* Header */}
           <motion.div
@@ -38,10 +38,10 @@ export default function About() {
             transition={{ duration: 0.6 }}
             className="text-center mb-16"
           >
-            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-emerald-400 to-blue-500 bg-clip-text text-transparent mb-4">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold fx-brand-text mb-4">
               O AiKeepTrade
             </h1>
-            <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-3xl mx-auto px-2">
               Historia powstania profesjonalnego dziennika handlowego stworzonego w niekonwencjonalny sposób
             </p>
           </motion.div>
@@ -53,16 +53,17 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mb-16"
           >
-            <Card className="bg-slate-950/80 border-slate-800 shadow-2xl shadow-emerald-500/15 overflow-hidden">
+            <Card className="fx-card-dark border-white/8 shadow-2xl  overflow-hidden">
               <CardContent className="p-12">
                 <div className="flex items-center justify-center">
-                  <div className="relative">
-                    <div className="logo-arrow hero-logo w-32 h-32 rounded-3xl shadow-2xl shadow-blue-500/50">
-                      <span className="logo-arrow-path" />
-                      <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
-                      <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
-                      <span className="logo-arrow-wave" />
-                    </div>
+                  <div className="relative flex flex-col items-center gap-3">
+                    <img
+                      src="/aikeeptrade-icon-hires.png"
+                      alt="AiKeepTrade"
+                      height="160"
+                      className="h-28 sm:h-36 w-auto object-contain drop-shadow-2xl"
+                    />
+                    <span className="text-3xl sm:text-4xl font-extrabold tracking-tight fx-brand-text">AiKeepTrade</span>
                     <div className="absolute -top-4 -right-4">
                       <Sparkles className="w-12 h-12 text-yellow-400 animate-[pulse_2.8s_ease-in-out_infinite]" />
                     </div>
@@ -79,10 +80,10 @@ export default function About() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="space-y-8 mb-16"
           >
-            <Card className="bg-slate-950/75 border-slate-800 backdrop-blur-sm">
+            <Card className="bg-slate-950/75 border-white/8 backdrop-blur-sm">
               <CardContent className="p-8 space-y-6 text-slate-200 leading-relaxed">
                 <div className="flex items-center gap-3 mb-4">
-                  <Code className="w-8 h-8 text-emerald-400" />
+                  <Code className="w-8 h-8 text-sky-400" />
                   <h2 className="text-3xl font-bold text-foreground">Niezwykła Historia Powstania</h2>
                 </div>
                 
@@ -98,8 +99,8 @@ export default function About() {
                   fiction? A jednak to prawda!
                 </p>
 
-                <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border-l-4 border-emerald-500/80 p-6 rounded-r-lg">
-                  <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-300 mb-2">
+                <div className="bg-blue-500/10 border-l-4 border-lime-400/80 p-6 rounded-r-lg">
+                  <p className="text-lg font-semibold text-sky-600 dark:text-sky-300 mb-2">
                     Sekret? Współpraca z AI! 🤖✨
                   </p>
                   <p className="text-base">
@@ -152,7 +153,7 @@ export default function About() {
                   Musisz tylko wiedzieć, czego chcesz, i potrafić o to poprosić.
                 </p>
 
-                <p className="text-lg font-bold text-emerald-600 dark:text-emerald-300">
+                <p className="text-lg font-bold text-sky-600 dark:text-sky-300">
                   Witaj w przyszłości, gdzie AI jest Twoim współprogramistą, a wyobraźnia jedynym ograniczeniem! 🌟
                 </p>
               </CardContent>
@@ -178,10 +179,10 @@ export default function About() {
                   transition={{ duration: 0.35, delay: 0.72 + index * 0.06 }}
                   whileHover={{ y: -3 }}
                 >
-                <Card className="bg-slate-950/70 border-slate-800 hover:border-emerald-500/40 transition-all duration-200">
+                <Card className="fx-card-dark border-white/8 hover:border-blue-500/40 transition-all duration-200">
                   <CardContent className="p-6">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center mb-4">
-                      <div className="text-emerald-400">
+                    <div className="w-12 h-12 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4">
+                      <div className="text-sky-400">
                         {feature.icon}
                       </div>
                     </div>
@@ -206,18 +207,18 @@ export default function About() {
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               {/* Screenshot placeholders */}
-              <Card className="bg-slate-950/70 border-slate-800 overflow-hidden">
+              <Card className="fx-card-dark border-white/8 overflow-hidden">
                 <CardContent className="p-0">
                   <div className="aspect-video bg-gradient-to-br from-slate-900/80 to-slate-950/80 flex items-center justify-center">
                     <div className="text-center">
-                      <TrendingUp className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+                      <TrendingUp className="w-16 h-16 text-sky-400 mx-auto mb-4" />
                       <p className="text-slate-300">Dashboard z analityką</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-slate-950/70 border-slate-800 overflow-hidden">
+              <Card className="fx-card-dark border-white/8 overflow-hidden">
                 <CardContent className="p-0">
                   <div className="aspect-video bg-gradient-to-br from-slate-900/80 to-slate-950/80 flex items-center justify-center">
                     <div className="text-center">
@@ -237,9 +238,9 @@ export default function About() {
             transition={{ duration: 0.6, delay: 1 }}
             className="text-center"
           >
-            <Card className="bg-slate-950/80 border-emerald-500/40">
+            <Card className="fx-card-dark border-blue-500/40">
               <CardContent className="p-12">
-                <Rocket className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
+                <Rocket className="w-16 h-16 text-sky-400 mx-auto mb-4" />
                 <h2 className="text-3xl font-bold text-slate-100 mb-4">
                   Gotowy, by zacząć swoją podróż?
                 </h2>
@@ -248,12 +249,12 @@ export default function About() {
                   Zacznij śledzić swoje transakcje, analizować strategie i rozwijaj się jako trader!
                 </p>
                 <div className="flex gap-4 justify-center">
-                  <a href="/register" className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 rounded-lg text-white font-semibold transition-all duration-200 hover:-translate-y-0.5">
+                  <a href="/register" className="px-6 py-3 fx-cta rounded-lg text-white font-semibold transition-all duration-200 hover:-translate-y-0.5">
                     Zarejestruj się za darmo
                   </a>
                   <a
                     href="/contact"
-                    className="px-6 py-3 rounded-lg border border-emerald-400/60 text-emerald-200 font-semibold transition-all duration-200 hover:bg-emerald-500/10 hover:-translate-y-0.5"
+                    className="px-6 py-3 rounded-lg border border-blue-500/50 text-sky-200 font-semibold transition-all duration-200 hover:bg-blue-500/10 hover:-translate-y-0.5"
                   >
                     Skontaktuj się z nami
                   </a>
@@ -264,6 +265,6 @@ export default function About() {
         </div>
       </div>
       <Footer variant="hero" />
-    </>
+    </div>
   );
 }

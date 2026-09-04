@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, LogIn, UserPlus } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageProvider';
 import LanguageToggle from '@/components/LanguageToggle';
 
@@ -13,161 +13,143 @@ export default function PublicNavbar({ variant = 'default' }) {
 
   const menuItems = [
     { label: t('features') || 'Features', href: '#features' },
-    { label: t('pricing') || 'Pricing', href: '/pricing' },
-    { label: t('about') || 'About', href: '/about' },
+    { label: t('about') || 'Resources', href: '/about' },
     { label: t('contact') || 'Contact', href: '/contact' },
   ];
 
-  const navbarClassName = isHero
-    ? 'fixed top-0 left-0 right-0 z-50 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md supports-[backdrop-filter]:bg-slate-950/70 transition-colors duration-300'
-    : 'fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/80 transition-colors duration-300';
-
-  const menuLinkClassName = isHero
-    ? 'text-sm font-medium text-slate-300 hover:text-white transition-colors'
-    : 'text-sm font-medium text-muted-foreground hover:text-foreground transition-colors';
-
-  const ghostButtonClassName = isHero
-    ? 'gap-2 text-slate-300 hover:text-white hover:bg-slate-800/80'
-    : 'gap-2 text-muted-foreground hover:text-foreground hover:bg-accent';
-
-  const mobileMenuClassName = isHero
-    ? 'md:hidden py-4 space-y-3 border-t border-slate-800/80 bg-slate-950/95 rounded-b-xl animate-in fade-in-0 slide-in-from-top-2 duration-300'
-    : 'md:hidden py-4 space-y-3 border-t border-border bg-background/95 rounded-b-xl animate-in fade-in-0 slide-in-from-top-2 duration-300';
-
-  const mobileLinkClassName = isHero
-    ? 'block px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors'
-    : 'block px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors';
-
-  return (
-    <nav className={navbarClassName}>
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="logo-arrow w-10 h-10 rounded-xl transition-transform group-hover:scale-105">
-              <span className="logo-arrow-path" />
-              <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
-              <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
-              <span className="logo-arrow-wave" />
+  if (!isHero) {
+    return (
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <Link to="/" className="flex items-center gap-2 group">
+              <img
+                src="/aikeeptrade-icon-hires.png"
+                alt="AiKeepTrade"
+                width="36"
+                height="36"
+                className="h-9 w-9 object-contain transition-transform group-hover:scale-[1.03]"
+              />
+              <span className="text-lg font-bold tracking-tight text-foreground">AiKeepTrade</span>
+            </Link>
+            <div className="hidden md:flex items-center gap-3">
+              <LanguageToggle variant="light" />
+              <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>{t('login') || 'Sign in'}</Button>
+              <Button size="sm" onClick={() => navigate('/register')} className="fx-cta px-4">{t('register') || 'Try now'}</Button>
             </div>
-            <span className="font-bold text-xl bg-gradient-to-r from-emerald-400 to-blue-500 dark:from-emerald-300 dark:to-blue-400 bg-clip-text text-transparent">
-              AiKeepTrade
-            </span>
-          </Link>
-
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-8">
-            {menuItems.map((item) => (
-              item.href.startsWith('#') ? (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className={menuLinkClassName}
-                >
-                  {item.label}
-                </a>
-              ) : (
-                <Link
-                  key={item.label}
-                  to={item.href}
-                  className={menuLinkClassName}
-                >
-                  {item.label}
-                </Link>
-              )
-            ))}
-          </div>
-
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-3">
-            <LanguageToggle variant={isHero ? 'dark' : 'light'} />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/login')}
-              className={ghostButtonClassName}
-            >
-              <LogIn className="w-4 h-4" />
-              {t('login') || 'Login'}
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => navigate('/register')}
-              className="gap-2 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white"
-            >
-              <UserPlus className="w-4 h-4" />
-              {t('register') || 'Sign Up'}
-            </Button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="flex md:hidden items-center gap-2">
-            <LanguageToggle variant={isHero ? 'dark' : 'light'} />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={isHero ? 'text-slate-300 hover:text-white hover:bg-slate-800/80' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}
-            >
-              {mobileMenuOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </Button>
           </div>
         </div>
+      </nav>
+    );
+  }
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className={mobileMenuClassName}>
+  return (
+    <>
+      <nav className="fx-pill-nav hidden md:block">
+        <div className="fx-pill-nav-inner">
+          {/* Logo (left, inside pill) */}
+          <Link to="/" className="flex items-center gap-2 pl-2 pr-3 group">
+            <img
+              src="/aikeeptrade-icon-hires.png"
+              alt="AiKeepTrade"
+              width="28"
+              height="28"
+              className="h-7 w-7 object-contain transition-transform group-hover:scale-[1.03]"
+            />
+            <span className="text-base font-bold tracking-tight text-white">AiKeepTrade</span>
+          </Link>
+
+          {/* Center menu */}
+          <div className="flex items-center gap-0.5 mx-2">
             {menuItems.map((item) => (
               item.href.startsWith('#') ? (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className={mobileLinkClassName}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.label}
-                </a>
+                <a key={item.label} href={item.href} className="fx-nav-link">{item.label}</a>
               ) : (
-                <Link
-                  key={item.label}
-                  to={item.href}
-                  className={mobileLinkClassName}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.label}
-                </Link>
+                <Link key={item.label} to={item.href} className="fx-nav-link">{item.label}</Link>
               )
             ))}
-            <div className={`flex flex-col gap-2 px-4 pt-4 ${isHero ? 'border-t border-slate-800/80' : 'border-t border-border'}`}>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  navigate('/login');
-                  setMobileMenuOpen(false);
-                }}
-                className={isHero ? 'w-full gap-2 border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white' : 'w-full gap-2'}
-              >
-                <LogIn className="w-4 h-4" />
-                {t('login') || 'Login'}
-              </Button>
-              <Button
-                onClick={() => {
-                  navigate('/register');
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full gap-2 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700"
-              >
-                <UserPlus className="w-4 h-4" />
-                {t('register') || 'Sign Up'}
-              </Button>
-            </div>
           </div>
-        )}
-      </div>
-    </nav>
+
+          {/* Right actions */}
+          <div className="ml-auto flex items-center gap-2">
+            <div className="hidden lg:block"><LanguageToggle variant="dark" /></div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="fx-nav-pill"
+            >
+              <User className="w-3.5 h-3.5" />
+              {t('login') || 'Sign in'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/register')}
+              className="fx-cta h-8 px-4 text-[13px]"
+            >
+              {t('register') || 'Try now'}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile floating header */}
+      <nav className="md:hidden fx-pill-nav">
+        <div className="fx-pill-nav-inner">
+          <Link to="/" className="flex items-center gap-1.5 pl-1 pr-2">
+            <img
+              src="/aikeeptrade-icon-hires.png"
+              alt="AiKeepTrade"
+              width="26"
+              height="26"
+              className="h-[26px] w-[26px] object-contain"
+            />
+            <span className="text-sm font-bold tracking-tight text-white">AiKeepTrade</span>
+          </Link>
+          <div className="ml-auto flex items-center gap-2">
+            <LanguageToggle variant="dark" />
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="fx-nav-pill px-2"
+              aria-label="Menu"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed top-[78px] left-3 right-3 z-50 rounded-2xl border border-white/10 bg-[#0d111c]/95 backdrop-blur-xl p-3 animate-in fade-in-0 slide-in-from-top-2 duration-200 shadow-2xl">
+          <div className="flex flex-col gap-1">
+            {menuItems.map((item) => (
+              item.href.startsWith('#') ? (
+                <a key={item.label} href={item.href} className="fx-nav-link h-10 justify-start" onClick={() => setMobileMenuOpen(false)}>{item.label}</a>
+              ) : (
+                <Link key={item.label} to={item.href} className="fx-nav-link h-10 justify-start" onClick={() => setMobileMenuOpen(false)}>{item.label}</Link>
+              )
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-white/8">
+            <button
+              type="button"
+              onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}
+              className="fx-cta-outline h-10 px-4 text-sm font-medium"
+            >
+              {t('login') || 'Sign in'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { navigate('/register'); setMobileMenuOpen(false); }}
+              className="fx-cta h-10 px-4 text-sm"
+            >
+              {t('register') || 'Try now'}
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

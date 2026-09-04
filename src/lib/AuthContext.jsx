@@ -11,6 +11,14 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { logger } from '@/lib/logger';
+import {
+  applyRuntimeSettings,
+  DEFAULT_USER_SETTINGS,
+  getEffectiveUserSettings,
+  loadLocalUserSettings,
+  resetLocalSessionForFreshUser,
+} from '@/lib/userSettings';
+import { queryClientInstance } from '@/lib/query-client';
 
 const AuthContext = createContext(undefined);
 
@@ -31,6 +39,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  /** New Auth users (created in Firebase Console) get an empty profile — no demo data. */
   const ensureProfile = async (authUser) => {
     if (!authUser) return null;
     try {
@@ -40,13 +49,26 @@ export const AuthProvider = ({ children }) => {
         const profile = {
           email: authUser.email || '',
           fullName: authUser.displayName || authUser.email?.split('@')[0] || '',
-          language: 'pl',
+          displayName: '',
+          avatar: 'initials',
+          language: DEFAULT_USER_SETTINGS.language,
           theme: 'dark',
           skin: 'blackblu',
+          default_currency: DEFAULT_USER_SETTINGS.default_currency,
+          timezone: DEFAULT_USER_SETTINGS.timezone,
+          trade_time_source: DEFAULT_USER_SETTINGS.trade_time_source,
+          date_format: DEFAULT_USER_SETTINGS.date_format,
+          time_format: DEFAULT_USER_SETTINGS.time_format,
+          show_session_clocks: DEFAULT_USER_SETTINGS.show_session_clocks,
+          notifications_enabled: DEFAULT_USER_SETTINGS.notifications_enabled,
+          show_weekends: DEFAULT_USER_SETTINGS.show_weekends,
+          privacy_mode: DEFAULT_USER_SETTINGS.privacy_mode,
+          start_page: DEFAULT_USER_SETTINGS.start_page,
+          pnl_view: DEFAULT_USER_SETTINGS.pnl_view,
           createdAt: serverTimestamp(),
         };
         await setDoc(userRef, profile, { merge: true });
-        return profile;
+        return { ...profile, _isNew: true };
       }
       return snapshot.data();
     } catch (error) {
@@ -55,29 +77,51 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const applyAuthenticatedUser = async (nextFirebaseUser) => {
+    queryClientInstance.clear();
+    const profile = await ensureProfile(nextFirebaseUser);
+    const isNew = Boolean(profile?._isNew);
+
+    if (isNew) {
+      resetLocalSessionForFreshUser();
+    }
+
+    const { _isNew, ...cloudProfile } = profile || {};
+    const mergedUser = {
+      id: nextFirebaseUser.uid,
+      email: nextFirebaseUser.email || cloudProfile?.email || '',
+      fullName: cloudProfile?.fullName || nextFirebaseUser.displayName || '',
+      ...cloudProfile,
+    };
+
+    const effective = getEffectiveUserSettings({
+      cloudSettings: cloudProfile,
+      // Fresh Firebase accounts must not inherit another user's browser prefs
+      localSettings: isNew ? {} : loadLocalUserSettings(),
+    });
+    applyRuntimeSettings(effective);
+
+    setFirebaseUser(nextFirebaseUser);
+    setUser(mergedUser);
+    setIsAuthenticated(true);
+    return { mergedUser, effective, isNew };
+  };
+
   const initializeApp = () => {
     let unsubscribe = () => {};
 
     const setupAuth = () => {
       unsubscribe = onAuthStateChanged(auth, async (nextFirebaseUser) => {
         try {
-          setFirebaseUser(nextFirebaseUser || null);
           if (!nextFirebaseUser) {
+            queryClientInstance.clear();
+            setFirebaseUser(null);
             setUser(null);
             setIsAuthenticated(false);
             return;
           }
 
-          const profile = await ensureProfile(nextFirebaseUser);
-          const mergedUser = {
-            id: nextFirebaseUser.uid,
-            email: nextFirebaseUser.email || profile?.email || '',
-            fullName: profile?.fullName || nextFirebaseUser.displayName || '',
-            ...profile
-          };
-
-          setUser(mergedUser);
-          setIsAuthenticated(true);
+          await applyAuthenticatedUser(nextFirebaseUser);
         } catch (error) {
           logger.error('Error initializing auth state', error);
           setAuthError({
@@ -93,19 +137,10 @@ export const AuthProvider = ({ children }) => {
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
-          ensureProfile(result.user)
-            .then((profile) => {
-              const mergedUser = {
-                id: result.user.uid,
-                email: result.user.email || profile?.email || '',
-                fullName: profile?.fullName || result.user.displayName || result.user.email?.split('@')[0] || '',
-                ...profile,
-              };
-              setFirebaseUser(result.user);
-              setUser(mergedUser);
-              setIsAuthenticated(true);
+          applyAuthenticatedUser(result.user)
+            .then(({ effective }) => {
               setIsLoadingAuth(false);
-              window.location.href = '/Dashboard';
+              window.location.href = effective?.start_page || '/Dashboard';
             })
             .catch((err) => {
               logger.error('Redirect ensureProfile error', err);
@@ -191,6 +226,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async (shouldRedirect = true) => {
     try {
       await signOut(auth);
+      queryClientInstance.clear();
       setUser(null);
       setFirebaseUser(null);
       setIsAuthenticated(false);
@@ -200,6 +236,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Logout error:', error);
+      queryClientInstance.clear();
       setUser(null);
       setFirebaseUser(null);
       setIsAuthenticated(false);
@@ -210,11 +247,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   const navigateToRegister = () => {
-    window.location.href = '/register';
+    window.location.href = '/';
   };
 
   return (

@@ -4,13 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Edit, Calendar, Clock, Target } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, tradeOutcomeBadgeClass, tradeStatusBadgeClass } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, getTradeRealizedPL, tradeOutcomeBadgeClass, tradeStatusBadgeClass, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
+import { formatTradeDate, formatTradeClock, getDateFormat } from "@/lib/userSettings";
 
 export default function TradeCard({ trade, onEdit = null }) {
   const { t } = useLanguage();
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerImage, setViewerImage] = useState("");
+  const dateFormat = getDateFormat();
   const isWin = trade.outcome === "Win";
   const isLoss = trade.outcome === "Loss";
   const plColor = isWin ? "text-emerald-600 dark:text-emerald-300" : isLoss ? "text-rose-600 dark:text-rose-300" : "text-amber-600 dark:text-amber-300";
@@ -58,7 +60,7 @@ export default function TradeCard({ trade, onEdit = null }) {
   const outcomeDisplay = outcomeRaw && /[A-Za-zĄąĆćĘęŁłŃńÓóŚśŹźŻż]/.test(outcomeRaw) ? outcomeRaw : "-";
 
   return (
-    <Card className={`hover:shadow-xl transition-all duration-300 ${bgColor} dark:bg-[#23233a] dark:border-slate-700 border`}>
+    <Card className={`hover:shadow-xl transition-all duration-300 ${bgColor} dark:bg-card dark:border-slate-700 border`}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -69,7 +71,7 @@ export default function TradeCard({ trade, onEdit = null }) {
               </Badge>
               {trade.outcome && (
                 <Badge variant="outline" className={tradeOutcomeBadgeClass(trade.outcome)}>
-                  {trade.outcome}
+                  {tradeOutcomeDisplay(trade.outcome)}
                 </Badge>
               )}
             </div>
@@ -77,7 +79,7 @@ export default function TradeCard({ trade, onEdit = null }) {
             <div className="flex flex-wrap gap-3 text-sm text-slate-600 dark:text-slate-400">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                {trade.date}
+                {formatTradeDate(trade.date, dateFormat)}
               </span>
               {trade.time && (
                 <span className="flex items-center gap-1">
@@ -110,8 +112,8 @@ export default function TradeCard({ trade, onEdit = null }) {
             <Badge variant="outline">{t('lotSize')}: {trade.position_size || '-'}</Badge>
             <Badge variant="outline">{t('entryPrice')}: {trade.entry_price || '-'}</Badge>
             <Badge variant="outline">{t('closePrice')}: {trade.exit_price || '-'}</Badge>
-            <Badge variant="outline">{t('entryTime')}: {trade.entry_time || '-'}</Badge>
-            <Badge variant="outline">{t('exitTime')}: {trade.exit_time || '-'}</Badge>
+            <Badge variant="outline">{t('entryTime')}: {formatTradeClock(trade, "entry") || '-'}</Badge>
+            <Badge variant="outline">{t('exitTime')}: {formatTradeClock(trade, "exit") || '-'}</Badge>
           </div>
         </div>
 
@@ -145,8 +147,8 @@ export default function TradeCard({ trade, onEdit = null }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-white/70 dark:bg-slate-800/50 rounded-xl dark:border dark:border-slate-700">
           <div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('statusLabel')}</p>
-            <Badge className={`${tradeStatusBadgeClass(trade.status)} truncate max-w-full`} title={trade.status || '-'}>
-              {trade.status || '-'}
+            <Badge className={`${tradeStatusBadgeClass(trade.status)} truncate max-w-full`} title={tradeStatusDisplay(trade.status)}>
+              {tradeStatusDisplay(trade.status)}
             </Badge>
           </div>
           <div>
@@ -247,7 +249,7 @@ export default function TradeCard({ trade, onEdit = null }) {
               </div>
               <div className="text-right">
                 <p className={`text-2xl font-bold ${plColor}`}>
-                  {parseFloat(trade.profit_loss) > 0 ? '+' : ''}{parseFloat(trade.profit_loss).toFixed(2)}
+                  {(getTradeRealizedPL(trade) ?? 0) > 0 ? '+' : ''}{(getTradeRealizedPL(trade) ?? 0).toFixed(2)}
                 </p>
                 {trade.profit_loss_percent != null && (
                   <p className={`text-sm ${plColor}`}>

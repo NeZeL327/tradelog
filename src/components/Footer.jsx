@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useLanguage } from '@/components/LanguageProvider';
 
@@ -14,9 +14,9 @@ export default function Footer({ variant = 'default' }) {
     : 'inline-flex items-center text-sm text-muted-foreground transition-all duration-200 hover:text-foreground hover:translate-x-1';
 
   const footerClassName = isHero
-    ? 'mt-auto w-full border-t border-slate-800/70 bg-gradient-to-r from-slate-950/95 via-blue-950/70 to-slate-950/95 backdrop-blur supports-[backdrop-filter]:bg-slate-950/85'
+    ? 'mt-auto w-full border-t border-blue-500/10 bg-gradient-to-b from-[#070a14]/95 via-[#060912]/95 to-[#050810] backdrop-blur supports-[backdrop-filter]:bg-[#060912]/90'
     : isApp
-      ? 'mt-auto w-full border-t border-slate-200/70 dark:border-white/10 bg-gradient-to-r from-slate-50/95 via-blue-50/85 to-slate-50/95 dark:from-[#0f0f16]/95 dark:via-[#121827]/85 dark:to-[#14141f]/95 backdrop-blur supports-[backdrop-filter]:dark:bg-[#121827]/80'
+      ? 'mt-auto w-full border-t border-slate-200/70 dark:border-white/10 bg-gradient-to-r from-slate-50/95 via-blue-50/85 to-slate-50/95 dark:from-background/95 dark:via-background/90 dark:to-background/95 backdrop-blur supports-[backdrop-filter]:dark:bg-background/80'
       : 'mt-auto w-full border-t border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/80';
   
   return (
@@ -24,14 +24,14 @@ export default function Footer({ variant = 'default' }) {
       <div className="container mx-auto px-4 py-10">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="logo-arrow h-9 w-9 rounded-lg">
-                <span className="logo-arrow-path" />
-                <span className="logo-arrow-shape"><span className="logo-arrow-letter-text">A</span></span>
-                <span className="logo-arrow-tip"><span className="logo-arrow-letter-text">I</span></span>
-                <span className="logo-arrow-wave" />
-              </div>
-              <span className={isHero ? 'text-base font-semibold text-slate-100' : isApp ? 'text-base font-semibold text-slate-800 dark:text-slate-100' : 'text-base font-semibold text-foreground'}>AiKeepTrade</span>
+            <div className="flex items-center gap-2">
+              <img
+                src="/aikeeptrade-icon-hires.png"
+                alt="AiKeepTrade"
+                height="36"
+                className="h-9 w-9 object-contain"
+              />
+              <span className={isHero ? 'text-lg font-bold tracking-tight text-white' : isApp ? 'text-lg font-bold tracking-tight text-slate-800 dark:text-white' : 'text-lg font-bold tracking-tight text-foreground'}>AiKeepTrade</span>
             </div>
             <p className={isHero ? 'max-w-xs text-sm leading-relaxed text-slate-400' : isApp ? 'max-w-xs text-sm leading-relaxed text-slate-500 dark:text-slate-400' : 'max-w-xs text-sm leading-relaxed text-muted-foreground'}>
               {t('footerTagline') || 'Professional trading journal for serious traders'}
@@ -42,11 +42,6 @@ export default function Footer({ variant = 'default' }) {
           <div className="space-y-4">
             <h3 className={isHero ? 'text-sm font-semibold tracking-wide text-slate-100' : isApp ? 'text-sm font-semibold tracking-wide text-slate-800 dark:text-slate-100' : 'text-sm font-semibold tracking-wide text-foreground'}>{t('footerNavigation') || 'Navigation'}</h3>
             <ul className="space-y-2.5">
-              <li>
-                <Link to="/pricing" className={linkClassName}>
-                  {t('pricing') || 'Pricing'}
-                </Link>
-              </li>
               <li>
                 <Link to="/about" className={linkClassName}>
                   {t('about') || 'About'}

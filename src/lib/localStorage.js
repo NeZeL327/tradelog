@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import imageCompression from 'browser-image-compression';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { db, storage } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 
 const userCollection = (userId, name) => collection(db, 'users', String(userId), name);
 const TRADE_TRASH_RETENTION_DAYS = 30;
@@ -58,16 +58,20 @@ const runSafe = async (label, action) => {
   }
 };
 
-const isImageFile = (file) => file && typeof file.type === 'string' && file.type.startsWith('image/');
+const isImageFile = (file) => {
+  if (!file) return false;
+  if (file.type?.startsWith('image/')) return true;
+  return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(file.name || '');
+};
 
 export const compressImage = async (file) => {
   if (!isImageFile(file)) return file;
 
   const options = {
     maxSizeMB: 0.6,
-    maxWidthOrHeight: 2560,
-    useWebWorker: true,
-    initialQuality: 0.95
+    maxWidthOrHeight: 1920,
+    useWebWorker: false,
+    initialQuality: 0.85
   };
 
   try {
@@ -76,6 +80,40 @@ export const compressImage = async (file) => {
     console.error('compressImage error:', error);
     return file;
   }
+};
+
+const readFileAsDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Nie udało się odczytać pliku.'));
+    reader.readAsDataURL(file);
+  });
+
+const formatStorageError = (error) => {
+  const code = String(error?.code || '');
+  if (code.includes('storage/unauthorized') || code.includes('permission-denied')) {
+    return 'Brak uprawnień do zapisu zdjęcia. Zaloguj się ponownie.';
+  }
+  if (code.includes('storage/canceled')) {
+    return 'Upload anulowany.';
+  }
+  if (code.includes('storage/quota-exceeded')) {
+    return 'Przekroczono limit miejsca w Storage.';
+  }
+  return error?.message || 'Nie udało się wysłać zdjęcia.';
+};
+
+export const imageFileToDataUrl = async (file) => {
+  const compressed = await compressImage(file);
+  if (compressed.size > 850_000) {
+    throw new Error('Zdjęcie jest za duże (max ~800 KB). Wybierz mniejszy plik.');
+  }
+  const dataUrl = await readFileAsDataUrl(compressed);
+  if (!dataUrl.startsWith('data:image/')) {
+    throw new Error('Dozwolone są tylko pliki graficzne.');
+  }
+  return dataUrl;
 };
 
 export const updateUser = async (userId, updates) => {
@@ -186,11 +224,36 @@ export const getDeletedTrades = async (userId) => {
   });
 };
 
+const stripUndefinedDeep = (value) => {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefinedDeep).filter((item) => item !== undefined);
+  }
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    // Keep Firestore FieldValue / Timestamp-like objects as-is
+    if (typeof value.isEqual === 'function' || typeof value.toMillis === 'function') {
+      return value;
+    }
+    const out = {};
+    for (const [key, nested] of Object.entries(value)) {
+      if (nested === undefined) continue;
+      if (typeof nested === 'number' && Number.isNaN(nested)) continue;
+      out[key] = stripUndefinedDeep(nested);
+    }
+    return out;
+  }
+  return value;
+};
+
 export const createTrade = async (userId, tradeData) => {
   return runSafe('createTrade', async () => {
     if (!userId) throw new Error('Użytkownik nie jest zalogowany');
-    const payload = {
+    const cleaned = stripUndefinedDeep({
       ...tradeData,
+      account_id: tradeData?.account_id != null ? String(tradeData.account_id) : tradeData?.account_id,
+      status: tradeData?.status || 'Closed',
+    });
+    const payload = {
+      ...cleaned,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
@@ -422,15 +485,225 @@ export const uploadUserFile = async (userId, file, folder = 'uploads') => {
 
 export const uploadTradeScreenshot = async (userId, file) => {
   return runSafe('uploadTradeScreenshot', async () => {
-    if (!userId || !file) return '';
+    const uid = auth.currentUser?.uid || userId;
+    if (!uid) throw new Error('Użytkownik nie jest zalogowany');
+    if (!file) throw new Error('Nie wybrano pliku');
+
     const fileToUpload = await compressImage(file);
-    const safeName = file.name ? file.name.replace(/\s+/g, '_') : `file_${Date.now()}`;
-    const path = `tradeScreenshots/${userId}/${Date.now()}_${safeName}`;
+    const safeName = file.name ? file.name.replace(/[^\w.-]+/g, '_') : `file_${Date.now()}.jpg`;
+    const path = `users/${uid}/trade-screenshots/${Date.now()}_${safeName}`;
     const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, fileToUpload);
-    return getDownloadURL(storageRef);
+
+    try {
+      await uploadBytes(storageRef, fileToUpload, {
+        contentType: fileToUpload.type || file.type || 'image/jpeg',
+      });
+      const url = await getDownloadURL(storageRef);
+      if (!url) throw new Error('Nie udało się uzyskać adresu zdjęcia');
+      return url;
+    } catch (error) {
+      throw new Error(formatStorageError(error));
+    }
+  });
+};
+
+/** Upload do Storage; jeśli Storage niedostępny — zapis inline (data URL) w Firestore. */
+export const persistTradeScreenshot = async (userId, file) => {
+  try {
+    return await uploadTradeScreenshot(userId, file);
+  } catch (storageError) {
+    console.warn('persistTradeScreenshot: storage failed, using data URL fallback', storageError);
+    return imageFileToDataUrl(file);
+  }
+};
+
+// --- Backtesting: strategies only for this module (not global "Strategies" page) ---
+
+export const getBacktestStrategies = async (userId) => {
+  return runSafe('getBacktestStrategies', async () => {
+    if (!userId) return [];
+    const baseRef = userCollection(userId, 'backtest_strategies');
+    const q = query(baseRef, orderBy('name'));
+    const snapshot = await getDocs(q);
+    return mapDocs(snapshot);
+  });
+};
+
+export const createBacktestStrategy = async (userId, data) => {
+  return runSafe('createBacktestStrategy', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const name = String(data?.name || '').trim();
+    if (!name) throw new Error('Podaj nazwę strategii');
+    const payload = {
+      name,
+      description: String(data?.description || '').trim(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    const refDoc = await addDoc(userCollection(userId, 'backtest_strategies'), payload);
+    return { id: refDoc.id, ...payload };
+  });
+};
+
+export const updateBacktestStrategy = async (userId, strategyId, data) => {
+  return runSafe('updateBacktestStrategy', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const name = String(data?.name || '').trim();
+    if (!name) throw new Error('Podaj nazwę strategii');
+    const refDoc = doc(db, 'users', String(userId), 'backtest_strategies', String(strategyId));
+    await updateDoc(refDoc, {
+      name,
+      description: String(data?.description || '').trim(),
+      updatedAt: serverTimestamp()
+    });
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
+export const deleteBacktestStrategy = async (userId, strategyId) => {
+  return runSafe('deleteBacktestStrategy', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const sid = String(strategyId);
+    await deleteDoc(doc(db, 'users', String(userId), 'backtest_strategies', sid));
+    try {
+      await deleteDoc(doc(db, 'users', String(userId), 'backtest_strategy_pages', sid));
+    } catch {
+      /* optional page doc */
+    }
+    return true;
+  });
+};
+
+// --- Backtesting journal (strategy tests — separate from live trades) ---
+
+export const getBacktestEntries = async (userId) => {
+  return runSafe('getBacktestEntries', async () => {
+    if (!userId) return [];
+    const baseRef = userCollection(userId, 'backtest_entries');
+    const q = query(baseRef, orderBy('date', 'desc'));
+    const snapshot = await getDocs(q);
+    return mapDocs(snapshot);
+  });
+};
+
+export const createBacktestEntry = async (userId, data) => {
+  return runSafe('createBacktestEntry', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const payload = {
+      ...data,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    const refDoc = await addDoc(userCollection(userId, 'backtest_entries'), payload);
+    return { id: refDoc.id, ...payload };
+  });
+};
+
+export const updateBacktestEntry = async (userId, entryId, data) => {
+  return runSafe('updateBacktestEntry', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const refDoc = doc(db, 'users', String(userId), 'backtest_entries', String(entryId));
+    await updateDoc(refDoc, { ...data, updatedAt: serverTimestamp() });
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
+export const deleteBacktestEntry = async (userId, entryId) => {
+  return runSafe('deleteBacktestEntry', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    await deleteDoc(doc(db, 'users', String(userId), 'backtest_entries', String(entryId)));
+    return true;
+  });
+};
+
+/** Per-strategy notepad for backtesting (browser-tab workspace — one saved page per strategy). */
+export const getBacktestStrategyPage = async (userId, strategyId) => {
+  return runSafe('getBacktestStrategyPage', async () => {
+    if (!userId || !strategyId) return null;
+    const refDoc = doc(db, 'users', String(userId), 'backtest_strategy_pages', String(strategyId));
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
+export const saveBacktestStrategyPage = async (userId, strategyId, { content = '' } = {}) => {
+  return runSafe('saveBacktestStrategyPage', async () => {
+    if (!userId || !strategyId) throw new Error('Użytkownik nie jest zalogowany');
+    const refDoc = doc(db, 'users', String(userId), 'backtest_strategy_pages', String(strategyId));
+    await setDoc(
+      refDoc,
+      { content: String(content), updatedAt: serverTimestamp() },
+      { merge: true }
+    );
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
   });
 };
 
 export const seedTradingData = () => Promise.resolve();
 export const initDemoData = () => Promise.resolve();
+
+// --- Trading reports (Raporty) ---
+
+export const getReports = async (userId) => {
+  return runSafe('getReports', async () => {
+    if (!userId) return [];
+    const snapshot = await getDocs(userCollection(userId, 'reports'));
+    return mapDocs(snapshot);
+  });
+};
+
+export const getReport = async (userId, reportId) => {
+  return runSafe('getReport', async () => {
+    if (!userId || !reportId) return null;
+    const refDoc = doc(db, 'users', String(userId), 'reports', String(reportId));
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
+export const createReport = async (userId, reportData) => {
+  return runSafe('createReport', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const cleaned = stripUndefinedDeep({ ...reportData });
+    const payload = {
+      ...cleaned,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    const refDoc = await addDoc(userCollection(userId, 'reports'), payload);
+    return { id: refDoc.id, ...payload };
+  });
+};
+
+export const updateReport = async (userId, reportId, reportData) => {
+  return runSafe('updateReport', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const cleaned = stripUndefinedDeep({ ...reportData });
+    const refDoc = doc(db, 'users', String(userId), 'reports', String(reportId));
+    await updateDoc(refDoc, { ...cleaned, updatedAt: serverTimestamp() });
+    const snapshot = await getDoc(refDoc);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
+export const deleteReport = async (userId, reportId) => {
+  return runSafe('deleteReport', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const refDoc = doc(db, 'users', String(userId), 'reports', String(reportId));
+    await deleteDoc(refDoc);
+    return true;
+  });
+};
+
+/** Upload screenshot for reports; Storage with data-URL fallback */
+export const persistReportScreenshot = async (userId, file) => {
+  try {
+    return await uploadUserFile(userId, file, 'report-screenshots');
+  } catch (storageError) {
+    console.warn('persistReportScreenshot: storage failed, using data URL fallback', storageError);
+    return imageFileToDataUrl(file);
+  }
+};

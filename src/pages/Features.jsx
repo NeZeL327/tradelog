@@ -12,8 +12,7 @@ import { createPageUrl } from '@/utils';
 import { mainFeaturesVariants, moreFeaturesVariants } from './featuresCardVariants';
 
 export default function Features() {
-  const { t, language } = useLanguage();
-  const isPolish = language === 'pl';
+  const { t } = useLanguage();
 
   const mainFeatures = [
     {
@@ -51,22 +50,10 @@ export default function Features() {
     },
   ];
 
-  const pageCopy = {
-    subtitle: isPolish
-      ? 'Wszystko, czego potrzebujesz do prowadzenia dziennika handlowego - w jednym miejscu.'
-      : 'Everything you need to run your trading journal - in one place.',
-    mainTools: isPolish ? 'Główne narzędzia' : 'Main tools',
-    moreFeatures: isPolish ? 'Co jeszcze oferujemy' : 'What else we offer',
-    ctaTitle: isPolish ? 'Gotowy na start?' : 'Ready to get started?',
-    ctaDescription: isPolish
-      ? 'Załóż konto i korzystaj ze wszystkich funkcji. Bez karty kredytowej.'
-      : 'Create an account and use all features. No credit card required.'
-  };
-
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <PublicNavbar variant="hero" />
-      <div className="public-trading-bg use-trading-wallpaper min-h-screen pt-24 pb-12 transition-colors duration-300 relative">
+      <div className="public-trading-bg use-trading-wallpaper flex-1 flex flex-col pt-24 pb-12 transition-colors duration-300 relative">
         <TradingWallpaper variant="lineChart" />
         <AnimatedPublicBackground />
         <div className="container mx-auto px-4 max-w-6xl relative z-10">
@@ -81,12 +68,12 @@ export default function Features() {
             <div className="w-full max-w-3xl flex flex-col items-center text-center">
               <h1
                 id="features-heading"
-                className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-emerald-200 via-cyan-200 to-blue-300 bg-clip-text text-transparent pb-5 mb-4 drop-shadow-[0_0_20px_rgba(167,243,208,0.15)]"
+                className="text-3xl sm:text-5xl md:text-6xl font-bold fx-brand-text bg-clip-text text-transparent pb-5 mb-4 drop-shadow-[0_0_20px_rgba(167,243,208,0.15)]"
               >
                 {t('features') || 'Funkcje'}
               </h1>
-              <p className="text-slate-300 text-lg max-w-xl leading-relaxed">
-                {pageCopy.subtitle}
+              <p className="text-slate-300 text-base sm:text-lg max-w-xl leading-relaxed px-2">
+                Wszystko, czego potrzebujesz do prowadzenia dziennika handlowego — w jednym miejscu.
               </p>
             </div>
           </motion.section>
@@ -99,7 +86,7 @@ export default function Features() {
             className="mb-20"
           >
             <h2 className="text-2xl font-semibold text-slate-100 text-center mb-8">
-              {pageCopy.mainTools}
+              Główne narzędzia
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
               {mainFeatures.map((feature, index) => {
@@ -114,11 +101,11 @@ export default function Features() {
                   >
                     <motion.div whileHover={v.hover} className="h-full">
                       <LiveCard variant="main" className="h-full">
-                        <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-slate-800 hover:border-emerald-500/50 h-full overflow-hidden shadow-lg group">
+                        <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-white/8 hover:border-blue-500/50 h-full overflow-hidden shadow-lg group">
                           <CardContent className="p-6 relative">
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-emerald-400/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                            <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                             <motion.div
-                              className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent"
+                              className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-400/60 to-transparent"
                               initial={{ scaleX: 0 }}
                               animate={{ scaleX: 1 }}
                               transition={{ duration: 0.6, delay: 0.5 + index * 0.1 }}
@@ -152,7 +139,7 @@ export default function Features() {
             className="mb-16"
           >
             <h2 className="text-2xl font-semibold text-slate-100 text-center mb-8">
-              {pageCopy.moreFeatures}
+              Co jeszcze oferujemy
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
               {moreFeatures.map((feature, index) => {
@@ -167,7 +154,7 @@ export default function Features() {
                   >
                     <motion.div whileHover={v.hover} className="h-full">
                       <LiveCard variant="more" className="h-full">
-                        <Card className="feature-card-live feature-card-live-more bg-slate-800/70 border-slate-800 hover:border-primary/50 h-full overflow-hidden shadow-lg group">
+                        <Card className="feature-card-live feature-card-live-more bg-slate-800/70 border-white/8 hover:border-primary/50 h-full overflow-hidden shadow-lg group">
                           <CardContent className="p-6 relative">
                             <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-blue-400/8 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                             <AnimatedFeatureIcon
@@ -198,17 +185,17 @@ export default function Features() {
             className="text-center"
           >
             <LiveCard variant="main" className="max-w-2xl mx-auto">
-            <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-emerald-500/40 max-w-2xl mx-auto">
+            <Card className="feature-card-live feature-card-live-main bg-slate-800/80 border-blue-500/40 max-w-2xl mx-auto">
               <CardContent className="p-8">
                 <h2 className="text-2xl font-bold text-slate-100 mb-3">
-                  {pageCopy.ctaTitle}
+                  Gotowy na start?
                 </h2>
                 <p className="text-slate-400 mb-6">
-                  {pageCopy.ctaDescription}
+                  Załóż konto i korzystaj ze wszystkich funkcji. Bez karty kredytowej.
                 </p>
                 <a
                   href={createPageUrl('Register')}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-600 px-6 py-3 text-lg font-semibold text-white shadow-lg shadow-emerald-500/25 hover:from-emerald-600 hover:to-blue-700 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-xl fx-cta px-6 py-3 text-lg font-semibold text-white shadow-lg   transition-colors"
                 >
                   {t('pricingGetStarted') || 'Zacznij za darmo'}
                   <ArrowRight className="w-5 h-5" />
@@ -220,6 +207,6 @@ export default function Features() {
         </div>
       </div>
       <Footer variant="hero" />
-    </>
+    </div>
   );
 }

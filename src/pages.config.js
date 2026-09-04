@@ -47,36 +47,48 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import Accounts from './pages/Accounts';
-import Analytics from './pages/Analytics';
-import Billing from './pages/Billing';
-import Calendar from './pages/Calendar';
-import Checklist from './pages/Checklist';
-import Dashboard from './pages/Dashboard';
-import Goals from './pages/Goals';
-import Home from './pages/Home';
-import Journal from './pages/Journal';
-import Notes from './pages/Notes';
-import Planned from './pages/Planned';
-import Settings from './pages/Settings';
-import Strategies from './pages/Strategies';
-import StrategyDetails from './pages/StrategyDetails';
-import Upload from './pages/Upload';
-import __Layout from './Layout.jsx';
+import { lazy } from 'react';
+
+const Accounts = lazy(() => import('./pages/Accounts'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const Backtesting = lazy(() => import('./pages/Backtesting'));
+const Calendar = lazy(() => import('./pages/Calendar'));
+const CalculatorPopup = lazy(() => import('./pages/CalculatorPopup'));
+const Calculators = lazy(() => import('./pages/Calculators'));
+const Checklist = lazy(() => import('./pages/Checklist'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Goals = lazy(() => import('./pages/Goals'));
+const Home = lazy(() => import('./pages/Home'));
+const Journal = lazy(() => import('./pages/Journal'));
+const Missed = lazy(() => import('./pages/Missed'));
+const Notes = lazy(() => import('./pages/Notes'));
+const Planned = lazy(() => import('./pages/Planned'));
+const Raporty = lazy(() => import('./pages/Raporty'));
+const ProcessReview = lazy(() => import('./pages/ProcessReview'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Strategies = lazy(() => import('./pages/Strategies'));
+const StrategyDetails = lazy(() => import('./pages/StrategyDetails'));
+const Upload = lazy(() => import('./pages/Upload'));
+const __Layout = lazy(() => import('./Layout.jsx'));
 
 
 export const PAGES = {
     "Accounts": Accounts,
     "Analytics": Analytics,
-    "Billing": Billing,
+    "Backtesting": Backtesting,
     "Calendar": Calendar,
+    "CalculatorPopup": CalculatorPopup,
+    "Calculators": Calculators,
     "Checklist": Checklist,
     "Dashboard": Dashboard,
     "Goals": Goals,
     "Home": Home,
     "Journal": Journal,
     "Planned": Planned,
+    "Missed": Missed,
     "Notes": Notes,
+    "Raporty": Raporty,
+    "ProcessReview": ProcessReview,
     "Settings": Settings,
     "Strategies": Strategies,
     "StrategyDetails": StrategyDetails,

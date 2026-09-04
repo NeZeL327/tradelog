@@ -29,9 +29,9 @@ const applyThemeToDocument = (theme) => {
   if (theme === "dark") {
     root.classList.add("dark");
   }
-  root.setAttribute("data-skin", theme === "dark" ? "blackblu" : "default");
+  root.removeAttribute("data-skin");
   localStorage.setItem("appTheme", theme);
-  localStorage.setItem("appSkin", theme === "dark" ? "blackblu" : "default");
+  localStorage.removeItem("appSkin");
 };
 
 export default function ThemeToggle({ className = "" }) {
@@ -65,10 +65,7 @@ export default function ThemeToggle({ className = "" }) {
   useEffect(() => {
     if (user?.id && user?.theme !== theme) {
       try {
-        updateUser(user.id, {
-          theme,
-          skin: theme === "dark" ? "blackblu" : "default"
-        });
+        updateUser(user.id, { theme });
       } catch (error) {
         console.error("Theme update error:", error);
       }
@@ -101,12 +98,13 @@ export default function ThemeToggle({ className = "" }) {
             variant="ghost"
             onClick={() => handleThemeChange(entry.value)}
             className={cn(
-              "h-7 rounded-sm px-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
+              "h-7 rounded-sm px-1.5 sm:px-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
               isActive && "bg-accent text-foreground"
             )}
             aria-pressed={isActive}
           >
-            {entry.label}
+            <span className="sm:hidden">{entry.value === "dark" ? "D" : "L"}</span>
+            <span className="hidden sm:inline">{entry.label}</span>
           </Button>
         );
       })}

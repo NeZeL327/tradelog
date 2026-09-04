@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
 import { CheckCircle, AlertCircle, X } from "lucide-react";
 
@@ -132,7 +132,7 @@ export default function PositionManager() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-[#0f0f16] dark:to-[#1a1a2e] p-2 sm:p-3">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-background dark:to-background p-2 sm:p-3">
       {/* Notification */}
       {notification && (
         <div
