@@ -1,14 +1,15 @@
 import { isClosedTrade, normalizeDirection } from "@/lib/utils";
 import { toNumber } from "@/lib/tradePreviewStats";
+import { getTradeTimeSource, zonedWallTimeToDate } from "@/lib/userSettings";
 
 export const CHART_INTERVALS = [
-  { id: "1m", label: "1m", tv: "1" },
-  { id: "5m", label: "5m", tv: "5" },
-  { id: "15m", label: "15m", tv: "15" },
-  { id: "30m", label: "30m", tv: "30" },
-  { id: "1H", label: "1H", tv: "60" },
-  { id: "4H", label: "4H", tv: "240" },
-  { id: "1D", label: "1D", tv: "D" },
+  { id: "1m", label: "1m", tv: "1", yahoo: "1m", range: "5d" },
+  { id: "5m", label: "5m", tv: "5", yahoo: "5m", range: "5d" },
+  { id: "15m", label: "15m", tv: "15", yahoo: "15m", range: "1mo" },
+  { id: "30m", label: "30m", tv: "30", yahoo: "30m", range: "1mo" },
+  { id: "1H", label: "1H", tv: "60", yahoo: "60m", range: "3mo" },
+  { id: "4H", label: "4H", tv: "240", yahoo: "60m", range: "6mo", group: 4 },
+  { id: "1D", label: "1D", tv: "D", yahoo: "1d", range: "1y" },
 ];
 
 const CRYPTO = new Set([
@@ -29,9 +30,15 @@ export function tradeUnix(trade, which = "entry") {
     ? (trade?.exit_time || "")
     : (trade?.entry_time || trade?.open_time || trade?.time || "");
   if (!date) return null;
-  const d = new Date(`${String(date).slice(0, 10)}T${padTime(time)}`);
-  if (Number.isNaN(d.getTime())) return null;
-  return Math.floor(d.getTime() / 1000);
+  const day = String(date).slice(0, 10);
+  const clock = padTime(time);
+  const zoned = zonedWallTimeToDate(day, clock, getTradeTimeSource());
+  if (zoned && !Number.isNaN(zoned.getTime())) {
+    return Math.floor(zoned.getTime() / 1000);
+  }
+  const fallback = new Date(`${day}T${clock}`);
+  if (Number.isNaN(fallback.getTime())) return null;
+  return Math.floor(fallback.getTime() / 1000);
 }
 
 export function yahooSymbol(raw) {
@@ -161,12 +168,26 @@ async function fetchYahoo(symbol, interval, trade) {
   const spec = CHART_INTERVALS.find((item) => item.id === interval) || CHART_INTERVALS[2];
   const ticker = yahooSymbol(symbol);
   if (!ticker) return [];
+  const yahooInterval = spec.yahoo || "15m";
+  const encoded = encodeURIComponent(ticker);
+  const queries = [];
+  const entry = tradeUnix(trade, "entry");
+  const exit = tradeUnix(trade, "exit");
+  if (entry) {
+    const pad = intervalSeconds(spec.id) * 400;
+    const period1 = Math.max(0, entry - pad);
+    const period2 = Math.max(entry, exit || entry) + pad;
+    queries.push(`/v8/finance/chart/${encoded}?interval=${yahooInterval}&period1=${period1}&period2=${period2}&includePrePost=false`);
+  }
   const order = ["1d", "5d", "1mo", "3mo", "6mo", "1y", "2y", "5y"];
-  const needed = rangeForTrade(trade, spec.range);
-  const range = order[Math.max(order.indexOf(spec.range), order.indexOf(needed))] || spec.range;
-  const query = `/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${spec.yahoo}&range=${range}&includePrePost=false`;
-  const urls = [`${yahooBase()}${query}`];
-  if (import.meta.env.DEV) urls.push(`https://query1.finance.yahoo.com${query}`);
+  const needed = rangeForTrade(trade, spec.range || "1mo");
+  const range = order[Math.max(order.indexOf(spec.range), order.indexOf(needed))] || spec.range || "1mo";
+  queries.push(`/v8/finance/chart/${encoded}?interval=${yahooInterval}&range=${range}&includePrePost=false`);
+  const urls = [];
+  for (const query of queries) {
+    urls.push(`${yahooBase()}${query}`);
+    if (import.meta.env.DEV) urls.push(`https://query1.finance.yahoo.com${query}`);
+  }
   let lastError = null;
   for (const url of urls) {
     try {
@@ -324,4 +345,91 @@ export function visibleRangeForTrade(candles, trade, intervalSec) {
 export function intervalSeconds(id) {
   const map = { "1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1H": 3600, "4H": 14400, "1D": 86400 };
   return map[id] || 900;
+}
+
+export function tvRangeForTrade(trade) {
+  const entry = tradeUnix(trade, "entry");
+  if (!entry) return undefined;
+  const ageDays = (Date.now() / 1000 - entry) / 86400;
+  if (ageDays <= 1) return "1D";
+  if (ageDays <= 5) return "5D";
+  if (ageDays <= 30) return "1M";
+  if (ageDays <= 90) return "3M";
+  if (ageDays <= 180) return "6M";
+  if (ageDays <= 365) return "12M";
+  return "60M";
+}
+
+function importedPrice(value, entry) {
+  const v = toNumber(value);
+  if (v === null || v === 0) return null;
+  if (entry === null) return v;
+  return looksLikePrice(v, entry) ? v : null;
+}
+
+export function formatChartPrice(price) {
+  const n = toNumber(price);
+  if (n === null) return "";
+  const abs = Math.abs(n);
+  if (abs >= 50) return n.toFixed(2);
+  if (abs < 1) return n.toFixed(8).replace(/0+$/, "").replace(/\.$/, "");
+  return n.toFixed(5);
+}
+
+export function chartPriceFormat(symbol, prices = []) {
+  const s = String(symbol || "").toUpperCase();
+  const nums = prices.filter((p) => Number.isFinite(p));
+  const sample = nums.length ? Math.max(...nums.map((p) => Math.abs(p))) : null;
+  if (s.includes("JPY") && !s.includes("XAU")) {
+    return { type: "price", precision: 3, minMove: 0.001 };
+  }
+  if (s.includes("XAU") || s.includes("GOLD") || s.includes("XAG")) {
+    return { type: "price", precision: 2, minMove: 0.01 };
+  }
+  if (sample != null && sample < 1) {
+    return { type: "price", precision: 8, minMove: 0.00000001 };
+  }
+  if (sample != null && sample >= 50) {
+    return { type: "price", precision: 2, minMove: 0.01 };
+  }
+  return { type: "price", precision: 5, minMove: 0.00001 };
+}
+
+/** Imported Long/Short position only — never pip-derived SL/TP. */
+export function tradePositionModel(trade) {
+  const entry = toNumber(trade?.entry_price);
+  if (entry === null) return null;
+  const sl = importedPrice(trade?.stop_loss, entry)
+    ?? importedPrice(trade?.stop_loss_amount, entry);
+  const tp = importedPrice(trade?.take_profit, entry)
+    ?? importedPrice(trade?.take_profit_amount, entry);
+  return {
+    entry,
+    sl,
+    tp,
+    exit: toNumber(trade?.exit_price),
+    isLong: normalizeDirection(trade?.direction) !== "Short",
+    isClosed: isClosedTrade(trade),
+    entryTime: tradeUnix(trade, "entry"),
+    exitTime: tradeUnix(trade, "exit"),
+  };
+}
+
+export function snapCandleTime(candles, unix, intervalSec) {
+  if (!candles.length || unix == null || !Number.isFinite(unix)) return null;
+  const step = intervalSec || 900;
+  for (const candle of candles) {
+    if (unix >= candle.time && unix < candle.time + step) return candle.time;
+  }
+  let best = null;
+  let bestDiff = Infinity;
+  for (const candle of candles) {
+    const diff = Math.abs(candle.time - unix);
+    if (diff < bestDiff) {
+      best = candle.time;
+      bestDiff = diff;
+    }
+  }
+  if (best != null && bestDiff <= Math.max(step * 8, 3 * 86400)) return best;
+  return null;
 }

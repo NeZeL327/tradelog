@@ -88,13 +88,62 @@ export function getTradeRealizedPL(trade) {
   return pl;
 }
 
+const MAX_PLAUSIBLE_ABS_R = 15;
+
+function almostEqualNum(a, b) {
+  const scale = Math.max(Math.abs(a), Math.abs(b), 1e-9);
+  return Math.abs(a - b) / scale < 0.02;
+}
+
+/** True when a number looks like an FX/metal price, not dollar risk. */
+function looksLikePriceLevel(n) {
+  return n >= 0.5 && n <= 5;
+}
+
+/** Dollar (account) risk. Ignores SL price copied into stop_loss_amount. */
+export function getTradeMoneyRisk(trade) {
+  const amount = Math.abs(Number(trade?.stop_loss_amount));
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  const slPrice = Math.abs(Number(trade?.stop_loss));
+  if (Number.isFinite(slPrice) && slPrice > 0 && almostEqualNum(amount, slPrice)) return null;
+  if (looksLikePriceLevel(amount)) return null;
+  return amount;
+}
+
+/** Realized R = P&L / money risk. Never divide by a price level. */
+export function tradeRealizedR(trade) {
+  const pl = getTradeRealizedPL(trade);
+  const risk = getTradeMoneyRisk(trade);
+  if (risk && pl != null) {
+    const r = pl / risk;
+    if (Number.isFinite(r) && (Math.abs(r) <= MAX_PLAUSIBLE_ABS_R || risk >= 20)) return r;
+  }
+  const stored = [trade?.r_multiple, trade?.realized_r]
+    .map(Number)
+    .find((n) => Number.isFinite(n) && n !== 0 && Math.abs(n) <= MAX_PLAUSIBLE_ABS_R);
+  if (stored == null) return null;
+  if (pl != null && pl !== 0 && Math.sign(stored) !== Math.sign(pl)) return null;
+  return stored;
+}
+
 const normalizeTradeOutcome = (outcome) => {
-  const normalized = String(outcome || "").toLowerCase();
-  if (normalized === "win") return "win";
-  if (normalized === "loss") return "loss";
-  if (normalized === "breakeven") return "breakeven";
+  const normalized = String(outcome || "").trim().toLowerCase();
+  if (normalized === "win" || normalized === "w" || normalized === "profit") return "win";
+  if (normalized === "loss" || normalized === "l" || normalized === "lose") return "loss";
+  if (normalized === "breakeven" || normalized === "be" || normalized === "break even" || normalized === "break-even") return "breakeven";
   return "default";
 };
+
+/** Win / loss / BE from label, or from P&L when outcome is missing. */
+export function getTradeOutcomeKey(trade) {
+  const labeled = normalizeTradeOutcome(trade?.outcome);
+  if (labeled !== "default") return labeled;
+  const pl = getTradeRealizedPL(trade);
+  if (pl == null) return "default";
+  if (pl > 0) return "win";
+  if (pl < 0) return "loss";
+  return "breakeven";
+}
 
 export const tradeStatusBadgeClass = (status) => {
   const normalized = normalizeTradeStatus(status);

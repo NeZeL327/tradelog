@@ -1,86 +1,35 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Scale entire app to ~80%.
-   Zoom is on #root (NOT html) so Radix portals (rendered at body level,
-   outside #root) are unaffected and position themselves correctly.
-   Body must not scroll: #root is height:100% and overflow-y:auto so one
-   scroll container exists (min-height-only on #root broke scrolling).
-   Width AND height are divided by zoom so the visual box still fills the
-   monitor — otherwise a large empty strip appears under the footer. */
+/* 1:1 scale. CSS zoom on #root clips scrollHeight in Chromium
+   (last section of long pages never becomes reachable). */
 html,
 body {
   height: 100%;
   margin: 0;
   overflow: hidden;
-  /* Zoom strips around #root — match app shell */
   background-color: hsl(var(--app-shell));
 }
 
 #root {
-  /* Desktop denser UI; phones/tablets stay 1:1 (iPhone 15 Pro etc.) */
-  --app-zoom: 0.82;
-  zoom: var(--app-zoom);
-  /* Compensate: after zoom the visual size = CSS size * zoom. */
-  width: calc(100vw / var(--app-zoom));
-  height: calc(100% / var(--app-zoom));
-  min-height: calc(100% / var(--app-zoom));
-  max-height: calc(100% / var(--app-zoom));
+  --app-zoom: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
   box-sizing: border-box;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   background-color: hsl(var(--app-shell));
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Phone: slightly denser than 1:1 so the journal fits without pinching */
 @media (max-width: 1023px) {
   #root {
-    --app-zoom: 0.9;
-    zoom: var(--app-zoom);
-    width: calc(100vw / var(--app-zoom));
-    height: calc(100% / var(--app-zoom));
-    min-height: calc(100% / var(--app-zoom));
-    max-height: calc(100% / var(--app-zoom));
     padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-}
-
-@supports not (zoom: 1) {
-  html,
-  body {
-    overflow: hidden;
-    height: 100%;
-    margin: 0;
-  }
-  #root {
-    --app-zoom: 0.82;
-    zoom: unset;
-    width: calc(100vw / var(--app-zoom));
-    height: calc(100% / var(--app-zoom));
-    min-height: calc(100% / var(--app-zoom));
-    max-height: calc(100% / var(--app-zoom));
-    transform: scale(var(--app-zoom));
-    transform-origin: top left;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  @media (max-width: 1023px) {
-    #root {
-      --app-zoom: 0.9;
-      width: calc(100vw / var(--app-zoom));
-      height: calc(100% / var(--app-zoom));
-      min-height: calc(100% / var(--app-zoom));
-      max-height: calc(100% / var(--app-zoom));
-      transform: scale(var(--app-zoom));
-      transform-origin: top left;
-    }
   }
 }
 
@@ -891,6 +840,7 @@ html.dark main.cyber-dashboard .calendar-day-today:not(.calendar-day-selected) {
   position: relative;
   box-shadow: none;
   transition: border-color 150ms ease, box-shadow 150ms ease;
+  contain: layout style;
 }
 
 html.dark .cyber-panel {
@@ -1280,7 +1230,7 @@ table tbody tr:hover {
 
 .auth-screen {
   min-height: 100%;
-  min-height: calc(100vh / var(--app-zoom, 0.82));
+  min-height: 100%;
   background-color: #070a14;
   --px: 0;
   --py: 0;

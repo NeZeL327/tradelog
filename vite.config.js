@@ -25,6 +25,7 @@ export default defineConfig({
       "/yahoo-chart": {
         target: "https://query1.finance.yahoo.com",
         changeOrigin: true,
+        secure: false,
         rewrite: (p) => p.replace(/^\/yahoo-chart/, ""),
       },
     },

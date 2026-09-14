@@ -15,11 +15,10 @@ import { enUS, pl } from "date-fns/locale";
 import TradeFormNew from "../components/TradeFormNew";
 import TradePreviewPanel from "../components/TradePreviewPanel";
 import { goToTradeDetails } from "@/lib/tradeDetailsNav";
-import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/components/LanguageProvider";
 import { directionLabel, getTradeRealizedPL, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor } from "@/lib/utils";
 import { formatTradeDate, formatTradeClock, getDateFormat, getTradeEntryHour } from "@/lib/userSettings";
-import { CHART, chartTooltipStyle, chartGridProps, chartLegendStyle } from "@/lib/chartTheme";
+import { CHART, chartTooltipStyle, chartGridProps, chartLegendStyle, chartSeriesProps } from "@/lib/chartTheme";
 import QuoteLine from "@/components/QuoteLine";
 import Sparkline from "@/components/Sparkline";
 import { useUserSettings } from "@/hooks/use-user-settings";
@@ -1333,7 +1332,7 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <Sparkline values={dailyPLData.map((d) => d.pl)} />
+                  <Sparkline values={dailyPLData.map((d) => d.pl)} glow={false} />
                 </div>
               </div>
             </CardContent>
@@ -1413,9 +1412,10 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="p-2 pt-0">
                 <div className="h-[120px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
                     <PieChart>
                       <Pie
+                        isAnimationActive={false}
                         data={directionPieData}
                         dataKey="value"
                         innerRadius={32}
@@ -1459,7 +1459,7 @@ export default function Dashboard() {
                                   ? "hsl(var(--warning))"
                                   : "hsl(var(--loss))",
                           strokeDasharray: `${zellaScore.total * 3.267} 326.7`,
-                          transition: "stroke-dasharray 0.8s ease",
+                          transition: "none",
                         }}
                       />
                     </svg>
@@ -1541,7 +1541,7 @@ export default function Dashboard() {
                   {dailyCumulativeData.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-xs text-muted-foreground">{t("noData") || "—"}</div>
                   ) : (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" debounce={50}>
                       <AreaChart data={dailyCumulativeData} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
                         <defs>
                           <linearGradient id="plCumFillCyber" x1="0" y1="0" x2="0" y2="1">
@@ -1568,6 +1568,7 @@ export default function Dashboard() {
                           fill="url(#plCumFillCyber)"
                           strokeWidth={1.5}
                           dot={false}
+                          {...chartSeriesProps}
                         />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -1590,9 +1591,10 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="overflow-hidden p-2 pt-0">
                 <div className="w-full h-[160px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
                     <PieChart margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
                       <Pie
+                        isAnimationActive={false}
                         data={outcomeData}
                         cx="50%"
                         cy="50%"
@@ -1628,7 +1630,7 @@ export default function Dashboard() {
                   {tradeTimeData.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-xs text-muted-foreground">{t("noData") || "—"}</div>
                   ) : (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" debounce={50}>
                       <ScatterChart margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
                         <defs>
                           <clipPath id="scatter-clip-cyber-left">
@@ -1639,7 +1641,7 @@ export default function Dashboard() {
                         <XAxis dataKey="hour" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} domain={[0, 23]} ticks={[0, 4, 8, 12, 16, 20, 23]} />
                         <YAxis dataKey="pl" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} width={36} />
                         <Tooltip contentStyle={chartTooltipStyle} />
-                        <Scatter data={tradeTimeData} fill={CHART.line} clipPath="url(#scatter-clip-cyber-left)">
+                        <Scatter isAnimationActive={false} data={tradeTimeData} fill={CHART.line} clipPath="url(#scatter-clip-cyber-left)">
                           {tradeTimeData.map((entry, index) => (
                             <Cell key={`sc-left-${index}`} fill={tradePnLBarColor(entry.pl)} />
                           ))}
@@ -1892,15 +1894,15 @@ export default function Dashboard() {
                   {monthlyStackData.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-xs text-muted-foreground">{t("noData") || "—"}</div>
                   ) : (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" debounce={50}>
                       <BarChart data={monthlyStackData} margin={{ top: 8, right: 8, left: 4, bottom: 4 }}>
                         <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="label" stroke={axisColor} tick={{ fontSize: 10, fill: axisColor }} />
                         <YAxis stroke={axisColor} tick={{ fontSize: 10, fill: axisColor }} width={44} />
                         <Tooltip contentStyle={chartTooltipStyle} />
                         <Legend wrapperStyle={chartLegendStyle} />
-                        <Bar dataKey="winPl" stackId="m" fill={CHART.line} name={t("wins")} radius={[0, 0, 0, 0]} />
-                        <Bar dataKey="lossPl" stackId="m" fill={CHART.loss} name={t("losses")} radius={[4, 4, 0, 0]} />
+                        <Bar isAnimationActive={false} dataKey="winPl" stackId="m" fill={CHART.line} name={t("wins")} radius={[0, 0, 0, 0]} />
+                        <Bar isAnimationActive={false} dataKey="lossPl" stackId="m" fill={CHART.loss} name={t("losses")} radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -1957,7 +1959,7 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent className="overflow-hidden p-2 sm:p-3 pt-0">
                   <div className="w-full overflow-hidden">
-                    <ResponsiveContainer width="100%" height={260}>
+                    <ResponsiveContainer width="100%" height={260} debounce={50}>
                       <LineChart data={plOverTime} margin={{ top: 10, right: 16, left: 0, bottom: 8 }}>
                         <CartesianGrid {...chartGridProps} />
                         <XAxis dataKey="trade" stroke={axisColor} tick={{ fill: axisColor, fontSize: 10 }} />
@@ -1968,7 +1970,7 @@ export default function Dashboard() {
                           domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1 || 10)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1 || 10))]}
                         />
                         <Tooltip contentStyle={chartTooltipStyle} />
-                        <Line type="monotone" dataKey="pl" stroke={CHART.line} strokeWidth={1.5} dot={{ fill: CHART.line, r: 3 }} />
+                        <Line type="monotone" dataKey="pl" stroke={CHART.line} strokeWidth={1.5} dot={false} isAnimationActive={false} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -2163,13 +2165,13 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="overflow-hidden p-2 pt-0">
                 <div className="w-full h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
                     <BarChart data={dailyPLData} barSize={12} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
                       <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="date" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} tickFormatter={(v) => v.slice(5)} />
                       <YAxis stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} width={36} />
                       <Tooltip contentStyle={chartTooltipStyle} />
-                      <Bar dataKey="pl" radius={[4, 4, 0, 0]}>
+                      <Bar dataKey="pl" radius={[4, 4, 0, 0]} isAnimationActive={false}>
                         {dailyPLData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={tradePnLBarColor(entry.pl)} />
                         ))}
@@ -2370,7 +2372,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="overflow-hidden p-2 pt-0">
                 <div className="w-full h-[180px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
                     <LineChart data={accountBalanceOverTime} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
                       <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="trade" stroke={axisColor} tick={{ fill: axisColor, fontSize: 9 }} />
@@ -2384,7 +2386,7 @@ export default function Dashboard() {
                         ]}
                       />
                       <Tooltip contentStyle={chartTooltipStyle} />
-                      <Line type="monotone" dataKey="pl" stroke={CHART.line} strokeWidth={1.5} dot={false} />
+                      <Line type="monotone" dataKey="pl" stroke={CHART.line} strokeWidth={1.5} dot={false} isAnimationActive={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -2397,7 +2399,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="overflow-hidden p-2 pt-0">
                 <div className="w-full h-[160px]">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" debounce={50}>
                     <AreaChart data={drawdownData} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
                       <defs>
                         <clipPath id="drawdown-clip-cyber">
@@ -2420,6 +2422,7 @@ export default function Dashboard() {
                         strokeWidth={1.5}
                         dot={false}
                         clipPath="url(#drawdown-clip-cyber)"
+                        {...chartSeriesProps}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -2429,9 +2432,8 @@ export default function Dashboard() {
           </aside>
         </div>
 {/* Expanded Metric Details */}
-        <AnimatePresence>
           {expandedMetric === 'pl' && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+            <div>
               <Card>
                 <CardHeader>
                   <CardTitle>{t('detailedPLAnalysis')}</CardTitle>
@@ -2478,11 +2480,11 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           )}
 
           {expandedMetric === 'winrate' && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+            <div>
               <Card>
                 <CardHeader>
                   <CardTitle>{t('detailedWinRateAnalysis')}</CardTitle>
@@ -2521,11 +2523,11 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           )}
 
           {expandedMetric === 'avgpl' && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+            <div>
               <Card>
                 <CardHeader>
                   <CardTitle>{t('detailedAvgPLAnalysis')}</CardTitle>
@@ -2574,11 +2576,11 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           )}
 
           {expandedMetric === 'pf' && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+            <div>
               <Card>
                 <CardHeader>
                   <CardTitle>{t('detailedProfitFactorAnalysis')}</CardTitle>
@@ -2606,7 +2608,7 @@ export default function Dashboard() {
                   <div className="bg-muted/30 p-3 rounded-lg">
                     <p className="text-xs text-muted-foreground mb-2 font-semibold">{t('tradeEfficiency')}</p>
                     <div className="w-full overflow-hidden">
-                      <ResponsiveContainer width="100%" height={200}>
+                      <ResponsiveContainer width="100%" height={200} debounce={50}>
                         <BarChart data={[
                           { name: t('avgWinShort'), value: parseFloat(avgWin), fill: CHART.profit },
                           { name: t('avgLossShort'), value: Math.abs(parseFloat(avgLoss)), fill: CHART.loss }
@@ -2620,21 +2622,19 @@ export default function Dashboard() {
                           <XAxis dataKey="name" stroke={axisColor} tick={{ fill: axisColor }} />
                           <YAxis stroke={axisColor} tick={{ fill: axisColor }} width={50} />
                           <Tooltip />
-                          <Bar dataKey="value" radius={[8, 8, 0, 0]} clipPath="url(#trade-efficiency-clip)" />
+                          <Bar dataKey="value" radius={[8, 8, 0, 0]} clipPath="url(#trade-efficiency-clip)" isAnimationActive={false} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
 
         {/* Expanded Outcome Details */}
-        <AnimatePresence>
           {expandedMetric === 'outcome' && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+            <div>
               <Card>
                 <CardHeader>
                   <CardTitle>{t('detailedOutcomeAnalysis')}</CardTitle>
@@ -2669,9 +2669,8 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
 
         {/* Best & Worst Trades — styl jak reszta paneli cyber */}
         {bestTrade && worstTrade && (

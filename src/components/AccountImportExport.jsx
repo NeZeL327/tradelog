@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Download, Upload, FileSpreadsheet } from "lucide-react";
-import { createTrade, getTrades } from "@/lib/localStorage";
+import { createTradesBatch, getTrades } from "@/lib/localStorage";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
 import {
@@ -144,8 +144,13 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
     setParsing(true);
     setParseError("");
     setPreview(null);
+    await new Promise((r) => setTimeout(r, 40));
     try {
-      const tradesForDedup = user?.id ? await getTrades(user.id) : existingTrades;
+      const tradesForDedup = existingTrades?.length
+        ? existingTrades
+        : user?.id
+          ? await getTrades(user.id)
+          : [];
       const next = await buildPreview(file, brokerId, tradesForDedup);
       setPreview(next);
       if (!next.total) {
@@ -218,43 +223,31 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
     }
 
     setImporting(true);
-    const loadingToast = toast.loading("Sprawdzanie duplikatów...");
+    const loadingToast = toast.loading("Importowanie transakcji...");
 
     let successCount = 0;
     let errorCount = 0;
-    let skipped = 0;
-    let format = broker;
+    let skipped = preview.skipped || 0;
+    let format = preview.format || broker;
 
     try {
-      const freshTrades = await getTrades(user.id);
-      const previewNow = await buildPreview(selectedFile, broker, freshTrades);
-      skipped = previewNow.skipped;
-      format = previewNow.format;
-      setPreview(previewNow);
-
-      if (!previewNow.newTrades.length) {
-        toast.info(
-          previewNow.total > 0
-            ? `Wszystkie ${previewNow.total} transakcji z pliku są już w dzienniku — duplikaty pominięte.`
-            : "Plik nie zawiera transakcji do importu.",
-          { id: loadingToast, duration: 6000 }
-        );
+      const toImport = preview.newTrades || [];
+      if (!toImport.length) {
+        toast.info("Brak nowych transakcji do importu.", { id: loadingToast, duration: 5000 });
         return;
       }
 
-      toast.loading(`Importowanie ${previewNow.newTrades.length} nowych transakcji...`, {
+      toast.loading(`Importowanie ${toImport.length} nowych transakcji...`, {
         id: loadingToast,
       });
 
-      for (const trade of previewNow.newTrades) {
-        try {
-          await createTrade(user.id, trade);
-          successCount++;
-        } catch (err) {
-          console.error("Error creating trade:", err);
-          errorCount++;
-          toast.error(`Błąd zapisu trade ${trade.symbol || ""}: ${err.message || "Firestore"}`);
-        }
+      try {
+        await createTradesBatch(user.id, toImport);
+        successCount = toImport.length;
+      } catch (err) {
+        console.error("Batch import error:", err);
+        errorCount = toImport.length;
+        toast.error(`Błąd zapisu: ${err.message || "Firestore"}`);
       }
 
       const brokerLabel = BROKER_LABELS[format] || BROKER_LABELS[broker] || broker;

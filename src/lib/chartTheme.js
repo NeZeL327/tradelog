@@ -30,3 +30,7 @@ export const chartGridProps = {
   strokeOpacity: 0.45,
   vertical: false,
 };
+
+export const chartSeriesProps = {
+  isAnimationActive: false,
+};

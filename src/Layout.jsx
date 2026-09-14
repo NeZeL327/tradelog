@@ -29,7 +29,6 @@ import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import SessionClocks from "@/components/SessionClocks";
-import Footer from "@/components/Footer";
 import FloatingCalculator from "@/components/calculators/FloatingCalculator";
 import ReminderWatcher from "@/components/ReminderWatcher";
 import MobileTabBar from "@/components/MobileTabBar";
@@ -140,7 +139,7 @@ function LayoutContent({ children }) {
     <>
       <CommandSearchHost />
       {/* Connected shell (sidebar + header) + inset rounded content — both themes */}
-      <div className="min-h-full h-full flex w-full bg-[hsl(var(--app-shell))] app-atmosphere">
+      <div className="h-full min-h-0 flex w-full overflow-hidden bg-[hsl(var(--app-shell))] app-atmosphere">
 
         <Sidebar
           className="cyber-app-sidebar border-transparent bg-transparent"
@@ -296,7 +295,7 @@ function LayoutContent({ children }) {
         </Sidebar>
 
         {/* Column: top bar (shell) + inset content panel */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-full h-full bg-[hsl(var(--app-shell))]">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden bg-[hsl(var(--app-shell))]">
           {/* Top header — same color as sidebar (connected frame) */}
           <header className="cyber-app-header border-transparent bg-transparent px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 sticky top-0 z-10 flex items-center justify-between gap-2 sm:gap-4 pt-[max(0.625rem,env(safe-area-inset-top))]">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -344,12 +343,9 @@ function LayoutContent({ children }) {
           </header>
 
           {/* Content panel — rounded inset (connected transition under header) */}
-          <main className="flex-1 flex flex-col min-w-0 overflow-auto cyber-dashboard dashboard-surface bg-[hsl(var(--background))] md:mr-3 md:mb-3 md:rounded-lg md:border border-border/80 dark:md:mr-0 dark:md:mb-0 dark:md:rounded-none dark:border-transparent">
-            <div className="flex-1 min-h-0 flex flex-col w-full max-w-screen-2xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-[max(1rem,env(safe-area-inset-bottom))] app-mobile-tab-pad">
+          <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden cyber-dashboard dashboard-surface bg-[hsl(var(--background))] md:mr-3 md:mb-3 md:rounded-lg md:border border-border/80 dark:md:mr-0 dark:md:mb-0 dark:md:rounded-none dark:border-transparent">
+            <div className="w-full max-w-screen-2xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-32 app-mobile-tab-pad">
               {children}
-            </div>
-            <div className="hidden md:block">
-              <Footer variant="app" />
             </div>
           </main>
         </div>
@@ -364,7 +360,7 @@ function LayoutContent({ children }) {
 export default function Layout({ children }) {
   const isMobile = useIsMobile();
   return (
-    <SidebarProvider defaultOpen={!isMobile} className="!min-h-full h-full">
+    <SidebarProvider defaultOpen={!isMobile} className="h-full min-h-0 overflow-hidden">
       <LayoutContent>{children}</LayoutContent>
     </SidebarProvider>
   );

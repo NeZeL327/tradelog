@@ -54,7 +54,16 @@ export async function unzipArrayBuffer(arrayBuffer) {
     const extraLen = readU16(view, cdOffset + 30);
     const commentLen = readU16(view, cdOffset + 32);
     const localHeaderOffset = readU32(view, cdOffset + 42);
-    const name = decoder.decode(bytes.subarray(cdOffset + 46, cdOffset + 46 + nameLen));
+    const name = decoder.decode(bytes.subarray(cdOffset + 46, cdOffset + 46 + nameLen)).replace(/\\/g, "/");
+    const needed =
+      /xl\/sharedStrings\.xml$/i.test(name) ||
+      /xl\/worksheets\/[^/]+\.xml$/i.test(name) ||
+      /xl\/workbook\.xml$/i.test(name);
+
+    if (!needed) {
+      cdOffset += 46 + nameLen + extraLen + commentLen;
+      continue;
+    }
 
     if (readU32(view, localHeaderOffset) !== 0x04034b50) {
       cdOffset += 46 + nameLen + extraLen + commentLen;
@@ -84,7 +93,7 @@ export async function unzipArrayBuffer(arrayBuffer) {
       continue;
     }
 
-    files[name.replace(/\\/g, "/")] = data;
+    files[name] = data;
     cdOffset += 46 + nameLen + extraLen + commentLen;
   }
 
@@ -110,8 +119,21 @@ function sanitizeXml(xml) {
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 }
 
+function localKids(el, localName) {
+  const out = [];
+  for (let n = el.firstElementChild; n; n = n.nextElementSibling) {
+    const local = n.localName || String(n.nodeName || "").split(":").pop();
+    if (local === localName) out.push(n);
+  }
+  return out;
+}
+
 function byLocalName(root, localName) {
   if (!root) return [];
+  if (root.firstElementChild && (localName === "c" || localName === "v" || localName === "t" || localName === "is")) {
+    const kids = localKids(root, localName);
+    if (kids.length) return kids;
+  }
   if (typeof root.getElementsByTagNameNS === "function") {
     const all = root.getElementsByTagNameNS("*", localName);
     if (all.length) return Array.from(all);
@@ -189,7 +211,8 @@ function coerceCellValue(raw, type, sharedStrings) {
   if (type === "s") return sharedStrings[Number(raw || 0)] ?? "";
   if (raw == null) return "";
   const s = String(raw);
-  if (type !== "s" && /^\d+(\.\d+)?$/.test(s)) {
+  // Integers in 30000–60000 are often MT tickets — only convert true datetimes (fractional serials).
+  if (type !== "s" && /^\d+\.\d+$/.test(s)) {
     const asDate = excelSerialToDateTime(s);
     if (asDate) return asDate;
   }
@@ -224,11 +247,12 @@ function parseSheetRowsDom(xml, sharedStrings) {
 
   if (rowNodes.length) {
     for (const rowEl of rowNodes) {
-      const cells = byLocalName(rowEl, "c");
+      const cells = localKids(rowEl, "c");
+      const list = cells.length ? cells : byLocalName(rowEl, "c");
       const line = [];
       let nextCol = 0;
 
-      for (const cell of cells) {
+      for (const cell of list) {
         const ref = cell.getAttribute("r") || "";
         const parts = cellRefParts(ref);
         const col = parts ? parts.col : nextCol;
@@ -337,11 +361,14 @@ function parseSheetRows(xml, sharedStrings) {
   const fromDom = parseSheetRowsDom(clean, sharedStrings);
   if (fromDom && fromDom.length) return fromDom;
 
-  const fromRegex = parseSheetRowsRegex(clean, sharedStrings);
-  if (fromRegex.length) return fromRegex;
+  // Regex on multi-MB MT5 sheets freezes the tab — skip it.
+  if (clean.length < 1_200_000) {
+    const fromRegex = parseSheetRowsRegex(clean, sharedStrings);
+    if (fromRegex.length) return fromRegex;
+  }
 
   if (fromDom && !fromDom.length) throw new Error("Arkusz XLSX jest pusty");
-  throw new Error("Nie udało się odczytać arkusza XLSX — spróbuj zapisać raport MT jako CSV");
+  throw new Error("Nie udało się odczytać arkusza XLSX — zapisz raport MT jako CSV i spróbuj ponownie.");
 }
 
 function escapeCsvCell(value) {
@@ -363,14 +390,14 @@ function pickBestSheetPath(files) {
       return na - nb;
     });
 
-  // Prefer sheet with most <c> / <row> content
-  let best = sheetPaths[0] || null;
-  let bestScore = -1;
+  if (sheetPaths.length <= 1) return sheetPaths[0] || null;
+
+  let best = sheetPaths[0];
+  let bestLen = (files[best] || []).length;
   for (const path of sheetPaths) {
-    const xml = decodeXml(files[path] || []);
-    const score = (xml.match(/<(?:\w+:)?c\b/gi) || []).length + (xml.match(/<(?:\w+:)?row\b/gi) || []).length * 10;
-    if (score > bestScore) {
-      bestScore = score;
+    const len = (files[path] || []).length;
+    if (len > bestLen) {
+      bestLen = len;
       best = path;
     }
   }

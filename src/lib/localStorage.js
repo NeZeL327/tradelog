@@ -12,7 +12,8 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
-  where
+  where,
+  writeBatch,
 } from 'firebase/firestore';
 import imageCompression from 'browser-image-compression';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -257,10 +258,48 @@ export const createTrade = async (userId, tradeData) => {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
-    console.log('Creating trade in Firestore with payload:', payload);
     const refDoc = await addDoc(userCollection(userId, 'trades'), payload);
-    console.log('Trade created with ID:', refDoc.id);
     return { id: refDoc.id, ...payload };
+  });
+};
+
+const TRADE_BATCH_LIMIT = 400;
+
+export const createTradesBatch = async (userId, trades = []) => {
+  return runSafe('createTradesBatch', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const list = Array.isArray(trades) ? trades : [];
+    if (!list.length) return [];
+
+    const col = userCollection(userId, 'trades');
+    const created = [];
+
+    for (let i = 0; i < list.length; i += TRADE_BATCH_LIMIT) {
+      const chunk = list.slice(i, i + TRADE_BATCH_LIMIT);
+      const batch = writeBatch(db);
+      const chunkRefs = [];
+
+      for (const tradeData of chunk) {
+        const cleaned = stripUndefinedDeep({
+          ...tradeData,
+          account_id: tradeData?.account_id != null ? String(tradeData.account_id) : tradeData?.account_id,
+          status: tradeData?.status || 'Closed',
+        });
+        const payload = {
+          ...cleaned,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        const refDoc = doc(col);
+        batch.set(refDoc, payload);
+        chunkRefs.push({ id: refDoc.id, ...payload });
+      }
+
+      await batch.commit();
+      created.push(...chunkRefs);
+    }
+
+    return created;
   });
 };
 

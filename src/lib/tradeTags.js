@@ -9,6 +9,7 @@ import {
   saveLocalUserSettings,
 } from "@/lib/userSettings";
 import { updateUser } from "@/lib/localStorage";
+import { getTradeOutcomeKey } from "@/lib/utils";
 
 export const DEFAULT_CONFLUENCES = Object.freeze([
   "Sweep płynności",
@@ -193,8 +194,9 @@ export function aggregateTagPerformance(trades, field, { decidedWinRate, getPl }
     if (!tags.length) continue;
     taggedTrades += 1;
     const pl = typeof getPl === "function" ? getPl(trade) : 0;
-    const isWin = trade.outcome === "Win";
-    const isLoss = trade.outcome === "Loss";
+    const outcome = getTradeOutcomeKey(trade);
+    const isWin = outcome === "win";
+    const isLoss = outcome === "loss";
 
     for (const tag of tags) {
       if (!map[tag]) map[tag] = { tag, wins: 0, losses: 0, total: 0, pl: 0 };

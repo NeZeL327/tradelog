@@ -1,4 +1,4 @@
-import { directionLabel, getTradeRealizedPL, isClosedTrade, normalizeDirection } from "@/lib/utils";
+import { directionLabel, getTradeRealizedPL, isClosedTrade, normalizeDirection, tradeRealizedR } from "@/lib/utils";
 import { formatTradeClock, formatTradeClockDate, formatTradeDate, getDateFormat } from "@/lib/userSettings";
 
 export const STATS_STORAGE_PREFIX = "trade_preview_stats_fields_";
@@ -176,10 +176,8 @@ function roiValue(trade) {
 }
 
 function realizedR(trade) {
-  const risk = Math.abs(toNumber(trade?.stop_loss_amount) ?? toNumber(trade?.stop_loss) ?? 0);
-  const pl = getTradeRealizedPL(trade);
-  if (!risk || pl === null) return { text: "—", tone: "neutral" };
-  const r = pl / risk;
+  const r = tradeRealizedR(trade);
+  if (r == null) return { text: "—", tone: "neutral" };
   return { text: `${formatSigned(r)}R`, tone: plTone(r) };
 }
 
