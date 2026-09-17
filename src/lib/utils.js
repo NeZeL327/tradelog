@@ -54,6 +54,18 @@ export const isClosedTrade = (trade) => {
   return status === "closed" || status === "breakeven";
 };
 
+export const isTradingAccountActive = (account) =>
+  Boolean(account) && account.is_active !== false && account.status !== "Inactive";
+
+export const getActiveAccountIds = (accounts = []) =>
+  new Set(accounts.filter(isTradingAccountActive).map((account) => String(account.id)));
+
+/** Trades from deleted/old accounts (or without account_id) must not enter dashboard P&L. */
+export const tradeBelongsToActiveAccount = (trade, activeAccountIds) => {
+  if (!trade?.account_id) return false;
+  return activeAccountIds.has(String(trade.account_id));
+};
+
 export const tradeStatusDisplay = (status) => {
   if (normalizeTradeStatus(status) === "breakeven") return "Breakeven";
   return status || "-";

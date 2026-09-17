@@ -1,7 +1,7 @@
 ﻿import { useState, useRef, useEffect } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
-import { directionChartColor, getTradeRealizedPL, isClosedTrade, tradeOutcomeDisplay } from '@/lib/utils';
+import { directionChartColor, getActiveAccountIds, getTradeRealizedPL, isClosedTrade, isTradingAccountActive, tradeBelongsToActiveAccount, tradeOutcomeDisplay } from '@/lib/utils';
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -87,17 +87,11 @@ export default function Analytics() {
     queryFn: () => getTradingAccounts(user?.id),
   });
 
-  const activeAccounts = accounts.filter((account) => account.is_active !== false && account.status !== 'Inactive');
-  const inactiveAccountIds = new Set(
-    accounts
-      .filter((account) => account.is_active === false || account.status === 'Inactive')
-      .map((account) => String(account.id))
+  const activeAccounts = accounts.filter(isTradingAccountActive);
+  const activeAccountIds = getActiveAccountIds(accounts);
+  const tradesFromActiveAccounts = trades.filter((trade) =>
+    tradeBelongsToActiveAccount(trade, activeAccountIds)
   );
-  // Include trades without account_id; exclude only inactive accounts (same as Journal/Dashboard)
-  const tradesFromActiveAccounts = trades.filter((trade) => {
-    if (!trade.account_id) return true;
-    return !inactiveAccountIds.has(String(trade.account_id));
-  });
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies'],

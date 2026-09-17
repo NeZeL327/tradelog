@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import JournalMobileList from "../components/JournalMobileList";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, getTradeRealizedPL, isClosedTrade, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, getActiveAccountIds, getTradeRealizedPL, isClosedTrade, isTradingAccountActive, tradeBelongsToActiveAccount, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
 import { formatTradeDate, formatTradeClock, formatTradeClockDate, getDateFormat } from "@/lib/userSettings";
 import QuoteLine from "@/components/QuoteLine";
@@ -293,15 +293,11 @@ export default function JournalSimple({ mode = "all" }) {
     enabled: !!user?.id
   });
 
-  const activeAccounts = accounts.filter((account) => account.is_active !== false && account.status !== 'Inactive');
-  const activeAccountIds = new Set(activeAccounts.map((account) => String(account.id)));
-  const inactiveAccountIds = new Set(
-    accounts.filter(a => a.is_active === false || a.status === 'Inactive').map(a => String(a.id))
+  const activeAccounts = accounts.filter(isTradingAccountActive);
+  const activeAccountIds = getActiveAccountIds(accounts);
+  const tradesFromActiveAccounts = trades.filter((trade) =>
+    tradeBelongsToActiveAccount(trade, activeAccountIds)
   );
-  const tradesFromActiveAccounts = trades.filter((trade) => {
-    if (!trade.account_id) return true;
-    return !inactiveAccountIds.has(String(trade.account_id));
-  });
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies', user?.id],

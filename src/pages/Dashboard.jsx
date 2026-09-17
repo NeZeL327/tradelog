@@ -16,7 +16,7 @@ import TradeFormNew from "../components/TradeFormNew";
 import TradePreviewPanel from "../components/TradePreviewPanel";
 import { goToTradeDetails } from "@/lib/tradeDetailsNav";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionLabel, getTradeRealizedPL, isClosedTrade, normalizeDirection, tradeOutcomeChartColor, tradePnLBarColor } from "@/lib/utils";
+import { directionLabel, getActiveAccountIds, getTradeRealizedPL, isClosedTrade, isTradingAccountActive, normalizeDirection, tradeBelongsToActiveAccount, tradeOutcomeChartColor, tradePnLBarColor } from "@/lib/utils";
 import { formatTradeDate, formatTradeClock, getDateFormat, getTradeEntryHour } from "@/lib/userSettings";
 import { CHART, chartTooltipStyle, chartGridProps, chartLegendStyle, chartSeriesProps } from "@/lib/chartTheme";
 import QuoteLine from "@/components/QuoteLine";
@@ -224,15 +224,21 @@ export default function Dashboard() {
     queryFn: () => getTradingAccounts(user?.id),
   });
 
-  const activeAccounts = accounts.filter((account) => account.is_active !== false && account.status !== 'Inactive');
-  const activeAccountIds = new Set(activeAccounts.map((account) => String(account.id)));
-  const inactiveAccountIds = new Set(
-    accounts.filter(a => a.is_active === false || a.status === 'Inactive').map(a => String(a.id))
+  const activeAccounts = accounts.filter(isTradingAccountActive);
+  const activeAccountIds = getActiveAccountIds(accounts);
+  const tradesFromActiveAccounts = trades.filter((trade) =>
+    tradeBelongsToActiveAccount(trade, activeAccountIds)
   );
-  const tradesFromActiveAccounts = trades.filter((trade) => {
-    if (!trade.account_id) return true;
-    return !inactiveAccountIds.has(String(trade.account_id));
-  });
+
+  useEffect(() => {
+    const validIds = getActiveAccountIds(accounts);
+    setDashboardAccounts((prev) => {
+      if (prev.includes("all")) return prev.length === 1 ? prev : ["all"];
+      const sanitized = prev.filter((id) => validIds.has(String(id)));
+      if (sanitized.length === prev.length) return prev;
+      return sanitized.length ? sanitized : ["all"];
+    });
+  }, [accounts]);
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies'],

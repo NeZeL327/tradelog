@@ -14,7 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "@/components/LanguageProvider";
-import { cn, getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
+import { cn, getActiveAccountIds, getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
 import { CHART, chartTooltipStyle, chartGridProps } from "@/lib/chartTheme";
 import QuoteLine from "@/components/QuoteLine";
 
@@ -40,11 +40,7 @@ export default function Strategies() {
     queryFn: () => getTradingAccounts(user?.id),
   });
 
-  const activeAccountIds = new Set(
-    accounts
-      .filter((account) => account.is_active !== false && account.status !== 'Inactive')
-      .map((account) => String(account.id))
-  );
+  const activeAccountIds = getActiveAccountIds(accounts);
 
   const createMutation = useMutation({
     mutationFn: (data) => createStrategy(user?.id, data),
@@ -80,7 +76,7 @@ export default function Strategies() {
   // Strategy comparison data
   const strategyStats = strategies.map(strategy => {
     const strategyTrades = trades.filter(
-      (t) => t.strategy_id === strategy.id && isClosedTrade(t) && (!t.account_id || activeAccountIds.has(String(t.account_id)))
+      (t) => t.strategy_id === strategy.id && isClosedTrade(t) && activeAccountIds.has(String(t.account_id))
     );
     const wins = strategyTrades.filter(t => t.outcome === "Win").length;
     const losses = strategyTrades.filter(t => t.outcome === "Loss").length;

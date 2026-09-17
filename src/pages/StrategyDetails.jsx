@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, TrendingUp, Target, Award, Star, AlertCircle } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
-import { getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
+import { getActiveAccountIds, getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
 import { CHART, chartTooltipStyle, chartGridProps } from "@/lib/chartTheme";
 import QuoteLine from "@/components/QuoteLine";
 
@@ -66,14 +66,10 @@ export default function StrategyDetails() {
   }
 
   // Pobierz transakcje dla tej strategii
-  const activeAccountIds = new Set(
-    accounts
-      .filter((account) => account.is_active !== false && account.status !== 'Inactive')
-      .map((account) => String(account.id))
-  );
+  const activeAccountIds = getActiveAccountIds(accounts);
 
   const strategyTrades = trades.filter(
-    (t) => t.strategy_id === id && isClosedTrade(t) && (!t.account_id || activeAccountIds.has(String(t.account_id)))
+    (t) => t.strategy_id === id && isClosedTrade(t) && activeAccountIds.has(String(t.account_id))
   );
   const wins = strategyTrades.filter(t => t.outcome === "Win").length;
   const losses = strategyTrades.filter(t => t.outcome === "Loss").length;

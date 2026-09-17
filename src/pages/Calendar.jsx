@@ -10,7 +10,7 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Calendar as Calend
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek } from "date-fns";
 import { pl, enUS } from "date-fns/locale";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, getTradeRealizedPL, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass, tradeOutcomeDisplay } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, getTradeRealizedPL, isTradingAccountActive, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass, tradeOutcomeDisplay } from "@/lib/utils";
 import TradePreviewPanel from "../components/TradePreviewPanel";
 import { goToTradeDetails } from "@/lib/tradeDetailsNav";
 import { formatTradeDate, formatTradeClock, getDateFormat } from "@/lib/userSettings";
@@ -44,12 +44,11 @@ export default function Calendar() {
     return status === "open" || status === "closed" || status === "breakeven";
   };
 
-  // Hide trades belonging to inactive accounts everywhere in the calendar view.
+  // Hide trades belonging to inactive or deleted accounts everywhere in the calendar view.
   const isFromActiveAccount = (trade) => {
-    if (!trade?.account_id) return true;
+    if (!trade?.account_id) return false;
     const account = accounts.find((a) => String(a.id) === String(trade.account_id));
-    if (!account) return true;
-    return account.is_active !== false && account.status !== 'Inactive';
+    return isTradingAccountActive(account);
   };
 
   const getTradeStatusLabel = (trade) => {
