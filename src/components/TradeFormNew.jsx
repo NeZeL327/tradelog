@@ -9,6 +9,7 @@ import { createTrade, updateTrade, getTradingAccounts, getStrategies, persistTra
 import { useLanguage } from "@/components/LanguageProvider";
 import { X, Plus, ListChecks, AlertTriangle, Brain, Star } from "lucide-react";
 import ImageViewer from "@/components/common/ImageViewer";
+import ScreenshotField, { isImageFile } from "@/components/common/ScreenshotField";
 import { normalizeDirection } from "@/lib/utils";
 import {
   EmotionsInlinePanel,
@@ -63,85 +64,6 @@ function FormSelect({ value, onValueChange, placeholder, children, className, di
         {children}
       </SelectContent>
     </Select>
-  );
-}
-
-function isImageFile(file) {
-  if (!file) return false;
-  if (file.type?.startsWith("image/")) return true;
-  return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(file.name || "");
-}
-
-function ScreenshotField({
-  slotId,
-  label,
-  value,
-  pending,
-  onPickFile,
-  onRemove,
-  onView,
-  addLabel,
-  changeLabel,
-  removeLabel,
-  viewLabel,
-  uploadError,
-}) {
-  return (
-    <div>
-      <Label className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">{label}</Label>
-      <input
-        id={slotId}
-        type="file"
-        accept="image/*,.heic,.heif"
-        className="sr-only"
-        onChange={onPickFile}
-      />
-      <label
-        htmlFor={slotId}
-        className="relative flex items-center justify-center h-20 w-full border border-dashed border-border/70 rounded-lg bg-muted/20 hover:border-primary/50 hover:bg-primary/5 transition cursor-pointer overflow-hidden"
-      >
-        {value ? (
-          <>
-            <img
-              src={value}
-              alt={label}
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            />
-            <div className="absolute inset-0 bg-black/20 pointer-events-none" />
-            {pending && (
-              <div className="absolute bottom-1 left-1 right-1 text-center text-[10px] font-medium text-primary-foreground bg-primary/90 rounded px-1 py-0.5 pointer-events-none">
-                Zapisze po „Zapisz”
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="flex flex-col items-center">
-            <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center mb-1">
-              <Plus className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-[11px] font-medium text-muted-foreground">{addLabel}</span>
-          </div>
-        )}
-      </label>
-      {uploadError && (
-        <p className="mt-1 text-xs text-loss dark:text-loss">{uploadError}</p>
-      )}
-      {value && (
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          <Button type="button" variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={onRemove}>
-            {removeLabel}
-          </Button>
-          <Button type="button" variant="outline" size="sm" className="h-7 text-[11px] px-2" onClick={onView}>
-            {viewLabel}
-          </Button>
-          <Button type="button" variant="outline" size="sm" className="h-7 text-[11px] px-2" asChild>
-            <label htmlFor={slotId} className="cursor-pointer">
-              {changeLabel}
-            </label>
-          </Button>
-        </div>
-      )}
-    </div>
   );
 }
 

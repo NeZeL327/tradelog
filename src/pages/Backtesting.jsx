@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import {
   getBacktestEntries,
@@ -11,7 +11,7 @@ import {
   deleteBacktestStrategy,
   getBacktestStrategyPage,
   saveBacktestStrategyPage,
-  uploadUserFile,
+  persistTradeScreenshot,
 } from "@/lib/localStorage";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +39,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  ImageIcon,
   TrendingUp,
   TrendingDown,
   BarChart3,
@@ -78,6 +77,7 @@ import { loadTradeTagLists, saveTradeTagLists } from "@/lib/tradeTags";
 import EditableTagChips from "@/components/EditableTagChips";
 import { toast } from "sonner";
 import ImageViewer from "@/components/common/ImageViewer";
+import ScreenshotField, { isImageFile } from "@/components/common/ScreenshotField";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmotionsInlinePanel, createEmptyEmotions, normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
@@ -94,6 +94,14 @@ const COMMON_PAIRS = [
 ];
 
 const WEEKDAYS = ["Pon", "Wt", "Śr", "Czw", "Pt", "Sob", "Ndz"];
+const SCREENSHOT_KEYS = ["screenshot_1", "screenshot_2", "screenshot_3"];
+
+function getBacktestScreenshots(row) {
+  if (!row) return [];
+  const slots = SCREENSHOT_KEYS.map((key) => row[key]).filter(Boolean);
+  if (slots.length) return slots;
+  return row.screenshot_url ? [row.screenshot_url] : [];
+}
 
 const pieColors = {
   Win: CHART.profit,
@@ -163,7 +171,9 @@ export default function Backtesting() {
     amount: "",
     tags: "",
     notes: "",
-    screenshot_url: "",
+    screenshot_1: "",
+    screenshot_2: "",
+    screenshot_3: "",
     entry_confirmation: false,
     confluences: [],
     mistakes: [],
@@ -172,9 +182,13 @@ export default function Backtesting() {
   });
 
   const [form, setForm] = useState(emptyForm);
-  const [filePending, setFilePending] = useState(null);
   const [emotionsOpen, setEmotionsOpen] = useState(false);
   const [detailEmotionsOpen, setDetailEmotionsOpen] = useState(false);
+  const [screenshotErrors, setScreenshotErrors] = useState({});
+  const [pendingScreenshotKeys, setPendingScreenshotKeys] = useState(() => new Set());
+  const formUid = useId().replace(/:/g, "");
+  const blobUrlsRef = useRef([]);
+  const pendingScreenshotsRef = useRef({});
 
   const confluenceOptions = useMemo(() => {
     const base = tagLists.confluences || [];
@@ -197,6 +211,87 @@ export default function Backtesting() {
       setDetailEmotionsOpen(countFilledEmotionStages(detailRow.emotions) > 0);
     }
   }, [detailRow]);
+
+  useEffect(() => {
+    return () => {
+      blobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      blobUrlsRef.current = [];
+    };
+  }, []);
+
+  const trackBlobUrl = (url) => {
+    if (url?.startsWith("blob:")) blobUrlsRef.current.push(url);
+  };
+
+  const revokeBlobUrl = (url) => {
+    if (!url?.startsWith("blob:")) return;
+    URL.revokeObjectURL(url);
+    blobUrlsRef.current = blobUrlsRef.current.filter((item) => item !== url);
+  };
+
+  const handleScreenshotPick = (fieldName) => (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!user?.id) {
+      setScreenshotErrors((prev) => ({ ...prev, [fieldName]: "Musisz być zalogowany." }));
+      return;
+    }
+    if (!isImageFile(file)) {
+      setScreenshotErrors((prev) => ({ ...prev, [fieldName]: "Wybierz plik graficzny (JPG, PNG, WebP)." }));
+      return;
+    }
+
+    setScreenshotErrors((prev) => ({ ...prev, [fieldName]: null }));
+    setForm((prev) => {
+      revokeBlobUrl(prev[fieldName]);
+      return prev;
+    });
+
+    const previewUrl = URL.createObjectURL(file);
+    trackBlobUrl(previewUrl);
+    pendingScreenshotsRef.current[fieldName] = file;
+    setPendingScreenshotKeys((prev) => new Set(prev).add(fieldName));
+    setForm((prev) => ({ ...prev, [fieldName]: previewUrl }));
+  };
+
+  const resolveScreenshotsForSubmit = async () => {
+    const resolved = {};
+    for (const key of SCREENSHOT_KEYS) {
+      const pendingFile = pendingScreenshotsRef.current[key];
+      if (pendingFile) {
+        try {
+          resolved[key] = await persistTradeScreenshot(user.id, pendingFile);
+        } catch (uploadErr) {
+          const message = uploadErr?.message || "Nie udało się wysłać zdjęcia.";
+          setScreenshotErrors((prev) => ({ ...prev, [key]: message }));
+          throw new Error(message);
+        }
+        revokeBlobUrl(form[key]);
+        pendingScreenshotsRef.current[key] = null;
+        continue;
+      }
+      const current = form[key];
+      resolved[key] = current && !String(current).startsWith("blob:") ? current : "";
+    }
+    setPendingScreenshotKeys(new Set());
+    return resolved;
+  };
+
+  const clearScreenshot = (fieldName) => {
+    pendingScreenshotsRef.current[fieldName] = null;
+    setPendingScreenshotKeys((prev) => {
+      const next = new Set(prev);
+      next.delete(fieldName);
+      return next;
+    });
+    setForm((prev) => {
+      revokeBlobUrl(prev[fieldName]);
+      return { ...prev, [fieldName]: "" };
+    });
+    setScreenshotErrors((prev) => ({ ...prev, [fieldName]: null }));
+  };
 
   const toggleInArray = (field, value) =>
     setForm((f) => {
@@ -504,10 +599,8 @@ export default function Backtesting() {
 
   const saveMutation = useMutation({
     mutationFn: async ({ id, payload }) => {
-      let screenshot_url = payload.screenshot_url;
-      if (filePending) {
-        screenshot_url = await uploadUserFile(user.id, filePending, "backtest");
-      }
+      const screenshots = await resolveScreenshotsForSubmit();
+      const firstShot = screenshots.screenshot_1 || screenshots.screenshot_2 || screenshots.screenshot_3 || "";
       const strategy_id = payload.strategy_id || null;
       const bt = btStrategies.find((s) => String(s.id) === String(strategy_id));
       const sn = bt?.name || payload.strategy_name || "";
@@ -542,7 +635,10 @@ export default function Backtesting() {
         amount: toNumberSafe(payload.amount),
         tags: payload.tags?.trim() || "",
         notes: payload.notes?.trim() || "",
-        screenshot_url: screenshot_url || "",
+        screenshot_1: screenshots.screenshot_1 || "",
+        screenshot_2: screenshots.screenshot_2 || "",
+        screenshot_3: screenshots.screenshot_3 || "",
+        screenshot_url: firstShot,
         entry_confirmation: !!payload.entry_confirmation,
         confluences: Array.isArray(payload.confluences) ? payload.confluences : [],
         mistakes: Array.isArray(payload.mistakes) ? payload.mistakes : [],
@@ -603,8 +699,13 @@ export default function Backtesting() {
   });
 
   function resetForm() {
+    SCREENSHOT_KEYS.forEach((key) => {
+      pendingScreenshotsRef.current[key] = null;
+      revokeBlobUrl(form[key]);
+    });
+    setPendingScreenshotKeys(new Set());
+    setScreenshotErrors({});
     setEditingId(null);
-    setFilePending(null);
     setForm(emptyForm());
   }
 
@@ -617,7 +718,11 @@ export default function Backtesting() {
 
   function openEdit(row) {
     setEditingId(row.id);
-    setFilePending(null);
+    SCREENSHOT_KEYS.forEach((key) => {
+      pendingScreenshotsRef.current[key] = null;
+    });
+    setPendingScreenshotKeys(new Set());
+    setScreenshotErrors({});
     setForm({
       date: row.date || new Date().toISOString().slice(0, 10),
       symbol: row.symbol || "",
@@ -635,7 +740,9 @@ export default function Backtesting() {
       amount: numToStr(row.amount),
       tags: row.tags || "",
       notes: row.notes || "",
-      screenshot_url: row.screenshot_url || "",
+      screenshot_1: row.screenshot_1 || row.screenshot_url || "",
+      screenshot_2: row.screenshot_2 || "",
+      screenshot_3: row.screenshot_3 || "",
       entry_confirmation: !!row.entry_confirmation,
       confluences: Array.isArray(row.confluences) ? row.confluences : [],
       mistakes: Array.isArray(row.mistakes) ? row.mistakes : [],
@@ -1020,19 +1127,24 @@ export default function Backtesting() {
                         : "—"}
                     </td>
                     <td className="p-3">
-                      {row.screenshot_url ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewerUrl(row.screenshot_url);
-                            setViewerOpen(true);
-                          }}
-                          className="inline-flex items-center gap-1 text-primary hover:underline"
-                        >
-                          <ImageIcon className="w-4 h-4" />
-                          {t("view")}
-                        </button>
+                      {getBacktestScreenshots(row).length > 0 ? (
+                        <div className="flex items-center gap-1">
+                          {getBacktestScreenshots(row).map((imageUrl, index) => (
+                            <button
+                              key={`${row.id}-shot-${index}`}
+                              type="button"
+                              className="size-8 aspect-square rounded-md overflow-hidden border border-border bg-muted shrink-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setViewerUrl(imageUrl);
+                                setViewerOpen(true);
+                              }}
+                              title={`${t("screenshot") || "Screenshot"} ${index + 1}`}
+                            >
+                              <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
@@ -1641,23 +1753,28 @@ export default function Backtesting() {
                     <p className="text-sm whitespace-pre-wrap leading-relaxed">{detailRow.notes}</p>
                   </div>
                 ) : null}
-                {detailRow.screenshot_url ? (
-                  <div className="rounded-xl border border-border overflow-hidden bg-muted/10">
-                    <button
-                      type="button"
-                      className="w-full block focus:outline-none focus:ring-2 focus:ring-primary/40"
-                      onClick={() => {
-                        setViewerUrl(detailRow.screenshot_url);
-                        setViewerOpen(true);
-                      }}
-                    >
-                      <img
-                        src={detailRow.screenshot_url}
-                        alt=""
-                        className="w-full max-h-[320px] object-contain bg-slate-950/5 dark:bg-slate-950/40"
-                      />
-                    </button>
-                    <p className="text-xs text-center text-muted-foreground py-2">{t("backtestDetailTapZoom")}</p>
+                {getBacktestScreenshots(detailRow).length > 0 ? (
+                  <div className="rounded-xl border border-border overflow-hidden bg-muted/10 p-3 space-y-2">
+                    <div className="grid grid-cols-3 gap-2 max-w-[420px]">
+                      {getBacktestScreenshots(detailRow).map((imageUrl, index) => (
+                        <button
+                          key={`${detailRow.id}-detail-shot-${index}`}
+                          type="button"
+                          className="relative aspect-square w-full rounded-lg overflow-hidden border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
+                          onClick={() => {
+                            setViewerUrl(imageUrl);
+                            setViewerOpen(true);
+                          }}
+                        >
+                          <img
+                            src={imageUrl}
+                            alt={`${t("screenshot") || "Screenshot"} ${index + 1}`}
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-center text-muted-foreground">{t("backtestDetailTapZoom")}</p>
                   </div>
                 ) : null}
                 <div className="flex flex-wrap gap-2 justify-end pt-2">
@@ -1945,29 +2062,33 @@ export default function Backtesting() {
                 placeholder={t("backtestNotesPlaceholder")}
               />
             </div>
-            <div className="p-3 rounded-md bg-muted/40 border border-border">
-              <Label className="text-xs font-semibold">{t("backtestScreenshot")}</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                className="mt-2 cursor-pointer text-sm"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  setFilePending(f || null);
-                }}
-              />
-              {form.screenshot_url && !filePending && (
-                <button
-                  type="button"
-                  className="text-xs text-primary mt-2 underline"
-                  onClick={() => {
-                    setViewerUrl(form.screenshot_url);
-                    setViewerOpen(true);
-                  }}
-                >
-                  {t("backtestViewCurrent")}
-                </button>
-              )}
+            <div className="p-3 rounded-md bg-muted/40 border border-border space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t("backtestScreenshot")} — podgląd od razu, wysyłka po „Zapisz”
+              </p>
+              <div className="grid grid-cols-3 gap-4">
+                {SCREENSHOT_KEYS.map((key, idx) => (
+                  <ScreenshotField
+                    key={key}
+                    slotId={`${formUid}-${key}`}
+                    label={`${t("screenshot")} ${idx + 1}`}
+                    value={form[key]}
+                    pending={pendingScreenshotKeys.has(key)}
+                    uploadError={screenshotErrors[key]}
+                    onPickFile={handleScreenshotPick(key)}
+                    onRemove={() => clearScreenshot(key)}
+                    onView={() => {
+                      if (!form[key]) return;
+                      setViewerUrl(form[key]);
+                      setViewerOpen(true);
+                    }}
+                    addLabel={t("add")}
+                    changeLabel={t("change")}
+                    removeLabel={t("remove")}
+                    viewLabel={t("view")}
+                  />
+                ))}
+              </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button
