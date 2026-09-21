@@ -103,6 +103,45 @@ function getBacktestScreenshots(row) {
   return row.screenshot_url ? [row.screenshot_url] : [];
 }
 
+function asTagList(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function TableTagCell({ items, toneClass }) {
+  const list = asTagList(items);
+  if (!list.length) return <span className="text-muted-foreground">—</span>;
+  const shown = list.slice(0, 2);
+  const rest = list.length - shown.length;
+  return (
+    <div className="flex flex-wrap items-center gap-1 max-w-[170px]">
+      {shown.map((tag) => (
+        <span
+          key={tag}
+          title={tag}
+          className={`px-1.5 py-0.5 rounded-md text-[10px] font-medium truncate max-w-[140px] ${toneClass}`}
+        >
+          {tag}
+        </span>
+      ))}
+      {rest > 0 ? <span className="text-[10px] text-muted-foreground">+{rest}</span> : null}
+    </div>
+  );
+}
+
+function GradeStars({ value, size = "w-3.5 h-3.5" }) {
+  const n = Math.max(0, Math.min(5, Math.round(Number(value) || 0)));
+  return (
+    <span className="inline-flex items-center gap-0.5" title={n ? `${n}/5` : "Brak oceny"}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          className={`${size} ${i <= n ? "fill-amber-400 text-amber-400" : "fill-transparent text-slate-300 dark:text-slate-600"}`}
+        />
+      ))}
+    </span>
+  );
+}
+
 const pieColors = {
   Win: CHART.profit,
   Loss: CHART.loss,
@@ -1040,6 +1079,9 @@ export default function Backtesting() {
                   <th className="text-left p-3 font-semibold">{t("backtestColOutcome")}</th>
                   <th className="text-left p-3 font-semibold">{t("backtestColR")}</th>
                   <th className="text-right p-3 font-semibold">{t("backtestColAmount")}</th>
+                  <th className="text-left p-3 font-semibold">Warunki</th>
+                  <th className="text-left p-3 font-semibold">Błędy</th>
+                  <th className="text-left p-3 font-semibold">Jakość</th>
                   <th className="text-left p-3 font-semibold">{t("backtestColShot")}</th>
                   <th className="text-right p-3 font-semibold w-[100px]">{t("actions")}</th>
                 </tr>
@@ -1125,6 +1167,25 @@ export default function Backtesting() {
                             maximumFractionDigits: 2,
                           })
                         : "—"}
+                    </td>
+                    <td className="p-3">
+                      <TableTagCell
+                        items={row.confluences}
+                        toneClass="bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit"
+                      />
+                    </td>
+                    <td className="p-3">
+                      <TableTagCell
+                        items={row.mistakes}
+                        toneClass="bg-loss/10 text-loss dark:bg-loss/10 dark:text-loss"
+                      />
+                    </td>
+                    <td className="p-3">
+                      {Number(row.grade) > 0 ? (
+                        <GradeStars value={row.grade} />
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="p-3">
                       {getBacktestScreenshots(row).length > 0 ? (
@@ -1669,36 +1730,48 @@ export default function Backtesting() {
                     ))}
                   </div>
                 ) : null}
-                {Number(detailRow.grade) > 0 ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ocena</span>
-                    <span className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <Star key={n} className={`w-4 h-4 ${n <= Number(detailRow.grade) ? "fill-amber-400 text-amber-400" : "fill-transparent text-slate-300 dark:text-slate-600"}`} />
-                      ))}
-                    </span>
-                  </div>
-                ) : null}
-                {Array.isArray(detailRow.confluences) && detailRow.confluences.length > 0 ? (
+                <div className="rounded-xl border border-border bg-muted/15 p-4 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proces zagrania</p>
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5"><ListChecks className="w-3.5 h-3.5 text-profit" /> Confluencje</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {detailRow.confluences.map((c, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded-md bg-profit/10 dark:bg-profit/10 text-profit dark:text-profit text-xs">{c}</span>
-                      ))}
-                    </div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                      <ListChecks className="w-3.5 h-3.5 text-profit" /> Warunki wejścia
+                    </p>
+                    {asTagList(detailRow.confluences).length ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {asTagList(detailRow.confluences).map((c) => (
+                          <span key={c} className="px-2 py-0.5 rounded-md bg-profit/10 text-profit text-xs">{c}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Brak zaznaczonych warunków</p>
+                    )}
                   </div>
-                ) : null}
-                {Array.isArray(detailRow.mistakes) && detailRow.mistakes.length > 0 ? (
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-loss" /> Błędy</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {detailRow.mistakes.map((m, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded-md bg-loss/10 dark:bg-loss/10 text-loss dark:text-loss text-xs">{m}</span>
-                      ))}
-                    </div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-loss" /> Błędy w zagraniu
+                    </p>
+                    {asTagList(detailRow.mistakes).length ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {asTagList(detailRow.mistakes).map((m) => (
+                          <span key={m} className="px-2 py-0.5 rounded-md bg-loss/10 text-loss text-xs">{m}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Brak zaznaczonych błędów</p>
+                    )}
                   </div>
-                ) : null}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Jakość zagrania</span>
+                    {Number(detailRow.grade) > 0 ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <GradeStars value={detailRow.grade} size="w-4 h-4" />
+                        <span className="text-sm font-medium tabular-nums">{Number(detailRow.grade)}/5</span>
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Brak oceny</span>
+                    )}
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("backtestColOutcome")}</p>
