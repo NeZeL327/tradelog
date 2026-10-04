@@ -22,7 +22,7 @@ export default function QuoteLine({ stats, variant = "page", className }) {
         />
         <div className="relative">
           <Quote className="w-3.5 h-3.5 text-primary mb-1.5" />
-          <p className="text-[12px] leading-snug text-white/90 italic">
+          <p className="font-mono text-[12px] font-medium leading-snug tracking-[0.01em] text-white/90 not-italic">
             “{text}”
           </p>
           <span className="mt-2 block h-0.5 w-8 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" aria-hidden />
@@ -34,12 +34,12 @@ export default function QuoteLine({ stats, variant = "page", className }) {
   return (
     <div
       className={cn(
-        "relative max-w-sm overflow-hidden rounded-xl border border-primary/30 bg-card px-3.5 py-2.5",
+        "relative max-w-md overflow-hidden rounded-md border border-border bg-card px-3 py-2",
         className
       )}
     >
-      <span className="absolute left-0 top-2.5 bottom-2.5 w-0.5 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" aria-hidden />
-      <p className="pl-3 text-[13px] leading-snug text-foreground/80 italic">“{text}”</p>
+      <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-primary" aria-hidden />
+      <p className="pl-3 font-mono text-[12px] font-medium leading-snug tracking-[0.01em] text-foreground/90 not-italic">“{text}”</p>
     </div>
   );
 }

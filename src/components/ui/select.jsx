@@ -16,7 +16,7 @@ const SelectTrigger = React.forwardRef(({ className, children, ...props }, ref) 
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "relative flex h-9 w-full items-center justify-center whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 [&>span]:w-full [&>span]:text-center [&>span]:pr-5",
+      "relative flex h-8 w-full items-center justify-center whitespace-nowrap rounded-md border border-input bg-background px-2.5 py-1 text-[13px] shadow-none ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 [&>span]:w-full [&>span]:text-center [&>span]:pr-5",
       className
     )}
     {...props}>
@@ -54,18 +54,16 @@ const SelectContent = React.forwardRef(({
   children,
   position = "popper",
   side = "bottom",
-  align = "center",
+  align = "start",
   sideOffset = 4,
-  avoidCollisions = true,
+  avoidCollisions = false,
   ...props
 }, ref) => (
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-[120] max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-card text-card-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-        position === "popper" &&
-          "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
+        "relative z-[120] max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-card text-card-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
         className
       )}
       position={position}
@@ -77,8 +75,11 @@ const SelectContent = React.forwardRef(({
     >
       <SelectScrollUpButton />
       <SelectPrimitive.Viewport
-        className={cn("p-1", position === "popper" &&
-          "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]")}
+        className={cn(
+          "p-1",
+          position === "popper" &&
+            "w-full min-w-[var(--radix-select-trigger-width)] max-h-[min(18rem,var(--radix-select-content-available-height))]"
+        )}
       >
         {children}
       </SelectPrimitive.Viewport>
@@ -103,12 +104,14 @@ const SelectItem = React.forwardRef(({ className, children, ...props }, ref) => 
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "group relative flex w-full cursor-default select-none items-center justify-between rounded-sm py-1.5 pl-2 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "group relative flex w-full cursor-default select-none items-center justify-between gap-2 rounded-sm py-1.5 pl-2 pr-2 font-mono text-[13px] font-medium tracking-[-0.011em] outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
     {...props}>
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-    <span className="flex h-5 w-5 items-center justify-center rounded-full border-[3px] border-border bg-background group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary">
+    <SelectPrimitive.ItemText className="min-w-0 flex-1 truncate">
+      {children}
+    </SelectPrimitive.ItemText>
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] border-border bg-background group-data-[state=checked]:border-primary group-data-[state=checked]:bg-primary">
       <SelectPrimitive.ItemIndicator>
         <Check className="h-3.5 w-3.5 text-primary-foreground" />
       </SelectPrimitive.ItemIndicator>

@@ -563,7 +563,7 @@ export default function ProcessReview() {
 
           {aiText ? (
             <Panel title="Notatka AI" subtitle="Edytowalna — możesz poprawić przed zapisem">
-              <pre className="whitespace-pre-wrap text-sm font-sans leading-relaxed text-foreground/90 py-2">
+              <pre className="whitespace-pre-wrap text-sm font-mono leading-relaxed text-foreground/90 py-2">
                 {aiText}
               </pre>
             </Panel>

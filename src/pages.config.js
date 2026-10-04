@@ -52,13 +52,14 @@ import { lazy } from 'react';
 const Accounts = lazy(() => import('./pages/Accounts'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Backtesting = lazy(() => import('./pages/Backtesting'));
+const Billing = lazy(() => import('./pages/Billing'));
 const Calendar = lazy(() => import('./pages/Calendar'));
 const CalculatorPopup = lazy(() => import('./pages/CalculatorPopup'));
 const Calculators = lazy(() => import('./pages/Calculators'));
 const Checklist = lazy(() => import('./pages/Checklist'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const DayPlan = lazy(() => import('./pages/DayPlan'));
 const Goals = lazy(() => import('./pages/Goals'));
-const Home = lazy(() => import('./pages/Home'));
 const Journal = lazy(() => import('./pages/Journal'));
 const Missed = lazy(() => import('./pages/Missed'));
 const Notes = lazy(() => import('./pages/Notes'));
@@ -69,7 +70,6 @@ const Settings = lazy(() => import('./pages/Settings'));
 const Strategies = lazy(() => import('./pages/Strategies'));
 const StrategyDetails = lazy(() => import('./pages/StrategyDetails'));
 const TradeDetails = lazy(() => import('./pages/TradeDetails'));
-const Upload = lazy(() => import('./pages/Upload'));
 const __Layout = lazy(() => import('./Layout.jsx'));
 
 
@@ -77,13 +77,14 @@ export const PAGES = {
     "Accounts": Accounts,
     "Analytics": Analytics,
     "Backtesting": Backtesting,
+    "Billing": Billing,
     "Calendar": Calendar,
     "CalculatorPopup": CalculatorPopup,
     "Calculators": Calculators,
     "Checklist": Checklist,
     "Dashboard": Dashboard,
+    "DayPlan": DayPlan,
     "Goals": Goals,
-    "Home": Home,
     "Journal": Journal,
     "Planned": Planned,
     "Missed": Missed,
@@ -94,7 +95,6 @@ export const PAGES = {
     "Strategies": Strategies,
     "StrategyDetails": StrategyDetails,
     "TradeDetails": TradeDetails,
-    "Upload": Upload,
 }
 
 export const pagesConfig = {

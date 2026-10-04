@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
-import { getTrades, deleteTrade, getTradingAccounts, getStrategies } from '@/lib/localStorage';
+import { getTrades, deleteTrade, deleteTradesBatch, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,13 +38,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import JournalMobileList from "../components/JournalMobileList";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, getActiveAccountIds, getTradeRealizedPL, isClosedTrade, isTradingAccountActive, tradeBelongsToActiveAccount, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
+import { directionBadgeClass, directionLabel, getActiveAccountIds, getTradeRealizedPL, isClosedTrade, isTradingAccountActive, normalizeTradeStatus, tradeBelongsToActiveAccount, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
 import { formatTradeDate, formatTradeClock, formatTradeClockDate, getDateFormat } from "@/lib/userSettings";
 import QuoteLine from "@/components/QuoteLine";
 import { EmptyState } from "@/components/ui/empty-state";
 import TradePreviewPanel from "../components/TradePreviewPanel";
 import { goToTradeDetails } from "@/lib/tradeDetailsNav";
+import { toast } from "sonner";
 
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
 const DAYS_PL = ["Pn","Wt","Śr","Cz","Pt","Sb","Nd"];
@@ -283,7 +284,7 @@ export default function JournalSimple({ mode = "all" }) {
     queryKey: ['trades', user?.id],
     queryFn: () => getTrades(user?.id),
     enabled: !!user?.id,
-    staleTime: 1000,
+    staleTime: 30_000,
     placeholderData: [],
   });
 
@@ -295,9 +296,13 @@ export default function JournalSimple({ mode = "all" }) {
 
   const activeAccounts = accounts.filter(isTradingAccountActive);
   const activeAccountIds = getActiveAccountIds(accounts);
-  const tradesFromActiveAccounts = trades.filter((trade) =>
-    tradeBelongsToActiveAccount(trade, activeAccountIds)
-  );
+  const tradesFromActiveAccounts = trades.filter((trade) => {
+    if (tradeBelongsToActiveAccount(trade, activeAccountIds)) return true;
+    // Planned/missed are often saved before an account is chosen.
+    // Keep them on those lists; dashboard P&L still ignores trades without account_id.
+    const status = normalizeTradeStatus(trade?.status);
+    return (status === "planned" || status === "missed") && !trade?.account_id;
+  });
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies', user?.id],
@@ -330,13 +335,16 @@ export default function JournalSimple({ mode = "all" }) {
     }
 
     if (deleteDialog.mode === "bulk") {
-      for (const id of selectedTrades) {
-        await deleteTrade(user?.id, id);
+      try {
+        await deleteTradesBatch(user?.id, [...selectedTrades]);
+        setSelectedTrades(new Set());
+        queryClient.invalidateQueries({ queryKey: ['trades', user?.id] });
+        refetch();
+      } catch (error) {
+        toast.error(error?.message || "Nie udało się usunąć transakcji");
+      } finally {
+        setDeleteDialog({ open: false, mode: null, tradeId: null, count: 0 });
       }
-      setSelectedTrades(new Set());
-      queryClient.invalidateQueries({ queryKey: ['trades', user?.id] });
-      refetch();
-      setDeleteDialog({ open: false, mode: null, tradeId: null, count: 0 });
     }
   };
 
@@ -524,9 +532,12 @@ export default function JournalSimple({ mode = "all" }) {
     : statusFilteredTrades.filter(t => outcomeFilters.includes(t.outcome));
 
   const filteredTrades = sortTrades(outcomeFilteredTrades);
-  const plannedTrades = sortTrades(baseFilteredTrades.filter(t => t.status === "Planned"));
-  const missedTrades = sortTrades(baseFilteredTrades.filter(t => t.status === "Missed"));
-  const executedTrades = filteredTrades.filter(t => t.status !== "Planned" && t.status !== "Missed");
+  const plannedTrades = sortTrades(baseFilteredTrades.filter(t => normalizeTradeStatus(t.status) === "planned"));
+  const missedTrades = sortTrades(baseFilteredTrades.filter(t => normalizeTradeStatus(t.status) === "missed"));
+  const executedTrades = filteredTrades.filter(t => {
+    const status = normalizeTradeStatus(t.status);
+    return status !== "planned" && status !== "missed";
+  });
   const displayTrades = isPlannedMode
     ? plannedTrades
     : isMissedMode
@@ -616,8 +627,8 @@ export default function JournalSimple({ mode = "all" }) {
     total: statsSource.length,
     open: baseFilteredTrades.filter(t => t.status === "Open").length,
     closed: baseFilteredTrades.filter(isClosedTrade).length,
-    planned: baseFilteredTrades.filter(t => t.status === "Planned").length,
-    missed: baseFilteredTrades.filter(t => t.status === "Missed").length,
+    planned: baseFilteredTrades.filter(t => normalizeTradeStatus(t.status) === "planned").length,
+    missed: baseFilteredTrades.filter(t => normalizeTradeStatus(t.status) === "missed").length,
     wins: statsSource.filter(t => t.outcome === "Win").length,
     losses: statsSource.filter(t => t.outcome === "Loss").length,
     breakeven: statsSource.filter(t => t.outcome === "Breakeven").length,

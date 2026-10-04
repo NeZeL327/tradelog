@@ -1,6 +1,6 @@
-import './App.css'
 import { lazy, Suspense } from 'react'
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from "sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
@@ -19,6 +19,12 @@ const Terms = lazy(() => import('./pages/Terms'));
 const Privacy = lazy(() => import('./pages/Privacy'));
 const Cookies = lazy(() => import('./pages/Cookies'));
 const TradeDetails = lazy(() => import('./pages/TradeDetails'));
+const Home = lazy(() => import('./pages/Home'));
+const Register = lazy(() => import('./pages/Register'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
+const Features = lazy(() => import('./pages/Features'));
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -54,6 +60,28 @@ const RouteFallback = () => (
   </div>
 );
 
+const publicLegalRoutes = (
+  <>
+    <Route path="/terms" element={<PageShell><Terms /></PageShell>} />
+    <Route path="/privacy" element={<PageShell><Privacy /></PageShell>} />
+    <Route path="/cookies" element={<PageShell><Cookies /></PageShell>} />
+  </>
+);
+
+const publicMarketingRoutes = (
+  <>
+    <Route path="/home" element={<PageShell><Home /></PageShell>} />
+    <Route path="/register" element={<PageShell><Register /></PageShell>} />
+    <Route path="/Register" element={<PageShell><Register /></PageShell>} />
+    <Route path="/pricing" element={<PageShell><Pricing /></PageShell>} />
+    <Route path="/Pricing" element={<PageShell><Pricing /></PageShell>} />
+    <Route path="/about" element={<PageShell><About /></PageShell>} />
+    <Route path="/contact" element={<PageShell><Contact /></PageShell>} />
+    <Route path="/features" element={<PageShell><Features /></PageShell>} />
+    <Route path="/Features" element={<PageShell><Features /></PageShell>} />
+  </>
+);
+
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
 
@@ -76,12 +104,16 @@ const AuthenticatedApp = () => {
 
   if (!isAuthenticated) {
     return (
-      <Routes>
-        <Route path="/" element={<PageShell><Login /></PageShell>} />
-        <Route path="/login" element={<PageShell><Login /></PageShell>} />
-        <Route path="/Login" element={<PageShell><Login /></PageShell>} />
-        <Route path="*" element={<PageShell><Login /></PageShell>} />
-      </Routes>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<PageShell><Login /></PageShell>} />
+          <Route path="/login" element={<PageShell><Login /></PageShell>} />
+          <Route path="/Login" element={<PageShell><Login /></PageShell>} />
+          {publicMarketingRoutes}
+          {publicLegalRoutes}
+          <Route path="*" element={<PageShell><Login /></PageShell>} />
+        </Routes>
+      </Suspense>
     );
   }
 
@@ -93,9 +125,8 @@ const AuthenticatedApp = () => {
             <MainPage />
           </LayoutWrapper>
         } />
-        <Route path="/terms" element={<PageShell><Terms /></PageShell>} />
-        <Route path="/privacy" element={<PageShell><Privacy /></PageShell>} />
-        <Route path="/cookies" element={<PageShell><Cookies /></PageShell>} />
+        {publicLegalRoutes}
+        {publicMarketingRoutes}
         <Route
           path="/trade"
           element={
@@ -161,6 +192,7 @@ function App() {
           </Router>
         </LanguageProvider>
         <Toaster />
+        <SonnerToaster richColors position="top-right" closeButton />
         {import.meta.env.DEV && (
           <Suspense fallback={null}>
             <VisualEditAgent />

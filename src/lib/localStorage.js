@@ -197,8 +197,15 @@ export const getTrades = async (userId, filters = {}) => {
       : query(baseRef, orderBy('date', 'desc'));
     const snapshot = await getDocs(q);
     const allTrades = mapDocs(snapshot);
-    await purgeExpiredDeletedTrades(userId, allTrades);
+    // Filter only — purge runs via scheduleTradeTrashPurge / getDeletedTrades
     return allTrades.filter((trade) => !trade.deleted_at);
+  });
+};
+
+export const scheduleTradeTrashPurge = (userId, trades = []) => {
+  if (!userId || !trades.length) return;
+  void purgeExpiredDeletedTrades(userId, trades).catch((error) => {
+    console.error("scheduleTradeTrashPurge error:", error);
   });
 };
 
@@ -325,6 +332,32 @@ export const deleteTrade = async (userId, tradeId) => {
       updatedAt: serverTimestamp()
     });
     return true;
+  });
+};
+
+export const deleteTradesBatch = async (userId, tradeIds = []) => {
+  return runSafe('deleteTradesBatch', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const ids = [...new Set((tradeIds || []).map((id) => String(id)).filter(Boolean))];
+    if (!ids.length) return 0;
+
+    const deletedAt = new Date();
+    const expiresAt = new Date(deletedAt.getTime() + TRADE_TRASH_RETENTION_MS);
+    const payload = {
+      deleted_at: deletedAt.toISOString(),
+      deleted_expires_at: expiresAt.toISOString(),
+      updatedAt: serverTimestamp(),
+    };
+
+    const CHUNK = 400;
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const batch = writeBatch(db);
+      for (const id of ids.slice(i, i + CHUNK)) {
+        batch.update(doc(db, 'users', String(userId), 'trades', id), payload);
+      }
+      await batch.commit();
+    }
+    return ids.length;
   });
 };
 

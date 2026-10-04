@@ -29,13 +29,13 @@ export default function StrategyDetails() {
   });
 
   const { data: trades = [] } = useQuery({
-    queryKey: ['trades'],
+    queryKey: ['trades', user?.id],
     enabled: Boolean(user?.id),
     queryFn: () => getTrades(user?.id)
   });
 
   const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts'],
+    queryKey: ['accounts', user?.id],
     enabled: Boolean(user?.id),
     queryFn: () => getTradingAccounts(user?.id)
   });

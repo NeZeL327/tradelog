@@ -1,14 +1,16 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useAuth } from '@/lib/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
-  LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar,
-  LogOut, NotebookPen, ListTodo, AlarmClockOff,
+  LayoutDashboard, BookOpen, BarChart3, Wallet, Brain, Calendar, CalendarCheck2,
+  LogOut, NotebookPen, ListTodo, AlarmClockOff, Target,
   ChevronRight, User, FlaskConical, Settings as SettingsIcon, FileBarChart, Calculator, ClipboardList,
   Search, CandlestickChart,
 } from "lucide-react";
+
+const FloatingCalculator = lazy(() => import("@/components/calculators/FloatingCalculator"));
 import {
   Sidebar,
   SidebarContent,
@@ -29,7 +31,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import SessionClocks from "@/components/SessionClocks";
-import FloatingCalculator from "@/components/calculators/FloatingCalculator";
+import HeaderAccountSync from "@/components/HeaderAccountSync";
 import ReminderWatcher from "@/components/ReminderWatcher";
 import MobileTabBar from "@/components/MobileTabBar";
 import CommandSearch, { CommandSearchHost } from "@/components/CommandSearch";
@@ -46,6 +48,7 @@ const NAV_GROUPS = (t) => [
       { title: t("dashboard"), url: createPageUrl("Dashboard"), icon: LayoutDashboard },
       { title: t("journal"), url: createPageUrl("Journal"), icon: BookOpen },
       { title: t("calendar"), url: createPageUrl("Calendar"), icon: Calendar },
+      { title: t("dayPlan") || "Plan dnia", url: createPageUrl("DayPlan"), icon: CalendarCheck2 },
       { title: t("plannedTrades") || "Planned", url: createPageUrl("Planned"), icon: ListTodo },
       { title: t("missedTrades") || "Missed", url: createPageUrl("Missed"), icon: AlarmClockOff },
     ],
@@ -57,6 +60,7 @@ const NAV_GROUPS = (t) => [
       { title: t("analytics"), url: createPageUrl("Analytics"), icon: BarChart3 },
       { title: t("backtesting"), url: createPageUrl("Backtesting"), icon: FlaskConical },
       { title: t("strategies"), url: createPageUrl("Strategies"), icon: Brain },
+      { title: t("goals") || "Cele", url: createPageUrl("Goals"), icon: Target },
     ],
   },
   {
@@ -134,6 +138,7 @@ function LayoutContent({ children }) {
 
   const navGroups = NAV_GROUPS(t);
   const pathNorm = normalizePath(location.pathname);
+  const tradePage = isTradeDetailsPath(pathNorm);
 
   return (
     <>
@@ -149,41 +154,38 @@ function LayoutContent({ children }) {
             <img src="/sidebar-mountains.png" alt="" />
           </div>
           {/* Brand row */}
-          <SidebarHeader className="relative z-[1] border-transparent px-3 py-3 group-data-[collapsible=icon]:px-2">
-            <div className="flex items-center gap-2.5 group-data-[collapsible=icon]:justify-center px-1">
-              <img
-                src="/aikeeptrade-icon-hires.png"
-                alt="AiKeepTrade"
-                width="36"
-                height="36"
-                className="w-9 h-9 flex-shrink-0 rounded-lg object-contain"
-              />
-              <div className="min-w-0 group-data-[collapsible=icon]:hidden">
-                <p className="text-[15px] font-bold tracking-tight text-sidebar-foreground leading-tight">
+          <SidebarHeader className="relative z-[1] h-14 shrink-0 border-b border-[#3e484f]/30 bg-[#191b23] px-3 group-data-[collapsible=icon]:h-auto group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-2">
+            <div className="flex h-full items-center justify-between gap-2 group-data-[collapsible=icon]:justify-center">
+              <div className="flex min-w-0 items-center gap-2">
+                <img
+                  src="/aikeeptrade-icon-hires.png"
+                  alt="AiKeepTrade"
+                  width="22"
+                  height="22"
+                  className="h-[22px] w-[22px] flex-shrink-0 rounded-sm object-contain"
+                />
+                <span className="truncate font-mono text-[15px] font-semibold leading-6 tracking-[0.01em] text-[#e1e2ec] group-data-[collapsible=icon]:hidden">
                   AiKeepTrade
-                </p>
-                <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-muted-foreground mt-0.5">
-                  {t("navTagline")}
-                </p>
+                </span>
+                <span className="shrink-0 rounded-sm bg-[#32353d] px-1 py-0.5 font-mono text-[11px] font-semibold leading-none tracking-[0.06em] text-[#8ed5ff] group-data-[collapsible=icon]:hidden">
+                  PRO
+                </span>
               </div>
             </div>
-            <div className="mt-3 px-0.5 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-              <CommandSearch variant="sidebar" />
-            </div>
           </SidebarHeader>
+          <div className="relative z-[1] px-1 pt-2 group-data-[collapsible=icon]:px-2">
+            <CommandSearch variant="sidebar" />
+          </div>
 
           {/* Navigation — grouped like TradesViz / TradeZella (workflow → insights → tools → account) */}
-          <SidebarContent className="relative z-[1] flex-1 min-h-0 px-2.5 py-3 !flex !flex-col overflow-y-auto gap-0 sidebar-scroll">
+          <SidebarContent className="relative z-[1] flex-1 min-h-0 px-1 py-2 !flex !flex-col overflow-y-auto gap-0 sidebar-scroll">
             {navGroups.map((group, idx) => (
               <SidebarGroup key={group.label} className="p-0">
-                {idx > 0 && (
-                  <div className="h-px bg-sidebar-border my-3 mx-1 group-data-[collapsible=icon]:my-2" aria-hidden />
-                )}
-                <SidebarGroupLabel className="h-auto text-[10px] font-semibold uppercase tracking-[0.16em] px-2.5 mb-1.5 text-primary group-data-[collapsible=icon]:hidden">
+                <SidebarGroupLabel className="nav-group-label h-auto px-2 py-1 mb-0 mt-3 text-[#87929a] group-data-[collapsible=icon]:hidden">
                   {group.label}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
-                  <SidebarMenu className="gap-1">
+                  <SidebarMenu className="gap-0.5">
                     {group.items.map((item) => {
                       const isActive =
                         pathNorm === normalizePath(item.url)
@@ -194,23 +196,23 @@ function LayoutContent({ children }) {
                             asChild
                             tooltip={item.title}
                             className={`
-                              relative rounded-md transition-colors duration-150 !py-0 !h-auto
+                              nav-row relative rounded transition-colors duration-150 !py-0 !h-[30px]
                               ${isActive
-                                ? "sidebar-active font-medium"
-                                : "text-sidebar-foreground/80 hover:bg-foreground/5 hover:text-foreground"
+                                ? "sidebar-active"
+                                : "text-[#bdc8d1] hover:bg-[#191b23] hover:text-[#e1e2ec]"
                               }
                             `}
                           >
                             <NavLink
                               to={item.url}
                               onNavigate={closeMobileNav}
-                              className="flex items-center gap-3 min-h-[2.75rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:min-h-[2.35rem]"
+                              className="flex items-center gap-2 h-[30px] px-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:min-h-[2.35rem]"
                             >
                               <item.icon
-                                className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? "opacity-100" : "opacity-70"}`}
-                                strokeWidth={isActive ? 2 : 1.75}
+                                className="w-[18px] h-[18px] flex-shrink-0"
+                                strokeWidth={1.75}
                               />
-                              <span className="text-[13px] leading-snug group-data-[collapsible=icon]:hidden">{item.title}</span>
+                              <span className="text-[13px] font-normal leading-[18px] tracking-normal group-data-[collapsible=icon]:hidden">{item.title}</span>
                             </NavLink>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -261,19 +263,19 @@ function LayoutContent({ children }) {
                   <SidebarMenuButton
                     asChild
                     tooltip={t("settings")}
-                    className={`relative rounded-md transition-colors duration-150 !py-0 !h-auto ${
+                    className={`nav-row relative rounded transition-colors duration-150 !py-0 !h-[30px] ${
                       pathNorm === normalizePath(createPageUrl("Settings"))
-                        ? "sidebar-active font-medium"
-                        : "text-sidebar-foreground/90 hover:bg-foreground/5 hover:text-foreground"
+                        ? "sidebar-active"
+                        : "text-[#bdc8d1] hover:bg-[#191b23] hover:text-[#e1e2ec]"
                     }`}
                   >
                     <NavLink
                       to={createPageUrl("Settings")}
                       onNavigate={closeMobileNav}
-                      className="flex items-center gap-3 min-h-[2.5rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center"
+                      className="flex items-center gap-2 h-[30px] px-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center"
                     >
-                      <SettingsIcon className="w-[18px] h-[18px] flex-shrink-0 opacity-80" strokeWidth={1.75} />
-                      <span className="text-[13px] leading-snug group-data-[collapsible=icon]:hidden">{t("settings")}</span>
+                      <SettingsIcon className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.75} />
+                      <span className="text-[13px] font-normal leading-[18px] group-data-[collapsible=icon]:hidden">{t("settings")}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -281,11 +283,11 @@ function LayoutContent({ children }) {
                   <SidebarMenuButton
                     tooltip={t("logout")}
                     onClick={() => logout()}
-                    className="relative rounded-md transition-colors duration-150 !py-0 !h-auto text-sidebar-foreground/80 hover:bg-loss/10 hover:text-loss"
+                    className="nav-row relative rounded transition-colors duration-150 !py-0 !h-[30px] text-[#bdc8d1] hover:bg-[#191b23] hover:text-[#ffb4ab]"
                   >
-                    <div className="flex items-center gap-3 min-h-[2.5rem] px-3 py-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center w-full cursor-pointer">
-                      <LogOut className="w-[18px] h-[18px] flex-shrink-0 opacity-80" strokeWidth={1.75} />
-                      <span className="text-[13px] leading-snug group-data-[collapsible=icon]:hidden">{t("logout")}</span>
+                    <div className="flex items-center gap-2 h-[30px] px-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center w-full cursor-pointer">
+                      <LogOut className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.75} />
+                      <span className="text-[13px] font-normal leading-[18px] group-data-[collapsible=icon]:hidden">{t("logout")}</span>
                     </div>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -297,13 +299,13 @@ function LayoutContent({ children }) {
         {/* Column: top bar (shell) + inset content panel */}
         <div className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden bg-[hsl(var(--app-shell))]">
           {/* Top header — same color as sidebar (connected frame) */}
-          <header className="cyber-app-header border-transparent bg-transparent px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 sticky top-0 z-10 flex items-center justify-between gap-2 sm:gap-4 pt-[max(0.625rem,env(safe-area-inset-top))]">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <SidebarTrigger className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-150 flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0" />
-              <span className="md:hidden text-sm font-semibold text-foreground truncate">AiKeepTrade</span>
+          <header className="cyber-app-header sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border bg-[hsl(var(--app-shell))] px-3 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:gap-3 sm:px-4 md:px-5">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <SidebarTrigger className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-black/5 hover:text-foreground sm:h-8 sm:w-8 dark:hover:bg-white/5" />
+              <span className="truncate text-sm font-semibold text-foreground md:hidden">AiKeepTrade</span>
               <button
                 type="button"
-                className="md:hidden h-10 w-10 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5"
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground md:hidden"
                 aria-label={t("search")}
                 onClick={() => {
                   window.dispatchEvent(new Event("open-command-search"));
@@ -313,38 +315,50 @@ function LayoutContent({ children }) {
               </button>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <div className="hidden sm:block">
-                <SessionClocks />
+            <div className="flex min-w-0 shrink items-center gap-1.5 sm:gap-2.5">
+              <HeaderAccountSync />
+              <SessionClocks />
+              <div className="header-cluster flex h-8 items-center gap-0.5 px-0.5">
+                <LanguageToggle className="!h-7 border-0 bg-transparent p-0.5 shadow-none" />
+                <span className="header-cluster-sep" aria-hidden />
+                <ThemeToggle className="!h-7 border-0 bg-transparent p-0.5 shadow-none" />
+                {user ? (
+                  <>
+                    <span className="header-cluster-sep hidden md:block" aria-hidden />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="hidden h-7 gap-2 px-2 hover:bg-white/5 md:flex"
+                      asChild
+                    >
+                      <Link to={createPageUrl("Settings")}>
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className={`bg-gradient-to-br text-[10px] font-semibold text-white ${avatarPreset.gradient}`}>
+                            {avatarPreset.emoji ? (
+                              <span className="text-[13px] leading-none">{avatarPreset.emoji}</span>
+                            ) : (
+                              initials || <User className="h-3.5 w-3.5" />
+                            )}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="hidden max-w-[120px] truncate text-sm font-medium lg:inline">
+                          {displayName}
+                        </span>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                      </Link>
+                    </Button>
+                  </>
+                ) : null}
               </div>
-              <LanguageToggle />
-              <ThemeToggle />
-              {/* Desktop user button */}
-              {user && (
-                <Button variant="ghost" size="sm" className="hidden md:flex h-8 gap-2 items-center px-2.5 hover:bg-black/5 dark:hover:bg-white/5" asChild>
-                  <Link to={createPageUrl("Settings")}>
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className={`text-white text-[10px] font-semibold bg-gradient-to-br ${avatarPreset.gradient}`}>
-                        {avatarPreset.emoji ? (
-                          <span className="text-[13px] leading-none">{avatarPreset.emoji}</span>
-                        ) : (
-                          initials || <User className="w-3.5 h-3.5" />
-                        )}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium max-w-[140px] truncate hidden lg:inline">
-                      {displayName}
-                    </span>
-                    <ChevronRight className="w-3 h-3 text-muted-foreground" />
-                  </Link>
-                </Button>
-              )}
             </div>
           </header>
 
           {/* Content panel — rounded inset (connected transition under header) */}
-          <main className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden cyber-dashboard dashboard-surface bg-[hsl(var(--background))] md:mr-3 md:mb-3 md:rounded-lg md:border border-border/80 dark:md:mr-0 dark:md:mb-0 dark:md:rounded-none dark:border-transparent">
-            <div className="w-full max-w-screen-2xl mx-auto px-3 sm:px-6 py-4 sm:py-6 pb-32 app-mobile-tab-pad">
+          <main className={`flex-1 min-h-0 min-w-0 cyber-dashboard dashboard-surface bg-[hsl(var(--background))] md:mr-2 md:mb-2 md:rounded-md md:border border-border ${tradePage ? "overflow-hidden flex flex-col" : "overflow-y-auto overflow-x-hidden"}`}>
+            <div className={tradePage
+              ? "flex-1 min-h-0 flex flex-col overflow-hidden w-full px-3 sm:px-5 py-3"
+              : "w-full max-w-screen-2xl mx-auto px-3 sm:px-5 py-3 sm:py-4 pb-32 app-mobile-tab-pad"
+            }>
               {children}
             </div>
           </main>
@@ -352,7 +366,11 @@ function LayoutContent({ children }) {
       </div>
       <MobileTabBar />
       <ReminderWatcher />
-      {!isMobile && <FloatingCalculator />}
+      {!isMobile && (
+        <Suspense fallback={null}>
+          <FloatingCalculator />
+        </Suspense>
+      )}
     </>
   );
 }

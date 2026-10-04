@@ -1,6 +1,14 @@
 /** Shared CSV/XML/XLSX trade import parsers + deduplication for Accounts / Billing */
 
 import { isXlsxFileName, xlsxArrayBufferToCsvText } from "./xlsx-to-rows.js";
+import {
+  filterNewTrades,
+  normalizeTicket,
+  tradeDedupKey,
+  tradeImportFingerprints,
+} from "../../functions/tradeImportDedup.js";
+
+export { filterNewTrades, normalizeTicket, tradeDedupKey, tradeImportFingerprints };
 
 export const IMPORT_BROKERS = [
   { id: "auto", label: "Auto (wykryj format)" },
@@ -1016,144 +1024,4 @@ export function parseTradesFromFile(content, { accountId, brokerId = "auto", fil
   }
 
   return parseTradesFromCSV(content, { accountId, brokerId });
-}
-
-function normalizeTicket(value) {
-  if (value === "" || value == null) return "";
-  return String(value).trim().replace(/^#/, "");
-}
-
-/** Strip broker suffixes so FundedNext EURUSD matches MT EURUSDm. */
-function normalizeSymbolKey(symbol) {
-  return String(symbol || "")
-    .toUpperCase()
-    .trim()
-    .replace(/[^A-Z0-9]/g, "")
-    .replace(/(MICRO|RAW|PRO|ECN|SK|M)$/g, (suf, _i, s) => {
-      // Keep symbols that are only the suffix; strip trailing broker marks
-      if (s.length <= suf.length + 2) return suf;
-      return "";
-    });
-}
-
-/** Normalize to HH:mm:ss so re-imports match FundedNext / MT files. */
-function normalizeTimeKey(time) {
-  if (!time && time !== 0) return "";
-  const m = String(time).trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-  if (!m) return String(time).trim().slice(0, 8);
-  const hh = String(Math.min(23, Number(m[1]))).padStart(2, "0");
-  const mm = String(Math.min(59, Number(m[2]))).padStart(2, "0");
-  const ss = String(Math.min(59, Number(m[3] ?? 0))).padStart(2, "0");
-  return `${hh}:${mm}:${ss}`;
-}
-
-function roundPriceKey(value) {
-  const n = parseNum(value);
-  if (n == null) return "";
-  return Number(n.toFixed(5));
-}
-
-/**
- * Dedup fingerprints. Keep keys time-specific — never symbol+date+vol alone
- * (many same-day GBPUSD 0.96 scalps were false "duplicates").
- */
-export function tradeImportFingerprints(trade) {
-  const accountId = String(trade.account_id || "");
-  const ticket = normalizeTicket(
-    trade.external_ticket || trade.ticket_id || trade.ticket
-  );
-  const symbol = normalizeSymbolKey(trade.symbol);
-
-  const { date, time: rawTime } = splitDateTime(
-    trade.date ? `${trade.date} ${trade.entry_time || trade.time || "00:00:00"}` : ""
-  );
-  const time = normalizeTimeKey(rawTime || trade.entry_time || trade.time || "");
-  const timeMin = time ? time.slice(0, 5) : "";
-
-  const vol = trade.position_size ?? trade.quantity ?? trade.volume_units;
-  const volKey = vol != null && Number.isFinite(Number(vol)) ? Number(parseFloat(vol).toFixed(4)) : "";
-  const entry = roundPriceKey(trade.entry_price);
-  const exit = roundPriceKey(trade.exit_price);
-  const net = parseNum(trade.profit_loss);
-
-  const keys = [];
-
-  // 1) Ticket / Pozycja — strongest across FundedNext ↔ MT
-  if (ticket) {
-    keys.push(`ticket:${accountId}:${ticket}`);
-  }
-
-  // 2) Date + open time + lots (FundedNext classic)
-  if (date && time && volKey !== "") {
-    keys.push(`dtvol:${accountId}:${date}|${time}|${volKey}`);
-  }
-
-  // 3) Symbol + full datetime + volume / prices / net
-  if (date && symbol && time) {
-    keys.push(`sym:${accountId}:${symbol}:${date}:${time}:${volKey}`);
-
-    if (entry !== "" && exit !== "" && volKey !== "") {
-      keys.push(`px:${accountId}:${symbol}:${date}:${entry}:${exit}:${volKey}`);
-    }
-    if (net != null && timeMin) {
-      keys.push(`net:${accountId}:${symbol}:${date}:${timeMin}:${Number(net.toFixed(2))}`);
-    }
-  }
-
-  return keys;
-}
-
-/** @deprecated Użyj tradeImportFingerprints — zostawione dla kompatybilności. */
-export function tradeDedupKey(trade) {
-  const fps = tradeImportFingerprints(trade);
-  return fps[fps.length - 1] || "";
-}
-
-/**
- * Dedup against journal on this account.
- * Ticket match is authoritative; otherwise time-based fingerprints
- * (symbol+date+lots alone is NOT used — same-day scalps were false duplicates).
- */
-export function filterNewTrades(parsedTrades, existingTrades, accountId) {
-  const knownKeys = new Set();
-  const knownTickets = new Set();
-  const account = String(accountId || "");
-
-  for (const t of existingTrades || []) {
-    const tradeAccount = String(t.account_id ?? t.accountId ?? "");
-    if (tradeAccount && tradeAccount !== account) continue;
-    for (const key of tradeImportFingerprints({ ...t, account_id: account || tradeAccount })) {
-      knownKeys.add(key);
-    }
-    const ticket = normalizeTicket(t.external_ticket || t.ticket_id || t.ticket);
-    if (ticket) {
-      knownTickets.add(ticket);
-      knownKeys.add(`ticket:${account}:${ticket}`);
-    }
-  }
-
-  const newTrades = [];
-  let skipped = 0;
-  const batchKeys = new Set(knownKeys);
-  const batchTickets = new Set(knownTickets);
-
-  for (const trade of parsedTrades) {
-    const ticket = normalizeTicket(trade.external_ticket || trade.ticket_id || trade.ticket);
-    const fingerprints = tradeImportFingerprints({ ...trade, account_id: account });
-
-    const isDuplicate =
-      (ticket && batchTickets.has(ticket)) ||
-      fingerprints.some((key) => batchKeys.has(key));
-
-    if (isDuplicate) {
-      skipped++;
-      continue;
-    }
-
-    newTrades.push(trade);
-    fingerprints.forEach((key) => batchKeys.add(key));
-    if (ticket) batchTickets.add(ticket);
-  }
-
-  return { newTrades, skipped };
 }

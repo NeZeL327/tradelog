@@ -1,12 +1,15 @@
 import * as functions from "firebase-functions/v1";
-import { defineString } from "firebase-functions/params";
+import { defineSecret, defineString } from "firebase-functions/params";
 import admin from "firebase-admin";
 import Stripe from "stripe";
+import { connectMt5Handler } from "./mt5Connect.js";
+import { syncMt5Handler } from "./mt5Sync.js";
 
 admin.initializeApp();
 
 const stripeSecretParam = defineString("STRIPE_SECRET_KEY", { default: "" });
 const webhookSecretParam = defineString("STRIPE_WEBHOOK_SECRET", { default: "" });
+const metaApiToken = defineSecret("METAAPI_TOKEN");
 
 const getStripeClient = () => {
   const stripeSecret = stripeSecretParam.value() || process.env.STRIPE_SECRET_KEY || "";
@@ -24,6 +27,20 @@ const applyCors = (req, res) => {
   }
   return true;
 };
+
+export const connectMt5 = functions
+  .runWith({ secrets: [metaApiToken], timeoutSeconds: 180, memory: "256MB" })
+  .https.onCall((data, context) => connectMt5Handler(data, context, {
+    admin,
+    token: metaApiToken.value(),
+  }));
+
+export const syncMt5 = functions
+  .runWith({ secrets: [metaApiToken], timeoutSeconds: 180, memory: "512MB" })
+  .https.onCall((data, context) => syncMt5Handler(data, context, {
+    admin,
+    token: metaApiToken.value(),
+  }));
 
 export const createCheckoutSession = functions.https.onRequest(async (req, res) => {
   if (!applyCors(req, res)) return;

@@ -16,6 +16,7 @@ import { Plus, Edit, Trash, Wallet, Power } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { AccountImportButton } from "@/components/AccountImportExport";
+import MtAccountLink from "@/components/MtAccountLink";
 import QuoteLine from "@/components/QuoteLine";
 
 export default function Accounts() {
@@ -28,10 +29,7 @@ export default function Accounts() {
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ['accounts', user?.id],
-    queryFn: () => {
-      console.log('Fetching accounts for user:', user?.id);
-      return user ? getTradingAccounts(user.id) : [];
-    },
+    queryFn: () => (user ? getTradingAccounts(user.id) : []),
     enabled: !!user
   });
 
@@ -43,7 +41,6 @@ export default function Accounts() {
 
   const createMutation = useMutation({
     mutationFn: (data) => {
-      console.log('Creating account with data:', data);
       if (!user) throw new Error('Użytkownik nie jest zalogowany');
       return createTradingAccount(user.id, data);
     },
@@ -60,7 +57,6 @@ export default function Accounts() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => {
-      console.log('Updating account:', id, data);
       if (!user) throw new Error('Użytkownik nie jest zalogowany');
       return updateTradingAccount(user.id, id, data);
     },
@@ -78,7 +74,6 @@ export default function Accounts() {
 
   const deleteMutation = useMutation({
     mutationFn: (accountId) => {
-      console.log('Deleting account:', accountId);
       if (!user) throw new Error('Użytkownik nie jest zalogowany');
       return deleteTradingAccount(user.id, accountId);
     },
@@ -368,7 +363,19 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
               {getAccountTypeBadge()}
               <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: accentColor }} />
             </div>
-            <CardTitle className="text-base sm:text-lg truncate">{account.name}</CardTitle>
+            <div className="flex items-center gap-2 min-w-0">
+              <CardTitle className="text-base sm:text-lg truncate">{account.name}</CardTitle>
+              <MtAccountLink
+                account={account}
+                userId={user?.id}
+                existingTrades={trades}
+                onChanged={() => {
+                  queryClient.invalidateQueries({ queryKey: ["accounts", user?.id] });
+                  queryClient.invalidateQueries({ queryKey: ["trades", user?.id] });
+                  queryClient.invalidateQueries({ queryKey: ["trades"] });
+                }}
+              />
+            </div>
             <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 flex-wrap">
               {account.broker && <span className="truncate">{account.broker}</span>}
               {account.account_number && <span className="truncate">Nr: {account.account_number}</span>}
@@ -379,21 +386,6 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             </div>
           </div>
           <div className="flex gap-1 flex-shrink-0">
-            <div className="flex items-center gap-1 px-1.5 border rounded-md bg-muted/30">
-              <Power className={`w-3 h-3 shrink-0 ${isAccountActive ? 'text-profit' : 'text-slate-400'}`} />
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isAccountActive}
-                onClick={() => onToggleActive(account, !isAccountActive)}
-                aria-label={`Przełącz aktywność konta ${account.name}`}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isAccountActive ? 'bg-primary' : 'bg-muted'}`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${isAccountActive ? 'translate-x-[22px]' : 'translate-x-[1px]'}`}
-                />
-              </button>
-            </div>
             <AccountImportButton
               account={account}
               existingTrades={trades}
@@ -408,6 +400,17 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             </Button>
             <Button size="sm" variant="outline" onClick={() => onDelete(account)} className="h-8 w-8 p-0 text-loss hover:text-red-700">
               <Trash className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onToggleActive(account, !isAccountActive)}
+              aria-pressed={isAccountActive}
+              aria-label={isAccountActive ? `Wyłącz konto ${account.name}` : `Włącz konto ${account.name}`}
+              title={isAccountActive ? "Wyłącz konto" : "Włącz konto"}
+              className={`h-8 w-8 p-0 ${isAccountActive ? "text-profit" : "text-muted-foreground"}`}
+            >
+              <Power className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>

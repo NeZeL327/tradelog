@@ -26,18 +26,21 @@ export default function Strategies() {
   const queryClient = useQueryClient();
 
   const { data: strategies = [] } = useQuery({
-    queryKey: ['strategies'],
+    queryKey: ['strategies', user?.id],
     queryFn: () => getStrategies(user?.id),
+    enabled: !!user?.id,
   });
 
   const { data: trades = [] } = useQuery({
-    queryKey: ['trades'],
+    queryKey: ['trades', user?.id],
     queryFn: () => getTrades(user?.id),
+    enabled: !!user?.id,
   });
 
   const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts'],
+    queryKey: ['accounts', user?.id],
     queryFn: () => getTradingAccounts(user?.id),
+    enabled: !!user?.id,
   });
 
   const activeAccountIds = getActiveAccountIds(accounts);

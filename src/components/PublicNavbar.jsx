@@ -12,7 +12,7 @@ export default function PublicNavbar({ variant = 'default' }) {
   const isHero = variant === 'hero';
 
   const menuItems = [
-    { label: t('features') || 'Features', href: '#features' },
+    { label: t('features') || 'Features', href: '/features' },
     { label: t('about') || 'Resources', href: '/about' },
     { label: t('contact') || 'Contact', href: '/contact' },
   ];

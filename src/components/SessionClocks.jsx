@@ -74,31 +74,31 @@ export default function SessionClocks() {
 
   return (
     <div
-      className="hidden sm:flex items-center gap-1.5 mr-1"
+      className="header-cluster hidden h-8 items-center gap-0 sm:flex"
       aria-label="Godziny sesji tradingowych"
     >
-      {CLOCKS.map((clock) => {
+      {CLOCKS.map((clock, index) => {
         const open = isSessionOpen(now, clock.zone);
         return (
-          <div
-            key={clock.id}
-            title={clock.title}
-            className="flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1"
-          >
-            <span
-              className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                open
-                  ? "bg-primary shadow-[0_0_8px_hsl(var(--primary))]"
-                  : "bg-muted-foreground/40"
-              }`}
-              aria-hidden
-            />
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {clock.label}
-            </span>
-            <span className="text-[12px] font-medium tabular-nums text-foreground">
-              {formatTime(now, clock.zone, prefs.use12h)}
-            </span>
+          <div key={clock.id} className="flex items-center">
+            {index > 0 ? <span className="header-cluster-sep" aria-hidden /> : null}
+            <div
+              title={clock.title}
+              className="flex items-center gap-1.5 px-2 py-0.5"
+            >
+              <span
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                  open ? "bg-primary" : "bg-muted-foreground/35"
+                }`}
+                aria-hidden
+              />
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {clock.label}
+              </span>
+              <span className="text-[11px] font-medium tabular-nums text-foreground">
+                {formatTime(now, clock.zone, prefs.use12h)}
+              </span>
+            </div>
           </div>
         );
       })}

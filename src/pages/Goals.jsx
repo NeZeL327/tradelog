@@ -22,18 +22,21 @@ export default function Goals() {
   const queryClient = useQueryClient();
 
   const { data: goals = [] } = useQuery({
-    queryKey: ['goals'],
+    queryKey: ['goals', user?.id],
     queryFn: () => getGoals(user?.id),
+    enabled: !!user?.id,
   });
 
   const { data: trades = [] } = useQuery({
-    queryKey: ['trades'],
+    queryKey: ['trades', user?.id],
     queryFn: () => getTrades(user?.id),
+    enabled: !!user?.id,
   });
 
   const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts'],
+    queryKey: ['accounts', user?.id],
     queryFn: () => getTradingAccounts(user?.id),
+    enabled: !!user?.id,
   });
 
   const createMutation = useMutation({

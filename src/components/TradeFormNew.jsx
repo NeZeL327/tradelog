@@ -10,7 +10,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { X, Plus, ListChecks, AlertTriangle, Brain, Star } from "lucide-react";
 import ImageViewer from "@/components/common/ImageViewer";
 import ScreenshotField, { isImageFile } from "@/components/common/ScreenshotField";
-import { normalizeDirection } from "@/lib/utils";
+import { isTradingAccountActive, normalizeDirection } from "@/lib/utils";
 import {
   EmotionsInlinePanel,
   createEmptyEmotions,
@@ -175,6 +175,14 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
     loadData();
   }, [user?.id, t]);
+
+  useEffect(() => {
+    if (trade?.id) return;
+    const active = accounts.filter(isTradingAccountActive);
+    if (active.length !== 1) return;
+    const onlyId = String(active[0].id);
+    setFormData((prev) => (prev.account_id ? prev : { ...prev, account_id: onlyId }));
+  }, [accounts, trade?.id]);
 
   useEffect(() => {
     if (!trade?.id) {
@@ -793,6 +801,9 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                     <SelectItem value="Asia">Asia</SelectItem>
                     <SelectItem value="Londyn">Londyn</SelectItem>
                     <SelectItem value="Nowy Jork">Nowy Jork</SelectItem>
+                    <SelectItem value="Frankfurt">Frankfurt</SelectItem>
+                    <SelectItem value="NY PM">NY PM</SelectItem>
+                    <SelectItem value="NY Lunch">NY Lunch</SelectItem>
                   </FormSelect>
                 </div>
                 <div>

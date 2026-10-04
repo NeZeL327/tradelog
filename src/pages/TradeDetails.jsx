@@ -588,7 +588,7 @@ export default function TradeDetails() {
         </div>
       </header>
 
-      <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)] gap-3">
+      <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)] gap-3 min-h-[28rem]">
         <aside className="min-h-0 max-xl:h-[min(42vh,26rem)] max-xl:min-h-[20rem] h-full rounded-xl border border-white/[0.08] bg-card/40 overflow-hidden flex flex-col">
           <TabStrip tabs={LEFT_TABS} value={leftTab} onChange={setLeftTab} variant="line" />
           <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3">
@@ -680,8 +680,8 @@ export default function TradeDetails() {
               <ResizablePanel
                 id="chart"
                 order={1}
-                defaultSize={splitSizes[0]}
-                minSize={20}
+                defaultSize={Math.max(splitSizes[0] || 70, 45)}
+                minSize={40}
                 className="min-h-0 overflow-hidden"
               >
                 <div className="h-full min-h-0 p-2">

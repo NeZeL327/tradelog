@@ -14,14 +14,16 @@ export const CHART = {
 export const chartTooltipStyle = {
   backgroundColor: "hsl(var(--popover))",
   border: "1px solid hsl(var(--border))",
-  borderRadius: 12,
+  borderRadius: 8,
   fontSize: 12,
+  fontFamily: '"JetBrains Mono", ui-monospace, monospace',
   color: "hsl(var(--popover-foreground))",
   boxShadow: "none",
 };
 
 export const chartLegendStyle = {
   fontSize: 11,
+  fontFamily: '"JetBrains Mono", ui-monospace, monospace',
   color: "hsl(var(--muted-foreground))",
 };
 

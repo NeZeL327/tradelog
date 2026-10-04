@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 const Card = /** @type {any} */ (React.forwardRef(({ className, children, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("rounded-xl border border-border bg-card text-card-foreground shadow-none", className)}
+    className={cn("rounded-lg border border-border bg-card text-card-foreground shadow-none", className)}
     {...props}
   >
     {children}
@@ -16,7 +16,7 @@ Card.displayName = "Card"
 const CardHeader = /** @type {any} */ (React.forwardRef(({ className, children, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-4", className)}
+    className={cn("flex flex-col space-y-1 p-3", className)}
     {...props}
   >
     {children}
@@ -47,7 +47,7 @@ const CardDescription = /** @type {any} */ (React.forwardRef(({ className, child
 CardDescription.displayName = "CardDescription"
 
 const CardContent = /** @type {any} */ (React.forwardRef(({ className, children, ...props }, ref) => (
-  <div ref={ref} className={cn("p-4 pt-0", className)} {...props}>
+  <div ref={ref} className={cn("p-3 pt-0", className)} {...props}>
     {children}
   </div>
 )))

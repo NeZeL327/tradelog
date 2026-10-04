@@ -78,13 +78,15 @@ export default function Analytics() {
   const [activeTab, setActiveTab] = useState("overview");
 
   const { data: trades = [], isLoading } = useQuery({
-    queryKey: ['trades'],
+    queryKey: ['trades', user?.id],
     queryFn: () => getTrades(user?.id),
+    enabled: !!user?.id,
   });
 
   const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts'],
+    queryKey: ['accounts', user?.id],
     queryFn: () => getTradingAccounts(user?.id),
+    enabled: !!user?.id,
   });
 
   const activeAccounts = accounts.filter(isTradingAccountActive);
@@ -94,8 +96,9 @@ export default function Analytics() {
   );
 
   const { data: strategies = [] } = useQuery({
-    queryKey: ['strategies'],
+    queryKey: ['strategies', user?.id],
     queryFn: () => getStrategies(user?.id),
+    enabled: !!user?.id,
   });
 
   // Close dropdowns on outside click
@@ -193,7 +196,6 @@ export default function Analytics() {
     }
     symbolStats[trade.symbol].total++;
     if (trade.outcome === "Win") symbolStats[trade.symbol].wins++;
-                      if (trade.outcome === "Loss") symbolStats[trade.symbol].losses++;
     if (trade.outcome === "Loss") symbolStats[trade.symbol].losses++;
     symbolStats[trade.symbol].pl += (getTradeRealizedPL(trade) ?? 0);
   });
@@ -220,7 +222,6 @@ export default function Analytics() {
     }
     strategyStats[strategyName].total++;
     if (trade.outcome === "Win") strategyStats[strategyName].wins++;
-                      if (trade.outcome === "Loss") strategyStats[strategyName].losses++;
     if (trade.outcome === "Loss") strategyStats[strategyName].losses++;
     strategyStats[strategyName].pl += (getTradeRealizedPL(trade) ?? 0);
   });
@@ -242,7 +243,6 @@ export default function Analytics() {
       }
       timeframeStats[trade.timeframe].total++;
       if (trade.outcome === "Win") timeframeStats[trade.timeframe].wins++;
-                      if (trade.outcome === "Loss") timeframeStats[trade.timeframe].losses++;
       if (trade.outcome === "Loss") timeframeStats[trade.timeframe].losses++;
       timeframeStats[trade.timeframe].pl += (getTradeRealizedPL(trade) ?? 0);
     }
@@ -262,7 +262,6 @@ export default function Analytics() {
     if (directionStats[direction]) {
       directionStats[direction].total++;
       if (trade.outcome === "Win") directionStats[direction].wins++;
-                      if (trade.outcome === "Loss") directionStats[direction].losses++;
       if (trade.outcome === "Loss") directionStats[direction].losses++;
       directionStats[direction].pl += (getTradeRealizedPL(trade) ?? 0);
     }
@@ -285,7 +284,6 @@ export default function Analytics() {
       }
       sessionStats[trade.session].total++;
       if (trade.outcome === "Win") sessionStats[trade.session].wins++;
-                      if (trade.outcome === "Loss") sessionStats[trade.session].losses++;
       if (trade.outcome === "Loss") sessionStats[trade.session].losses++;
       sessionStats[trade.session].pl += (getTradeRealizedPL(trade) ?? 0);
     }
@@ -307,7 +305,6 @@ export default function Analytics() {
       }
       setupStats[trade.setup_quality].total++;
       if (trade.outcome === "Win") setupStats[trade.setup_quality].wins++;
-                      if (trade.outcome === "Loss") setupStats[trade.setup_quality].losses++;
       if (trade.outcome === "Loss") setupStats[trade.setup_quality].losses++;
       setupStats[trade.setup_quality].pl += (getTradeRealizedPL(trade) ?? 0);
     }
@@ -329,7 +326,6 @@ export default function Analytics() {
       }
       emotionalStats[trade.emotional_state].total++;
       if (trade.outcome === "Win") emotionalStats[trade.emotional_state].wins++;
-                      if (trade.outcome === "Loss") emotionalStats[trade.emotional_state].losses++;
       if (trade.outcome === "Loss") emotionalStats[trade.emotional_state].losses++;
       emotionalStats[trade.emotional_state].pl += (getTradeRealizedPL(trade) ?? 0);
     }
@@ -587,7 +583,6 @@ export default function Analytics() {
     }
     periodStats[period].total++;
     if (trade.outcome === "Win") periodStats[period].wins++;
-                      if (trade.outcome === "Loss") periodStats[period].losses++;
     if (trade.outcome === "Loss") periodStats[period].losses++;
     periodStats[period].pl += (getTradeRealizedPL(trade) ?? 0);
   });
@@ -1502,7 +1497,6 @@ export default function Analytics() {
                       }
                       accountBreakdown[accountName].total++;
                       if (trade.outcome === "Win") accountBreakdown[accountName].wins++;
-                      if (trade.outcome === "Loss") accountBreakdown[accountName].losses++;
                       accountBreakdown[accountName].pl += (getTradeRealizedPL(trade) ?? 0);
                     });
 
@@ -1523,7 +1517,6 @@ export default function Analytics() {
                       }
                       strategyBreakdown[strategyName].total++;
                       if (trade.outcome === "Win") strategyBreakdown[strategyName].wins++;
-                      if (trade.outcome === "Loss") strategyBreakdown[strategyName].losses++;
                       strategyBreakdown[strategyName].pl += (getTradeRealizedPL(trade) ?? 0);
                     });
 
@@ -1541,7 +1534,6 @@ export default function Analytics() {
                       if (directionBreakdown[direction]) {
                         directionBreakdown[direction].total++;
                         if (trade.outcome === "Win") directionBreakdown[direction].wins++;
-                      if (trade.outcome === "Loss") directionBreakdown[direction].losses++;
                         directionBreakdown[direction].pl += (getTradeRealizedPL(trade) ?? 0);
                       }
                     });
@@ -1564,7 +1556,6 @@ export default function Analytics() {
                         }
                         timeframeBreakdown[trade.timeframe].total++;
                         if (trade.outcome === "Win") timeframeBreakdown[trade.timeframe].wins++;
-                      if (trade.outcome === "Loss") timeframeBreakdown[trade.timeframe].losses++;
                         timeframeBreakdown[trade.timeframe].pl += (getTradeRealizedPL(trade) ?? 0);
                       }
                     });
@@ -1877,7 +1868,6 @@ export default function Analytics() {
                       }
                       accountBreakdown[accountName].total++;
                       if (trade.outcome === "Win") accountBreakdown[accountName].wins++;
-                      if (trade.outcome === "Loss") accountBreakdown[accountName].losses++;
                       accountBreakdown[accountName].pl += (getTradeRealizedPL(trade) ?? 0);
                     });
 
@@ -1896,7 +1886,6 @@ export default function Analytics() {
                       }
                       symbolBreakdown[trade.symbol].total++;
                       if (trade.outcome === "Win") symbolBreakdown[trade.symbol].wins++;
-                      if (trade.outcome === "Loss") symbolBreakdown[trade.symbol].losses++;
                       symbolBreakdown[trade.symbol].pl += (getTradeRealizedPL(trade) ?? 0);
                     });
 
@@ -1914,7 +1903,6 @@ export default function Analytics() {
                       if (directionBreakdown[direction]) {
                         directionBreakdown[direction].total++;
                         if (trade.outcome === "Win") directionBreakdown[direction].wins++;
-                      if (trade.outcome === "Loss") directionBreakdown[direction].losses++;
                         directionBreakdown[direction].pl += (getTradeRealizedPL(trade) ?? 0);
                       }
                     });
@@ -1937,7 +1925,6 @@ export default function Analytics() {
                         }
                         timeframeBreakdown[trade.timeframe].total++;
                         if (trade.outcome === "Win") timeframeBreakdown[trade.timeframe].wins++;
-                      if (trade.outcome === "Loss") timeframeBreakdown[trade.timeframe].losses++;
                         timeframeBreakdown[trade.timeframe].pl += (getTradeRealizedPL(trade) ?? 0);
                       }
                     });

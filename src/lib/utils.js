@@ -34,7 +34,7 @@ export const directionBadgeClass = (direction) => {
   return "rounded-full bg-muted text-muted-foreground border-transparent text-[11px] font-medium px-2 py-0.5";
 };
 
-const normalizeTradeStatus = (status) => {
+export const normalizeTradeStatus = (status) => {
   const normalized = String(status || "").toLowerCase();
   if (["open", "otwarta", "aktywna"].includes(normalized)) return "open";
   if (["closed", "wykonana", "zamknięta", "zamknieta", "executed"].includes(normalized)) return "closed";

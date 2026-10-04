@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -127,56 +127,57 @@ body {
   }
 
   .dark {
-    --background: 210 28% 5%;
-    --foreground: 40 8% 96%;
-    --card: 210 22% 9%;
-    --card-foreground: 40 8% 96%;
-    --popover: 210 22% 8%;
-    --popover-foreground: 40 8% 96%;
+    /* Stitch terminal surfaces, mapped onto existing AiKeepTrade tokens. */
+    --background: 222 32% 6.5%;
+    --foreground: 230 20% 91%;
+    --card: 226 14% 14%;
+    --card-foreground: 230 20% 91%;
+    --popover: 224 16% 11%;
+    --popover-foreground: 230 20% 91%;
 
-    --primary: 157 100% 48%;
-    --primary-foreground: 160 28% 6%;
+    --primary: 202 100% 78%;
+    --primary-foreground: 197 100% 14%;
 
-    --secondary: 210 18% 11%;
-    --secondary-foreground: 40 8% 88%;
-    --muted: 210 18% 11%;
-    --muted-foreground: 210 10% 58%;
+    --secondary: 224 12% 17%;
+    --secondary-foreground: 207 17% 82%;
+    --muted: 224 12% 16%;
+    --muted-foreground: 207 14% 68%;
 
-    --accent: 210 18% 12%;
-    --accent-foreground: 40 8% 96%;
+    --accent: 224 12% 18%;
+    --accent-foreground: 235 22% 90%;
 
-    --destructive: 0 58% 52%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 6 100% 84%;
+    --destructive-foreground: 0 70% 14%;
 
-    --border: 210 16% 16%;
-    --input: 210 16% 14%;
-    --ring: 157 100% 48%;
-    --radius: 0.875rem;
+    --border: 205 12% 26%;
+    --input: 224 12% 18%;
+    --ring: 202 100% 78%;
+    --radius: 0.5rem;
 
-    --profit: 157 95% 52%;
-    --loss: 0 58% 58%;
-    --warning: 38 55% 50%;
-    --surface-2: 210 20% 11%;
+    --profit: 155 73% 62%;
+    --loss: 6 100% 84%;
+    --warning: 38 72% 58%;
+    --surface-2: 224 12% 17%;
 
-    --chart-1: 157 100% 48%;
-    --chart-2: 157 95% 52%;
-    --chart-3: 0 58% 58%;
-    --chart-4: 210 10% 50%;
-    --chart-5: 38 55% 50%;
+    --chart-1: 202 100% 78%;
+    --chart-2: 155 73% 62%;
+    --chart-3: 6 100% 84%;
+    --chart-4: 207 14% 68%;
+    --chart-5: 38 72% 58%;
 
-    --app-shell: 210 32% 4%;
-    --sidebar-background: 210 32% 4%;
-    --sidebar-foreground: 40 8% 90%;
-    --sidebar-primary: 157 100% 48%;
-    --sidebar-primary-foreground: 160 28% 6%;
-    --sidebar-accent: 157 40% 12%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 210 16% 12%;
-    --sidebar-ring: 157 100% 48%;
+    --app-shell: 222 31% 6%;
+    --sidebar-background: 222 31% 6%;
+    --sidebar-foreground: 207 17% 82%;
+    --sidebar-primary: 202 100% 78%;
+    --sidebar-primary-foreground: 197 100% 14%;
+    --sidebar-accent: 222 14% 16%;
+    --sidebar-accent-foreground: 235 22% 90%;
+    --sidebar-border: 205 12% 22%;
+    --sidebar-ring: 202 100% 78%;
 
-    --window-bg: 210 22% 9.5%;
-    --window-border: 0 0% 100% / 0.06;
-    --window-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.035), 0 12px 32px hsl(0 0% 0% / 0.45);
+    --window-bg: 226 14% 14%;
+    --window-border: 206 12% 28%;
+    --window-shadow: 0 0 0 1px hsl(210 14% 28% / 0.35);
   }
 }
 
@@ -198,7 +199,7 @@ body {
 /* ===== ATMOSPHERE — flat carbon, no glow ===== */
 html.dark .app-atmosphere {
   background-color: hsl(var(--app-shell));
-  background-image: radial-gradient(ellipse 48% 40% at 8% 0%, hsl(157 100% 48% / 0.08), transparent 58%);
+  background-image: none;
 }
 
 html.dark .app-atmosphere::before {
@@ -231,13 +232,7 @@ html.dark [data-sidebar="sidebar"] {
 }
 
 html.dark [data-sidebar="sidebar"]::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 42%;
-  z-index: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse 90% 70% at 50% 100%, hsl(var(--primary) / 0.22), transparent 72%);
+  content: none;
 }
 
 html.dark .group[data-collapsible="icon"] [data-sidebar="sidebar"] {
@@ -277,14 +272,12 @@ html.dark .sidebar-mountain-layer img {
   height: 145%;
   object-fit: cover;
   object-position: center 72%;
-  opacity: 1;
-  filter: brightness(1.55) contrast(1.18) saturate(1.05);
+  opacity: 0.22;
+  filter: brightness(0.55) contrast(1.05) saturate(0.4);
 }
 
 html.dark .dashboard-surface {
-  background:
-    radial-gradient(ellipse 46% 32% at 10% 0%, hsl(157 100% 48% / 0.06), transparent 55%),
-    hsl(var(--background));
+  background: hsl(var(--background));
 }
 
 /* ===== TYPOGRAPHY SCALE ===== */
@@ -305,19 +298,21 @@ html.dark .dashboard-surface {
 }
 
 .type-metric {
-  font-size: 1.875rem;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 1.75rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.02em;
   line-height: 1;
   color: hsl(var(--foreground));
 }
 
 .type-metric-sm {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
   font-size: 1.0625rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
@@ -344,8 +339,12 @@ h1, h2, h3 {
 
 /* Monospaced numbers for financial data */
 .tabular-nums,
-table td,
 .font-mono {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+table td {
   font-variant-numeric: tabular-nums;
 }
 
@@ -358,10 +357,10 @@ body[data-is-home="false"] {
 /* ===== SIDEBAR ACTIVE STATE ===== */
 .sidebar-active {
   position: relative;
-  border-radius: 10px;
-  background: hsl(var(--primary) / 0.22) !important;
+  border-radius: 8px;
+  background: hsl(var(--sidebar-accent)) !important;
   color: hsl(var(--foreground)) !important;
-  box-shadow: 0 0 18px hsl(var(--primary) / 0.18);
+  box-shadow: none;
   transition: background var(--duration, 150ms) ease, color var(--duration, 150ms) ease, box-shadow var(--duration, 150ms) ease;
 }
 
@@ -371,30 +370,22 @@ body[data-is-home="false"] {
 
 html.dark .sidebar-active span,
 html.dark .sidebar-active svg {
-  color: #fff !important;
+  color: #8ed5ff !important;
 }
 
 .sidebar-active svg {
   color: hsl(var(--primary));
 }
 
-.sidebar-active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 0 2px 2px 0;
-  background: hsl(var(--primary));
-  box-shadow: 0 0 10px hsl(var(--primary) / 0.7);
+html.dark .sidebar-active::before {
+  display: none;
 }
 
 /* ===== STAT CARD ===== */
 .ocean-stat-card {
   border: 1px solid hsl(var(--border));
   background: hsl(var(--card));
-  border-radius: 14px;
+  border-radius: 8px;
   box-shadow: none;
   transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
@@ -438,7 +429,7 @@ html.dark .ocean-stat-card {
   .dashboard-kpi-row {
     background: hsl(var(--window-bg, var(--card)));
     border: 1px solid hsl(var(--window-border, var(--border)));
-    border-radius: 14px;
+    border-radius: 8px;
     overflow: hidden;
     gap: 0 !important;
     box-shadow: var(--window-shadow, none);
@@ -564,7 +555,7 @@ html.dark .ocean-stat-card {
 .recharts-cartesian-axis-tick-value {
   fill: hsl(var(--muted-foreground));
   font-size: 11px;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
 }
 
 .recharts-default-tooltip {
@@ -612,14 +603,47 @@ html:not(.dark) main.cyber-dashboard.dashboard-surface {
   background: transparent;
 }
 
+/* Concept 2: light grouped controls in the top bar */
+.cyber-app-header .header-cluster {
+  border: 1px solid hsl(var(--border) / 0.85);
+  border-radius: 0.5rem;
+  background: hsl(220 14% 12% / 0.72);
+  padding-left: 0.2rem;
+  padding-right: 0.2rem;
+}
+
+html:not(.dark) .cyber-app-header .header-cluster {
+  background: hsl(var(--card) / 0.92);
+}
+
+.cyber-app-header .header-cluster-sep {
+  display: inline-block;
+  width: 1px;
+  height: 1rem;
+  margin: 0 0.15rem;
+  background: hsl(var(--border) / 0.9);
+  flex-shrink: 0;
+}
+
+@media (max-width: 1100px) {
+  .cyber-app-header .header-cluster {
+    max-width: 100%;
+  }
+}
+
 html.dark .cyber-app-header {
-  border-bottom-color: transparent;
-  background: transparent;
+  border-bottom: 1px solid hsl(var(--sidebar-border));
+  background: hsl(var(--app-shell));
   backdrop-filter: none;
 }
 
 /* Sidebar — connected frame + active states */
-html.dark .cyber-app-sidebar,
+html.dark .cyber-app-sidebar {
+  border-right: 1px solid hsl(var(--sidebar-border)) !important;
+  box-shadow: none !important;
+  background: hsl(var(--sidebar-background)) !important;
+}
+
 html:not(.dark) .cyber-app-sidebar {
   border-right-color: transparent !important;
   box-shadow: none !important;
@@ -639,22 +663,19 @@ html:not(.dark) .cyber-app-sidebar .sidebar-active::before {
 
 /* Dark: same rail, no filled lime pill */
 html.dark .cyber-app-sidebar .sidebar-active {
-  background: linear-gradient(90deg, hsl(var(--primary) / 0.28), hsl(var(--primary) / 0.08) 62%, transparent) !important;
-  color: #fff !important;
+  background: #272a32 !important;
+  color: #8ed5ff !important;
   box-shadow: none;
-  border-radius: 10px;
+  border-radius: 4px;
 }
 
 html.dark .cyber-app-sidebar .sidebar-active span,
 html.dark .cyber-app-sidebar .sidebar-active svg {
-  color: #fff !important;
+  color: #8ed5ff !important;
 }
 
 html.dark .cyber-app-sidebar .sidebar-active::before {
-  display: block !important;
-  width: 3px;
-  background: hsl(var(--primary));
-  box-shadow: 0 0 12px hsl(var(--primary));
+  display: none !important;
 }
 
 /* Shadcn Card w treści — jak .cyber-panel (bez duplikatu na specjalnych kartach) */
@@ -670,13 +691,23 @@ html.dark main.cyber-dashboard .border.bg-card.text-card-foreground:not(.ocean-s
   background: hsl(var(--window-bg));
   border-color: hsl(var(--window-border));
   box-shadow: var(--window-shadow);
-  border-radius: 14px;
+  border-radius: 8px;
 }
 
 html.dark main.cyber-dashboard table thead th {
   background: hsl(var(--muted));
   border-color: hsl(var(--border));
   color: hsl(var(--muted-foreground));
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+html.dark main.cyber-dashboard table td {
+  font-variant-numeric: tabular-nums;
+  border-color: hsl(var(--border) / 0.7);
 }
 
 html.dark main.cyber-dashboard table tbody tr {
@@ -703,12 +734,12 @@ html.dark main.cyber-dashboard select:focus {
 
 /* ===== CYBER PAGE SHELL (tytuły, CTA, wykresy — spójnie z Dashboardem) ===== */
 .cyber-page-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.035em;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: hsl(var(--foreground));
-  margin-bottom: 0.35rem;
-  line-height: 1.2;
+  margin-bottom: 0.2rem;
+  line-height: 1.25;
 }
 
 html.dark .cyber-page-title {
@@ -718,17 +749,17 @@ html.dark .cyber-page-title {
 
 .cyber-page-sub {
   color: hsl(var(--muted-foreground));
-  font-size: 0.9375rem;
-  line-height: 1.45;
+  font-size: 0.8125rem;
+  line-height: 1.4;
 }
 
 main.cyber-dashboard .cyber-primary-btn {
   color: hsl(var(--primary-foreground)) !important;
   background: hsl(var(--primary)) !important;
-  box-shadow: 0 0 24px hsl(var(--primary) / 0.5);
+  box-shadow: none;
   border: none !important;
-  border-radius: 12px;
-  font-weight: 700;
+  border-radius: 8px;
+  font-weight: 600;
 }
 
 main.cyber-dashboard .cyber-primary-btn:hover {
@@ -737,7 +768,7 @@ main.cyber-dashboard .cyber-primary-btn:hover {
 
 html.dark main.cyber-dashboard .cyber-primary-btn {
   background: hsl(var(--primary)) !important;
-  box-shadow: 0 0 22px hsl(var(--primary) / 0.45);
+  box-shadow: none;
 }
 
 /* Recharts w obszarze aplikacji */
@@ -836,7 +867,7 @@ html.dark main.cyber-dashboard .calendar-day-today:not(.calendar-day-selected) {
 .cyber-panel {
   border: 1px solid hsl(var(--border));
   background: hsl(var(--card));
-  border-radius: 14px;
+  border-radius: 8px;
   position: relative;
   box-shadow: none;
   transition: border-color 150ms ease, box-shadow 150ms ease;
@@ -867,13 +898,16 @@ html.dark .cyber-panel-hero {
 
 html.dark .cyber-panel-title {
   color: hsl(var(--muted-foreground));
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
 }
 
 .cyber-hero {
   text-align: center;
   padding: 0.65rem 1rem;
   border: 1px solid hsl(var(--border));
-  border-radius: 14px;
+  border-radius: 8px;
   background: hsl(var(--card));
 }
 
@@ -920,7 +954,7 @@ html.dark .cyber-hero {
 .cyber-day-panel {
   background: hsl(var(--muted) / 0.35);
   border: 1px solid hsl(var(--border));
-  border-radius: 14px;
+  border-radius: 8px;
 }
 
 html.dark .cyber-day-panel {
@@ -943,7 +977,7 @@ html.dark .cyber-day-trade {
   position: relative;
   aspect-ratio: 1;
   min-height: 86px;
-  border-radius: 14px;
+  border-radius: 8px;
   border: 1px solid hsl(var(--border));
   display: flex;
   align-items: center;
@@ -1588,14 +1622,10 @@ table tbody tr:hover {
   animation: none;
 }
 
-.premium-title {
-  font-family: "Sora", "Space Grotesk", "Segoe UI", system-ui, sans-serif;
-  letter-spacing: 0.02em;
-}
-
+.premium-title,
 .premium-subtitle {
-  font-family: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
-  letter-spacing: 0.01em;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .hero-signal {
@@ -1757,7 +1787,7 @@ table tbody tr:hover {
 
 .hero-feature-icon {
   width: 44px; height: 44px;
-  border-radius: 14px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   font-size: 1.45rem;
@@ -2172,22 +2202,21 @@ table th, table td {
 
 /* --- App sidebar (Noir Signal rail) --- */
 html.dark .cyber-app-sidebar {
-  border-right-color: transparent !important;
+  border-right: 1px solid hsl(var(--sidebar-border)) !important;
   box-shadow: none !important;
-  background: transparent !important;
+  background: hsl(var(--sidebar-background)) !important;
 }
 
 html.dark .cyber-app-sidebar .sidebar-active {
-  background: linear-gradient(90deg, hsl(var(--primary) / 0.28), hsl(var(--primary) / 0.08) 62%, transparent) !important;
-  color: #fff !important;
-  box-shadow: none;
+  background: #272a32 !important;
+  color: #8ed5ff !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
 }
 
 html.dark .cyber-app-sidebar .sidebar-active::before {
-  display: block !important;
-  width: 3px;
-  background: hsl(var(--primary));
-  box-shadow: 0 0 12px hsl(var(--primary));
+  display: none !important;
 }
 
 html:not(.dark) .cyber-app-sidebar .sidebar-active::before,
@@ -2195,10 +2224,10 @@ html:not(.dark) .sidebar-active::before {
   display: block !important;
 }
 
-/* App top bar — blends into shell (connected with sidebar) */
 html.dark .cyber-app-header {
-  border-bottom-color: transparent !important;
-  background: transparent !important;
+  border-bottom: 1px solid hsl(var(--sidebar-border)) !important;
+  background: hsl(var(--app-shell)) !important;
+  backdrop-filter: none !important;
 }
 
 /* Content panel sits on shell; no extra glow overlay */
@@ -2208,9 +2237,7 @@ html.dark .cyber-dashboard {
 }
 
 html.dark main.cyber-dashboard.dashboard-surface {
-  background:
-    radial-gradient(ellipse 46% 32% at 10% 0%, hsl(157 100% 48% / 0.06), transparent 55%),
-    hsl(var(--background));
+  background: hsl(var(--background));
 }
 
 html.dark main.cyber-dashboard
@@ -2234,8 +2261,9 @@ html.dark main.cyber-dashboard input[type="email"],
 html.dark main.cyber-dashboard input[type="password"],
 html.dark main.cyber-dashboard textarea,
 html.dark main.cyber-dashboard select {
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  background: hsl(var(--app-shell) / 0.55) !important;
+  border-color: hsl(var(--border)) !important;
+  background: hsl(var(--app-shell)) !important;
+  border-radius: 6px;
 }
 
 html.dark main.cyber-dashboard input:focus,
@@ -2246,27 +2274,27 @@ html.dark main.cyber-dashboard select:focus {
 }
 
 html.dark main.cyber-dashboard [role="tab"][data-state="active"] {
-  color: #ffffff !important;
-  background: transparent !important;
-  box-shadow: inset 0 -2px 0 hsl(var(--primary)) !important;
-  border-radius: 0 !important;
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--card)) !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
 }
 
 html.dark main.cyber-dashboard .cyber-primary-btn,
 main.cyber-dashboard .cyber-primary-btn {
   background: hsl(var(--primary)) !important;
   color: hsl(var(--primary-foreground)) !important;
-  box-shadow: 0 0 24px hsl(var(--primary) / 0.5) !important;
+  box-shadow: none !important;
   border: none !important;
 }
 
 html.dark .cyber-page-title {
-  color: #fff !important;
+  color: hsl(var(--foreground)) !important;
   text-shadow: none !important;
 }
 
 .report-card {
-  border-radius: 14px;
+  border-radius: 8px;
   border: 1px solid hsl(var(--border));
   background: hsl(var(--card));
 }
@@ -2346,4 +2374,407 @@ html.dark .recharts-area-curve {
 .cyber-stat-tile::before,
 .cyber-trade-card::before {
   display: none;
+}
+
+/* UI type is Inter. Money and table figures stay JetBrains Mono. */
+html,
+body,
+button,
+input,
+textarea,
+select,
+.cyber-page-title,
+.premium-title,
+.premium-subtitle {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+}
+
+html.dark [data-sidebar="sidebar"] {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html.dark [data-sidebar="group"]:first-of-type [data-sidebar="group-label"] {
+  margin-top: 0 !important;
+}
+
+html.dark [data-sidebar="group-label"] {
+  height: auto !important;
+  min-height: 0 !important;
+  margin-top: 0.75rem;
+  margin-bottom: 0 !important;
+  padding: 4px 8px !important;
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 14px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #87929a !important;
+}
+
+html.dark [data-sidebar="menu-button"] {
+  height: 30px !important;
+  border-radius: 4px !important;
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 16px !important;
+  letter-spacing: 0.01em !important;
+  color: #bdc8d1 !important;
+}
+
+html.dark [data-sidebar="menu-button"] svg {
+  width: 18px !important;
+  height: 18px !important;
+  color: #bdc8d1 !important;
+}
+
+html.dark .cyber-app-sidebar .sidebar-active {
+  background: #272a32 !important;
+  color: #8ed5ff !important;
+  box-shadow: none !important;
+  border-radius: 4px !important;
+}
+
+/* Terminal squeeze — leftover slate, radii, wallpaper. Layout unchanged. */
+html.dark [data-sidebar="sidebar"] {
+  background-image: none !important;
+}
+
+html.dark .sidebar-mountain-layer {
+  display: none !important;
+}
+
+html.dark .rounded-xl {
+  border-radius: 8px !important;
+}
+
+html.dark .rounded-2xl {
+  border-radius: 10px !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800 {
+  color: hsl(var(--foreground)) !important;
+}
+
+html.dark .text-slate-700,
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-slate-400,
+html.dark .text-slate-300 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+html.dark .dark\:text-slate-300,
+html.dark .dark\:text-slate-400,
+html.dark .dark\:text-slate-600 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+html.dark .dark\:text-slate-100,
+html.dark .dark\:text-slate-200,
+html.dark .dark\:text-white {
+  color: hsl(var(--foreground)) !important;
+}
+
+html.dark .bg-slate-100,
+html.dark .dark\:bg-slate-700,
+html.dark .dark\:bg-slate-800,
+html.dark .bg-slate-500\/10,
+html.dark .bg-slate-500\/\[0\.03\] {
+  background-color: hsl(var(--muted)) !important;
+}
+
+html.dark .border-white\/\[0\.06\],
+html.dark .bg-black\/20 {
+  border-color: hsl(var(--border));
+  background-color: hsl(var(--card));
+}
+
+html.dark [class*="shadow-[0_0"] {
+  box-shadow: none !important;
+}
+
+html.dark main.cyber-dashboard table th,
+html.dark main.cyber-dashboard table td {
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+
+html.dark .cyber-stat-value,
+html.dark .type-metric,
+html.dark .tabular-nums {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Terminal windows — type and chrome across the app. Layout stays. */
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark [role="dialog"],
+html.dark [role="alertdialog"],
+html.dark [role="menu"],
+html.dark .cyber-page-title,
+html.dark .cyber-page-sub,
+html.dark .cyber-hero-heading,
+html.dark .cyber-hero-sub {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+}
+
+html.dark .tabular-nums,
+html.dark .font-mono,
+html.dark .cyber-stat-value-win,
+html.dark .cyber-stat-value-loss,
+html.dark .cyber-stat-value-cyan,
+html.dark .ocean-stat-card .text-xl,
+html.dark .ocean-stat-card .text-2xl,
+html.dark main .text-2xl.font-bold,
+html.dark main .text-3xl.font-bold,
+html.dark main .text-xl.font-bold,
+html.dark table td,
+html.dark table th {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-variant-numeric: tabular-nums;
+}
+
+html.dark .cyber-panel-title,
+html.dark .cyber-stat-label,
+html.dark .ocean-stat-card .uppercase,
+html.dark .text-\[10px\].uppercase,
+html.dark table th {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: hsl(207 10% 62%) !important;
+}
+
+html.dark .ocean-stat-card .tabular-nums,
+html.dark .cyber-stat-tile .tabular-nums {
+  font-size: 1.45rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+
+html.dark .ocean-stat-card > div,
+html.dark .cyber-stat-tile > div {
+  padding: 0.8rem 0.9rem !important;
+}
+
+html.dark main .bg-card,
+html.dark .ocean-stat-card,
+html.dark .cyber-stat-tile,
+html.dark .cyber-panel,
+html.dark .report-card {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+html.dark [role="dialog"],
+html.dark [role="alertdialog"] {
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 28px 60px hsl(222 50% 2% / 0.55) !important;
+}
+
+html.dark [role="menu"],
+html.dark [data-radix-popper-content-wrapper] > * {
+  background: hsl(var(--popover)) !important;
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--border)) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 16px 40px hsl(222 50% 2% / 0.5) !important;
+}
+
+html.dark [class*="bg-black\/60"] {
+  background-color: hsl(222 40% 2% / 0.72) !important;
+}
+
+html.dark .recharts-default-tooltip,
+html.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  background: hsl(var(--popover)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 8px !important;
+}
+
+/* Dark UI, menus, quotes and dialogs share the metric font. */
+html.dark body * {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+}
+
+html.dark [role="menu"],
+html.dark [role="menu"] *,
+html.dark [role="listbox"],
+html.dark [role="listbox"] *,
+html.dark [role="menuitem"],
+html.dark [role="menuitemcheckbox"],
+html.dark [role="menuitemradio"],
+html.dark [role="option"],
+html.dark [data-radix-popper-content-wrapper],
+html.dark [data-radix-popper-content-wrapper] *,
+html.dark [data-radix-select-viewport],
+html.dark [data-radix-select-viewport] *,
+html.dark [cmdk-root],
+html.dark [cmdk-root] *,
+html.dark [cmdk-item],
+html.dark [cmdk-input],
+html.dark [cmdk-group-heading],
+html.dark [data-radix-accordion-content],
+html.dark [data-radix-accordion-content] *,
+html.dark [data-radix-collapsible-content],
+html.dark [data-radix-collapsible-content] *,
+html.dark [role="dialog"],
+html.dark [role="dialog"] *,
+html.dark [role="alertdialog"],
+html.dark [role="alertdialog"] * {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+}
+
+html.dark [role="menuitem"],
+html.dark [role="menuitemcheckbox"],
+html.dark [role="menuitemradio"],
+html.dark [role="option"],
+html.dark [cmdk-item],
+html.dark [data-radix-collection-item],
+html.dark button[aria-expanded] {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.011em !important;
+}
+
+html.dark [cmdk-group-heading],
+html.dark [role="menu"] [role="presentation"],
+html.dark [data-radix-select-label] {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  color: hsl(207 10% 62%) !important;
+}
+
+html.dark .tabular-nums,
+html.dark .tabular-nums *,
+html.dark .font-mono,
+html.dark .font-mono *,
+html.dark .type-metric,
+html.dark .type-metric *,
+html.dark .cyber-stat-value-win,
+html.dark .cyber-stat-value-loss,
+html.dark .cyber-stat-value-cyan,
+html.dark .cyber-panel-title,
+html.dark .cyber-stat-label,
+html.dark .ocean-stat-card .uppercase,
+html.dark table th,
+html.dark table td,
+html.dark [role="dialog"] .tabular-nums,
+html.dark [role="dialog"] .tabular-nums *,
+html.dark [role="dialog"] .font-mono,
+html.dark [role="dialog"] .font-mono *,
+html.dark [role="dialog"] table th,
+html.dark [role="dialog"] table td,
+html.dark [role="menu"] .tabular-nums,
+html.dark [role="menu"] .font-mono,
+html.dark [data-radix-popper-content-wrapper] .tabular-nums,
+html.dark [data-radix-popper-content-wrapper] .tabular-nums *,
+html.dark [data-radix-popper-content-wrapper] .font-mono,
+html.dark [data-radix-popper-content-wrapper] .font-mono * {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+}
+
+/* Sidebar matches the reference rail: mono group labels, blue active row. */
+html.dark .cyber-app-sidebar,
+html.dark .cyber-app-sidebar [data-sidebar="sidebar"] {
+  background: #0b0e15 !important;
+  background-image: none !important;
+  border-right: 1px solid rgb(62 72 79 / 0.3) !important;
+}
+
+html.dark .cyber-app-sidebar [data-sidebar="group-label"] {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  line-height: 14px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #87929a !important;
+}
+
+html.dark .cyber-app-sidebar [data-sidebar="menu-button"],
+html.dark .cyber-app-sidebar [data-sidebar="menu-button"] span,
+html.dark .cyber-app-sidebar [data-sidebar="menu-button"] * {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em !important;
+  line-height: 16px !important;
+  color: #bdc8d1 !important;
+}
+
+html.dark .cyber-app-sidebar .sidebar-active {
+  background: #272a32 !important;
+  color: #8ed5ff !important;
+  border-radius: 4px !important;
+}
+
+html.dark .cyber-app-sidebar .sidebar-active span,
+html.dark .cyber-app-sidebar .sidebar-active svg {
+  background: transparent !important;
+  color: #8ed5ff !important;
+  font-weight: 500 !important;
+}
+
+html.dark .cyber-app-sidebar [data-sidebar="menu-button"] svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+html.dark svg text,
+html.dark .recharts-text,
+html.dark .recharts-label,
+html.dark .recharts-cartesian-axis-tick-value,
+html.dark .recharts-legend-item-text,
+html.dark .recharts-tooltip-item,
+html.dark .rdp,
+html.dark .rdp *,
+html.dark .tiptap-notes-editor,
+html.dark .tiptap-notes-editor .ProseMirror,
+html.dark .tiptap-notes-editor .ProseMirror *,
+html.dark [data-sonner-toaster],
+html.dark [data-sonner-toaster] *,
+html.dark [data-sonner-toast],
+html.dark [data-sonner-toast] * {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+}
+
+/* Filters, account menus, months, date range — same mono as KPI labels. */
+html.dark main button,
+html.dark main button *,
+html.dark main select,
+html.dark main input,
+html.dark main textarea,
+html.dark main [role="combobox"],
+html.dark main [role="combobox"] *,
+html.dark header button,
+html.dark header button *,
+html.dark [data-radix-popper-content-wrapper],
+html.dark [data-radix-popper-content-wrapper] *,
+html.dark [role="listbox"],
+html.dark [role="listbox"] *,
+html.dark [role="menu"],
+html.dark [role="menu"] *,
+html.dark [role="dialog"] button,
+html.dark [role="dialog"] button *,
+html.dark [role="dialog"] input,
+html.dark [role="dialog"] select,
+html.dark [role="dialog"] [role="combobox"],
+html.dark [role="dialog"] [role="combobox"] * {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
 }

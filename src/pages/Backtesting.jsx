@@ -84,7 +84,7 @@ import { EmotionsInlinePanel, createEmptyEmotions, normalizeEmotions, countFille
 
 const OUTCOMES = ["Win", "Loss", "Breakeven"];
 const DIRECTIONS = ["Long", "Short"];
-const SESSIONS = ["Asia", "London", "New York", "Other"];
+const SESSIONS = ["Asia", "London", "New York", "Frankfurt", "NY PM", "NY Lunch", "Other"];
 const TIMEFRAMES = ["M1", "M5", "M15", "M30", "H1", "H4", "D1", "W1"];
 const COMMON_PAIRS = [
   "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD", "AUDUSD", "NZDUSD",

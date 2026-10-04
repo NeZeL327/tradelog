@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
@@ -12,7 +12,6 @@ import { TrendingUp, TrendingDown, Calendar, Eye, ChevronDown, ChevronUp, Chevro
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, ScatterChart, Scatter } from "recharts";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isToday } from "date-fns";
 import { enUS, pl } from "date-fns/locale";
-import TradeFormNew from "../components/TradeFormNew";
 import TradePreviewPanel from "../components/TradePreviewPanel";
 import { goToTradeDetails } from "@/lib/tradeDetailsNav";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -23,6 +22,8 @@ import QuoteLine from "@/components/QuoteLine";
 import Sparkline from "@/components/Sparkline";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import { SkeletonKpiRow, SkeletonBlock } from "@/components/ui/skeleton-block";
+
+const TradeFormNew = lazy(() => import("../components/TradeFormNew"));
 
 // ─── Mini date-range calendar (same as Journal) ──────────────────────────────
 const MONTHS_PL = ["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"];
@@ -215,13 +216,15 @@ export default function Dashboard() {
   ]);
   const queryClient = useQueryClient();
   const { data: trades = [], isLoading, refetch } = useQuery({
-    queryKey: ['trades'],
+    queryKey: ['trades', user?.id],
     queryFn: () => getTrades(user?.id),
+    enabled: !!user?.id,
   });
 
   const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts'],
+    queryKey: ['accounts', user?.id],
     queryFn: () => getTradingAccounts(user?.id),
+    enabled: !!user?.id,
   });
 
   const activeAccounts = accounts.filter(isTradingAccountActive);
@@ -241,8 +244,9 @@ export default function Dashboard() {
   }, [accounts]);
 
   const { data: strategies = [] } = useQuery({
-    queryKey: ['strategies'],
+    queryKey: ['strategies', user?.id],
     queryFn: () => getStrategies(user?.id),
+    enabled: !!user?.id,
   });
 
   const handleViewTrade = (trade) => {
@@ -2770,14 +2774,16 @@ export default function Dashboard() {
               <DialogTitle>{t('addTrade')}</DialogTitle>
             </div>
             <div className="p-4">
-              <TradeFormNew
-                embedded
-                onSuccess={() => {
-                  refetch();
-                  setShowAddForm(false);
-                }}
-                onClose={() => setShowAddForm(false)}
-              />
+              <Suspense fallback={<div className="py-10 text-center text-sm text-muted-foreground">…</div>}>
+                <TradeFormNew
+                  embedded
+                  onSuccess={() => {
+                    refetch();
+                    setShowAddForm(false);
+                  }}
+                  onClose={() => setShowAddForm(false)}
+                />
+              </Suspense>
             </div>
           </DialogContent>
         </Dialog>

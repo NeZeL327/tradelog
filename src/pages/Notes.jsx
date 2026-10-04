@@ -1203,8 +1203,9 @@ export default function Notes() {
           flex: 1;
           min-height: calc(100vh - 20rem);
           padding: 1.25rem 1.5rem;
-          font-size: 15px;
-          line-height: 1.75;
+          font-family: "JetBrains Mono", ui-monospace, monospace;
+          font-size: 14px;
+          line-height: 1.7;
           outline: none;
         }
         .tiptap-notes-editor .ProseMirror h1 { font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem; }

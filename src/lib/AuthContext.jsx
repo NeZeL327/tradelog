@@ -289,7 +289,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToRegister = () => {
-    window.location.href = '/';
+    window.location.href = '/register';
   };
 
   return (
