@@ -13,12 +13,19 @@ export const MOOD_OPTIONS = [
   { id: "tired", pl: "Zmęczony", en: "Tired" },
 ];
 
+export const CHECKLIST_STAGES = [
+  { id: "plan", pl: "Plan", en: "Plan" },
+  { id: "trade", pl: "Handel", en: "Trade" },
+  { id: "review", pl: "Przegląd", en: "Review" },
+];
+
 export const DEFAULT_CHECKLIST = [
-  { key: "calendar", pl: "Sprawdziłem kalendarz i newsy", en: "I checked the calendar and news" },
-  { key: "levels", pl: "Wyznaczyłem poziomy", en: "I marked my levels" },
-  { key: "risk", pl: "Znam maksymalne ryzyko", en: "I know my max risk" },
-  { key: "setup", pl: "Setup jest potwierdzony", en: "Setup is confirmed" },
-  { key: "focus", pl: "Jestem skupiony i trzymam się planu", en: "I am focused and sticking to the plan" },
+  { key: "calendar", stage: "plan", pl: "Sprawdziłem kalendarz i newsy", en: "I checked the calendar and news" },
+  { key: "levels", stage: "plan", pl: "Wyznaczyłem poziomy", en: "I marked my levels" },
+  { key: "risk", stage: "plan", pl: "Znam maksymalne ryzyko", en: "I know my max risk" },
+  { key: "setup", stage: "trade", pl: "Setup jest potwierdzony", en: "Setup is confirmed" },
+  { key: "focus", stage: "trade", pl: "Jestem skupiony i trzymam się planu", en: "I am focused and sticking to the plan" },
+  { key: "journal", stage: "review", pl: "Uzupełniłem notatki z sesji", en: "I filled in session notes" },
 ];
 
 export const PROCESS_GOALS = [
@@ -67,8 +74,24 @@ export function defaultChecklist(language = "pl") {
   return DEFAULT_CHECKLIST.map((item) => ({
     id: createId(),
     text: language === "en" ? item.en : item.pl,
+    stage: item.stage || "plan",
     done: false,
     custom: false,
+  }));
+}
+
+export function checklistProgress(checklist = []) {
+  const total = checklist.length;
+  const done = checklist.filter((item) => item.done).length;
+  const open = checklist.filter((item) => !item.done);
+  return { total, done, open, ratio: total ? done / total : 0 };
+}
+
+export function groupChecklistByStage(checklist = [], language = "pl") {
+  return CHECKLIST_STAGES.map((stage) => ({
+    id: stage.id,
+    label: language === "en" ? stage.en : stage.pl,
+    items: checklist.filter((item) => (item.stage || "plan") === stage.id),
   }));
 }
 
@@ -140,6 +163,7 @@ export function applyTemplateToPlan(plan, template) {
     checklist: (template.checklist || []).map((item) => ({
       id: createId(),
       text: String(item.text || ""),
+      stage: item.stage || "plan",
       done: false,
       custom: !!item.custom,
     })),

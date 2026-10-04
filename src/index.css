@@ -4,8 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 1:1 scale. CSS zoom on #root clips scrollHeight in Chromium
-   (last section of long pages never becomes reachable). */
+/* Dense desktop UI without CSS zoom (zoom on #root clips scrollHeight). */
 html,
 body {
   height: 100%;
@@ -14,8 +13,18 @@ body {
   background-color: hsl(var(--app-shell));
 }
 
+/* 75% of default 16px — denser UI at browser 100% */
+@media (min-width: 1024px) {
+  html {
+    font-size: 12px;
+  }
+}
+
 #root {
   --app-zoom: 1;
+  /* Top bars + dock: small edge inset; main content: larger gutters */
+  --app-edge: 0.5rem;
+  --app-content-gutter: 2.5rem;
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -23,8 +32,40 @@ body {
   box-sizing: border-box;
   overflow: hidden;
   background-color: hsl(var(--app-shell));
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
+  padding-left: max(var(--app-edge), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--app-edge), env(safe-area-inset-right, 0px));
+}
+
+@media (min-width: 768px) {
+  #root {
+    --app-edge: 0.65rem;
+    --app-content-gutter: 4rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  #root {
+    --app-edge: 0.75rem;
+    --app-content-gutter: 7rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  #root {
+    --app-content-gutter: 10rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  #root {
+    --app-content-gutter: 14rem;
+  }
+}
+
+/* Middle content only — wider side margins */
+.app-content-pad {
+  padding-left: var(--app-content-gutter);
+  padding-right: var(--app-content-gutter);
 }
 
 @media (max-width: 1023px) {
@@ -44,6 +85,49 @@ body {
 }
 .app-h-scroll::-webkit-scrollbar {
   display: none;
+}
+
+.app-dock-pad {
+  /* Extra room for larger AppDock */
+  padding-bottom: calc(11rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Larger bottom dock — compensated for 75% root font */
+.app-dock-bar {
+  gap: 0.45rem;
+  padding: 0.7rem 0.95rem;
+  border-radius: 1.25rem;
+  max-width: min(100%, 1280px);
+}
+
+.app-dock-bar .app-dock-link {
+  min-width: 3.75rem;
+  padding: 0.55rem 0.85rem;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  border-radius: 0.9rem;
+}
+
+.app-dock-bar .app-dock-link svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.app-dock-bar .app-dock-sep {
+  height: 2.1rem;
+}
+
+/* Equal-height dashboard panel rows */
+.dash-row-equal > * {
+  min-height: 0;
+}
+@media (min-width: 1024px) {
+  .dash-row-equal {
+    align-items: stretch;
+  }
+  .dash-row-equal > * {
+    height: 100%;
+  }
 }
 
 @media (max-width: 767px) {
@@ -127,57 +211,57 @@ body {
   }
 
   .dark {
-    /* Stitch terminal surfaces, mapped onto existing AiKeepTrade tokens. */
-    --background: 222 32% 6.5%;
-    --foreground: 230 20% 91%;
-    --card: 226 14% 14%;
-    --card-foreground: 230 20% 91%;
-    --popover: 224 16% 11%;
-    --popover-foreground: 230 20% 91%;
+    /* SCR: deep navy shell, cyan accents, emerald profit, coral loss */
+    --background: 222 48% 6.5%;
+    --foreground: 210 40% 98%;
+    --card: 220 38% 10.5%;
+    --card-foreground: 210 40% 98%;
+    --popover: 220 40% 9%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 202 100% 78%;
-    --primary-foreground: 197 100% 14%;
+    --primary: 186 100% 52%;
+    --primary-foreground: 222 50% 6%;
 
-    --secondary: 224 12% 17%;
-    --secondary-foreground: 207 17% 82%;
-    --muted: 224 12% 16%;
-    --muted-foreground: 207 14% 68%;
+    --secondary: 220 30% 14%;
+    --secondary-foreground: 210 28% 84%;
+    --muted: 220 28% 13%;
+    --muted-foreground: 210 18% 64%;
 
-    --accent: 224 12% 18%;
-    --accent-foreground: 235 22% 90%;
+    --accent: 210 36% 15%;
+    --accent-foreground: 210 40% 96%;
 
-    --destructive: 6 100% 84%;
-    --destructive-foreground: 0 70% 14%;
+    --destructive: 4 90% 68%;
+    --destructive-foreground: 0 40% 12%;
 
-    --border: 205 12% 26%;
-    --input: 224 12% 18%;
-    --ring: 202 100% 78%;
-    --radius: 0.5rem;
+    --border: 210 32% 20%;
+    --input: 220 30% 13%;
+    --ring: 186 100% 52%;
+    --radius: 0.75rem;
 
-    --profit: 155 73% 62%;
-    --loss: 6 100% 84%;
-    --warning: 38 72% 58%;
-    --surface-2: 224 12% 17%;
+    --profit: 142 90% 48%;
+    --loss: 0 90% 66%;
+    --warning: 38 78% 58%;
+    --surface-2: 220 32% 12%;
 
-    --chart-1: 202 100% 78%;
-    --chart-2: 155 73% 62%;
-    --chart-3: 6 100% 84%;
-    --chart-4: 207 14% 68%;
-    --chart-5: 38 72% 58%;
+    --chart-1: 186 100% 52%;
+    --chart-2: 142 90% 48%;
+    --chart-3: 0 90% 66%;
+    --chart-4: 210 18% 64%;
+    --chart-5: 38 78% 58%;
 
-    --app-shell: 222 31% 6%;
-    --sidebar-background: 222 31% 6%;
-    --sidebar-foreground: 207 17% 82%;
-    --sidebar-primary: 202 100% 78%;
-    --sidebar-primary-foreground: 197 100% 14%;
-    --sidebar-accent: 222 14% 16%;
-    --sidebar-accent-foreground: 235 22% 90%;
-    --sidebar-border: 205 12% 22%;
-    --sidebar-ring: 202 100% 78%;
+    --app-shell: 220 55% 5%;
+    --sidebar-background: 220 55% 5%;
+    --sidebar-foreground: 210 28% 84%;
+    --sidebar-primary: 186 100% 52%;
+    --sidebar-primary-foreground: 222 50% 6%;
+    --sidebar-accent: 220 30% 13%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 210 28% 17%;
+    --sidebar-ring: 186 100% 52%;
 
-    --window-bg: 226 14% 14%;
-    --window-border: 206 12% 28%;
-    --window-shadow: 0 0 0 1px hsl(210 14% 28% / 0.35);
+    --window-bg: 220 38% 10.5%;
+    --window-border: 210 40% 22%;
+    --window-shadow: 0 0 0 1px hsl(199 80% 50% / 0.12);
   }
 }
 
@@ -338,10 +422,14 @@ h1, h2, h3 {
 }
 
 /* Monospaced numbers for financial data */
-.tabular-nums,
 .font-mono {
   font-family: "JetBrains Mono", ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
 }
 
 table td {
@@ -383,16 +471,16 @@ html.dark .sidebar-active::before {
 
 /* ===== STAT CARD ===== */
 .ocean-stat-card {
-  border: 1px solid hsl(var(--border));
+  border: 1px solid hsl(var(--border) / 0.5);
   background: hsl(var(--card));
-  border-radius: 8px;
+  border-radius: 12px;
   box-shadow: none;
-  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  transition: border-color 160ms ease, background 160ms ease;
 }
 
 html.dark .ocean-stat-card {
   background: hsl(var(--window-bg));
-  border: 1px solid hsl(var(--window-border));
+  border: 1px solid hsl(var(--window-border) / 0.9);
   box-shadow: var(--window-shadow);
 }
 
@@ -412,7 +500,7 @@ html.dark .ocean-stat-card {
 .ocean-stat-card [class*="CardContent"] {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .ocean-stat-card .flex.items-start.justify-between {
@@ -428,8 +516,8 @@ html.dark .ocean-stat-card {
 @media (min-width: 1024px) {
   .dashboard-kpi-row {
     background: hsl(var(--window-bg, var(--card)));
-    border: 1px solid hsl(var(--window-border, var(--border)));
-    border-radius: 8px;
+    border: 1px solid hsl(var(--window-border) / 0.95);
+    border-radius: 12px;
     overflow: hidden;
     gap: 0 !important;
     box-shadow: var(--window-shadow, none);
@@ -439,11 +527,132 @@ html.dark .ocean-stat-card {
     border-radius: 0 !important;
     box-shadow: none !important;
     background: transparent !important;
-    border-right: 1px solid hsl(0 0% 100% / 0.06) !important;
+    border-right: 1px solid hsl(var(--window-border) / 0.75) !important;
   }
   .dashboard-kpi-row > .ocean-stat-card:last-child {
     border-right: none !important;
   }
+}
+
+/* ===== APP SCR LOOK (Layout main.dash-scr — wszystkie strony app) ===== */
+html.dark .dash-scr {
+  --dash-gap: 0.5rem;
+}
+
+html.dark .dash-scr .cyber-panel,
+html.dark .dash-scr .ocean-stat-card {
+  border-radius: 10px;
+  border-color: hsl(var(--window-border) / 0.95);
+  background: hsl(var(--window-bg));
+}
+
+html.dark .dash-scr .dash-chip-up {
+  background: hsl(var(--profit) / 0.16);
+  color: hsl(var(--profit));
+  border-radius: 5px;
+  padding: 0.1rem 0.35rem;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+html.dark .dash-scr .dash-chip-down {
+  background: hsl(var(--loss) / 0.16);
+  color: hsl(var(--loss));
+  border-radius: 5px;
+  padding: 0.1rem 0.35rem;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+html.dark .dash-scr .cyber-page-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: hsl(var(--foreground));
+}
+
+html.dark .dash-scr .dash-page-sub {
+  color: hsl(var(--primary) / 0.85);
+  font-size: 0.72rem;
+}
+
+html.dark .dash-scr .dash-panel-title {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: hsl(var(--foreground));
+}
+
+/* Secondary panels use same title scale as SCR (not tiny uppercase) */
+html.dark .dash-scr .cyber-panel-title {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: hsl(var(--foreground));
+}
+
+html.dark .dash-scr .data-mono {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Compact, consistent filter controls */
+html.dark .dash-scr .dash-ctrl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.7rem;
+  border-radius: 0.45rem;
+  background: hsl(var(--window-bg));
+  border-color: hsl(var(--window-border) / 0.9);
+  font-size: 0.68rem;
+  color: hsl(var(--foreground));
+}
+
+html.dark .dash-scr .dash-period-chip {
+  height: 1.45rem;
+  border-radius: 0.35rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+}
+
+html.dark .dash-scr .dashboard-kpi-row .data-mono {
+  font-size: 1.05rem;
+}
+
+html.dark .dash-scr .ocean-stat-card,
+html.dark .dash-scr .cyber-panel {
+  border-radius: 10px;
+}
+
+html.dark .dash-scr .cyber-gauge {
+  min-height: 72px;
+  border-radius: 10px;
+  background: hsl(var(--window-bg));
+  border-color: hsl(var(--window-border) / 0.9);
+}
+
+html.dark .dash-scr .cyber-gauge-value {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.95rem;
+}
+
+html.dark .dash-scr .cyber-stat-strip {
+  gap: 0.5rem;
+}
+
+html.dark .dash-scr .cyber-stat-tile {
+  border-radius: 10px;
+  background: hsl(var(--window-bg));
+  border-color: hsl(var(--window-border) / 0.9);
 }
 
 .ocean-ring::after {
@@ -487,12 +696,39 @@ html.dark .ocean-stat-card {
   opacity: 0.45;
 }
 
+/* Trading calendar — SCR: even cells, tinted P&L days, cyan selection */
+.dash-cal-grid {
+  min-height: 0;
+  grid-auto-rows: minmax(1.75rem, 1fr);
+}
+
+.dash-cal-day {
+  min-height: 1.75rem;
+  width: 100%;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+
+html.dark .dash-scr .dash-cal-day:hover {
+  border-color: hsl(var(--primary) / 0.25);
+}
+
+html.dark .dashboard-kpi-row {
+  background: hsl(var(--window-bg)) !important;
+  border-color: hsl(var(--window-border) / 0.9) !important;
+  box-shadow: var(--window-shadow);
+}
+
+html.dark .dashboard-kpi-row > .ocean-stat-card {
+  border-right-color: hsl(var(--window-border) / 0.7) !important;
+}
+
 /* ===== MINI CALENDAR (Journal date picker) ===== */
 .mini-calendar-day {
-  min-height: 44px !important;
+  min-height: 36px !important;
   border: 1px solid hsl(var(--border)) !important;
   border-radius: var(--radius) !important;
-  padding: 6px !important;
+  padding: 4px !important;
   background: hsl(var(--card)) !important;
   box-shadow: none !important;
   cursor: pointer !important;
@@ -734,8 +970,8 @@ html.dark main.cyber-dashboard select:focus {
 
 /* ===== CYBER PAGE SHELL (tytuły, CTA, wykresy — spójnie z Dashboardem) ===== */
 .cyber-page-title {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.35rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: hsl(var(--foreground));
   margin-bottom: 0.2rem;
@@ -743,14 +979,18 @@ html.dark main.cyber-dashboard select:focus {
 }
 
 html.dark .cyber-page-title {
-  color: #fff;
+  color: hsl(var(--foreground));
   text-shadow: none;
 }
 
 .cyber-page-sub {
   color: hsl(var(--muted-foreground));
-  font-size: 0.8125rem;
-  line-height: 1.4;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+html.dark .cyber-page-sub {
+  color: hsl(var(--primary) / 0.85);
 }
 
 main.cyber-dashboard .cyber-primary-btn {
@@ -838,20 +1078,36 @@ html.dark main.cyber-dashboard .calendar-day-today:not(.calendar-day-selected) {
 
 .cyber-columns-grid {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.65rem;
   grid-template-columns: 1fr;
   grid-template-areas:
     "center"
     "left"
     "right";
+  align-items: stretch;
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1100px) {
   .cyber-columns-grid {
-    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(240px, 300px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1fr);
     grid-template-areas: "left center right";
-    align-items: start;
+    align-items: stretch;
   }
+}
+
+@media (min-width: 1400px) {
+  .cyber-columns-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  }
+}
+
+.cyber-col-left,
+.cyber-col-center,
+.cyber-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-height: 0;
 }
 
 .cyber-col-left {
@@ -864,19 +1120,35 @@ html.dark main.cyber-dashboard .calendar-day-today:not(.calendar-day-selected) {
   grid-area: right;
 }
 
+/* Last panel in each column fills remaining height — even bottom edge */
+.cyber-col-left > :last-child,
+.cyber-col-center > :last-child,
+.cyber-col-right > :last-child {
+  flex: 1 1 auto;
+  min-height: 220px;
+}
+
+.cyber-grow-chart {
+  flex: 1 1 auto;
+  min-height: 140px;
+  max-height: 220px;
+  width: 100%;
+  height: 100%;
+}
+
 .cyber-panel {
-  border: 1px solid hsl(var(--border));
+  border: 1px solid hsl(var(--border) / 0.55);
   background: hsl(var(--card));
-  border-radius: 8px;
+  border-radius: 12px;
   position: relative;
   box-shadow: none;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  transition: border-color 150ms ease, background 150ms ease;
   contain: layout style;
 }
 
 html.dark .cyber-panel {
   background: hsl(var(--window-bg));
-  border: 1px solid hsl(var(--window-border));
+  border: 1px solid hsl(var(--window-border) / 0.9);
   box-shadow: var(--window-shadow);
 }
 
@@ -898,9 +1170,9 @@ html.dark .cyber-panel-hero {
 
 html.dark .cyber-panel-title {
   color: hsl(var(--muted-foreground));
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
   font-size: 10px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 
 .cyber-hero {
@@ -952,15 +1224,15 @@ html.dark .cyber-hero {
 }
 
 .cyber-day-panel {
-  background: hsl(var(--muted) / 0.35);
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
+  background: hsl(var(--muted) / 0.28);
+  border: 1px solid hsl(var(--border) / 0.4);
+  border-radius: 12px;
 }
 
 html.dark .cyber-day-panel {
-  background: hsl(var(--window-bg));
-  border: 1px solid hsl(var(--window-border));
-  box-shadow: var(--window-shadow);
+  background: hsl(var(--card) / 0.45);
+  border: 1px solid hsl(var(--border) / 0.35);
+  box-shadow: none;
 }
 
 .cyber-day-trade {
@@ -2390,7 +2662,7 @@ select,
 }
 
 html.dark [data-sidebar="sidebar"] {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
 }
 
 html.dark [data-sidebar="group"]:first-of-type [data-sidebar="group-label"] {
@@ -2403,23 +2675,23 @@ html.dark [data-sidebar="group-label"] {
   margin-top: 0.75rem;
   margin-bottom: 0 !important;
   padding: 4px 8px !important;
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   line-height: 14px !important;
-  letter-spacing: 0.08em !important;
+  letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   color: #87929a !important;
 }
 
 html.dark [data-sidebar="menu-button"] {
   height: 30px !important;
-  border-radius: 4px !important;
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
-  font-size: 12px !important;
+  border-radius: 8px !important;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
   line-height: 16px !important;
-  letter-spacing: 0.01em !important;
+  letter-spacing: -0.01em !important;
   color: #bdc8d1 !important;
 }
 
@@ -2502,13 +2774,13 @@ html.dark main.cyber-dashboard table td {
   padding-bottom: 0.45rem;
 }
 
-html.dark .cyber-stat-value,
-html.dark .type-metric,
-html.dark .tabular-nums {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-}
-
-/* Terminal windows — type and chrome across the app. Layout stays. */
+/* UI: Inter. Trading figures: JetBrains Mono only on explicit metric classes. */
+html.dark,
+html.dark body,
+html.dark button,
+html.dark input,
+html.dark textarea,
+html.dark select,
 html.dark h1,
 html.dark h2,
 html.dark h3,
@@ -2518,22 +2790,25 @@ html.dark [role="menu"],
 html.dark .cyber-page-title,
 html.dark .cyber-page-sub,
 html.dark .cyber-hero-heading,
-html.dark .cyber-hero-sub {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+html.dark .cyber-hero-sub,
+html.dark .cyber-panel-title,
+html.dark .cyber-stat-label,
+html.dark table th {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
 }
 
-html.dark .tabular-nums,
+html.dark .type-metric,
 html.dark .font-mono,
+html.dark .cyber-stat-value,
 html.dark .cyber-stat-value-win,
 html.dark .cyber-stat-value-loss,
 html.dark .cyber-stat-value-cyan,
-html.dark .ocean-stat-card .text-xl,
-html.dark .ocean-stat-card .text-2xl,
-html.dark main .text-2xl.font-bold,
-html.dark main .text-3xl.font-bold,
-html.dark main .text-xl.font-bold,
-html.dark table td,
-html.dark table th {
+html.dark .data-mono,
+html.dark .session-clock,
+html.dark table td.tabular-nums,
+html.dark .tabular-nums.data-mono,
+html.dark .ocean-stat-card .tabular-nums,
+html.dark .cyber-stat-tile .tabular-nums {
   font-family: "JetBrains Mono", ui-monospace, monospace !important;
   font-variant-numeric: tabular-nums;
 }
@@ -2543,25 +2818,20 @@ html.dark .cyber-stat-label,
 html.dark .ocean-stat-card .uppercase,
 html.dark .text-\[10px\].uppercase,
 html.dark table th {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
   font-size: 10px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.12em !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   color: hsl(207 10% 62%) !important;
 }
 
 html.dark .ocean-stat-card .tabular-nums,
 html.dark .cyber-stat-tile .tabular-nums {
-  font-size: 1.45rem;
+  font-size: 1.35rem;
   font-weight: 600;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
   line-height: 1.15;
-}
-
-html.dark .ocean-stat-card > div,
-html.dark .cyber-stat-tile > div {
-  padding: 0.8rem 0.9rem !important;
 }
 
 html.dark main .bg-card,
@@ -2569,9 +2839,9 @@ html.dark .ocean-stat-card,
 html.dark .cyber-stat-tile,
 html.dark .cyber-panel,
 html.dark .report-card {
-  background: hsl(var(--card)) !important;
-  border: 1px solid hsl(var(--border)) !important;
-  border-radius: 8px !important;
+  background: hsl(var(--card) / 0.78) !important;
+  border: 1px solid hsl(var(--border) / 0.42) !important;
+  border-radius: 12px !important;
   box-shadow: none !important;
 }
 
@@ -2579,18 +2849,20 @@ html.dark [role="dialog"],
 html.dark [role="alertdialog"] {
   background: hsl(var(--card)) !important;
   color: hsl(var(--foreground)) !important;
-  border: 1px solid hsl(var(--border)) !important;
-  border-radius: 8px !important;
+  border: 1px solid hsl(var(--border) / 0.55) !important;
+  border-radius: 12px !important;
   box-shadow: 0 28px 60px hsl(222 50% 2% / 0.55) !important;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
 }
 
 html.dark [role="menu"],
 html.dark [data-radix-popper-content-wrapper] > * {
   background: hsl(var(--popover)) !important;
   color: hsl(var(--foreground));
-  border-color: hsl(var(--border)) !important;
-  border-radius: 8px !important;
+  border-color: hsl(var(--border) / 0.55) !important;
+  border-radius: 10px !important;
   box-shadow: 0 16px 40px hsl(222 50% 2% / 0.5) !important;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
 }
 
 html.dark [class*="bg-black\/60"] {
@@ -2599,43 +2871,10 @@ html.dark [class*="bg-black\/60"] {
 
 html.dark .recharts-default-tooltip,
 html.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
   background: hsl(var(--popover)) !important;
-  border: 1px solid hsl(var(--border)) !important;
-  border-radius: 8px !important;
-}
-
-/* Dark UI, menus, quotes and dialogs share the metric font. */
-html.dark body * {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
-}
-
-html.dark [role="menu"],
-html.dark [role="menu"] *,
-html.dark [role="listbox"],
-html.dark [role="listbox"] *,
-html.dark [role="menuitem"],
-html.dark [role="menuitemcheckbox"],
-html.dark [role="menuitemradio"],
-html.dark [role="option"],
-html.dark [data-radix-popper-content-wrapper],
-html.dark [data-radix-popper-content-wrapper] *,
-html.dark [data-radix-select-viewport],
-html.dark [data-radix-select-viewport] *,
-html.dark [cmdk-root],
-html.dark [cmdk-root] *,
-html.dark [cmdk-item],
-html.dark [cmdk-input],
-html.dark [cmdk-group-heading],
-html.dark [data-radix-accordion-content],
-html.dark [data-radix-accordion-content] *,
-html.dark [data-radix-collapsible-content],
-html.dark [data-radix-collapsible-content] *,
-html.dark [role="dialog"],
-html.dark [role="dialog"] *,
-html.dark [role="alertdialog"],
-html.dark [role="alertdialog"] * {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  border: 1px solid hsl(var(--border) / 0.55) !important;
+  border-radius: 10px !important;
 }
 
 html.dark [role="menuitem"],
@@ -2643,8 +2882,8 @@ html.dark [role="menuitemcheckbox"],
 html.dark [role="menuitemradio"],
 html.dark [role="option"],
 html.dark [cmdk-item],
-html.dark [data-radix-collection-item],
-html.dark button[aria-expanded] {
+html.dark [data-radix-collection-item] {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   letter-spacing: -0.011em !important;
@@ -2653,40 +2892,12 @@ html.dark button[aria-expanded] {
 html.dark [cmdk-group-heading],
 html.dark [role="menu"] [role="presentation"],
 html.dark [data-radix-select-label] {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
   font-size: 10px !important;
   font-weight: 600 !important;
-  letter-spacing: 0.14em !important;
+  letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
   color: hsl(207 10% 62%) !important;
-}
-
-html.dark .tabular-nums,
-html.dark .tabular-nums *,
-html.dark .font-mono,
-html.dark .font-mono *,
-html.dark .type-metric,
-html.dark .type-metric *,
-html.dark .cyber-stat-value-win,
-html.dark .cyber-stat-value-loss,
-html.dark .cyber-stat-value-cyan,
-html.dark .cyber-panel-title,
-html.dark .cyber-stat-label,
-html.dark .ocean-stat-card .uppercase,
-html.dark table th,
-html.dark table td,
-html.dark [role="dialog"] .tabular-nums,
-html.dark [role="dialog"] .tabular-nums *,
-html.dark [role="dialog"] .font-mono,
-html.dark [role="dialog"] .font-mono *,
-html.dark [role="dialog"] table th,
-html.dark [role="dialog"] table td,
-html.dark [role="menu"] .tabular-nums,
-html.dark [role="menu"] .font-mono,
-html.dark [data-radix-popper-content-wrapper] .tabular-nums,
-html.dark [data-radix-popper-content-wrapper] .tabular-nums *,
-html.dark [data-radix-popper-content-wrapper] .font-mono,
-html.dark [data-radix-popper-content-wrapper] .font-mono * {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
 }
 
 /* Sidebar matches the reference rail: mono group labels, blue active row. */
@@ -2698,11 +2909,11 @@ html.dark .cyber-app-sidebar [data-sidebar="sidebar"] {
 }
 
 html.dark .cyber-app-sidebar [data-sidebar="group-label"] {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   line-height: 14px !important;
-  letter-spacing: 0.08em !important;
+  letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   color: #87929a !important;
 }
@@ -2710,10 +2921,10 @@ html.dark .cyber-app-sidebar [data-sidebar="group-label"] {
 html.dark .cyber-app-sidebar [data-sidebar="menu-button"],
 html.dark .cyber-app-sidebar [data-sidebar="menu-button"] span,
 html.dark .cyber-app-sidebar [data-sidebar="menu-button"] * {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
-  font-size: 12px !important;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
-  letter-spacing: 0.01em !important;
+  letter-spacing: -0.01em !important;
   line-height: 16px !important;
   color: #bdc8d1 !important;
 }
@@ -2736,45 +2947,157 @@ html.dark .cyber-app-sidebar [data-sidebar="menu-button"] svg {
   height: 18px !important;
 }
 
-html.dark svg text,
-html.dark .recharts-text,
-html.dark .recharts-label,
 html.dark .recharts-cartesian-axis-tick-value,
-html.dark .recharts-legend-item-text,
-html.dark .recharts-tooltip-item,
+html.dark .recharts-tooltip-item {
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+}
+
 html.dark .rdp,
 html.dark .rdp *,
 html.dark .tiptap-notes-editor,
 html.dark .tiptap-notes-editor .ProseMirror,
-html.dark .tiptap-notes-editor .ProseMirror *,
 html.dark [data-sonner-toaster],
-html.dark [data-sonner-toaster] *,
-html.dark [data-sonner-toast],
-html.dark [data-sonner-toast] * {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+html.dark [data-sonner-toast] {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
 }
 
-/* Filters, account menus, months, date range — same mono as KPI labels. */
 html.dark main button,
-html.dark main button *,
-html.dark main select,
 html.dark main input,
 html.dark main textarea,
+html.dark main select,
 html.dark main [role="combobox"],
-html.dark main [role="combobox"] *,
 html.dark header button,
-html.dark header button *,
-html.dark [data-radix-popper-content-wrapper],
-html.dark [data-radix-popper-content-wrapper] *,
-html.dark [role="listbox"],
-html.dark [role="listbox"] *,
-html.dark [role="menu"],
-html.dark [role="menu"] *,
 html.dark [role="dialog"] button,
-html.dark [role="dialog"] button *,
-html.dark [role="dialog"] input,
-html.dark [role="dialog"] select,
-html.dark [role="dialog"] [role="combobox"],
-html.dark [role="dialog"] [role="combobox"] * {
+html.dark [role="dialog"] input {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+}
+
+/* ===== APP SCR GLOBAL (po terminal squeeze — spójność wszystkich stron) ===== */
+html.dark main.cyber-dashboard.dash-scr .cyber-page-title {
+  font-size: 1.35rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.25 !important;
+  color: hsl(var(--foreground)) !important;
+  text-shadow: none !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr .cyber-page-sub,
+html.dark main.cyber-dashboard.dash-scr .dash-page-sub {
+  color: hsl(var(--primary) / 0.85) !important;
+  font-size: 0.72rem !important;
+  line-height: 1.35 !important;
+  font-weight: 500 !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr .cyber-panel-title,
+html.dark main.cyber-dashboard.dash-scr .dash-panel-title {
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+  text-transform: none !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr .cyber-panel,
+html.dark main.cyber-dashboard.dash-scr .ocean-stat-card,
+html.dark main.cyber-dashboard.dash-scr .cyber-stat-tile,
+html.dark main.cyber-dashboard.dash-scr .report-card,
+html.dark main.cyber-dashboard.dash-scr .cyber-gauge,
+html.dark main.cyber-dashboard.dash-scr div.border.bg-card:not(button):not([role="combobox"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="h-11"]) {
+  background: hsl(var(--window-bg)) !important;
+  border: 1px solid hsl(var(--window-border) / 0.95) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--window-shadow) !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr .data-mono {
   font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-variant-numeric: tabular-nums;
+}
+
+html.dark main.cyber-dashboard.dash-scr .ocean-stat-card .tabular-nums,
+html.dark main.cyber-dashboard.dash-scr .cyber-stat-tile .tabular-nums,
+html.dark main.cyber-dashboard.dash-scr .dashboard-kpi-row .data-mono {
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.15 !important;
+}
+
+/* Dense metric scale (SCR) — bez hero marketingowych */
+html.dark main.cyber-dashboard.dash-scr .text-4xl {
+  font-size: 1.6rem !important;
+  line-height: 1.15 !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr .text-3xl {
+  font-size: 1.35rem !important;
+  line-height: 1.2 !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr .text-2xl {
+  font-size: 1.15rem !important;
+  line-height: 1.2 !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr .text-xl {
+  font-size: 1.05rem !important;
+  line-height: 1.25 !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr .text-profit,
+html.dark main.cyber-dashboard.dash-scr .text-emerald-400,
+html.dark main.cyber-dashboard.dash-scr .text-emerald-500 {
+  color: hsl(var(--profit)) !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr .text-loss,
+html.dark main.cyber-dashboard.dash-scr .text-red-400,
+html.dark main.cyber-dashboard.dash-scr .text-red-500 {
+  color: hsl(var(--loss)) !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr .cyber-primary-btn {
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 0.78rem !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr [role="tablist"] {
+  border-radius: 8px !important;
+  background: hsl(var(--window-bg)) !important;
+  border: 1px solid hsl(var(--window-border) / 0.85) !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr [role="tab"] {
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr [role="tab"][data-state="active"] {
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--primary) / 0.14) !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr input[type="text"],
+html.dark main.cyber-dashboard.dash-scr input[type="number"],
+html.dark main.cyber-dashboard.dash-scr input[type="search"],
+html.dark main.cyber-dashboard.dash-scr input[type="email"],
+html.dark main.cyber-dashboard.dash-scr input[type="password"],
+html.dark main.cyber-dashboard.dash-scr textarea,
+html.dark main.cyber-dashboard.dash-scr select,
+html.dark main.cyber-dashboard.dash-scr [role="combobox"] {
+  border-radius: 6px !important;
+  font-size: 0.78rem !important;
+}
+
+html.dark main.cyber-dashboard.dash-scr table thead th {
+  font-size: 0.62rem !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  color: hsl(var(--muted-foreground)) !important;
 }

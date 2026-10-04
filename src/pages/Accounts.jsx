@@ -148,7 +148,7 @@ export default function Accounts() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1">
             <h1 className="cyber-page-title">Konta tradingowe</h1>
-            <p className="cyber-page-sub text-sm">Zarządzaj swoimi kontami handlowymi</p>
+            <p className="cyber-page-sub">Zarządzaj swoimi kontami handlowymi</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <QuoteLine className="hidden lg:flex shrink-0" />

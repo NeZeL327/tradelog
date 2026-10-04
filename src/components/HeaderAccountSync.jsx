@@ -118,7 +118,10 @@ export default function HeaderAccountSync() {
 
   const chooseAccount = (value) => {
     setAccountId(value);
-    if (user?.id) localStorage.setItem(storageKey(user.id), value);
+    if (user?.id) {
+      localStorage.setItem(storageKey(user.id), value);
+      window.dispatchEvent(new Event("storage"));
+    }
   };
 
   const refreshTrades = () => {
@@ -184,7 +187,7 @@ export default function HeaderAccountSync() {
   const menuWidthStyle = { width: menuWidth, minWidth: menuWidth, maxWidth: menuWidth };
 
   return (
-    <div className="header-cluster hidden h-8 items-center gap-0.5 md:flex">
+    <div className="header-cluster flex h-8 items-center gap-0.5">
       <Select
         value={accountId || undefined}
         onValueChange={chooseAccount}
@@ -198,7 +201,7 @@ export default function HeaderAccountSync() {
           aria-label="Konto do importu"
           onPointerDown={prepareMenuOffset}
           style={widthStyle}
-          className="h-7 shrink-0 justify-start border-0 bg-transparent px-2 pr-7 text-left text-[12px] font-mono shadow-none focus:ring-0 focus:ring-offset-0 [&>span]:line-clamp-none [&>span]:w-auto [&>span]:max-w-none [&>span]:flex-1 [&>span]:overflow-visible [&>span]:whitespace-nowrap [&>span]:pr-0 [&>span]:text-left"
+          className="h-7 shrink-0 justify-start border-0 bg-transparent px-2 pr-7 text-left text-[12px] font-medium shadow-none focus:ring-0 focus:ring-offset-0 [&>span]:line-clamp-none [&>span]:w-auto [&>span]:max-w-none [&>span]:flex-1 [&>span]:overflow-visible [&>span]:whitespace-nowrap [&>span]:pr-0 [&>span]:text-left"
         >
           <SelectValue placeholder="Konto" />
         </SelectTrigger>

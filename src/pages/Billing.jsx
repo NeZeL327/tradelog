@@ -210,8 +210,8 @@ export default function Billing() {
 
         {/* Header */}
         <div className="text-center pt-2 pb-2">
-          <h1 className="cyber-page-title text-2xl">{t("billingTitle")}</h1>
-          <p className="cyber-page-sub text-sm">{t("billingSubtitle")}</p>
+          <h1 className="cyber-page-title">{t("billingTitle")}</h1>
+          <p className="cyber-page-sub">{t("billingSubtitle")}</p>
         </div>
 
         {/* Status banner */}

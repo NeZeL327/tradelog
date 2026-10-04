@@ -9,9 +9,14 @@ const CLOCKS = [
 
 function zoneHour(now, timeZone) {
   try {
-    return Number(
-      new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", hour12: false }).format(now)
-    );
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      hour: "2-digit",
+      hour12: false,
+      hourCycle: "h23",
+    }).formatToParts(now);
+    const h = Number(parts.find((p) => p.type === "hour")?.value);
+    return Number.isFinite(h) && h >= 0 && h <= 23 ? h : -1;
   } catch {
     return -1;
   }
@@ -19,12 +24,28 @@ function zoneHour(now, timeZone) {
 
 function formatTime(date, timeZone, use12h) {
   try {
-    return new Intl.DateTimeFormat(use12h ? "en-US" : "pl-PL", {
+    // formatToParts avoids locale quirks (e.g. bogus "66:xx" on some Windows locales)
+    if (use12h) {
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }).format(date);
+    }
+    const parts = new Intl.DateTimeFormat("en-GB", {
       timeZone,
       hour: "2-digit",
       minute: "2-digit",
-      hour12: use12h,
-    }).format(date);
+      hour12: false,
+      hourCycle: "h23",
+    }).formatToParts(date);
+    const hour = parts.find((p) => p.type === "hour")?.value;
+    const minute = parts.find((p) => p.type === "minute")?.value;
+    if (!hour || !minute) return "--:--";
+    const hNum = Number(hour);
+    if (!Number.isFinite(hNum) || hNum < 0 || hNum > 23) return "--:--";
+    return `${String(hNum).padStart(2, "0")}:${minute.padStart(2, "0")}`;
   } catch {
     return "--:--";
   }
@@ -88,14 +109,14 @@ export default function SessionClocks() {
             >
               <span
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                  open ? "bg-primary" : "bg-muted-foreground/35"
+                  open ? "bg-profit" : "bg-muted-foreground/35"
                 }`}
                 aria-hidden
               />
               <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {clock.label}
               </span>
-              <span className="text-[11px] font-medium tabular-nums text-foreground">
+              <span className="data-mono text-[11px] font-medium tabular-nums text-foreground">
                 {formatTime(now, clock.zone, prefs.use12h)}
               </span>
             </div>

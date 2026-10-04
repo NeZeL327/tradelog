@@ -20,10 +20,13 @@ import { createPageUrl } from "@/utils";
 import {
   applyTemplateToPlan,
   createId,
+  CHECKLIST_STAGES,
+  checklistProgress,
   DAY_PLAN_STATUSES,
   DAY_PLAN_STATUS_LABELS,
   emptyDayPlan,
   formatIsoDisplay,
+  groupChecklistByStage,
   MOOD_OPTIONS,
   planHasContent,
   planToTemplatePayload,
@@ -113,6 +116,7 @@ export default function DayPlan() {
   const [savedAt, setSavedAt] = useState(null);
   const [quickNote, setQuickNote] = useState("");
   const [newCheckItem, setNewCheckItem] = useState("");
+  const [newCheckStage, setNewCheckStage] = useState("plan");
   const [templateName, setTemplateName] = useState("");
   const [historyFilters, setHistoryFilters] = useState({ accountId: "all", status: "all", from: "", to: "" });
   const [confirm, setConfirm] = useState(null);
@@ -310,14 +314,14 @@ export default function DayPlan() {
   }
 
   return (
-    <div className="space-y-4 pb-28">
+    <div className="space-y-4 pb-2">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground flex items-center gap-2">
-            <CalendarCheck2 className="h-6 w-6 text-primary" />
+          <h1 className="cyber-page-title mb-0.5 flex items-center gap-2">
+            <CalendarCheck2 className="h-5 w-5 text-primary" />
             {t("dayPlan") || "Plan dnia"}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="cyber-page-sub">
             {t("dayPlanSubtitle") || "Przygotuj sesję, monitoruj plan i wyciągnij wnioski."}
           </p>
         </div>
@@ -408,6 +412,38 @@ export default function DayPlan() {
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 {t("dayPlanNew") || "Nowy plan"}
               </Button>
+              {plan && activeAccounts.length > 0 ? (
+                <>
+                  <span className="mx-0.5 hidden h-5 w-px bg-border sm:inline" aria-hidden />
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => persist(plan)}
+                  >
+                    <Save className="mr-1 h-3.5 w-3.5" />
+                    {t("dayPlanSave") || "Zapisz plan"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => persist({ ...plan, status: "ready" })}
+                  >
+                    {t("dayPlanMarkReady") || "Oznacz jako gotowy"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => persist({ ...plan, status: "active" })}
+                  >
+                    {t("dayPlanStartSession") || "Rozpocznij sesję"}
+                  </Button>
+                </>
+              ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex items-center gap-1 rounded-md border border-border p-0.5">
@@ -506,94 +542,165 @@ export default function DayPlan() {
                   ))}
                 </SectionCard>
 
-                <SectionCard title={t("dayPlanChecklist") || "Checklista przed wejściem"}>
-                  <div className="space-y-2">
-                    {(plan.checklist || []).map((item) => (
-                      <div key={item.id} className="flex items-start gap-2 rounded-md border border-border/70 px-2 py-1.5">
-                        <Checkbox
-                          checked={!!item.done}
-                          onCheckedChange={(checked) =>
-                            patchPlan((prev) => ({
-                              ...prev,
-                              checklist: prev.checklist.map((row) =>
-                                row.id === item.id ? { ...row, done: !!checked } : row
-                              ),
-                            }))
-                          }
-                          className="mt-0.5"
-                        />
-                        <Input
-                          value={item.text}
-                          onChange={(e) =>
-                            patchPlan((prev) => ({
-                              ...prev,
-                              checklist: prev.checklist.map((row) =>
-                                row.id === item.id ? { ...row, text: e.target.value, custom: true } : row
-                              ),
-                            }))
-                          }
-                          className="h-8 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 shrink-0 text-muted-foreground"
-                          onClick={() =>
-                            patchPlan((prev) => ({
-                              ...prev,
-                              checklist: prev.checklist.filter((row) => row.id !== item.id),
-                            }))
-                          }
-                          aria-label={t("delete") || "Usuń"}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                <SectionCard title={t("dayPlanChecklist") || "Checklista dnia"}>
+                  {(() => {
+                    const progress = checklistProgress(plan.checklist || []);
+                    const stages = groupChecklistByStage(plan.checklist || [], lang);
+                    const addItem = () => {
+                      if (!newCheckItem.trim()) return;
+                      patchPlan((prev) => ({
+                        ...prev,
+                        checklist: [
+                          ...(prev.checklist || []),
+                          {
+                            id: createId(),
+                            text: newCheckItem.trim(),
+                            stage: newCheckStage,
+                            done: false,
+                            custom: true,
+                          },
+                        ],
+                      }));
+                      setNewCheckItem("");
+                    };
+                    return (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
+                          <div>
+                            <p className="text-[11px] text-muted-foreground">{t("dayPlanProgress") || "Postęp realizacji"}</p>
+                            <p className="text-sm font-semibold tabular-nums">
+                              {progress.done} / {progress.total}
+                            </p>
+                          </div>
+                            <div className="h-1.5 w-28 overflow-hidden rounded-full bg-primary/15">
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${progress.ratio * 100}%` }} />
+                          </div>
+                        </div>
+
+                        {stages.map((stage) => (
+                          <div key={stage.id} className="space-y-2">
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-300/90">
+                              {stage.label}
+                            </p>
+                            {(stage.items || []).length === 0 && (
+                              <p className="text-[11px] text-muted-foreground">{t("dayPlanStageEmpty") || "Brak punktów w tym etapie"}</p>
+                            )}
+                            {stage.items.map((item) => (
+                              <div key={item.id} className="flex items-start gap-2 rounded-md border border-border/70 px-2 py-1.5">
+                                <Checkbox
+                                  checked={!!item.done}
+                                  onCheckedChange={(checked) =>
+                                    patchPlan((prev) => ({
+                                      ...prev,
+                                      checklist: prev.checklist.map((row) =>
+                                        row.id === item.id ? { ...row, done: !!checked } : row
+                                      ),
+                                    }))
+                                  }
+                                  className="mt-0.5"
+                                />
+                                <Input
+                                  value={item.text}
+                                  onChange={(e) =>
+                                    patchPlan((prev) => ({
+                                      ...prev,
+                                      checklist: prev.checklist.map((row) =>
+                                        row.id === item.id ? { ...row, text: e.target.value, custom: true } : row
+                                      ),
+                                    }))
+                                  }
+                                  className="h-8 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+                                />
+                                <Select
+                                  value={item.stage || "plan"}
+                                  onValueChange={(value) =>
+                                    patchPlan((prev) => ({
+                                      ...prev,
+                                      checklist: prev.checklist.map((row) =>
+                                        row.id === item.id ? { ...row, stage: value } : row
+                                      ),
+                                    }))
+                                  }
+                                >
+                                  <SelectTrigger className="h-7 w-[96px] shrink-0 text-[11px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {CHECKLIST_STAGES.map((s) => (
+                                      <SelectItem key={s.id} value={s.id}>
+                                        {lang === "en" ? s.en : s.pl}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 shrink-0 text-muted-foreground"
+                                  onClick={() =>
+                                    patchPlan((prev) => ({
+                                      ...prev,
+                                      checklist: prev.checklist.filter((row) => row.id !== item.id),
+                                    }))
+                                  }
+                                  aria-label={t("delete") || "Usuń"}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+
+                        {progress.open.length > 0 && (
+                          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-amber-300/90">
+                              {t("dayPlanToClose") || "Do domknięcia"}
+                            </p>
+                            <ul className="space-y-1">
+                              {progress.open.slice(0, 6).map((item) => (
+                                <li key={item.id} className="truncate text-[12px] text-foreground/85">
+                                  • {item.text}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Select value={newCheckStage} onValueChange={setNewCheckStage}>
+                            <SelectTrigger className="h-8 w-full sm:w-[120px] text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CHECKLIST_STAGES.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  {lang === "en" ? s.en : s.pl}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            value={newCheckItem}
+                            onChange={(e) => setNewCheckItem(e.target.value)}
+                            placeholder={t("dayPlanAddCheck") || "Nowy punkt"}
+                            className="h-8 text-sm"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addItem();
+                              }
+                            }}
+                          />
+                          <Button type="button" variant="outline" size="sm" className="h-8" onClick={addItem}>
+                            <Plus className="mr-1 h-3.5 w-3.5" />
+                            {t("add") || "Dodaj"}
+                          </Button>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={newCheckItem}
-                      onChange={(e) => setNewCheckItem(e.target.value)}
-                      placeholder={t("dayPlanAddCheck") || "Nowy punkt"}
-                      className="h-8 text-sm"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          if (!newCheckItem.trim()) return;
-                          patchPlan((prev) => ({
-                            ...prev,
-                            checklist: [
-                              ...prev.checklist,
-                              { id: createId(), text: newCheckItem.trim(), done: false, custom: true },
-                            ],
-                          }));
-                          setNewCheckItem("");
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-8"
-                      onClick={() => {
-                        if (!newCheckItem.trim()) return;
-                        patchPlan((prev) => ({
-                          ...prev,
-                          checklist: [
-                            ...prev.checklist,
-                            { id: createId(), text: newCheckItem.trim(), done: false, custom: true },
-                          ],
-                        }));
-                        setNewCheckItem("");
-                      }}
-                    >
-                      <Plus className="h-3.5 w-3.5 mr-1" />
-                      {t("add") || "Dodaj"}
-                    </Button>
-                  </div>
+                    );
+                  })()}
                 </SectionCard>
 
                 <SectionCard title={t("dayPlanParameters") || "Parametry dnia"}>
@@ -851,6 +958,61 @@ export default function DayPlan() {
                   </div>
                 </SectionCard>
               </div>
+
+              {/* Actions in normal flow — no fixed bar over dock/content */}
+              <div className="flex flex-col gap-3 rounded-xl border border-border bg-card/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" size="sm" className="h-9" onClick={() => persist(plan)}>
+                    <Save className="mr-1.5 h-4 w-4" />
+                    {t("dayPlanSave") || "Zapisz plan"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9"
+                    onClick={() => persist({ ...plan, status: "ready" })}
+                  >
+                    {t("dayPlanMarkReady") || "Oznacz jako gotowy"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9"
+                    onClick={() => persist({ ...plan, status: "active" })}
+                  >
+                    {t("dayPlanStartSession") || "Rozpocznij sesję"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-9"
+                    onClick={() => persist({ ...plan, status: "closed" })}
+                  >
+                    {t("dayPlanCloseDay") || "Zamknij dzień"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 text-destructive hover:text-destructive"
+                    onClick={() => setConfirm({ type: "clearDay" })}
+                  >
+                    <Trash2 className="mr-1 h-4 w-4" />
+                    {t("dayPlanClearDay") || "Wyczyść dzień"}
+                  </Button>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {saveStatusText()}
+                  {selectedAccount ? ` · ${selectedAccount.name}` : ""}
+                  {" · "}
+                  <button type="button" className="underline-offset-2 hover:underline" onClick={() => setTab("history")}>
+                    {t("dayPlanViewHistory") || "Zobacz poprzednie plany"}
+                  </button>
+                </div>
+              </div>
             </>
           )}
         </>
@@ -1035,60 +1197,6 @@ export default function DayPlan() {
               })}
             </div>
           )}
-        </div>
-      )}
-
-      {tab === "day" && plan && activeAccounts.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-[hsl(var(--app-shell))]/95 backdrop-blur supports-[backdrop-filter]:bg-[hsl(var(--app-shell))]/80 md:left-[var(--sidebar-width,0px)]">
-          <div className="mx-auto flex max-w-screen-2xl flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" className="h-9" onClick={() => persist(plan)}>
-                <Save className="h-4 w-4 mr-1.5" />
-                {t("dayPlanSave") || "Zapisz plan"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9"
-                onClick={() => persist({ ...plan, status: "ready" })}
-              >
-                {t("dayPlanMarkReady") || "Oznacz jako gotowy"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9"
-                onClick={() => persist({ ...plan, status: "active" })}
-              >
-                {t("dayPlanStartSession") || "Rozpocznij sesję"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9"
-                onClick={() => persist({ ...plan, status: "closed" })}
-              >
-                {t("dayPlanCloseDay") || "Zamknij dzień"}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-9 text-destructive"
-                onClick={() => setConfirm({ type: "clearDay" })}
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                {t("dayPlanClearDay") || "Wyczyść dzień"}
-              </Button>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {saveStatusText()}
-              {selectedAccount ? ` · ${selectedAccount.name}` : ""}
-              {" · "}
-              <button type="button" className="underline-offset-2 hover:underline" onClick={() => setTab("history")}>
-                {t("dayPlanViewHistory") || "Zobacz poprzednie plany"}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 

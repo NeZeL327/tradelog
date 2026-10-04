@@ -191,7 +191,7 @@ export default function Checklist() {
       <div className="max-w-none mx-0 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="cyber-page-title text-3xl sm:text-4xl">{t("notesChecklists") || "Checklisty"}</h1>
+            <h1 className="cyber-page-title">{t("notesChecklists") || "Checklisty"}</h1>
             <p className="cyber-page-sub">Tworz boxy checklist i przypinaj pojedynczo do prawego panelu.</p>
           </div>
           <div className="flex items-center gap-2">
