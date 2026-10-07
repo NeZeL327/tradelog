@@ -5,7 +5,6 @@ import {
   CalendarCheck2,
   ChevronLeft,
   ChevronRight,
-  Copy,
   Loader2,
   Plus,
   Save,
@@ -18,38 +17,36 @@ import { getTradingAccounts } from "@/lib/localStorage";
 import { isTradingAccountActive, cn } from "@/lib/utils";
 import { createPageUrl } from "@/utils";
 import {
-  applyTemplateToPlan,
   createId,
   CHECKLIST_STAGES,
   checklistProgress,
   DAY_PLAN_STATUSES,
   DAY_PLAN_STATUS_LABELS,
+  DEFAULT_DAY_PLAN_TAGS,
   emptyDayPlan,
   formatIsoDisplay,
   groupChecklistByStage,
   MOOD_OPTIONS,
-  planHasContent,
-  planToTemplatePayload,
+  normalizeDayPlan,
+  processBandForScore,
+  processCriteriaScore,
   PROCESS_GOALS,
   shiftIsoDate,
   todayIso,
   validatePlanParameters,
 } from "@/lib/dayPlanModel";
 import {
-  createDayPlanTemplate,
   deleteDayPlan,
-  deleteDayPlanTemplate,
-  duplicateDayPlanTemplate,
   getDayPlan,
   HEADER_ACCOUNT_STORAGE_KEY,
   listDayPlans,
-  listDayPlanTemplates,
   saveDayPlan,
 } from "@/lib/dayPlanStorage";
+import DayPlanGuidedFlow from "@/components/DayPlanGuidedFlow";
+import DayPlanTaggedNote from "@/components/DayPlanTaggedNote";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -69,21 +66,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const AUTOSAVE_MS = 1200;
 
 function statusLabel(status, language) {
   const row = DAY_PLAN_STATUS_LABELS[status] || DAY_PLAN_STATUS_LABELS.draft;
   return language === "en" ? row.en : row.pl;
-}
-
-function CharCount({ value, max }) {
-  const len = String(value || "").length;
-  return (
-    <span className="text-[11px] tabular-nums text-muted-foreground">
-      {len}/{max}
-    </span>
-  );
 }
 
 function SectionCard({ title, children, className }) {
@@ -106,7 +99,10 @@ export default function DayPlan() {
   const [searchParams, setSearchParams] = useSearchParams();
   const lang = language === "en" ? "en" : "pl";
 
-  const [tab, setTab] = useState(searchParams.get("tab") || "day");
+  const [tab, setTab] = useState(() => {
+    const raw = searchParams.get("tab") || "day";
+    return raw === "templates" ? "day" : raw;
+  });
   const [date, setDate] = useState(searchParams.get("date") || todayIso());
   const [accountId, setAccountId] = useState(searchParams.get("account") || "");
   const [plan, setPlan] = useState(null);
@@ -115,12 +111,13 @@ export default function DayPlan() {
   const [saveState, setSaveState] = useState("idle");
   const [savedAt, setSavedAt] = useState(null);
   const [quickNote, setQuickNote] = useState("");
+  const [quickNoteTags, setQuickNoteTags] = useState([]);
   const [newCheckItem, setNewCheckItem] = useState("");
   const [newCheckStage, setNewCheckStage] = useState("plan");
-  const [templateName, setTemplateName] = useState("");
   const [historyFilters, setHistoryFilters] = useState({ accountId: "all", status: "all", from: "", to: "" });
   const [confirm, setConfirm] = useState(null);
   const [pendingNav, setPendingNav] = useState(null);
+  const [classicOpen, setClassicOpen] = useState(false);
   const autosaveRef = useRef(null);
   const skipDirtyRef = useRef(false);
 
@@ -130,12 +127,6 @@ export default function DayPlan() {
     enabled: !!user?.id,
   });
   const activeAccounts = useMemo(() => accounts.filter(isTradingAccountActive), [accounts]);
-
-  const { data: templates = [], refetch: refetchTemplates } = useQuery({
-    queryKey: ["dayPlanTemplates", user?.id],
-    queryFn: () => listDayPlanTemplates(user.id),
-    enabled: !!user?.id,
-  });
 
   const { data: history = [], refetch: refetchHistory, isFetching: historyLoading } = useQuery({
     queryKey: ["dayPlansHistory", user?.id, historyFilters],
@@ -162,6 +153,10 @@ export default function DayPlan() {
     localStorage.setItem(HEADER_ACCOUNT_STORAGE_KEY(user.id), accountId);
   }, [user?.id, accountId]);
 
+  const planView = searchParams.get("view") || "";
+  const planSession = searchParams.get("session") || "";
+  const planHorizon = searchParams.get("horizon") || "";
+
   useEffect(() => {
     const next = new URLSearchParams(searchParams);
     next.set("date", date);
@@ -181,7 +176,11 @@ export default function DayPlan() {
     setLoading(true);
     try {
       const existing = await getDayPlan(user.id, accountId, date);
-      const next = existing || emptyDayPlan({ accountId, date, language: lang });
+      const next = normalizeDayPlan(existing || emptyDayPlan({ accountId, date, language: lang }), {
+        accountId,
+        date,
+        language: lang,
+      });
       skipDirtyRef.current = true;
       setPlan(next);
       setBaseline(JSON.stringify(next));
@@ -213,6 +212,7 @@ export default function DayPlan() {
       setSavedAt(new Date());
       setSaveState("saved");
       queryClient.invalidateQueries({ queryKey: ["dayPlansHistory", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["dayPlanProgress", user.id] });
       if (!silent) toast.success(t("dayPlanSaved") || "Plan zapisany");
       return true;
     } catch (err) {
@@ -265,10 +265,11 @@ export default function DayPlan() {
 
   const addSessionNote = () => {
     const text = quickNote.trim();
-    if (!text) return;
+    if (!text && !(quickNoteTags || []).length) return;
     const note = {
       id: createId(),
       text,
+      tags: [...(quickNoteTags || [])],
       created_at: new Date().toISOString(),
     };
     patchPlan((prev) => ({
@@ -276,26 +277,24 @@ export default function DayPlan() {
       session_notes: [note, ...(prev.session_notes || [])],
     }));
     setQuickNote("");
+    setQuickNoteTags([]);
   };
 
-  const applyTemplate = async (template) => {
-    if (!plan || !template) return;
-    const apply = () => {
-      patchPlan((prev) => applyTemplateToPlan(prev, template));
-      toast.success(t("dayPlanTemplateApplied") || "Szablon zastosowany");
-    };
-    if (planHasContent(plan)) {
-      setConfirm({ type: "applyTemplate", template, onConfirm: apply });
-      return;
-    }
-    apply();
-  };
+  const patchTagList = (key, next) =>
+    patchPlan((prev) => ({
+      ...prev,
+      tag_lists: { ...prev.tag_lists, [key]: next },
+    }));
 
   const clearDay = async () => {
     if (!user?.id || !accountId || !date) return;
     try {
       await deleteDayPlan(user.id, accountId, date);
-      const blank = emptyDayPlan({ accountId, date, language: lang });
+      const blank = normalizeDayPlan(emptyDayPlan({ accountId, date, language: lang }), {
+        accountId,
+        date,
+        language: lang,
+      });
       setPlan(blank);
       setBaseline(JSON.stringify(blank));
       setSaveState("idle");
@@ -330,7 +329,6 @@ export default function DayPlan() {
       <div className="flex flex-wrap gap-1 border-b border-border pb-px">
         {[
           { id: "day", label: t("dayPlanTabDay") || "Dzień" },
-          { id: "templates", label: t("dayPlanTabTemplates") || "Szablony" },
           { id: "history", label: t("dayPlanTabHistory") || "Historia" },
         ].map((item) => (
           <button
@@ -365,47 +363,20 @@ export default function DayPlan() {
                 />
                 {t("dayPlanStatus") || "Plan"}: {statusLabel(plan?.status || "draft", lang)}
               </span>
-              <Select
-                value={plan?.template_id || "__none__"}
-                onValueChange={(value) => {
-                  if (value === "__none__") return;
-                  const template = templates.find((row) => row.id === value);
-                  if (template) applyTemplate(template);
-                }}
-              >
-                <SelectTrigger className="h-8 w-[180px] text-xs">
-                  <SelectValue placeholder={t("dayPlanTemplate") || "Szablon"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">{t("dayPlanNoTemplate") || "Bez szablonu"}</SelectItem>
-                  {templates.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => {
-                  setTemplateName(plan?.template_name || `${t("dayPlan") || "Plan"} ${date}`);
-                  setConfirm({ type: "saveTemplate" });
-                }}
-              >
-                {t("dayPlanSaveAsTemplate") || "Zapisz jako szablon"}
-              </Button>
               <Button
                 type="button"
                 size="sm"
                 className="h-8 text-xs"
                 onClick={() =>
                   requestContextChange(() => {
-                    setDate(todayIso());
-                    setPlan(emptyDayPlan({ accountId, date: todayIso(), language: lang }));
-                    setBaseline("");
+                    const nextDate = todayIso();
+                    const blank = normalizeDayPlan(
+                      emptyDayPlan({ accountId, date: nextDate, language: lang }),
+                      { accountId, date: nextDate, language: lang }
+                    );
+                    setDate(nextDate);
+                    setPlan(blank);
+                    setBaseline(JSON.stringify(blank));
                   })
                 }
               >
@@ -418,7 +389,7 @@ export default function DayPlan() {
                   <Button
                     type="button"
                     size="sm"
-                    className="h-8 text-xs"
+                    className="h-8 text-xs cyber-primary-btn"
                     onClick={() => persist(plan)}
                   >
                     <Save className="mr-1 h-3.5 w-3.5" />
@@ -429,6 +400,7 @@ export default function DayPlan() {
                     variant="outline"
                     size="sm"
                     className="h-8 text-xs"
+                    disabled={plan.status === "ready" || plan.status === "active" || plan.status === "closed"}
                     onClick={() => persist({ ...plan, status: "ready" })}
                   >
                     {t("dayPlanMarkReady") || "Oznacz jako gotowy"}
@@ -438,14 +410,39 @@ export default function DayPlan() {
                     variant="outline"
                     size="sm"
                     className="h-8 text-xs"
+                    disabled={plan.status === "active" || plan.status === "closed"}
                     onClick={() => persist({ ...plan, status: "active" })}
                   >
                     {t("dayPlanStartSession") || "Rozpocznij sesję"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    disabled={plan.status === "closed"}
+                    onClick={() => persist({ ...plan, status: "closed" })}
+                  >
+                    {t("dayPlanCloseDay") || "Zakończ sesję"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs text-destructive hover:text-destructive"
+                    onClick={() => setConfirm({ type: "clearDay" })}
+                  >
+                    <Trash2 className="mr-1 h-3.5 w-3.5" />
+                    {t("dayPlanClearDay") || "Wyczyść"}
                   </Button>
                 </>
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <span className="hidden text-[11px] text-muted-foreground lg:inline">
+                {saveStatusText()}
+                {selectedAccount ? ` · ${selectedAccount.name}` : ""}
+              </span>
               <div className="inline-flex items-center gap-1 rounded-md border border-border p-0.5">
                 <Button
                   type="button"
@@ -513,32 +510,71 @@ export default function DayPlan() {
             </div>
           ) : (
             <>
+              <DayPlanGuidedFlow
+                plan={plan}
+                lang={lang}
+                patchPlan={patchPlan}
+                onPersist={() => {
+                  window.setTimeout(() => {
+                    queryClient.invalidateQueries({ queryKey: ["dayPlanProgress", user?.id] });
+                  }, AUTOSAVE_MS + 200);
+                }}
+                initialView={planView === "mapping" || planView === "focus" ? planView : undefined}
+                initialSession={["asia", "london", "ny"].includes(planSession) ? planSession : undefined}
+                initialHorizon={["htf", "mtf", "ltf"].includes(planHorizon) ? planHorizon : undefined}
+              />
+
+              <Collapsible open={classicOpen} onOpenChange={setClassicOpen}>
+                <div className="rounded-xl border border-border bg-card/50">
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-muted/20"
+                    >
+                      <span>{t("dayPlanClassicSections") || "Dodatkowe sekcje planu"}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {classicOpen
+                          ? t("hide") || "Ukryj"
+                          : t("show") || "Pokaż"}{" "}
+                        · {t("dayPlanClassicHint") || "pre-sesja, checklista, parametry, notatki"}
+                      </span>
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-3 border-t border-border px-3 pb-3 pt-3">
               <div className="grid gap-3 xl:grid-cols-3">
                 <SectionCard title={t("dayPlanPreSession") || "Plan przed sesją"}>
                   {[
-                    ["market_context", t("dayPlanMarketContext") || "Kontekst rynku", 1000],
-                    ["scenario_levels", t("dayPlanScenario") || "Scenariusz / poziomy", 1000],
-                    ["watchlist", t("dayPlanWatchlist") || "Instrumenty do obserwacji", 500],
-                    ["avoid_today", t("dayPlanAvoid") || "Czego dziś unikam?", 500],
-                  ].map(([key, label, max]) => (
-                    <div key={key} className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-xs">{label}</Label>
-                        <CharCount value={plan.pre_session?.[key]} max={max} />
-                      </div>
-                      <Textarea
-                        value={plan.pre_session?.[key] || ""}
-                        maxLength={max}
-                        rows={key === "watchlist" || key === "avoid_today" ? 2 : 4}
-                        onChange={(e) =>
-                          patchPlan((prev) => ({
-                            ...prev,
-                            pre_session: { ...prev.pre_session, [key]: e.target.value },
-                          }))
-                        }
-                        className="resize-y text-sm"
-                      />
-                    </div>
+                    ["market_context", t("dayPlanMarketContext") || "Kontekst rynku", 1000, ["News risk", "Trend day", "Range day", "High impact"]],
+                    ["scenario_levels", t("dayPlanScenario") || "Scenariusz / poziomy", 1000, ["Scenariusz A", "Scenariusz B", "Kluczowe poziomy"]],
+                    ["watchlist", t("dayPlanWatchlist") || "Instrumenty do obserwacji", 500, ["Watchlist", "Tylko A+", "Asia first"]],
+                    ["avoid_today", t("dayPlanAvoid") || "Czego dziś unikam?", 500, ["Unikaj FOMO", "No revenge", "Overtrade"]],
+                  ].map(([key, label, max, suggest], idx) => (
+                    <DayPlanTaggedNote
+                      key={key}
+                      label={label}
+                      text={plan.pre_session?.[key] || ""}
+                      tags={plan.pre_session_tags?.[key] || []}
+                      suggestTags={suggest}
+                      options={plan.tag_lists?.pre_session || DEFAULT_DAY_PLAN_TAGS.pre_session}
+                      defaultOptions={DEFAULT_DAY_PLAN_TAGS.pre_session}
+                      rows={key === "watchlist" || key === "avoid_today" ? 2 : 3}
+                      maxLength={max}
+                      noteCollapsible
+                      showVocabManager={idx === 0}
+                      onTextChange={(value) =>
+                        patchPlan((prev) => ({
+                          ...prev,
+                          pre_session: { ...prev.pre_session, [key]: value },
+                        }))
+                      }
+                      onTagsChange={(tags) =>
+                        patchPlan((prev) => ({
+                          ...prev,
+                          pre_session_tags: { ...prev.pre_session_tags, [key]: tags },
+                        }))
+                      }
+                      onOptionsChange={(next) => patchTagList("pre_session", next)}
+                    />
                   ))}
                 </SectionCard>
 
@@ -765,47 +801,54 @@ export default function DayPlan() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs">{t("dayPlanExtraRules") || "Dodatkowe zasady"}</Label>
-                      <CharCount value={plan.parameters?.extra_rules} max={500} />
-                    </div>
-                    <Textarea
-                      value={plan.parameters?.extra_rules || ""}
-                      maxLength={500}
-                      rows={4}
-                      onChange={(e) =>
-                        patchPlan((prev) => ({
-                          ...prev,
-                          parameters: { ...prev.parameters, extra_rules: e.target.value },
-                        }))
-                      }
-                      className="text-sm"
-                    />
-                  </div>
+                  <DayPlanTaggedNote
+                    label={t("dayPlanExtraRules") || "Dodatkowe zasady"}
+                    text={plan.parameters?.extra_rules || ""}
+                    tags={plan.parameters?.extra_rules_tags || []}
+                    suggestTags={DEFAULT_DAY_PLAN_TAGS.parameters}
+                    options={plan.tag_lists?.parameters || DEFAULT_DAY_PLAN_TAGS.parameters}
+                    defaultOptions={DEFAULT_DAY_PLAN_TAGS.parameters}
+                    rows={3}
+                    maxLength={500}
+                    noteCollapsible
+                    showVocabManager
+                    onTextChange={(value) =>
+                      patchPlan((prev) => ({
+                        ...prev,
+                        parameters: { ...prev.parameters, extra_rules: value },
+                      }))
+                    }
+                    onTagsChange={(tags) =>
+                      patchPlan((prev) => ({
+                        ...prev,
+                        parameters: { ...prev.parameters, extra_rules_tags: tags },
+                      }))
+                    }
+                    onOptionsChange={(next) => patchTagList("parameters", next)}
+                  />
                 </SectionCard>
               </div>
 
               <div className="grid gap-3 xl:grid-cols-3">
                 <SectionCard title={t("dayPlanSessionNotes") || "Notatki z sesji"}>
-                  <div className="flex gap-2">
-                    <Input
-                      value={quickNote}
-                      onChange={(e) => setQuickNote(e.target.value)}
-                      placeholder={t("dayPlanQuickNote") || "Szybka notatka…"}
-                      className="h-8 text-sm"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addSessionNote();
-                        }
-                      }}
-                    />
-                    <Button type="button" size="sm" className="h-8" onClick={addSessionNote}>
-                      {t("add") || "Dodaj"}
-                    </Button>
-                  </div>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <DayPlanTaggedNote
+                    label={t("dayPlanQuickNote") || "Nowa notatka"}
+                    hint={t("dayPlanTaggedHint") || "Kliknij tagi albo napisz — albo jedno i drugie."}
+                    text={quickNote}
+                    tags={quickNoteTags}
+                    suggestTags={DEFAULT_DAY_PLAN_TAGS.session}
+                    options={plan.tag_lists?.session || DEFAULT_DAY_PLAN_TAGS.session}
+                    defaultOptions={DEFAULT_DAY_PLAN_TAGS.session}
+                    rows={2}
+                    showVocabManager
+                    onTextChange={setQuickNote}
+                    onTagsChange={setQuickNoteTags}
+                    onOptionsChange={(next) => patchTagList("session", next)}
+                  />
+                  <Button type="button" size="sm" className="h-8 w-full" onClick={addSessionNote}>
+                    {t("add") || "Dodaj"}
+                  </Button>
+                  <div className="space-y-2 max-h-72 overflow-y-auto">
                     {(plan.session_notes || []).length === 0 ? (
                       <p className="text-xs text-muted-foreground py-4 text-center">
                         {t("dayPlanNoNotes") || "Brak notatek z tej sesji."}
@@ -837,18 +880,31 @@ export default function DayPlan() {
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
-                          <Textarea
-                            value={note.text}
+                          <DayPlanTaggedNote
+                            text={note.text || ""}
+                            tags={note.tags || []}
+                            suggestTags={DEFAULT_DAY_PLAN_TAGS.session}
+                            options={plan.tag_lists?.session || DEFAULT_DAY_PLAN_TAGS.session}
+                            defaultOptions={DEFAULT_DAY_PLAN_TAGS.session}
                             rows={2}
-                            onChange={(e) =>
+                            noteCollapsible
+                            onTextChange={(value) =>
                               patchPlan((prev) => ({
                                 ...prev,
                                 session_notes: prev.session_notes.map((row) =>
-                                  row.id === note.id ? { ...row, text: e.target.value } : row
+                                  row.id === note.id ? { ...row, text: value } : row
                                 ),
                               }))
                             }
-                            className="text-sm"
+                            onTagsChange={(tags) =>
+                              patchPlan((prev) => ({
+                                ...prev,
+                                session_notes: prev.session_notes.map((row) =>
+                                  row.id === note.id ? { ...row, tags } : row
+                                ),
+                              }))
+                            }
+                            onOptionsChange={(next) => patchTagList("session", next)}
                           />
                         </div>
                       ))
@@ -857,40 +913,55 @@ export default function DayPlan() {
                 </SectionCard>
 
                 <SectionCard title={t("dayPlanPostSession") || "Podsumowanie po sesji"}>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs">{t("dayPlanWentWell") || "Co poszło dobrze?"}</Label>
-                      <CharCount value={plan.post_session?.went_well} max={2000} />
-                    </div>
-                    <Textarea
-                      value={plan.post_session?.went_well || ""}
-                      maxLength={2000}
-                      rows={4}
-                      onChange={(e) =>
-                        patchPlan((prev) => ({
-                          ...prev,
-                          post_session: { ...prev.post_session, went_well: e.target.value },
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs">{t("dayPlanImprove") || "Co poprawię następnym razem?"}</Label>
-                      <CharCount value={plan.post_session?.improve_next} max={2000} />
-                    </div>
-                    <Textarea
-                      value={plan.post_session?.improve_next || ""}
-                      maxLength={2000}
-                      rows={4}
-                      onChange={(e) =>
-                        patchPlan((prev) => ({
-                          ...prev,
-                          post_session: { ...prev.post_session, improve_next: e.target.value },
-                        }))
-                      }
-                    />
-                  </div>
+                  <DayPlanTaggedNote
+                    label={t("dayPlanWentWell") || "Co poszło dobrze?"}
+                    text={plan.post_session?.went_well || ""}
+                    tags={plan.post_session?.went_well_tags || []}
+                    suggestTags={["Dyscyplina", "Proces OK", "Trzymałem plan", "Journal done"]}
+                    options={plan.tag_lists?.post || DEFAULT_DAY_PLAN_TAGS.post}
+                    defaultOptions={DEFAULT_DAY_PLAN_TAGS.post}
+                    rows={3}
+                    maxLength={2000}
+                    noteCollapsible
+                    showVocabManager
+                    onTextChange={(value) =>
+                      patchPlan((prev) => ({
+                        ...prev,
+                        post_session: { ...prev.post_session, went_well: value },
+                      }))
+                    }
+                    onTagsChange={(tags) =>
+                      patchPlan((prev) => ({
+                        ...prev,
+                        post_session: { ...prev.post_session, went_well_tags: tags },
+                      }))
+                    }
+                    onOptionsChange={(next) => patchTagList("post", next)}
+                  />
+                  <DayPlanTaggedNote
+                    label={t("dayPlanImprove") || "Co poprawię następnym razem?"}
+                    text={plan.post_session?.improve_next || ""}
+                    tags={plan.post_session?.improve_next_tags || []}
+                    suggestTags={["Lekcja", "Revenge", "Overtrade", "FOMO"]}
+                    options={plan.tag_lists?.post || DEFAULT_DAY_PLAN_TAGS.post}
+                    defaultOptions={DEFAULT_DAY_PLAN_TAGS.post}
+                    rows={3}
+                    maxLength={2000}
+                    noteCollapsible
+                    onTextChange={(value) =>
+                      patchPlan((prev) => ({
+                        ...prev,
+                        post_session: { ...prev.post_session, improve_next: value },
+                      }))
+                    }
+                    onTagsChange={(tags) =>
+                      patchPlan((prev) => ({
+                        ...prev,
+                        post_session: { ...prev.post_session, improve_next_tags: tags },
+                      }))
+                    }
+                    onOptionsChange={(next) => patchTagList("post", next)}
+                  />
                 </SectionCard>
 
                 <SectionCard title={t("dayPlanMoodDiscipline") || "Samopoczucie i dyscyplina"}>
@@ -958,147 +1029,19 @@ export default function DayPlan() {
                   </div>
                 </SectionCard>
               </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
 
-              {/* Actions in normal flow — no fixed bar over dock/content */}
-              <div className="flex flex-col gap-3 rounded-xl border border-border bg-card/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4">
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="sm" className="h-9" onClick={() => persist(plan)}>
-                    <Save className="mr-1.5 h-4 w-4" />
-                    {t("dayPlanSave") || "Zapisz plan"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9"
-                    onClick={() => persist({ ...plan, status: "ready" })}
-                  >
-                    {t("dayPlanMarkReady") || "Oznacz jako gotowy"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9"
-                    onClick={() => persist({ ...plan, status: "active" })}
-                  >
-                    {t("dayPlanStartSession") || "Rozpocznij sesję"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-9"
-                    onClick={() => persist({ ...plan, status: "closed" })}
-                  >
-                    {t("dayPlanCloseDay") || "Zamknij dzień"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 text-destructive hover:text-destructive"
-                    onClick={() => setConfirm({ type: "clearDay" })}
-                  >
-                    <Trash2 className="mr-1 h-4 w-4" />
-                    {t("dayPlanClearDay") || "Wyczyść dzień"}
-                  </Button>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {saveStatusText()}
-                  {selectedAccount ? ` · ${selectedAccount.name}` : ""}
-                  {" · "}
-                  <button type="button" className="underline-offset-2 hover:underline" onClick={() => setTab("history")}>
-                    {t("dayPlanViewHistory") || "Zobacz poprzednie plany"}
-                  </button>
-                </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 px-0.5 text-[11px] text-muted-foreground">
+                <span className="lg:hidden">{saveStatusText()}</span>
+                <button type="button" className="underline-offset-2 hover:underline" onClick={() => setTab("history")}>
+                  {t("dayPlanViewHistory") || "Zobacz poprzednie plany"}
+                </button>
               </div>
             </>
           )}
         </>
-      )}
-
-      {tab === "templates" && (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm text-muted-foreground">
-              {t("dayPlanTemplatesHint") || "Szablony zawierają plan przed sesją, checklistę i parametry dnia."}
-            </p>
-            <Button
-              type="button"
-              size="sm"
-              onClick={async () => {
-                const name = window.prompt(t("dayPlanTemplateName") || "Nazwa szablonu", "NY Open");
-                if (!name?.trim()) return;
-                const payload = planToTemplatePayload(
-                  plan || emptyDayPlan({ accountId, date, language: lang }),
-                  name
-                );
-                await createDayPlanTemplate(user.id, payload);
-                refetchTemplates();
-                toast.success(t("dayPlanTemplateCreated") || "Szablon utworzony");
-              }}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1" />
-              {t("dayPlanNewTemplate") || "Nowy szablon"}
-            </Button>
-          </div>
-          {!templates.length ? (
-            <Card>
-              <CardContent className="py-12 text-center text-sm text-muted-foreground">
-                {t("dayPlanNoTemplates") || "Brak szablonów. Zapisz bieżący plan jako szablon lub utwórz nowy."}
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {templates.map((template) => (
-                <Card key={template.id} className="border-border">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{template.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3 text-xs text-muted-foreground">
-                    <p className="line-clamp-3">
-                      {template.pre_session?.market_context || template.pre_session?.scenario_levels || "—"}
-                    </p>
-                    <p>
-                      {(template.checklist || []).length} {t("dayPlanChecks") || "punktów checklisty"}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="button" size="sm" variant="outline" className="h-8" onClick={() => {
-                        setTab("day");
-                        applyTemplate(template);
-                      }}>
-                        {t("dayPlanUseTemplate") || "Zastosuj"}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="h-8"
-                        onClick={async () => {
-                          await duplicateDayPlanTemplate(user.id, template);
-                          refetchTemplates();
-                          toast.success(t("dayPlanTemplateCopied") || "Skopiowano szablon");
-                        }}
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 text-destructive"
-                        onClick={() => setConfirm({ type: "deleteTemplate", template })}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
       )}
 
       {tab === "history" && (
@@ -1165,6 +1108,10 @@ export default function DayPlan() {
                 const accountName =
                   activeAccounts.find((a) => String(a.id) === String(row.account_id))?.name ||
                   row.account_id;
+                const processPct = processCriteriaScore(row.post_session?.process);
+                const processBand = processBandForScore(processPct);
+                const focusScore = row.focus?.score;
+                const tradeMode = row.focus?.trade_mode;
                 return (
                   <button
                     key={row.id}
@@ -1186,8 +1133,33 @@ export default function DayPlan() {
                         {statusLabel(row.status || "draft", lang)}
                       </span>
                     </div>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px]">
+                      {focusScore != null ? (
+                        <span className="rounded border border-border/70 px-1.5 py-0.5 text-muted-foreground">
+                          Skupienie {focusScore}
+                        </span>
+                      ) : null}
+                      {tradeMode ? (
+                        <span className="rounded border border-border/70 px-1.5 py-0.5 uppercase text-muted-foreground">
+                          {tradeMode}
+                        </span>
+                      ) : null}
+                      {Object.values(row.post_session?.process || {}).some(Boolean) ? (
+                        <span
+                          className={cn(
+                            "rounded border px-1.5 py-0.5",
+                            processBand.tone === "profit" && "border-profit/40 text-profit",
+                            processBand.tone === "loss" && "border-loss/40 text-loss",
+                            processBand.tone === "amber" && "border-amber-500/40 text-amber-400"
+                          )}
+                        >
+                          Proces {processPct}% · {lang === "en" ? processBand.en : processBand.pl}
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                      {row.pre_session?.market_context ||
+                      {row.mapping?.htf?.notes ||
+                        row.pre_session?.market_context ||
                         row.pre_session?.scenario_levels ||
                         row.post_session?.went_well ||
                         "—"}
@@ -1206,28 +1178,12 @@ export default function DayPlan() {
             <AlertDialogTitle>
               {confirm?.type === "unsaved" && (t("dayPlanUnsavedTitle") || "Niezapisane zmiany")}
               {confirm?.type === "clearDay" && (t("dayPlanClearTitle") || "Wyczyścić dzień?")}
-              {confirm?.type === "deleteTemplate" && (t("dayPlanDeleteTemplateTitle") || "Usunąć szablon?")}
-              {confirm?.type === "applyTemplate" && (t("dayPlanApplyTemplateTitle") || "Zastąpić pola planu?")}
-              {confirm?.type === "saveTemplate" && (t("dayPlanSaveAsTemplate") || "Zapisz jako szablon")}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirm?.type === "unsaved" &&
                 (t("dayPlanUnsavedDesc") || "Masz niezapisane zmiany. Zapisać przed kontynuacją?")}
               {confirm?.type === "clearDay" &&
                 (t("dayPlanClearDesc") || "Usuniesz plan tylko dla wybranej daty i konta.")}
-              {confirm?.type === "deleteTemplate" &&
-                (t("dayPlanDeleteTemplateDesc") || "Tej operacji nie można cofnąć.")}
-              {confirm?.type === "applyTemplate" &&
-                (t("dayPlanApplyTemplateDesc") ||
-                  "Szablon nadpisze plan przed sesją, checklistę i parametry. Notatki sesji pozostaną.")}
-              {confirm?.type === "saveTemplate" && (
-                <Input
-                  value={templateName}
-                  onChange={(e) => setTemplateName(e.target.value)}
-                  className="mt-2"
-                  placeholder={t("dayPlanTemplateName") || "Nazwa szablonu"}
-                />
-              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1267,41 +1223,6 @@ export default function DayPlan() {
                 }}
               >
                 {t("dayPlanClearDay") || "Wyczyść dzień"}
-              </AlertDialogAction>
-            )}
-            {confirm?.type === "deleteTemplate" && (
-              <AlertDialogAction
-                onClick={async () => {
-                  await deleteDayPlanTemplate(user.id, confirm.template.id);
-                  refetchTemplates();
-                  toast.success(t("dayPlanTemplateDeleted") || "Szablon usunięty");
-                  setConfirm(null);
-                }}
-              >
-                {t("delete") || "Usuń"}
-              </AlertDialogAction>
-            )}
-            {confirm?.type === "applyTemplate" && (
-              <AlertDialogAction
-                onClick={() => {
-                  confirm.onConfirm?.();
-                  setConfirm(null);
-                }}
-              >
-                {t("dayPlanUseTemplate") || "Zastosuj"}
-              </AlertDialogAction>
-            )}
-            {confirm?.type === "saveTemplate" && (
-              <AlertDialogAction
-                onClick={async () => {
-                  if (!templateName.trim() || !plan) return;
-                  await createDayPlanTemplate(user.id, planToTemplatePayload(plan, templateName));
-                  refetchTemplates();
-                  toast.success(t("dayPlanTemplateCreated") || "Szablon utworzony");
-                  setConfirm(null);
-                }}
-              >
-                {t("save") || "Zapisz"}
               </AlertDialogAction>
             )}
           </AlertDialogFooter>

@@ -6,7 +6,17 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 import { useLanguage } from "@/components/LanguageProvider";
 import { getDayPlan, HEADER_ACCOUNT_STORAGE_KEY } from "@/lib/dayPlanStorage";
-import { todayIso } from "@/lib/dayPlanModel";
+import {
+  dayPlanNextAction,
+  focusStatusLabel,
+  isFocusComplete,
+  normalizeDayPlan,
+  todayIso,
+} from "@/lib/dayPlanModel";
+import {
+  formatSessionRange,
+  getActiveTradingSession,
+} from "@/lib/tradingSessions";
 import { getTrades, getTradingAccounts, updateTradingAccount } from "@/lib/localStorage";
 import { createPageUrl } from "@/utils";
 import { getTradeRealizedPL, isClosedTrade, isTradingAccountActive, cn } from "@/lib/utils";
@@ -20,36 +30,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Check } from "lucide-react";
 
 function ringStyle(ratio) {
   const pct = Math.max(0, Math.min(1, ratio)) * 100;
   return {
     background: `conic-gradient(hsl(var(--primary)) ${pct}%, hsl(var(--muted)) 0)`,
   };
-}
-
-function activeSession(now = new Date()) {
-  const hourIn = (tz) => {
-    try {
-      const parts = new Intl.DateTimeFormat("en-GB", {
-        timeZone: tz,
-        hour: "2-digit",
-        hour12: false,
-        hourCycle: "h23",
-      }).formatToParts(now);
-      const h = Number(parts.find((p) => p.type === "hour")?.value);
-      return Number.isFinite(h) && h >= 0 && h <= 23 ? h : -1;
-    } catch {
-      return -1;
-    }
-  };
-  const ldn = hourIn("Europe/London");
-  const ny = hourIn("America/New_York");
-  const asia = hourIn("Asia/Tokyo");
-  if (ldn >= 8 && ldn < 17) return { id: "ldn", labelPl: "Londyn", labelEn: "London", range: "08:00 – 17:00" };
-  if (ny >= 9 && ny < 16) return { id: "ny", labelPl: "Nowy Jork", labelEn: "New York", range: "09:00 – 16:00" };
-  if (asia >= 0 && asia < 9) return { id: "asia", labelPl: "Azja", labelEn: "Asia", range: "00:00 – 09:00" };
-  return null;
 }
 
 function Meter({ label, current, max, unit }) {
@@ -135,30 +122,52 @@ export default function SessionRhythmBar() {
     if (account?.id && !accountId) setAccountId(String(account.id));
   }, [account, accountId]);
 
-  const { data: plan } = useQuery({
+  const { data: planRaw } = useQuery({
     queryKey: ["dayPlanProgress", user?.id, account?.id, date],
     queryFn: () => getDayPlan(user.id, account.id, date),
     enabled: !!user?.id && !!account?.id,
   });
 
-  const checklist = plan?.checklist || [];
-  const done = checklist.filter((item) => item.done).length;
-  const total = checklist.length;
-  const progressRatio = total ? done / total : 0;
+  const plan = useMemo(
+    () =>
+      planRaw
+        ? normalizeDayPlan(planRaw, {
+            accountId: account?.id,
+            date,
+            language: language === "en" ? "en" : "pl",
+          })
+        : null,
+    [planRaw, account?.id, date, language]
+  );
 
-  const session = activeSession(now);
+  const focusDone = isFocusComplete(plan?.focus);
+  const progressRatio = focusDone ? 1 : plan?.focus?.score != null ? 0.5 : 0;
+
+  const session = getActiveTradingSession(now);
   const sessionLabel = session
     ? language === "en"
       ? session.labelEn
       : session.labelPl
     : t("sessionClosed") || "Poza sesją";
 
-  const nextIncomplete = checklist.find((item) => !item.done);
-  const nextAction = nextIncomplete?.text
-    ? String(nextIncomplete.text)
-    : plan
-      ? t("dayPlanReviewAction") || "Przegląd planu"
-      : t("dayPlanCreateAction") || "Utwórz plan dnia";
+  const next = dayPlanNextAction(plan, session?.id || plan?.mapping_session, language === "en" ? "en" : "pl");
+  const nextAction = next.label;
+  const nextHref = (() => {
+    const base = createPageUrl("DayPlan");
+    const params = new URLSearchParams();
+    if (account?.id) params.set("account", String(account.id));
+    params.set("date", date);
+    if (next.view) params.set("view", next.view);
+    if (next.session) params.set("session", next.session);
+    if (next.horizon) params.set("horizon", next.horizon);
+    const q = params.toString();
+    return q ? `${base}?${q}` : base;
+  })();
+  const focusLabel = plan
+    ? focusStatusLabel(plan.focus, language === "en" ? "en" : "pl")
+    : language === "en"
+      ? "no plan"
+      : "brak planu";
 
   const accountTrades = useMemo(
     () => trades.filter((tr) => String(tr.account_id) === String(account?.id) && isClosedTrade(tr)),
@@ -252,10 +261,10 @@ export default function SessionRhythmBar() {
             <div
               className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
               style={ringStyle(progressRatio)}
-              aria-label={`${done}/${total}`}
+              aria-label={focusLabel}
             >
               <div className="data-mono flex h-7 w-7 items-center justify-center rounded-full bg-[hsl(var(--window-bg))] text-[10px] font-semibold tabular-nums text-foreground">
-                {total ? `${done}/${total}` : "—"}
+                {focusDone ? <Check className="h-3.5 w-3.5 text-profit" /> : plan?.focus?.score != null ? `${plan.focus.score}/2` : "—"}
               </div>
             </div>
             <div className="min-w-0">
@@ -263,9 +272,9 @@ export default function SessionRhythmBar() {
                 {t("sessionRhythm") || "Rytm Sesji"}
               </p>
               <p className="truncate text-[12px] text-foreground">
-                {total
-                  ? `${t("dayPlanTodayProgress") || "Dzisiejszy plan"}: ${done} ${t("of") || "z"} ${total}`
-                  : t("dayPlanNoChecklist") || "Brak checklisty na dziś"}
+                {plan
+                  ? `${t("dayPlan") || "Plan dnia"} · ${focusLabel}`
+                  : t("dayPlanNoChecklist") || "Brak planu na dziś"}
               </p>
               <div className="mt-1 h-1 w-28 overflow-hidden rounded-full bg-primary/15 sm:w-36">
                 <div className="h-full rounded-full bg-primary" style={{ width: `${progressRatio * 100}%` }} />
@@ -281,7 +290,9 @@ export default function SessionRhythmBar() {
               <span className={cn("h-1.5 w-1.5 rounded-full", session ? "bg-profit" : "bg-muted-foreground")} />
               {sessionLabel}
             </p>
-            <p className="data-mono mt-0.5 text-[10px] text-muted-foreground">{session?.range || "—"}</p>
+            <p className="data-mono mt-0.5 text-[10px] text-muted-foreground">
+              {session ? formatSessionRange(session) : "—"}
+            </p>
           </div>
 
           <div className="hidden w-px self-stretch bg-[hsl(var(--window-border)/0.75)] sm:block" aria-hidden />
@@ -296,10 +307,20 @@ export default function SessionRhythmBar() {
 
           <div className="hidden w-px self-stretch bg-[hsl(var(--window-border)/0.75)] sm:block" aria-hidden />
 
+          <div className="flex min-w-[110px] flex-col justify-center px-2.5 py-1.5 sm:px-3">
+            <p className="text-[10px] text-muted-foreground">{t("dayPlanFocus") || "Skupienie"}</p>
+            <p className="mt-0.5 flex items-center gap-1.5 truncate text-[12px] font-medium text-foreground">
+              {focusDone ? <Check className="h-3.5 w-3.5 shrink-0 text-profit" /> : null}
+              <span className="truncate">{focusLabel}</span>
+            </p>
+          </div>
+
+          <div className="hidden w-px self-stretch bg-[hsl(var(--window-border)/0.75)] sm:block" aria-hidden />
+
           <div className="flex min-w-0 flex-1 flex-col justify-center px-2.5 py-1.5 sm:px-3">
             <p className="text-[10px] text-muted-foreground">{t("nextAction") || "Następne działanie"}</p>
             <Link
-              to={createPageUrl("DayPlan")}
+              to={nextHref}
               className="mt-0.5 inline-flex max-w-full items-center gap-1 truncate text-[12px] font-medium text-primary hover:underline"
             >
               <span className="truncate">{nextAction}</span>

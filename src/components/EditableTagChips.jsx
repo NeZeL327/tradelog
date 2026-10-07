@@ -55,6 +55,9 @@ export default function EditableTagChips({
   onOptionsChange,
   onSelectedChange,
   kind = "confluences",
+  /** Optional override for reset / add helpers (e.g. Day Plan vocab). */
+  defaultOptions,
+  addPlaceholder,
   sectionClassName,
   labelClassName,
 }) {
@@ -63,8 +66,9 @@ export default function EditableTagChips({
   const [editingTag, setEditingTag] = useState(null);
   const [editValue, setEditValue] = useState("");
   const styles = ACCENTS[accent] || ACCENTS.emerald;
-  const defaults =
-    kind === "mistakes"
+  const defaults = Array.isArray(defaultOptions)
+    ? defaultOptions
+    : kind === "mistakes"
       ? DEFAULT_MISTAKES
       : kind === "psychology"
         ? DEFAULT_PSYCHOLOGY
@@ -157,7 +161,7 @@ export default function EditableTagChips({
 
       <div className="flex flex-wrap gap-1">
         {(options || []).map((tag) => {
-          const active = selectedSet.has(tag);
+          const active = selectedSet.has(normalizeTagLabel(tag));
           if (managing && editingTag === tag) {
             return (
               <span key={tag} className="inline-flex items-center gap-1">
@@ -241,7 +245,10 @@ export default function EditableTagChips({
               handleAdd();
             }
           }}
-          placeholder={kind === "mistakes" ? "Nowy błąd…" : "Nowy warunek…"}
+          placeholder={
+            addPlaceholder ||
+            (kind === "mistakes" ? "Nowy błąd…" : kind === "psychology" ? "Nowy tag…" : "Nowy warunek…")
+          }
           className="h-7 flex-1 min-w-[8rem] text-[11px] px-2"
           maxLength={48}
         />
