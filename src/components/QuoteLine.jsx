@@ -38,8 +38,8 @@ export default function QuoteLine({ stats, variant = "page", className }) {
         className
       )}
     >
-      <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-primary" aria-hidden />
-      <p className="pl-3 font-mono text-[12px] font-medium leading-snug tracking-[0.01em] text-foreground/90 not-italic">“{text}”</p>
+      <span className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-border" aria-hidden />
+      <p className="pl-3 text-[12px] font-medium leading-snug tracking-[0.01em] text-muted-foreground not-italic">“{text}”</p>
     </div>
   );
 }

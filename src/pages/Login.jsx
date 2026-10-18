@@ -231,7 +231,7 @@ export default function Login() {
                         initial={{ opacity: 0, y: -6 }}
                         animate={{ opacity: 1, y: 0 }}
                       >
-                        <Alert variant="destructive" className="text-sm bg-loss/10 border-red-500/30 text-red-200">
+                        <Alert variant="destructive" className="text-sm bg-ds-neg-tint border-ds-line text-ds-text">
                           <AlertDescription>{visibleError}</AlertDescription>
                         </Alert>
                       </motion.div>

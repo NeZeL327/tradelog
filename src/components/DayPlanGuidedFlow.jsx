@@ -935,7 +935,6 @@ export default function DayPlanGuidedFlow({
       patchPlan((prev) => ({ ...prev, phase: "mapping" }));
       setEditingFocus(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialView, initialSession, initialHorizon]);
 
   useEffect(() => {

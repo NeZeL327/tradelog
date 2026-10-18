@@ -3,22 +3,22 @@ import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-medium tracking-wide transition-colors focus:outline-none focus:ring-1 focus:ring-ring",
+  "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ds-focus)]",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground",
+          "border-[color:var(--ds-sel-line)] bg-ds-sel text-ds-accent",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground",
+          "border-ds-line bg-transparent text-ds-text2",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground",
-        outline: "text-foreground",
-        win: "border-transparent bg-profit/12 text-profit",
-        loss: "border-transparent bg-loss/12 text-loss",
-        long: "border-transparent bg-profit/12 text-profit",
-        short: "border-transparent bg-loss/12 text-loss",
-        pending: "border-transparent bg-warning/12 text-warning",
+          "border-transparent bg-[color:var(--ds-neg-tint)] text-ds-neg",
+        outline: "border-ds-line text-ds-text2",
+        win: "border-transparent bg-[color:var(--ds-pos-tint)] text-ds-pos",
+        loss: "border-transparent bg-[color:var(--ds-neg-tint)] text-ds-neg",
+        long: "border-transparent bg-[color:var(--ds-pos-tint)] text-ds-pos",
+        short: "border-transparent bg-[color:var(--ds-neg-tint)] text-ds-neg",
+        pending: "border-transparent bg-[color:var(--ds-warn-tint)] text-ds-warn",
       },
     },
     defaultVariants: {

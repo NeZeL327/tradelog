@@ -27,7 +27,10 @@ export default function Settings() {
   const queryClient = useQueryClient();
 
   const [user, setUser] = useState(null);
-  const [activeSection, setActiveSection] = useState('profile');
+  const [activeSection, setActiveSection] = useState(() => {
+    const section = new URLSearchParams(window.location.search).get("section");
+    return section || "profile";
+  });
   const [settings, setSettings] = useState(() => {
     const local = loadLocalUserSettings();
     const base = getEffectiveUserSettings({ localSettings: local });
@@ -274,7 +277,7 @@ export default function Settings() {
   if (!settings) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -282,7 +285,7 @@ export default function Settings() {
   if (!authUser) {
     return (
       <div className="w-full min-h-[40vh] dashboard-surface">
-        <div className="max-w-none mx-0 space-y-6">
+        <div className="max-w-none mx-0 space-y-3">
           <div className="text-center">
             <h1 className="cyber-page-title mb-4">Wymagane logowanie</h1>
             <p className="cyber-page-sub">Musisz się zalogować, aby zarządzać ustawieniami.</p>
@@ -293,8 +296,8 @@ export default function Settings() {
   }
 
   return (
-    <div className="w-full min-h-0 space-y-6 dashboard-surface">
-      <div className="max-w-none mx-0 space-y-6">
+    <div className="w-full min-h-0 space-y-3 dashboard-surface">
+      <div className="max-w-none mx-0 space-y-3">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="cyber-page-title">{t.title}</h1>
@@ -316,18 +319,18 @@ export default function Settings() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Preview */}
-                  <div className="flex items-center gap-4 p-4 rounded-lg border border-border bg-muted/30">
+                  <div className="flex items-center gap-4 p-4 rounded-lg border border-border bg-muted">
                     {(() => {
                       const preset = getAvatarPreset(settings.avatar);
                       const previewUser = { ...user, displayName: settings.displayName, fullName: settings.fullName };
                       const initials = getUserInitials(previewUser);
                       return (
                         <>
-                          <div className={`h-14 w-14 rounded-full flex items-center justify-center text-white text-lg font-semibold shadow-md ring-2 ring-white/50 dark:ring-slate-700/60 bg-gradient-to-br ${preset.gradient}`}>
+                          <div className={`h-14 w-14 rounded-full flex items-center justify-center text-white text-lg font-semibold ring-2 ring-border bg-gradient-to-br ${preset.gradient}`}>
                             {preset.emoji ? <span className="text-2xl leading-none">{preset.emoji}</span> : initials}
                           </div>
                           <div className="min-w-0">
-                            <p className="text-base font-semibold text-slate-900 dark:text-slate-100 truncate">
+                            <p className="text-base font-semibold text-foreground truncate">
                               {settings.displayName?.trim() || settings.fullName?.trim() || user?.email}
                             </p>
                             <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
@@ -371,7 +374,7 @@ export default function Settings() {
 
                   <div>
                     <Label>{t.email}</Label>
-                    <Input value={user?.email || ""} disabled className="bg-muted/40 dark:text-foreground" />
+                    <Input value={user?.email || ""} disabled className="bg-muted text-foreground" />
                     <p className="text-xs text-muted-foreground mt-1">
                       {settings.language === 'pl' ? "Email nie może być zmieniony" : "Email cannot be changed"}
                     </p>
@@ -397,10 +400,10 @@ export default function Settings() {
                             key={preset.id}
                             type="button"
                             onClick={() => setSettings({ ...settings, avatar: preset.id })}
-                            className={`relative group aspect-square rounded-xl flex flex-col items-center justify-center gap-1 text-white font-semibold shadow-sm transition-all duration-200 bg-gradient-to-br ${preset.gradient} ${
+                            className={`relative group aspect-square rounded-xl flex flex-col items-center justify-center gap-1 text-white font-semibold transition-all duration-200 bg-gradient-to-br ${preset.gradient} ${
                               active
-                                ? "ring-4 ring-primary ring-offset-2 ring-offset-background scale-[1.03]"
-                                : "hover:ring-1 ring-1 ring-black/5 dark:ring-white/10"
+                                ? "ring-1 ring-primary/40 ring-offset-2 ring-offset-background"
+                                : "ring-1 ring-border"
                             }`}
                             aria-pressed={active}
                             title={preset.label}
@@ -412,7 +415,7 @@ export default function Settings() {
                             )}
                             <span className="text-[10px] font-medium opacity-90">{preset.label}</span>
                             {active && (
-                              <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                              <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-muted text-primary flex items-center justify-center">
                                 <Check className="w-3 h-3" />
                               </span>
                             )}
@@ -704,7 +707,7 @@ export default function Settings() {
                             className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-3 rounded-lg border border-border"
                           >
                             <div className="min-w-0">
-                              <div className="font-semibold text-slate-900 dark:text-slate-100">
+                              <div className="font-semibold text-foreground">
                                 {trade.symbol || '-'} • {trade.date || '-'}
                               </div>
                               <div className="text-xs text-muted-foreground mt-1">
@@ -712,7 +715,7 @@ export default function Settings() {
                               </div>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                              <span className="text-xs px-2 py-1 rounded-full bg-warning/10 text-warning">
                                 {daysLeft} {t.daysLeft}
                               </span>
                               <Button
@@ -768,8 +771,8 @@ export default function Settings() {
                 return (
                   <Button
                     key={section.id}
-                    variant={isActive ? 'default' : 'outline'}
-                    className="w-full justify-start"
+                    variant="outline"
+                    className={isActive ? "w-full justify-start bg-muted text-foreground border-border" : "w-full justify-start"}
                     onClick={() => setActiveSection(section.id)}
                   >
                     <Icon className="w-4 h-4 mr-2" />

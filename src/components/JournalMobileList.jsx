@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { directionBadgeClass, directionLabel, getTradeRealizedPL, tradeOutcomeBadgeClass, tradeOutcomeDisplay, tradeStatusBadgeClass, tradeStatusDisplay } from "@/lib/utils";
 import { formatTradeClock, formatTradeClockDate, getDateFormat } from "@/lib/userSettings";
+import { usePnlDisplay } from "@/hooks/use-pnl-display";
 
 export default function JournalMobileList({
   trades,
@@ -10,6 +11,7 @@ export default function JournalMobileList({
   onView,
 }) {
   const dateFormat = getDateFormat();
+  const pnl = usePnlDisplay();
 
   if (!trades.length) {
     return (
@@ -50,7 +52,7 @@ export default function JournalMobileList({
                 </div>
                 <div className="text-right shrink-0">
                   <p className={`text-sm font-bold tabular-nums ${hasPl ? (plUp ? "text-profit" : "text-loss") : "text-muted-foreground"}`}>
-                    {hasPl ? `${plUp ? "+" : ""}${plNum.toFixed(2)}` : "—"}
+                    {hasPl ? pnl.formatTrade(trade) : "—"}
                   </p>
                   <div className="mt-1 flex justify-end gap-1">
                     <Badge className={`${tradeStatusBadgeClass(trade.status)} text-[10px] px-1.5 py-0`}>

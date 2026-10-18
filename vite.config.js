@@ -17,6 +17,8 @@ export default defineConfig({
     warmup: {
       clientFiles: [
         './src/pages/Login.jsx',
+        './src/pages/Dashboard.jsx',
+        './src/pages/Journal.jsx',
         './src/lib/AuthContext.jsx',
         './src/components/LanguageProvider.jsx',
       ],

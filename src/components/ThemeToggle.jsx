@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/AuthContext";
 import { updateUser } from "@/lib/localStorage";
+import { applyTheme } from "@/lib/userSettings";
 
 const APP_THEME_EVENT = "app-theme-changed";
 
@@ -20,18 +21,11 @@ const resolveTheme = (user) => {
   const profileTheme = normalizeTheme(user?.theme);
   if (profileTheme) return profileTheme;
 
-  return document.documentElement.classList.contains("dark") ? "dark" : "light";
+  return "dark";
 };
 
 const applyThemeToDocument = (theme) => {
-  const root = document.documentElement;
-  root.classList.remove("dark");
-  if (theme === "dark") {
-    root.classList.add("dark");
-  }
-  root.removeAttribute("data-skin");
-  localStorage.setItem("appTheme", theme);
-  localStorage.removeItem("appSkin");
+  applyTheme(theme === "dark" ? "dark" : "light");
 };
 
 export default function ThemeToggle({ className = "" }) {
@@ -45,7 +39,9 @@ export default function ThemeToggle({ className = "" }) {
 
   useEffect(() => {
     applyThemeToDocument(theme);
-    window.dispatchEvent(new CustomEvent(APP_THEME_EVENT, { detail: { theme } }));
+    const applied = document.documentElement.classList.contains("dark") ? "dark" : "light";
+    if (applied !== theme) setTheme(applied);
+    window.dispatchEvent(new CustomEvent(APP_THEME_EVENT, { detail: { theme: applied } }));
   }, [theme]);
 
   useEffect(() => {
@@ -74,9 +70,8 @@ export default function ThemeToggle({ className = "" }) {
 
   const handleThemeChange = (nextTheme) => {
     const normalizedTheme = nextTheme === "dark" ? "dark" : "light";
-    if (normalizedTheme !== theme) {
-      setTheme(normalizedTheme);
-    }
+    applyThemeToDocument(normalizedTheme);
+    setTheme(normalizedTheme);
   };
 
   return (
@@ -99,7 +94,7 @@ export default function ThemeToggle({ className = "" }) {
             onClick={() => handleThemeChange(entry.value)}
             className={cn(
               "h-7 rounded-sm px-1.5 sm:px-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
-              isActive && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.45)]"
+              isActive && "bg-ds-s3 text-ds-text hover:bg-ds-s3 hover:text-ds-text"
             )}
             aria-pressed={isActive}
           >

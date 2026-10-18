@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, BarChart3, CalendarDays, ChevronLeft, ChevronRight, Info, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import ImageViewer from "@/components/common/ImageViewer";
 import TradePreviewChart from "@/components/TradePreviewChart";
 import TradePreviewPhotos from "@/components/TradePreviewPhotos";
@@ -26,6 +25,7 @@ import {
 import { useLanguage } from "@/components/LanguageProvider";
 import { useAuth } from "@/lib/AuthContext";
 import { getStrategies, getTradingAccounts, getTrades, updateTrade } from "@/lib/localStorage";
+import { usePnlDisplay } from "@/hooks/use-pnl-display";
 import { loadTradeTagLists, saveTradeTagLists } from "@/lib/tradeTags";
 import {
   cn,
@@ -41,7 +41,6 @@ import {
   formatClosedLabel,
   formatHeldDuration,
   formatOpenedLabel,
-  formatSigned,
   loadVisibleStatsFields,
   plTone,
   saveVisibleStatsFields,
@@ -95,19 +94,8 @@ function loadJournalRange() {
   return "day";
 }
 
-function loadSplitSizes() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem("aikeep-trade-details-split-v4") || "");
-    if (Array.isArray(parsed) && parsed.length === 2 && parsed.every((n) => Number.isFinite(n))) {
-      return parsed;
-    }
-  } catch {
-    /* ignore */
-  }
-  return [70, 30];
-}
-
 function JournalTable({ trades, currentId, onSelect, t, dateFormat, showDate }) {
+  const pnl = usePnlDisplay();
   if (!trades.length) {
     return (
       <p className="text-sm text-muted-foreground py-6 text-center">
@@ -120,7 +108,7 @@ function JournalTable({ trades, currentId, onSelect, t, dateFormat, showDate }) 
     <div className="overflow-auto h-full min-h-0">
       <table className="w-full text-[12px]">
         <thead>
-          <tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground border-b border-white/[0.08]">
+          <tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border">
             {showDate && <th className="py-1.5 pr-2 font-medium">Data</th>}
             <th className="py-1.5 pr-2 font-medium">Symbol</th>
             <th className="py-1.5 pr-2 font-medium">Side</th>
@@ -138,8 +126,8 @@ function JournalTable({ trades, currentId, onSelect, t, dateFormat, showDate }) 
                 key={item.id}
                 onClick={() => { if (!active) onSelect(item); }}
                 className={cn(
-                  "border-b border-white/[0.06] transition-colors",
-                  active ? "bg-primary/12" : "cursor-pointer hover:bg-white/[0.04]"
+                  "border-b border-border transition-colors",
+                  active ? "bg-primary/10" : "cursor-pointer hover:bg-muted"
                 )}
               >
                 {showDate && (
@@ -157,7 +145,7 @@ function JournalTable({ trades, currentId, onSelect, t, dateFormat, showDate }) 
                   {formatTradeClock(item, "entry") || "—"}
                 </td>
                 <td className={cn("py-1.5 pr-2 text-right tabular-nums font-medium", toneClass(plTone(pl)))}>
-                  {pl == null ? "—" : formatSigned(pl)}
+                  {pl == null ? "—" : pnl.formatTrade(item)}
                 </td>
                 <td className="py-1.5 text-right">
                   {item.outcome ? (
@@ -192,7 +180,7 @@ function NotesDock({
   dateFormat,
 }) {
   return (
-    <div className="h-full min-h-0 overflow-hidden flex flex-col">
+    <div className="flex min-h-full flex-col">
       <div className="px-4 pt-2.5 pb-2 flex items-center gap-1.5 shrink-0">
         <p className="text-[13px] font-semibold">Notes</p>
         <Info className="h-3.5 w-3.5 text-muted-foreground" />
@@ -204,8 +192,8 @@ function NotesDock({
           className={cn(
             "h-8 px-2.5 rounded-lg text-[12px] font-medium inline-flex items-center gap-1.5 border",
             notesView === "trade"
-              ? "bg-primary/15 text-primary border-primary/30"
-              : "bg-transparent text-muted-foreground border-white/10 hover:text-foreground"
+              ? "bg-muted text-foreground border-border"
+              : "bg-transparent text-muted-foreground border-border hover:text-foreground"
           )}
         >
           <BarChart3 className="h-3.5 w-3.5" />
@@ -217,8 +205,8 @@ function NotesDock({
           className={cn(
             "h-8 px-2.5 rounded-lg text-[12px] font-medium inline-flex items-center gap-1.5 border",
             notesView === "journal"
-              ? "bg-primary/15 text-primary border-primary/30"
-              : "bg-transparent text-muted-foreground border-white/10 hover:text-foreground"
+              ? "bg-muted text-foreground border-border"
+              : "bg-transparent text-muted-foreground border-border hover:text-foreground"
           )}
         >
           <CalendarDays className="h-3.5 w-3.5" />
@@ -230,7 +218,7 @@ function NotesDock({
             onNotesViewChange("journal");
             onJournalRangeChange(e.target.value);
           }}
-          className="h-8 rounded-lg border border-white/10 bg-background/60 px-2 text-[12px] text-foreground"
+          className="h-8 rounded-lg border border-border bg-muted px-2 text-[12px] text-foreground"
           aria-label="Zakres Journal"
         >
           <option value="day">Dzień</option>
@@ -239,7 +227,7 @@ function NotesDock({
           <option value="all">Wszystkie</option>
         </select>
       </div>
-      <div className="flex-1 min-h-0 overflow-hidden px-4 pb-3">
+      <div className="px-4 pb-4">
         {notesView === "journal" ? (
           <JournalTable
             trades={journalTrades}
@@ -250,7 +238,7 @@ function NotesDock({
             showDate={journalRange !== "day"}
           />
         ) : (
-          <div className="h-full min-h-0">
+          <div>
             <NotesTab
               compact={compact}
               notesDraft={notesDraft}
@@ -263,6 +251,172 @@ function NotesDock({
       </div>
     </div>
   );
+}
+
+const MIN_CHART = 200;
+const MIN_NOTES = 380;
+const PANE_KEY = "aikeep-trade-pane-heights-v1";
+
+function readPaneHeights() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PANE_KEY) || "");
+    if (Number.isFinite(parsed?.chart) && Number.isFinite(parsed?.notes)) {
+      return {
+        chart: Math.max(MIN_CHART, parsed.chart),
+        notes: Math.max(MIN_NOTES, parsed.notes),
+      };
+    }
+  } catch {
+    /* ignore */
+  }
+  return { chart: 560, notes: 440 };
+}
+
+function usePaneHeights() {
+  const [chartH, setChartH] = useState(() => readPaneHeights().chart);
+  const [notesH, setNotesH] = useState(() => readPaneHeights().notes);
+  const sizes = useRef({ chartH, notesH });
+  sizes.current = { chartH, notesH };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PANE_KEY, JSON.stringify({ chart: Math.round(chartH), notes: Math.round(notesH) }));
+    } catch {
+      /* ignore */
+    }
+  }, [chartH, notesH]);
+
+  const dragBy = useCallback((dy) => {
+    const { chartH: chart, notesH: notes } = sizes.current;
+    let nextChart = chart;
+    let nextNotes = notes;
+    if (dy >= 0) {
+      const take = Math.min(dy, Math.max(0, notes - MIN_NOTES));
+      nextChart = chart + dy;
+      nextNotes = notes - take;
+    } else {
+      const up = -dy;
+      const take = Math.min(up, Math.max(0, chart - MIN_CHART));
+      nextNotes = notes + up;
+      nextChart = chart - take;
+    }
+    sizes.current = { chartH: nextChart, notesH: nextNotes };
+    setChartH(nextChart);
+    setNotesH(nextNotes);
+  }, []);
+
+  return { chartH, notesH, dragBy };
+}
+
+const SIDE_KEY = "aikeep-trade-side-w";
+const MIN_SIDE = 260;
+const MAX_SIDE = 560;
+
+function useSideWidth() {
+  const [sideW, setSideW] = useState(() => {
+    try {
+      const n = Number(localStorage.getItem(SIDE_KEY));
+      if (Number.isFinite(n)) return Math.min(MAX_SIDE, Math.max(MIN_SIDE, n));
+    } catch {
+      /* ignore */
+    }
+    return 320;
+  });
+  const widthRef = useRef(sideW);
+  widthRef.current = sideW;
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDE_KEY, String(Math.round(sideW)));
+    } catch {
+      /* ignore */
+    }
+  }, [sideW]);
+
+  const dragX = useCallback((dx) => {
+    const next = Math.min(MAX_SIDE, Math.max(MIN_SIDE, widthRef.current + dx));
+    widthRef.current = next;
+    setSideW(next);
+  }, []);
+
+  return { sideW, dragX };
+}
+
+function ColResizeHandle({ onDrag }) {
+  const lastX = useRef(0);
+  const onPointerDown = (event) => {
+    event.preventDefault();
+    lastX.current = event.clientX;
+    const move = (ev) => {
+      const dx = ev.clientX - lastX.current;
+      lastX.current = ev.clientX;
+      if (dx) onDrag(dx);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  return (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Rozciągnij szerokość wykresu"
+      onPointerDown={onPointerDown}
+      className="mx-1 hidden w-3 shrink-0 cursor-col-resize items-center justify-center self-stretch xl:flex"
+    >
+      <div className="h-14 w-1.5 rounded-full bg-border hover:bg-primary/50" />
+    </div>
+  );
+}
+
+function RowResizeHandle({ onDrag }) {
+  const lastY = useRef(0);
+
+  const onPointerDown = (event) => {
+    event.preventDefault();
+    lastY.current = event.clientY;
+    const move = (ev) => {
+      const dy = ev.clientY - lastY.current;
+      lastY.current = ev.clientY;
+      if (dy) onDrag(dy);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  return (
+    <div
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="Rozciągnij wykres i notatki"
+      onPointerDown={onPointerDown}
+      className="flex h-7 shrink-0 cursor-row-resize items-center justify-center"
+    >
+      <div className="h-1.5 w-14 rounded-full bg-border hover:bg-primary/50" />
+    </div>
+  );
+}
+
+function useWideLayout() {
+  const [wide, setWide] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(min-width: 1280px)").matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1280px)");
+    const sync = () => setWide(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return wide;
 }
 
 function enrichTrade(trade, accounts, strategies) {
@@ -285,13 +439,16 @@ export default function TradeDetails() {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   const { user } = useAuth();
+  const pnl = usePnlDisplay();
   const dateFormat = getDateFormat();
 
+  const wide = useWideLayout();
+  const { sideW, dragX } = useSideWidth();
+  const { chartH, notesH, dragBy } = usePaneHeights();
   const [leftTab, setLeftTab] = useState("stats");
   const [rightTab, setRightTab] = useState("chart");
   const [notesView, setNotesView] = useState("trade");
   const [journalRange, setJournalRange] = useState(loadJournalRange);
-  const [splitSizes, setSplitSizes] = useState(loadSplitSizes);
   const [fieldsOpen, setFieldsOpen] = useState(false);
   const [visibleIds, setVisibleIds] = useState(() => loadVisibleStatsFields(user?.id));
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -532,12 +689,12 @@ export default function TradeDetails() {
   };
 
   return (
-    <div className="flex flex-col gap-3 flex-1 h-full min-h-0 overflow-hidden">
-      <header className="shrink-0 flex flex-wrap items-center justify-between gap-2">
+    <div className="flex flex-col gap-3">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-[12px] border border-border bg-card px-3 py-3 shadow-none">
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           <button
             type="button"
-            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
             onClick={async () => {
               await flushDirty();
               navigate(createPageUrl("Journal"));
@@ -548,7 +705,7 @@ export default function TradeDetails() {
           </button>
           <button
             type="button"
-            className="h-8 w-8 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5 disabled:opacity-30"
+            className="h-8 w-8 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30"
             disabled={!prevTrade}
             onClick={() => goToTrade(prevTrade)}
             aria-label="Poprzednia transakcja"
@@ -558,7 +715,7 @@ export default function TradeDetails() {
           <span className="text-[18px] font-semibold truncate">{trade.symbol || "—"}</span>
           <button
             type="button"
-            className="h-8 w-8 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5 disabled:opacity-30"
+            className="h-8 w-8 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30"
             disabled={!nextTrade}
             onClick={() => goToTrade(nextTrade)}
             aria-label="Następna transakcja"
@@ -586,10 +743,19 @@ export default function TradeDetails() {
             {held ? ` · ${held}` : ""}
           </span>
         </div>
+        <div className="text-right">
+          <p className="text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">P&L</p>
+          <p className={cn("text-[22px] font-semibold tabular-nums leading-none", toneClass(plTone(netPl)))}>
+            {netPl == null ? "—" : pnl.formatTrade(trade)}
+          </p>
+        </div>
       </header>
 
-      <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)] gap-3 min-h-[28rem]">
-        <aside className="min-h-0 max-xl:h-[min(42vh,26rem)] max-xl:min-h-[20rem] h-full rounded-xl border border-white/[0.08] bg-card/40 overflow-hidden flex flex-col">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-start">
+        <aside
+          className="flex h-[min(42vh,26rem)] min-h-[16rem] w-full flex-col overflow-hidden rounded-[12px] border border-border bg-card shadow-none xl:sticky xl:top-0 xl:h-[calc(100dvh-5.5rem)] xl:shrink-0"
+          style={wide ? { width: sideW } : undefined}
+        >
           <TabStrip tabs={LEFT_TABS} value={leftTab} onChange={setLeftTab} variant="line" />
           <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3">
             {leftTab === "stats" && (
@@ -598,13 +764,13 @@ export default function TradeDetails() {
                   <div>
                     <p className="text-[11px] font-medium tracking-wide text-muted-foreground">Net P&L</p>
                     <p className={cn("mt-1 text-[32px] leading-none font-bold tabular-nums tracking-tight", toneClass(plTone(netPl)))}>
-                      {netPl == null ? "—" : formatSigned(netPl)}
+                      {netPl == null ? "—" : pnl.formatTrade(trade)}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setFieldsOpen(true)}
-                    className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
                     aria-label="Dostosuj widoczne pola"
                   >
                     <Settings2 className="h-3.5 w-3.5" />
@@ -617,7 +783,7 @@ export default function TradeDetails() {
                   t={t}
                   settingsInRow={false}
                 />
-                <div className="mt-5 pt-4 border-t border-white/[0.08]">
+                <div className="mt-5 pt-4 border-t border-border">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-3">Tags</p>
                   <TagsTab
                     trade={trade}
@@ -655,58 +821,30 @@ export default function TradeDetails() {
             )}
           </div>
         </aside>
-
-        <section className="min-h-0 min-w-0 h-full rounded-xl border border-white/[0.08] bg-card/40 overflow-hidden flex flex-col">
+        <ColResizeHandle onDrag={dragX} />
+        <section className="flex min-w-0 flex-1 flex-col rounded-[12px] border border-border bg-card shadow-none">
           <TabStrip tabs={RIGHT_TABS} value={rightTab} onChange={setRightTab} variant="line" />
 
           {rightTab === "notes" ? (
-            <div className="flex-1 min-h-0">
+            <div className="min-h-0 flex-1 overflow-y-auto" style={{ minHeight: notesH }}>
               <NotesDock {...notesDockProps} compact={false} />
             </div>
           ) : (
-            <ResizablePanelGroup
-              direction="vertical"
-              autoSaveId="aikeep-trade-details-split-v4"
-              onLayout={(sizes) => {
-                setSplitSizes(sizes);
-                try {
-                  localStorage.setItem("aikeep-trade-details-split-v4", JSON.stringify(sizes));
-                } catch {
-                  /* ignore */
-                }
-              }}
-              className="flex-1 min-h-0"
-            >
-              <ResizablePanel
-                id="chart"
-                order={1}
-                defaultSize={Math.max(splitSizes[0] || 70, 45)}
-                minSize={40}
-                className="min-h-0 overflow-hidden"
-              >
-                <div className="h-full min-h-0 p-2">
-                  {rightTab === "chart" ? (
-                    <TradePreviewChart key={trade.id} trade={trade} />
-                  ) : (
-                    <div className="h-full overflow-y-auto p-2">
-                      <RunningPlTab trade={trade} />
-                    </div>
-                  )}
-                </div>
-              </ResizablePanel>
-              <ResizableHandle pill />
-              <ResizablePanel
-                id="notes"
-                order={2}
-                defaultSize={splitSizes[1]}
-                minSize={12}
-                className="min-h-0 overflow-hidden"
-              >
-                <div className="h-full min-h-0 overflow-hidden border-t border-white/[0.06]">
-                  <NotesDock {...notesDockProps} compact />
-                </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
+            <>
+              <div className="shrink-0 p-2" style={{ height: chartH }}>
+                {rightTab === "chart" ? (
+                  <TradePreviewChart key={trade.id} trade={trade} />
+                ) : (
+                  <div className="h-full overflow-y-auto">
+                    <RunningPlTab trade={trade} />
+                  </div>
+                )}
+              </div>
+              <RowResizeHandle onDrag={dragBy} />
+              <div className="shrink-0 border-t border-border" style={{ minHeight: notesH }}>
+                <NotesDock {...notesDockProps} compact={false} />
+              </div>
+            </>
           )}
         </section>
       </div>

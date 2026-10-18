@@ -1,12 +1,19 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
 import { ExternalLink, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   CHART_INTERVALS,
+  fetchTradeCandles,
+  intervalSeconds,
+  snapCandleTime,
   tradePriceLevels,
+  tradeUnix,
   tradingViewEmbedSrc,
   tradingViewSymbol,
 } from "@/lib/tradePreviewMarketData";
+
+const TradeCandleChart = lazy(() => import("@/components/TradeCandleChart"));
 
 function intervalFromTrade(trade) {
   const tf = String(trade?.timeframe || "").toUpperCase().replace(/\s/g, "");
@@ -23,11 +30,11 @@ function intervalFromTrade(trade) {
 function LevelChip({ label, value, tone }) {
   if (value == null) return null;
   const cls =
-    tone === "profit" ? "text-profit bg-profit/10 border-profit/20"
-      : tone === "loss" ? "text-loss bg-loss/10 border-loss/20"
-        : "text-muted-foreground bg-white/5 border-white/10";
+    tone === "profit" ? "text-ds-pos bg-ds-pos-tint border-transparent"
+      : tone === "loss" ? "text-ds-neg bg-ds-neg-tint border-transparent"
+        : "text-ds-text2 bg-ds-s3 border-transparent";
   return (
-    <span className={cn("text-[11px] px-2 py-0.5 rounded-md border tabular-nums", cls)}>
+    <span className={cn("text-[11px] px-2 py-0.5 rounded-ds-xs border tabular-nums", cls)}>
       {label} {value}
     </span>
   );
@@ -90,17 +97,10 @@ function mountIframeFallback(el, symbol, intervalId) {
   el.appendChild(iframe);
 }
 
-export default function TradePreviewChart({ trade }) {
+function TradingViewPane({ trade, interval, reloadTick }) {
   const hostId = `tv_${useId().replace(/:/g, "")}`;
   const hostRef = useRef(null);
-  const [interval, setIntervalId] = useState(() => intervalFromTrade(trade));
-  const [reloadTick, setReloadTick] = useState(0);
-  const levels = tradePriceLevels(trade);
   const tvSymbol = tradingViewSymbol(trade?.symbol);
-
-  useEffect(() => {
-    setIntervalId(intervalFromTrade(trade));
-  }, [trade?.id, trade?.symbol]);
 
   useEffect(() => {
     const el = hostRef.current;
@@ -118,7 +118,6 @@ export default function TradePreviewChart({ trade }) {
           mountIframeFallback(el, trade?.symbol, interval);
           return;
         }
-        // eslint-disable-next-line no-new
         new window.TradingView.widget({
           autosize: true,
           width: el.clientWidth,
@@ -129,7 +128,9 @@ export default function TradePreviewChart({ trade }) {
           theme: "dark",
           style: "1",
           locale: "pl",
-          toolbar_bg: "#0b1220",
+          toolbar_bg: "#0a0e18",
+          backgroundColor: "rgba(10, 14, 24, 1)",
+          gridColor: "rgba(255, 255, 255, 0.04)",
           enable_publishing: false,
           hide_top_toolbar: false,
           hide_side_toolbar: false,
@@ -159,23 +160,78 @@ export default function TradePreviewChart({ trade }) {
     };
   }, [hostId, tvSymbol, trade?.symbol, interval, reloadTick]);
 
+  return (
+    <div
+      id={hostId}
+      ref={hostRef}
+      className="absolute inset-0 [&_iframe]:!h-full [&_iframe]:!w-full [&_iframe]:block"
+    />
+  );
+}
+
+// Real candles only count if they cover the trade's entry time; otherwise fall back to TradingView.
+function useTradeCandles(trade, interval, reloadTick) {
+  const [state, setState] = useState({ status: "loading", candles: [] });
+  useEffect(() => {
+    let cancelled = false;
+    setState({ status: "loading", candles: [] });
+    fetchTradeCandles(trade?.symbol, interval, trade)
+      .then((res) => {
+        if (cancelled) return;
+        const covers = snapCandleTime(res.candles, tradeUnix(trade, "entry"), intervalSeconds(interval)) != null;
+        setState(res.candles.length && covers ? { status: "ready", candles: res.candles } : { status: "fallback", candles: [] });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.warn("Trade candles unavailable:", err?.message);
+        setState({ status: "fallback", candles: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [trade?.id, trade?.symbol, interval, reloadTick]);
+  return [state, () => setState({ status: "fallback", candles: [] })];
+}
+
+function ChartSkeleton() {
+  return (
+    <div role="status" aria-label="Loading chart" className="absolute inset-0 flex items-end gap-1.5 p-4">
+      {[40, 55, 35, 60, 72, 50, 66, 80, 58, 70, 62, 85].map((h, idx) => (
+        <Skeleton key={idx} className="flex-1 rounded-ds-xs" style={{ height: `${h}%` }} />
+      ))}
+    </div>
+  );
+}
+
+export default function TradePreviewChart({ trade }) {
+  const [interval, setIntervalId] = useState(() => intervalFromTrade(trade));
+  const [reloadTick, setReloadTick] = useState(0);
+  const levels = tradePriceLevels(trade);
+  const tvSymbol = tradingViewSymbol(trade?.symbol);
+  const [candleState, switchToFallback] = useTradeCandles(trade, interval, reloadTick);
+
+  useEffect(() => {
+    setIntervalId(intervalFromTrade(trade));
+  }, [trade?.id, trade?.symbol]);
+
   const entryTone = levels.isLong ? "profit" : "loss";
   const exitTone = levels.isLong ? "loss" : "profit";
 
   return (
     <div className="h-full min-h-0 flex flex-col gap-2">
       <div className="flex items-center gap-2 overflow-x-auto pb-0.5 shrink-0">
-        <div className="flex items-center gap-0.5 rounded-lg bg-white/[0.04] p-0.5 min-w-max">
+        <div className="flex items-center gap-0.5 rounded-ds-sm bg-ds-s2 p-0.5 min-w-max" role="group" aria-label="Interval">
           {CHART_INTERVALS.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => setIntervalId(item.id)}
+              aria-pressed={interval === item.id}
               className={cn(
-                "h-7 px-2 rounded-md text-[11px] font-medium",
+                "h-7 px-2 rounded-ds-xs text-[11px] font-medium transition-colors",
                 interval === item.id
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-ds-s3 text-ds-text"
+                  : "text-ds-text3 hover:text-ds-text"
               )}
             >
               {item.label}
@@ -184,7 +240,7 @@ export default function TradePreviewChart({ trade }) {
         </div>
         <button
           type="button"
-          className="h-7 px-2 rounded-md text-[11px] font-medium text-muted-foreground hover:text-foreground bg-white/[0.04]"
+          className="h-7 px-2 rounded-ds-sm text-[11px] font-medium text-ds-text2 transition-colors hover:text-ds-text bg-ds-s2"
           onClick={() => setReloadTick((n) => n + 1)}
         >
           <RotateCcw className="h-3 w-3 inline mr-1" />
@@ -194,7 +250,7 @@ export default function TradePreviewChart({ trade }) {
           href={`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(tvSymbol)}`}
           target="_blank"
           rel="noreferrer"
-          className="h-7 px-2 rounded-md text-[11px] font-medium text-muted-foreground hover:text-foreground bg-white/[0.04] inline-flex items-center gap-1 shrink-0"
+          className="h-7 px-2 rounded-ds-sm text-[11px] font-medium text-ds-text2 transition-colors hover:text-ds-text bg-ds-s2 inline-flex items-center gap-1 shrink-0"
         >
           <ExternalLink className="h-3 w-3" />
           Pełny TV
@@ -211,12 +267,16 @@ export default function TradePreviewChart({ trade }) {
         ))}
       </div>
 
-      <div className="relative flex-1 min-h-0 rounded-xl border border-white/[0.06] bg-black/20 overflow-hidden">
-        <div
-          id={hostId}
-          ref={hostRef}
-          className="absolute inset-0 [&_iframe]:!h-full [&_iframe]:!w-full [&_iframe]:block"
-        />
+      <div className="relative flex-1 min-h-[260px] rounded-ds-md border border-ds-line bg-ds-s2 overflow-hidden">
+        {candleState.status === "loading" ? <ChartSkeleton /> : null}
+        {candleState.status === "ready" ? (
+          <Suspense fallback={<ChartSkeleton />}>
+            <TradeCandleChart candles={candleState.candles} trade={trade} interval={interval} onError={switchToFallback} />
+          </Suspense>
+        ) : null}
+        {candleState.status === "fallback" ? (
+          <TradingViewPane trade={trade} interval={interval} reloadTick={reloadTick} />
+        ) : null}
       </div>
     </div>
   );

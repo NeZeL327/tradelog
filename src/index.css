@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -13,10 +12,10 @@ body {
   background-color: hsl(var(--app-shell));
 }
 
-/* 75% of default 16px — denser UI at browser 100% */
+/* Screenshot scale: Inter at a normal UI size, not a shrunk 12px root. */
 @media (min-width: 1024px) {
   html {
-    font-size: 12px;
+    font-size: 15px;
   }
 }
 
@@ -24,7 +23,7 @@ body {
   --app-zoom: 1;
   /* Top bars + dock: small edge inset; main content: larger gutters */
   --app-edge: 0.5rem;
-  --app-content-gutter: 2.5rem;
+  --app-content-gutter: 1.25rem;
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -39,26 +38,14 @@ body {
 @media (min-width: 768px) {
   #root {
     --app-edge: 0.65rem;
-    --app-content-gutter: 4rem;
+    --app-content-gutter: 1.5rem;
   }
 }
 
 @media (min-width: 1280px) {
   #root {
     --app-edge: 0.75rem;
-    --app-content-gutter: 7rem;
-  }
-}
-
-@media (min-width: 1536px) {
-  #root {
-    --app-content-gutter: 10rem;
-  }
-}
-
-@media (min-width: 1800px) {
-  #root {
-    --app-content-gutter: 14rem;
+    --app-content-gutter: 1.5rem;
   }
 }
 
@@ -88,33 +75,34 @@ body {
 }
 
 .app-dock-pad {
-  /* Extra room for larger AppDock */
-  padding-bottom: calc(11rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
 }
 
-/* Larger bottom dock — compensated for 75% root font */
-.app-dock-bar {
-  gap: 0.45rem;
-  padding: 0.7rem 0.95rem;
-  border-radius: 1.25rem;
-  max-width: min(100%, 1280px);
+.app-side-nav .app-dock-link {
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 0;
+  justify-content: center;
+  padding: 0;
+  border-radius: 0.75rem;
 }
 
-.app-dock-bar .app-dock-link {
-  min-width: 3.75rem;
-  padding: 0.55rem 0.85rem;
-  gap: 0.25rem;
-  font-size: 0.85rem;
-  border-radius: 0.9rem;
+.app-side-nav .app-dock-link svg {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
-.app-dock-bar .app-dock-link svg {
-  width: 1.35rem;
-  height: 1.35rem;
+.dashboard-surface .bg-card,
+.bg-card {
+  box-shadow: inset 0 1px 0 hsl(210 40% 90% / 0.05), 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
-.app-dock-bar .app-dock-sep {
-  height: 2.1rem;
+.dashboard-surface table tbody tr {
+  transition: background-color 150ms ease;
+}
+
+.dashboard-surface table tbody tr:hover {
+  background: hsl(var(--accent) / 0.55);
 }
 
 /* Equal-height dashboard panel rows */
@@ -158,110 +146,178 @@ body {
   clip-path: inset(1px);
 }
 
-/* ===== DESIGN TOKENS — Carbon Ledger ===== */
+/* Light tokens. Dark reference palette lives on .dark only, so the LIGHT/DARK switch changes the screen. */
 @layer base {
   :root {
-    --background: 80 8% 97%;
-    --foreground: 220 12% 12%;
+    --background: 210 20% 98%;
+    --foreground: 218 28% 16%;
     --card: 0 0% 100%;
-    --card-foreground: 220 12% 12%;
+    --card-foreground: 218 28% 16%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 12% 12%;
-
-    --primary: 158 72% 32%;
+    --popover-foreground: 218 28% 16%;
+    --primary: 234 77% 61%;
     --primary-foreground: 0 0% 100%;
-
-    --secondary: 80 8% 94%;
-    --secondary-foreground: 220 12% 16%;
-    --muted: 80 8% 94%;
-    --muted-foreground: 220 8% 40%;
-
-    --accent: 80 8% 93%;
-    --accent-foreground: 220 12% 12%;
-
-    --destructive: 0 58% 46%;
+    --secondary: 210 16% 93%;
+    --secondary-foreground: 218 16% 32%;
+    --muted: 210 16% 93%;
+    --muted-foreground: 215 12% 40%;
+    --accent: 210 16% 93%;
+    --accent-foreground: 218 28% 16%;
+    --destructive: 350 72% 46%;
     --destructive-foreground: 0 0% 100%;
-
-    --border: 80 6% 88%;
-    --input: 80 6% 88%;
-    --ring: 158 72% 32%;
-    --radius: 0.75rem;
+    --border: 214 18% 84%;
+    --input: 214 18% 84%;
+    --ring: 234 77% 61%;
+    --radius: 0.625rem;
     --duration: 150ms;
-
-    --profit: 158 68% 32%;
-    --loss: 0 58% 46%;
-    --warning: 38 55% 42%;
-    --surface-2: 80 8% 93%;
-
-    --chart-1: 158 72% 32%;
-    --chart-2: 158 68% 32%;
-    --chart-3: 0 58% 46%;
-    --chart-4: 220 8% 42%;
-    --chart-5: 38 55% 42%;
-
-    --app-shell: 80 8% 95%;
-    --sidebar-background: 80 8% 95%;
-    --sidebar-foreground: 220 10% 22%;
-    --sidebar-primary: 152 28% 32%;
+    --profit: 152 60% 32%;
+    --loss: 350 72% 46%;
+    --warning: 38 80% 42%;
+    --surface-2: 210 16% 95%;
+    --chart-1: 234 77% 61%;
+    --chart-2: 152 60% 32%;
+    --chart-3: 350 72% 46%;
+    --chart-4: 215 12% 40%;
+    --chart-5: 38 80% 42%;
+    --app-shell: 210 18% 96%;
+    --sidebar-background: 210 18% 96%;
+    --sidebar-foreground: 218 16% 32%;
+    --sidebar-primary: 234 77% 61%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 152 16% 92%;
-    --sidebar-accent-foreground: 152 28% 22%;
-    --sidebar-border: 80 6% 88%;
-    --sidebar-ring: 152 28% 32%;
+    --sidebar-accent: 210 16% 93%;
+    --sidebar-accent-foreground: 218 28% 16%;
+    --sidebar-border: 214 18% 84%;
+    --sidebar-ring: 234 77% 61%;
+    --window-bg: 0 0% 100%;
+    --window-border: 214 18% 84%;
+    --window-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+
+    --font-sans: "Manrope", "Inter", system-ui, sans-serif;
+
+    /* Design-system tokens (LIGHT values so the LIGHT toggle stays readable) */
+    --ds-bg: #f4f6fa;
+    --ds-glow: transparent;
+    --ds-s1: #ffffff;
+    --ds-s2: rgba(15, 23, 42, 0.035);
+    --ds-s3: rgba(15, 23, 42, 0.07);
+    --ds-line: rgba(15, 23, 42, 0.09);
+    --ds-frame: rgba(15, 23, 42, 0.12);
+    --ds-text: #1c2430;
+    --ds-text2: #4b5568;
+    --ds-text3: #646d80;
+    --ds-accent: #4f5fe8;
+    --ds-accent-glow: 0 0 18px rgba(79, 95, 232, 0.3);
+    --ds-pos: #2f9e44;
+    --ds-pos-tint: rgba(47, 158, 68, 0.12);
+    --ds-neg: #d63c47;
+    --ds-neg-tint: rgba(214, 60, 71, 0.12);
+    --ds-warn: #b7880f;
+    --ds-warn-tint: rgba(183, 136, 15, 0.14);
+    --ds-sel: rgba(79, 95, 232, 0.1);
+    --ds-sel-line: rgba(79, 95, 232, 0.25);
+    --ds-focus: rgba(79, 95, 232, 0.5);
+    --ds-glass: rgba(255, 255, 255, 0.92);
+    --ds-shadow-pop: 0 16px 40px rgba(15, 23, 42, 0.14);
+    --ds-skeleton: rgba(15, 23, 42, 0.06);
+    --ds-pill-line: rgba(15, 23, 42, 0.12);
+    --ds-inset: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    --ds-frame-top: rgba(15, 23, 42, 0.14);
+    --ds-frame-bottom: rgba(15, 23, 42, 0.08);
+    --ds-backdrop: rgba(15, 23, 42, 0.35);
+
+    /* Shared scale (theme independent) */
+    --ds-radius-xs: 4px;
+    --ds-radius-sm: 8px;
+    --ds-radius-md: 12px;
+    --ds-radius-lg: 16px;
+    --ds-radius-xl: 24px;
+    --ds-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --ds-dur: 180ms;
   }
 
   .dark {
-    /* SCR: deep navy shell, cyan accents, emerald profit, coral loss */
-    --background: 222 48% 6.5%;
-    --foreground: 210 40% 98%;
-    --card: 220 38% 10.5%;
-    --card-foreground: 210 40% 98%;
-    --popover: 220 40% 9%;
-    --popover-foreground: 210 40% 98%;
+    /* shadcn HSL tokens resolved from the --ds-* palette below */
+    --background: 225 44% 4%;
+    --foreground: 223 41% 94%;
+    --card: 224 41% 7%;
+    --card-foreground: 223 41% 94%;
+    --popover: 224 38% 8%;
+    --popover-foreground: 223 41% 94%;
 
-    --primary: 186 100% 52%;
-    --primary-foreground: 222 50% 6%;
+    --primary: 233 100% 71%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 30% 14%;
-    --secondary-foreground: 210 28% 84%;
-    --muted: 220 28% 13%;
-    --muted-foreground: 210 18% 64%;
+    --secondary: 224 26% 10%;
+    --secondary-foreground: 225 17% 63%;
+    --muted: 224 26% 10%;
+    --muted-foreground: 225 17% 63%;
 
-    --accent: 210 36% 15%;
-    --accent-foreground: 210 40% 96%;
+    --accent: 224 22% 13%;
+    --accent-foreground: 223 41% 94%;
 
-    --destructive: 4 90% 68%;
-    --destructive-foreground: 0 40% 12%;
+    --destructive: 357 86% 64%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 210 32% 20%;
-    --input: 220 30% 13%;
-    --ring: 186 100% 52%;
+    --border: 224 16% 13%;
+    --input: 224 26% 10%;
+    --ring: 233 100% 71%;
     --radius: 0.75rem;
+    --duration: 180ms;
 
-    --profit: 142 90% 48%;
-    --loss: 0 90% 66%;
-    --warning: 38 78% 58%;
-    --surface-2: 220 32% 12%;
+    --profit: 110 62% 64%;
+    --loss: 357 86% 64%;
+    --warning: 44 77% 56%;
+    --surface-2: 224 26% 10%;
 
-    --chart-1: 186 100% 52%;
-    --chart-2: 142 90% 48%;
-    --chart-3: 0 90% 66%;
-    --chart-4: 210 18% 64%;
-    --chart-5: 38 78% 58%;
+    --chart-1: 233 100% 71%;
+    --chart-2: 110 62% 64%;
+    --chart-3: 357 86% 64%;
+    --chart-4: 225 17% 63%;
+    --chart-5: 44 77% 56%;
 
-    --app-shell: 220 55% 5%;
-    --sidebar-background: 220 55% 5%;
-    --sidebar-foreground: 210 28% 84%;
-    --sidebar-primary: 186 100% 52%;
-    --sidebar-primary-foreground: 222 50% 6%;
-    --sidebar-accent: 220 30% 13%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 210 28% 17%;
-    --sidebar-ring: 186 100% 52%;
+    --app-shell: 225 44% 4%;
+    --sidebar-background: 225 44% 4%;
+    --sidebar-foreground: 225 17% 63%;
+    --sidebar-primary: 233 100% 71%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 224 22% 13%;
+    --sidebar-accent-foreground: 223 41% 94%;
+    --sidebar-border: 224 16% 13%;
+    --sidebar-ring: 233 100% 71%;
 
-    --window-bg: 220 38% 10.5%;
-    --window-border: 210 40% 22%;
-    --window-shadow: 0 0 0 1px hsl(199 80% 50% / 0.12);
+    --window-bg: 224 41% 7%;
+    --window-border: 224 16% 16%;
+    --window-shadow: none;
+
+    --ds-bg: #05070d;
+    --ds-glow: radial-gradient(ellipse 1100px 720px at 50% -140px, #2a4a8a 0%, rgba(16, 26, 51, 0.85) 42%, transparent 74%);
+    --ds-s1: #0a0e18;
+    --ds-s2: rgba(255, 255, 255, 0.035);
+    --ds-s3: rgba(255, 255, 255, 0.07);
+    --ds-line: rgba(255, 255, 255, 0.07);
+    --ds-frame: rgba(255, 255, 255, 0.12);
+    --ds-text: #e8ecf5;
+    --ds-text2: #9099b2;
+    --ds-text3: #868ea5;
+    --ds-accent: #6b7cff;
+    --ds-accent-glow: 0 0 24px rgba(107, 124, 255, 0.45);
+    --ds-pos: #7ddc6b;
+    --ds-pos-tint: rgba(125, 220, 107, 0.14);
+    --ds-neg: #f2555f;
+    --ds-neg-tint: rgba(242, 85, 95, 0.14);
+    --ds-warn: #e6b83a;
+    --ds-warn-tint: rgba(230, 184, 58, 0.14);
+    --ds-sel: rgba(107, 124, 255, 0.12);
+    --ds-sel-line: rgba(107, 124, 255, 0.25);
+    --ds-focus: rgba(107, 124, 255, 0.5);
+    --ds-glass: rgba(12, 16, 28, 0.86);
+    --ds-shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.45);
+    --ds-skeleton: rgba(255, 255, 255, 0.05);
+    --ds-pill-line: rgba(255, 255, 255, 0.1);
+    --ds-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    --ds-frame-top: rgba(255, 255, 255, 0.16);
+    --ds-frame-bottom: rgba(255, 255, 255, 0.05);
+    --ds-backdrop: rgba(5, 7, 13, 0.6);
   }
 }
 
@@ -271,18 +327,17 @@ body {
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-sans);
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    letter-spacing: 0.01em;
+    letter-spacing: -0.011em;
   }
 }
 
-/* ===== ATMOSPHERE — flat carbon, no glow ===== */
 html.dark .app-atmosphere {
-  background-color: hsl(var(--app-shell));
+  background-color: var(--ds-bg);
   background-image: none;
 }
 
@@ -382,7 +437,7 @@ html.dark .dashboard-surface {
 }
 
 .type-metric {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-sans);
   font-size: 1.75rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -392,7 +447,7 @@ html.dark .dashboard-surface {
 }
 
 .type-metric-sm {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-sans);
   font-size: 1.0625rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -423,7 +478,7 @@ h1, h2, h3 {
 
 /* Monospaced numbers for financial data */
 .font-mono {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
 
@@ -579,7 +634,7 @@ html.dark .dash-scr .dash-page-sub {
 }
 
 html.dark .dash-scr .dash-panel-title {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -589,7 +644,7 @@ html.dark .dash-scr .dash-panel-title {
 
 /* Secondary panels use same title scale as SCR (not tiny uppercase) */
 html.dark .dash-scr .cyber-panel-title {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -598,7 +653,7 @@ html.dark .dash-scr .cyber-panel-title {
 }
 
 html.dark .dash-scr .data-mono {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
 
@@ -641,7 +696,7 @@ html.dark .dash-scr .cyber-gauge {
 }
 
 html.dark .dash-scr .cyber-gauge-value {
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-sans);
   font-size: 0.95rem;
 }
 
@@ -679,13 +734,13 @@ html.dark .dash-scr .cyber-stat-tile {
 
 .calendar-day:hover {
   background: hsl(var(--accent));
-  border-color: hsl(var(--primary) / 0.3);
+  border-color: transparent;
 }
 
 .calendar-day-selected {
-  background: hsl(var(--primary) / 0.1) !important;
-  border-color: hsl(var(--primary) / 0.55) !important;
-  box-shadow: none;
+  background: hsl(var(--accent)) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .calendar-day-today {
@@ -791,7 +846,7 @@ html.dark .dashboard-kpi-row > .ocean-stat-card {
 .recharts-cartesian-axis-tick-value {
   fill: hsl(var(--muted-foreground));
   font-size: 11px;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-family: var(--font-sans);
 }
 
 .recharts-default-tooltip {
@@ -843,7 +898,7 @@ html:not(.dark) main.cyber-dashboard.dashboard-surface {
 .cyber-app-header .header-cluster {
   border: 1px solid hsl(var(--border) / 0.85);
   border-radius: 0.5rem;
-  background: hsl(220 14% 12% / 0.72);
+  background: hsl(var(--card));
   padding-left: 0.2rem;
   padding-right: 0.2rem;
 }
@@ -931,13 +986,13 @@ html.dark main.cyber-dashboard .border.bg-card.text-card-foreground:not(.ocean-s
 }
 
 html.dark main.cyber-dashboard table thead th {
-  background: hsl(var(--muted));
-  border-color: hsl(var(--border));
-  color: hsl(var(--muted-foreground));
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 10px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--ds-text3);
+  font-family: var(--font-sans);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -1066,14 +1121,19 @@ html.dark .cyber-dialog-header {
 }
 
 html.dark main.cyber-dashboard .calendar-day-selected {
-  background: hsl(var(--primary) / 0.12) !important;
-  border-color: hsl(var(--primary) / 0.45) !important;
-  box-shadow: none;
+  background: var(--ds-s3) !important;
+  border-color: var(--ds-frame) !important;
+  box-shadow: none !important;
+}
+
+html.dark main.cyber-dashboard .calendar-day:hover {
+  border-color: transparent !important;
+  background: var(--ds-s3);
 }
 
 html.dark main.cyber-dashboard .calendar-day-today:not(.calendar-day-selected) {
-  border-color: hsl(var(--foreground) / 0.35) !important;
-  box-shadow: none;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .cyber-columns-grid {
@@ -1170,7 +1230,7 @@ html.dark .cyber-panel-hero {
 
 html.dark .cyber-panel-title {
   color: hsl(var(--muted-foreground));
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   letter-spacing: 0.06em;
 }
@@ -1549,13 +1609,14 @@ table tbody tr:hover {
   filter: blur(70px);
 }
 
-.auth-orb-a {
-  width: 28rem;
-  height: 28rem;
-  top: -8rem;
-  right: -6rem;
-  background: hsl(160 72% 42% / 0.22);
-  animation: authOrbA 16s ease-in-out infinite;
+.auth-orb-a,
+.auth-orb-b,
+.auth-orb-c {
+  background: transparent;
+}
+
+.auth-logo-glow {
+  box-shadow: none;
 }
 
 .auth-orb-b {
@@ -1563,8 +1624,7 @@ table tbody tr:hover {
   height: 24rem;
   bottom: -7rem;
   left: -5rem;
-  background: hsl(210 40% 40% / 0.18);
-  animation: authOrbB 20s ease-in-out infinite;
+  background: transparent;
 }
 
 .auth-orb-c {
@@ -1572,13 +1632,12 @@ table tbody tr:hover {
   height: 14rem;
   top: 42%;
   left: 38%;
-  background: hsl(160 72% 42% / 0.1);
-  animation: authOrbC 12s ease-in-out infinite;
+  background: transparent;
 }
 
 .auth-logo-glow {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 28px hsl(160 72% 42% / 0.18);
-  animation: authLogoPulse 4.5s ease-in-out infinite;
+  box-shadow: none;
+  animation: none;
 }
 
 .auth-journal-item {
@@ -1896,7 +1955,7 @@ table tbody tr:hover {
 
 .premium-title,
 .premium-subtitle {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
   letter-spacing: -0.02em;
 }
 
@@ -2137,11 +2196,8 @@ table tbody tr:hover {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background-color: #040b1a;
-  background:
-    linear-gradient(180deg, rgba(2, 6, 23, 0.1), rgba(2, 6, 23, 0.34)),
-    url('/trading-bg-user.png?v=7') var(--public-bg-focus-x) var(--public-bg-focus-y) / var(--public-bg-main-size) no-repeat,
-    linear-gradient(180deg, #020617 0%, #081126 44%, #030a19 100%);
+  background: #080D17;
+  background-image: none;
 }
 
 .market-home::before,
@@ -2195,7 +2251,7 @@ table tbody tr:hover {
   .grid.gap-6 { gap: 1rem; }
 }
 
-.rounded-full {
+.rounded-full:not(.hidden) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2317,25 +2373,16 @@ table th, table td {
 /* --- Public/marketing pages: carbon + lime wash --- */
 .market-home,
 .public-trading-bg {
-  background-color: #070a14 !important;
-  background:
-    radial-gradient(1400px 700px at 50% -10%, hsl(var(--primary) / 0.08), transparent 65%),
-    radial-gradient(1100px 600px at 12% 110%, hsl(var(--primary) / 0.04), transparent 55%),
-    linear-gradient(180deg, #070a14 0%, #0a0e1a 45%, #060912 100%) !important;
+  background: #080D17 !important;
+  background-image: none !important;
 }
 
 .market-home::before,
-.public-trading-bg::before {
-  background:
-    radial-gradient(circle at 18% 60%, hsl(var(--primary) / 0.05), transparent 40%),
-    radial-gradient(circle at 86% 40%, hsl(var(--foreground) / 0.04), transparent 42%) !important;
-  opacity: 0.6 !important;
-}
-
+.public-trading-bg::before,
 .market-home::after,
 .public-trading-bg::after {
-  background:
-    linear-gradient(180deg, rgba(7, 10, 20, 0) 0%, rgba(7, 10, 20, 0.45) 70%, rgba(7, 10, 20, 0.85) 100%) !important;
+  background: none !important;
+  opacity: 0 !important;
 }
 
 /* --- CTA: Wise-style lime, no glow --- */
@@ -2453,17 +2500,22 @@ table th, table td {
 
 /* Public hero card */
 .fx-card-dark {
-  background: linear-gradient(180deg, rgba(15, 19, 32, 0.92) 0%, rgba(11, 14, 24, 0.92) 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.7),
-              inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
-  border-radius: 0.625rem;
+  background: #0E1624 !important;
+  border: 1px solid #203149 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+  border-radius: 12px;
+  backdrop-filter: none !important;
+}
+
+.fx-card-dark.hero-card::before,
+.fx-card-dark.hero-card::after {
+  display: none !important;
 }
 
 .fx-input-dark {
-  background: rgba(7, 10, 20, 0.6) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: #f1f5f9 !important;
+  background: #111B2B !important;
+  border: 1px solid #203149 !important;
+  color: #E2E8F0 !important;
 }
 .fx-input-dark:focus,
 .fx-input-dark:focus-visible {
@@ -2533,16 +2585,17 @@ html.dark main.cyber-dashboard input[type="email"],
 html.dark main.cyber-dashboard input[type="password"],
 html.dark main.cyber-dashboard textarea,
 html.dark main.cyber-dashboard select {
-  border-color: hsl(var(--border)) !important;
-  background: hsl(var(--app-shell)) !important;
-  border-radius: 6px;
+  border-color: var(--ds-line) !important;
+  background: var(--ds-s2) !important;
+  color: var(--ds-text) !important;
+  border-radius: 10px;
 }
 
 html.dark main.cyber-dashboard input:focus,
 html.dark main.cyber-dashboard textarea:focus,
 html.dark main.cyber-dashboard select:focus {
-  border-color: hsl(var(--primary) / 0.55) !important;
-  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.28) !important;
+  border-color: var(--ds-sel-line) !important;
+  box-shadow: 0 0 0 2px var(--ds-focus) !important;
 }
 
 html.dark main.cyber-dashboard [role="tab"][data-state="active"] {
@@ -2554,10 +2607,10 @@ html.dark main.cyber-dashboard [role="tab"][data-state="active"] {
 
 html.dark main.cyber-dashboard .cyber-primary-btn,
 main.cyber-dashboard .cyber-primary-btn {
-  background: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
-  box-shadow: none !important;
-  border: none !important;
+  background: var(--ds-accent) !important;
+  color: #ffffff !important;
+  box-shadow: var(--ds-accent-glow) !important;
+  border: 1px solid transparent !important;
 }
 
 html.dark .cyber-page-title {
@@ -2658,11 +2711,11 @@ select,
 .cyber-page-title,
 .premium-title,
 .premium-subtitle {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 
 html.dark [data-sidebar="sidebar"] {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 
 html.dark [data-sidebar="group"]:first-of-type [data-sidebar="group-label"] {
@@ -2675,7 +2728,7 @@ html.dark [data-sidebar="group-label"] {
   margin-top: 0.75rem;
   margin-bottom: 0 !important;
   padding: 4px 8px !important;
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   line-height: 14px !important;
@@ -2687,7 +2740,7 @@ html.dark [data-sidebar="group-label"] {
 html.dark [data-sidebar="menu-button"] {
   height: 30px !important;
   border-radius: 8px !important;
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   line-height: 16px !important;
@@ -2794,7 +2847,7 @@ html.dark .cyber-hero-sub,
 html.dark .cyber-panel-title,
 html.dark .cyber-stat-label,
 html.dark table th {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
 }
 
 html.dark .type-metric,
@@ -2809,21 +2862,20 @@ html.dark table td.tabular-nums,
 html.dark .tabular-nums.data-mono,
 html.dark .ocean-stat-card .tabular-nums,
 html.dark .cyber-stat-tile .tabular-nums {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-family: var(--font-sans) !important;
   font-variant-numeric: tabular-nums;
 }
 
 html.dark .cyber-panel-title,
 html.dark .cyber-stat-label,
 html.dark .ocean-stat-card .uppercase,
-html.dark .text-\[10px\].uppercase,
 html.dark table th {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.06em !important;
+  font-family: var(--font-sans) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.1em !important;
   text-transform: uppercase !important;
-  color: hsl(207 10% 62%) !important;
+  color: var(--ds-text3) !important;
 }
 
 html.dark .ocean-stat-card .tabular-nums,
@@ -2839,9 +2891,9 @@ html.dark .ocean-stat-card,
 html.dark .cyber-stat-tile,
 html.dark .cyber-panel,
 html.dark .report-card {
-  background: hsl(var(--card) / 0.78) !important;
-  border: 1px solid hsl(var(--border) / 0.42) !important;
-  border-radius: 12px !important;
+  background: var(--ds-s2) !important;
+  border: 1px solid var(--ds-line) !important;
+  border-radius: 16px !important;
   box-shadow: none !important;
 }
 
@@ -2852,7 +2904,7 @@ html.dark [role="alertdialog"] {
   border: 1px solid hsl(var(--border) / 0.55) !important;
   border-radius: 12px !important;
   box-shadow: 0 28px 60px hsl(222 50% 2% / 0.55) !important;
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
 }
 
 html.dark [role="menu"],
@@ -2862,7 +2914,7 @@ html.dark [data-radix-popper-content-wrapper] > * {
   border-color: hsl(var(--border) / 0.55) !important;
   border-radius: 10px !important;
   box-shadow: 0 16px 40px hsl(222 50% 2% / 0.5) !important;
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
 }
 
 html.dark [class*="bg-black\/60"] {
@@ -2871,7 +2923,7 @@ html.dark [class*="bg-black\/60"] {
 
 html.dark .recharts-default-tooltip,
 html.dark .recharts-tooltip-wrapper .recharts-default-tooltip {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
   background: hsl(var(--popover)) !important;
   border: 1px solid hsl(var(--border) / 0.55) !important;
   border-radius: 10px !important;
@@ -2883,7 +2935,7 @@ html.dark [role="menuitemradio"],
 html.dark [role="option"],
 html.dark [cmdk-item],
 html.dark [data-radix-collection-item] {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   letter-spacing: -0.011em !important;
@@ -2892,7 +2944,7 @@ html.dark [data-radix-collection-item] {
 html.dark [cmdk-group-heading],
 html.dark [role="menu"] [role="presentation"],
 html.dark [data-radix-select-label] {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-size: 10px !important;
   font-weight: 600 !important;
   letter-spacing: 0.08em !important;
@@ -2909,7 +2961,7 @@ html.dark .cyber-app-sidebar [data-sidebar="sidebar"] {
 }
 
 html.dark .cyber-app-sidebar [data-sidebar="group-label"] {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   line-height: 14px !important;
@@ -2921,7 +2973,7 @@ html.dark .cyber-app-sidebar [data-sidebar="group-label"] {
 html.dark .cyber-app-sidebar [data-sidebar="menu-button"],
 html.dark .cyber-app-sidebar [data-sidebar="menu-button"] span,
 html.dark .cyber-app-sidebar [data-sidebar="menu-button"] * {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   letter-spacing: -0.01em !important;
@@ -2930,15 +2982,15 @@ html.dark .cyber-app-sidebar [data-sidebar="menu-button"] * {
 }
 
 html.dark .cyber-app-sidebar .sidebar-active {
-  background: #272a32 !important;
-  color: #8ed5ff !important;
-  border-radius: 4px !important;
+  background: var(--ds-s3) !important;
+  color: var(--ds-text) !important;
+  border-radius: 10px !important;
 }
 
 html.dark .cyber-app-sidebar .sidebar-active span,
 html.dark .cyber-app-sidebar .sidebar-active svg {
   background: transparent !important;
-  color: #8ed5ff !important;
+  color: var(--ds-text) !important;
   font-weight: 500 !important;
 }
 
@@ -2949,7 +3001,7 @@ html.dark .cyber-app-sidebar [data-sidebar="menu-button"] svg {
 
 html.dark .recharts-cartesian-axis-tick-value,
 html.dark .recharts-tooltip-item {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-family: var(--font-sans) !important;
 }
 
 html.dark .rdp,
@@ -2958,7 +3010,7 @@ html.dark .tiptap-notes-editor,
 html.dark .tiptap-notes-editor .ProseMirror,
 html.dark [data-sonner-toaster],
 html.dark [data-sonner-toast] {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
 }
 
 html.dark main button,
@@ -2969,13 +3021,13 @@ html.dark main [role="combobox"],
 html.dark header button,
 html.dark [role="dialog"] button,
 html.dark [role="dialog"] input {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
 }
 
 /* ===== APP SCR GLOBAL (po terminal squeeze — spójność wszystkich stron) ===== */
 html.dark main.cyber-dashboard.dash-scr .cyber-page-title {
-  font-size: 1.35rem !important;
-  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
   letter-spacing: -0.02em !important;
   line-height: 1.25 !important;
   color: hsl(var(--foreground)) !important;
@@ -2984,7 +3036,7 @@ html.dark main.cyber-dashboard.dash-scr .cyber-page-title {
 
 html.dark main.cyber-dashboard.dash-scr .cyber-page-sub,
 html.dark main.cyber-dashboard.dash-scr .dash-page-sub {
-  color: hsl(var(--primary) / 0.85) !important;
+  color: var(--ds-text2) !important;
   font-size: 0.72rem !important;
   line-height: 1.35 !important;
   font-weight: 500 !important;
@@ -2992,7 +3044,7 @@ html.dark main.cyber-dashboard.dash-scr .dash-page-sub {
 
 html.dark main.cyber-dashboard.dash-scr .cyber-panel-title,
 html.dark main.cyber-dashboard.dash-scr .dash-panel-title {
-  font-family: "Inter", "Segoe UI", system-ui, sans-serif !important;
+  font-family: var(--font-sans) !important;
   font-size: 0.72rem !important;
   font-weight: 600 !important;
   letter-spacing: -0.01em !important;
@@ -3006,14 +3058,14 @@ html.dark main.cyber-dashboard.dash-scr .cyber-stat-tile,
 html.dark main.cyber-dashboard.dash-scr .report-card,
 html.dark main.cyber-dashboard.dash-scr .cyber-gauge,
 html.dark main.cyber-dashboard.dash-scr div.border.bg-card:not(button):not([role="combobox"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="h-11"]) {
-  background: hsl(var(--window-bg)) !important;
-  border: 1px solid hsl(var(--window-border) / 0.95) !important;
-  border-radius: 10px !important;
-  box-shadow: var(--window-shadow) !important;
+  background: var(--ds-s2) !important;
+  border: 1px solid var(--ds-line) !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
 }
 
 html.dark main.cyber-dashboard.dash-scr .data-mono {
-  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-family: var(--font-sans) !important;
   font-variant-numeric: tabular-nums;
 }
 
@@ -3028,12 +3080,12 @@ html.dark main.cyber-dashboard.dash-scr .dashboard-kpi-row .data-mono {
 
 /* Dense metric scale (SCR) — bez hero marketingowych */
 html.dark main.cyber-dashboard.dash-scr .text-4xl {
-  font-size: 1.6rem !important;
+  font-size: 1.25rem !important;
   line-height: 1.15 !important;
 }
 
 html.dark main.cyber-dashboard.dash-scr .text-3xl {
-  font-size: 1.35rem !important;
+  font-size: 1.15rem !important;
   line-height: 1.2 !important;
 }
 
@@ -3066,21 +3118,36 @@ html.dark main.cyber-dashboard.dash-scr .cyber-primary-btn {
 }
 
 html.dark main.cyber-dashboard.dash-scr [role="tablist"] {
-  border-radius: 8px !important;
-  background: hsl(var(--window-bg)) !important;
-  border: 1px solid hsl(var(--window-border) / 0.85) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--ds-line) !important;
+  padding: 0 !important;
+  gap: 16px;
 }
 
 html.dark main.cyber-dashboard.dash-scr [role="tab"] {
-  font-size: 0.72rem !important;
-  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
+  color: var(--ds-text3) !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  margin-bottom: -1px;
+}
+
+html.dark main.cyber-dashboard.dash-scr [role="tab"]:hover {
+  color: var(--ds-text) !important;
+  background: var(--ds-s2) !important;
+  border-radius: 8px 8px 0 0 !important;
 }
 
 html.dark main.cyber-dashboard.dash-scr [role="tab"][data-state="active"] {
-  color: hsl(var(--foreground)) !important;
-  background: hsl(var(--primary) / 0.14) !important;
+  color: var(--ds-text) !important;
+  background: transparent !important;
   box-shadow: none !important;
-  border-radius: 6px !important;
+  border-radius: 0 !important;
+  border-bottom-color: var(--ds-text) !important;
 }
 
 html.dark main.cyber-dashboard.dash-scr input[type="text"],
@@ -3096,8 +3163,68 @@ html.dark main.cyber-dashboard.dash-scr [role="combobox"] {
 }
 
 html.dark main.cyber-dashboard.dash-scr table thead th {
-  font-size: 0.62rem !important;
-  letter-spacing: 0.04em !important;
+  font-family: var(--font-sans) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.1em !important;
   text-transform: uppercase !important;
-  color: hsl(var(--muted-foreground)) !important;
+  color: var(--ds-text3) !important;
+}
+
+/* Reference skin — must win over older Inter / slate rules */
+html,
+body,
+#root,
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-sans) !important;
+}
+
+body,
+#root {
+  background: var(--ds-bg);
+  color: var(--ds-text);
+}
+
+html.dark body,
+html.dark #root {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text);
+}
+
+html.dark .dashboard-surface {
+  background: transparent !important;
+  color: var(--ds-text);
+}
+
+html.dark .dashboard-surface .bg-card,
+html.dark .dashboard-surface .rounded-xl.border,
+html.dark .dashboard-surface .rounded-lg.border {
+  background-color: var(--ds-s2);
+  border-color: var(--ds-line) !important;
+  box-shadow: none;
+}
+
+html.dark .dashboard-surface table {
+  color: var(--ds-text);
+}
+
+html.dark .dashboard-surface table thead th {
+  color: var(--ds-text3) !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+}
+
+html.dark .dashboard-surface .text-muted-foreground {
+  color: var(--ds-text2) !important;
+}
+
+.data-mono,
+.tabular-nums {
+  font-family: var(--font-sans) !important;
+  font-variant-numeric: tabular-nums;
 }

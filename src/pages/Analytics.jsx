@@ -12,10 +12,11 @@ import { BarChart, Bar, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, 
 import { ExportButton } from "../components/ExportButton";
 import { ImportButton } from "../components/ImportButton";
 import { useLanguage } from "@/components/LanguageProvider";
+import { usePnlDisplay } from "@/hooks/use-pnl-display";
 import { normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
 import { getTradeEntryMinutes } from "@/lib/userSettings";
 import { aggregateTagPerformance } from "@/lib/tradeTags";
-import { CHART, chartTooltipStyle, chartGridProps } from "@/lib/chartTheme";
+import { CHART, chartTooltipStyle, chartGridProps, chartBarRadius } from "@/lib/chartTheme";
 import { SkeletonKpiRow, SkeletonBlock } from "@/components/ui/skeleton-block";
 import QuoteLine from "@/components/QuoteLine";
 
@@ -51,6 +52,7 @@ const weekStartKeyLocal = (dateStr) => {
 
 export default function Analytics() {
   const { t } = useLanguage();
+  const pnl = usePnlDisplay();
   const { user } = useAuth();
   const [selectedAccounts, setSelectedAccounts] = useState(["all"]);
   const [filterSymbols, setFilterSymbols] = useState(["all"]);
@@ -623,7 +625,7 @@ export default function Analytics() {
 
   if (isLoading) {
     return (
-      <div className="w-full mx-auto space-y-6 dashboard-surface py-2">
+      <div className="w-full mx-auto space-y-3 dashboard-surface py-2">
         <SkeletonKpiRow count={4} />
         <SkeletonBlock rows={8} className="rounded-lg border border-border" />
       </div>
@@ -676,8 +678,8 @@ export default function Analytics() {
     : null;
 
   return (
-    <div className="analytics-page w-full min-h-0 space-y-6 dashboard-surface">
-      <div className="max-w-none mx-0 space-y-6">
+    <div className="analytics-page w-full min-h-0 space-y-3 dashboard-surface">
+      <div className="max-w-none mx-0 space-y-3">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="cyber-page-title">{t('advancedAnalytics')}</h1>
@@ -723,13 +725,13 @@ export default function Analytics() {
             <div className="relative" ref={accountDropdownRef}>
               <button
                 onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
               >
                 <span className="truncate text-center w-full pr-5">{selectedAccountsLabel || t('allAccounts')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {accountDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
                   {(() => {
                     const isSelected = selectedAccounts.includes('all');
                     return (
@@ -738,9 +740,9 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('allAccounts')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                       {isSelected && (
-                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -758,9 +760,9 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{acc.name}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                         {isSelected && (
-                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
@@ -779,13 +781,13 @@ export default function Analytics() {
             <div className="relative" ref={symbolDropdownRef}>
               <button
                 onClick={() => setSymbolDropdownOpen(!symbolDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
               >
                 <span className="truncate text-center w-full pr-5">{selectedSymbolsLabel || t('all')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {symbolDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
                   {(() => {
                     const isSelected = filterSymbols.includes('all');
                     return (
@@ -794,9 +796,9 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                       {isSelected && (
-                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -814,9 +816,9 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{sym}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                         {isSelected && (
-                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
@@ -835,21 +837,21 @@ export default function Analytics() {
             <div className="relative" ref={strategyDropdownRef}>
               <button
                 onClick={() => setStrategyDropdownOpen(!strategyDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
               >
                 <span className="truncate text-center w-full pr-5">{selectedStrategiesLabel || t('all')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {strategyDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
                   <button
                     onClick={() => toggleMultiFilter(setFilterStrategies, 'all')}
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes('all') ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes('all') ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${filterStrategies.includes('all') ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                       {filterStrategies.includes('all') && (
-                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -862,9 +864,9 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes(String(strategy.id)) ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{strategy.name}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${filterStrategies.includes(String(strategy.id)) ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${filterStrategies.includes(String(strategy.id)) ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                         {filterStrategies.includes(String(strategy.id)) && (
-                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
@@ -881,13 +883,13 @@ export default function Analytics() {
             <div className="relative" ref={directionDropdownRef}>
               <button
                 onClick={() => setDirectionDropdownOpen(!directionDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
               >
                 <span className="truncate text-center w-full pr-5">{selectedDirectionsLabel || t('all')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {directionDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
                   {(() => {
                     const isSelected = filterDirections.includes('all');
                     return (
@@ -896,9 +898,9 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                       {isSelected && (
-                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -916,9 +918,9 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{dir}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                         {isSelected && (
-                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
@@ -937,13 +939,13 @@ export default function Analytics() {
             <div className="relative" ref={outcomeDropdownRef}>
               <button
                 onClick={() => setOutcomeDropdownOpen(!outcomeDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
               >
                 <span className="truncate text-center w-full pr-5">{selectedOutcomesLabel || t('all')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {outcomeDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
                   {(() => {
                     const isSelected = filterOutcomes.includes('all');
                     return (
@@ -952,9 +954,9 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                       {isSelected && (
-                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -972,9 +974,9 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{tradeOutcomeDisplay(out)}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                         {isSelected && (
-                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
@@ -993,13 +995,13 @@ export default function Analytics() {
             <div className="relative" ref={timeframeDropdownRef}>
               <button
                 onClick={() => setTimeframeDropdownOpen(!timeframeDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted/40"
+                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
               >
                 <span className="truncate text-center w-full pr-5">{selectedTimeframesLabel || t('all')}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {timeframeDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border bg-popover p-1 shadow-md max-h-64 overflow-y-auto">
+                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
                   {(() => {
                     const isSelected = filterTimeframes.includes('all');
                     return (
@@ -1008,9 +1010,9 @@ export default function Analytics() {
                     className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                   >
                     <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                       {isSelected && (
-                        <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -1028,9 +1030,9 @@ export default function Analytics() {
                       className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
                     >
                       <span className="truncate">{tf}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[3px] ${isSelected ? 'border-primary bg-primary' : 'border-border bg-background'}`}>
+                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
                         {isSelected && (
-                          <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
@@ -1069,7 +1071,7 @@ export default function Analytics() {
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-profit dark:text-profit">{t('wins')}</p>
-              <p className="text-3xl font-bold text-profit dark:text-profit mt-1">{outcomeCounts.wins}</p>
+              <p className="text-[22px] font-semibold text-profit dark:text-profit mt-1">{outcomeCounts.wins}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {outcomeTotal ? `${((outcomeCounts.wins / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
               </p>
@@ -1077,8 +1079,8 @@ export default function Analytics() {
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">BE</p>
-              <p className="text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">{outcomeCounts.breakeven}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-warning">BE</p>
+              <p className="text-[22px] font-semibold text-warning mt-1">{outcomeCounts.breakeven}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {outcomeTotal ? `${((outcomeCounts.breakeven / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
               </p>
@@ -1087,7 +1089,7 @@ export default function Analytics() {
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-loss dark:text-loss">{t('losses')}</p>
-              <p className="text-3xl font-bold text-loss dark:text-loss mt-1">{outcomeCounts.losses}</p>
+              <p className="text-[22px] font-semibold text-loss dark:text-loss mt-1">{outcomeCounts.losses}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {outcomeTotal ? `${((outcomeCounts.losses / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
               </p>
@@ -1096,7 +1098,7 @@ export default function Analytics() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="flex w-full h-auto flex-wrap gap-1 p-1 bg-muted/40 md:flex-nowrap md:overflow-x-auto">
+          <TabsList className="flex w-full h-auto flex-wrap gap-1 p-1 bg-muted md:flex-nowrap md:overflow-x-auto">
             <TabsTrigger value="overview" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('overview')}</TabsTrigger>
             <TabsTrigger value="symbols" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('symbols')}</TabsTrigger>
             <TabsTrigger value="strategies" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('strategiesAnalytics')}</TabsTrigger>
@@ -1120,7 +1122,7 @@ export default function Analytics() {
                     {outcomeChartData.map((entry) => (
                       <div
                         key={entry.name}
-                        className="rounded-lg border border-border bg-muted/30 p-3"
+                        className="rounded-lg border border-border bg-muted p-3"
                       >
                         <p className="text-xs uppercase tracking-wide text-muted-foreground">{entry.name}</p>
                         <p className="text-2xl font-semibold text-foreground">{entry.count}</p>
@@ -1130,10 +1132,10 @@ export default function Analytics() {
                   </div>
 
                   <div className="w-full overflow-hidden px-4 py-2">
-                    <ResponsiveContainer width="96%" height={320}>
-                      <ComposedChart data={outcomeChartData} margin={{ top: 50, right: 50, left: 30, bottom: 70 }}>
+                    <ResponsiveContainer width="100%" height={320}>
+                      <ComposedChart data={outcomeChartData} margin={{ top: 16, right: 8, left: 0, bottom: 8 }}>
                         <CartesianGrid {...chartGridProps} />
-                        <XAxis dataKey="name" stroke={CHART.axis} />
+                        <XAxis dataKey="name" stroke={CHART.axis} interval={0} />
                         <YAxis yAxisId="left" stroke={CHART.axis} allowDecimals={false} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} tickFormatter={(value) => `${value}%`} width={70} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
                         <Tooltip
@@ -1145,7 +1147,7 @@ export default function Analytics() {
                             name === 'rate' ? t('winRate') : t('trades')
                           ]}
                         />
-                        <Bar dataKey="count" yAxisId="left" radius={[10, 10, 0, 0]}>
+                        <Bar dataKey="count" yAxisId="left" radius={chartBarRadius} maxBarSize={64}>
                           {outcomeChartData.map((entry) => (
                             <Cell key={entry.name} fill={entry.fill} />
                           ))}
@@ -1155,7 +1157,7 @@ export default function Analytics() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                  <div className="rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
                     {outcomeTop
                       ? `${t('insightOutcomeMost')} ${outcomeTop.name}`
                       : t('insightOutcomeEmpty')}
@@ -1172,7 +1174,7 @@ export default function Analytics() {
                     {directionEdgeData.map((entry) => (
                       <div
                         key={entry.direction}
-                        className="rounded-lg border border-border bg-muted/30 p-3"
+                        className="rounded-lg border border-border bg-muted p-3"
                       >
                         <p className="text-xs uppercase tracking-wide text-muted-foreground">{entry.direction}</p>
                         <p className="text-2xl font-semibold text-foreground">
@@ -1186,8 +1188,8 @@ export default function Analytics() {
                   </div>
 
                   <div className="w-full overflow-hidden px-4 py-2">
-                    <ResponsiveContainer width="96%" height={320}>
-                      <BarChart data={directionEdgeData} layout="vertical" margin={{ top: 50, right: 60, left: 90, bottom: 50 }}>
+                    <ResponsiveContainer width="100%" height={320}>
+                      <BarChart data={directionEdgeData} layout="vertical" margin={{ top: 16, right: 24, left: 24, bottom: 8 }}>
                         <CartesianGrid {...chartGridProps} />
                         <XAxis type="number" stroke={CHART.axis} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
                         <YAxis type="category" dataKey="direction" stroke={CHART.axis} width={80} />
@@ -1197,7 +1199,7 @@ export default function Analytics() {
                           labelStyle={{ color: 'hsl(var(--foreground))' }}
                           formatter={(value) => [Number(value).toFixed(2), t('netPL')]}
                         />
-                        <Bar dataKey="netPL" radius={[0, 10, 10, 0]}>
+                        <Bar dataKey="netPL" radius={[0, 6, 6, 0]}>
                           {directionEdgeData.map((entry) => (
                             <Cell key={entry.direction} fill={entry.netPL >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))'} />
                           ))}
@@ -1206,7 +1208,7 @@ export default function Analytics() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                  <div className="rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
                     {directionTop
                       ? `${t('insightDirectionBest')} ${directionTop.direction} · ${directionTop.winRate}% ${t('winRate')}`
                       : t('insightDirectionEmpty')}
@@ -1225,8 +1227,8 @@ export default function Analytics() {
               </CardHeader>
               <CardContent className="overflow-hidden p-4">
                 <div className="w-full overflow-hidden px-4 py-2">
-                  <ResponsiveContainer width="96%" height={450}>
-                    <AreaChart data={equityCurve} margin={{ top: 50, right: 50, left: 30, bottom: 80 }}>
+                  <ResponsiveContainer width="100%" height={450}>
+                    <AreaChart data={equityCurve} margin={{ top: 16, right: 16, left: 0, bottom: 8 }}>
                       <defs>
                         <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={CHART.line} stopOpacity={0.3}/>
@@ -1270,7 +1272,7 @@ export default function Analytics() {
               </CardHeader>
               <CardContent className="overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-                  <div className="rounded-lg border border-border bg-muted/30 p-3">
+                  <div className="rounded-lg border border-border bg-muted p-3">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('bestPeriod')}</p>
                     <p className="text-sm font-semibold text-foreground">
                       {bestPeriod ? bestPeriod.period : '--'}
@@ -1279,7 +1281,7 @@ export default function Analytics() {
                       {bestPeriod ? `${bestPeriod.pl >= 0 ? '+' : ''}${bestPeriod.pl.toFixed(2)}` : '--'}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-border bg-muted/30 p-3">
+                  <div className="rounded-lg border border-border bg-muted p-3">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('maxWinRate')}</p>
                     <p className="text-sm font-semibold text-foreground">
                       {bestWinRatePeriod ? `${bestWinRatePeriod.winRate}%` : '--'}
@@ -1288,15 +1290,15 @@ export default function Analytics() {
                       {bestWinRatePeriod ? bestWinRatePeriod.period : '--'}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-border bg-muted/30 p-3">
+                  <div className="rounded-lg border border-border bg-muted p-3">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('totalPeriods')}</p>
                     <p className="text-sm font-semibold text-foreground">{periodData.length}</p>
                     <p className="text-xs text-muted-foreground">{t('results')}</p>
                   </div>
                 </div>
                 <div className="w-full overflow-hidden px-6 py-2 pb-4">
-                  <ResponsiveContainer width="96%" height={400}>
-                    <BarChart data={periodData} margin={{ top: 50, right: 50, left: 30, bottom: timePeriod === "weekly" ? 120 : 80 }}>
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={periodData} margin={{ top: 16, right: 16, left: 0, bottom: timePeriod === "weekly" ? 72 : 24 }}>
                       <CartesianGrid {...chartGridProps} />
                       <XAxis dataKey="period" stroke={CHART.axis} angle={timePeriod === "weekly" ? -45 : 0} textAnchor={timePeriod === "weekly" ? "end" : "middle"} height={timePeriod === "weekly" ? 105 : 55} tickMargin={10} />
                       <YAxis stroke={CHART.axis} width={75} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
@@ -1305,7 +1307,7 @@ export default function Analytics() {
                         itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                         labelStyle={{ color: 'hsl(var(--foreground))' }}
                       />
-                      <Bar dataKey="pl" fill={CHART.line} name="P&L" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="pl" fill={CHART.line} name="P&L" radius={chartBarRadius} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1331,12 +1333,12 @@ export default function Analytics() {
                           labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]}>
+                        <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={chartBarRadius}>
                           {directionData.map((entry) => (
                             <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
                           ))}
                         </Bar>
-                        <Bar dataKey="avgPL" fill={CHART.warning} name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="avgPL" fill={CHART.warning} name={t('avgPLLabel')} radius={chartBarRadius} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1360,8 +1362,8 @@ export default function Analytics() {
                           labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                        <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={chartBarRadius} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1389,8 +1391,8 @@ export default function Analytics() {
                           labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="avgPL" yAxisId="right" fill={CHART.muted} name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                        <Bar dataKey="avgPL" yAxisId="right" fill={CHART.muted} name={t('avgPLLabel')} radius={chartBarRadius} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1419,8 +1421,8 @@ export default function Analytics() {
                           labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
-                        <Bar dataKey="totalPL" xAxisId="bottom" fill={CHART.profit} name={t('totalPLLabel')} radius={[0, 8, 8, 0]} />
-                        <Bar dataKey="winRate" xAxisId="top" fill={CHART.line} name={`${t('winRate')} (%)`} radius={[0, 8, 8, 0]} />
+                        <Bar dataKey="totalPL" xAxisId="bottom" fill={CHART.profit} name={t('totalPLLabel')} radius={[0, 6, 6, 0]} />
+                        <Bar dataKey="winRate" xAxisId="top" fill={CHART.line} name={`${t('winRate')} (%)`} radius={[0, 6, 6, 0]} />
                       </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1432,7 +1434,7 @@ export default function Analytics() {
                 <Card 
                   key={symbol.symbol} 
                   className={`border cursor-pointer transition-colors ${
-                    selectedSymbol === symbol.symbol ? 'border-primary ring-1 ring-primary/40' : 'border-border'
+                    selectedSymbol === symbol.symbol ? 'border-primary/40 bg-muted' : 'border-border'
                   }`}
                   onClick={() => setSelectedSymbol(symbol.symbol)}
                 >
@@ -1588,10 +1590,10 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2">
                                 {accountBreakdownData.map(item => (
-                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted/30 rounded-lg">
+                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted rounded-lg">
                                     <div>
                                       <p className="font-semibold text-sm text-foreground">{item.name}</p>
-                                      <p className="text-xs text-slate-600">{item.trades} transakcji</p>
+                                      <p className="text-xs text-muted-foreground">{item.trades} transakcji</p>
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
@@ -1616,7 +1618,7 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2">
                                 {strategyBreakdownData.map(item => (
-                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted/30 rounded-lg">
+                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted rounded-lg">
                                     <div>
                                       <p className="font-semibold text-sm text-foreground">{item.name}</p>
                                       <p className="text-xs text-muted-foreground">{item.trades} transakcji</p>
@@ -1653,12 +1655,12 @@ export default function Analytics() {
                                       labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]}>
+                                    <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={chartBarRadius}>
                                       {directionBreakdownData.map((entry) => (
                                         <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
                                       ))}
                                     </Bar>
-                                    <Bar dataKey="trades" fill={CHART.muted} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1683,8 +1685,8 @@ export default function Analytics() {
                                       labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                                    <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                                    <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={chartBarRadius} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1705,21 +1707,21 @@ export default function Analytics() {
                               <CardContent className="space-y-2">
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('date')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{bestTrade.date}</span>
+                                  <span className="text-sm font-semibold text-foreground">{bestTrade.date}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('direction')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{normalizeDirection(bestTrade.direction)}</span>
+                                  <span className="text-sm font-semibold text-foreground">{normalizeDirection(bestTrade.direction)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-profit dark:text-profit">
-                                    {(() => { const pl = getTradeRealizedPL(bestTrade) ?? 0; return `${pl >= 0 ? '+' : ''}${pl.toFixed(2)}`; })()}
+                                    {pnl.formatTrade(bestTrade)}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('setup')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{bestTrade.setup_quality}</span>
+                                  <span className="text-sm font-semibold text-foreground">{bestTrade.setup_quality}</span>
                                 </div>
                               </CardContent>
                             </Card>
@@ -1728,7 +1730,7 @@ export default function Analytics() {
                           {worstTrade && (getTradeRealizedPL(worstTrade) ?? 0) < 0 && (
                             <Card>
                               <CardHeader>
-                                <CardTitle className="text-base text-red-900 dark:text-red-300 flex items-center gap-2">
+                                <CardTitle className="text-base text-loss flex items-center gap-2">
                                   <AlertCircle className="w-4 h-4" />
                                   {t('worstTradeSingle')}
                                 </CardTitle>
@@ -1736,21 +1738,21 @@ export default function Analytics() {
                               <CardContent className="space-y-2">
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('date')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{worstTrade.date}</span>
+                                  <span className="text-sm font-semibold text-foreground">{worstTrade.date}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('direction')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{normalizeDirection(worstTrade.direction)}</span>
+                                  <span className="text-sm font-semibold text-foreground">{normalizeDirection(worstTrade.direction)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-loss dark:text-loss">
-                                    {(getTradeRealizedPL(worstTrade) ?? 0).toFixed(2)}
+                                    {pnl.formatTrade(worstTrade)}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('setup')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{worstTrade.setup_quality}</span>
+                                  <span className="text-sm font-semibold text-foreground">{worstTrade.setup_quality}</span>
                                 </div>
                               </CardContent>
                             </Card>
@@ -1784,9 +1786,9 @@ export default function Analytics() {
                         labelStyle={{ color: 'hsl(var(--foreground))' }}
                       />
                       <Legend />
-                      <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="avgPL" yAxisId="right" fill={CHART.profit} name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="trades" yAxisId="left" fill={CHART.muted} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                      <Bar dataKey="avgPL" yAxisId="right" fill={CHART.profit} name={t('avgPLLabel')} radius={chartBarRadius} />
+                      <Bar dataKey="trades" yAxisId="left" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1798,7 +1800,7 @@ export default function Analytics() {
                 <Card 
                   key={strategy.name} 
                   className={`border cursor-pointer transition-colors ${
-                    selectedStrategy === strategy.name ? 'border-primary ring-1 ring-primary/40' : 'border-border'
+                    selectedStrategy === strategy.name ? 'border-primary/40 bg-muted' : 'border-border'
                   }`}
                   onClick={() => setSelectedStrategy(strategy.name)}
                 >
@@ -1807,7 +1809,7 @@ export default function Analytics() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 bg-muted/40 rounded-md text-center">
+                      <div className="p-3 bg-muted rounded-md text-center">
                         <p className="text-2xl font-bold text-foreground">{strategy.winRate}%</p>
                         <p className="text-xs text-muted-foreground">{t('winRate')}</p>
                       </div>
@@ -1818,13 +1820,13 @@ export default function Analytics() {
                         <p className="text-xs text-muted-foreground">{t('avgPLLabel')}</p>
                         </div>
                         </div>
-                        <div className="flex justify-between p-3 bg-muted/30 rounded-lg">
+                        <div className="flex justify-between p-3 bg-muted rounded-lg">
                         <span className="text-sm text-muted-foreground">{t('totalPLLabel')}:</span>
                       <span className={`font-bold ${strategy.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
                         {strategy.totalPL > 0 ? '+' : ''}{strategy.totalPL.toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="flex justify-between p-3 bg-muted rounded-lg">
                       <span className="text-sm text-muted-foreground">{t('trades')}:</span>
                       <span className="font-bold text-foreground">{strategy.trades}</span>
                     </div>
@@ -1957,10 +1959,10 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2">
                                 {accountBreakdownData.map(item => (
-                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted/30 rounded-lg">
+                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted rounded-lg">
                                     <div>
                                       <p className="font-semibold text-sm text-foreground">{item.name}</p>
-                                      <p className="text-xs text-slate-600">{item.trades} transakcji</p>
+                                      <p className="text-xs text-muted-foreground">{item.trades} transakcji</p>
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
@@ -1985,7 +1987,7 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2 max-h-64 overflow-y-auto">
                               {symbolBreakdownData.map(item => (
-                               <div key={item.symbol} className="flex justify-between items-center p-2 bg-muted/30 rounded-lg">
+                               <div key={item.symbol} className="flex justify-between items-center p-2 bg-muted rounded-lg">
                                  <div>
                                    <p className="font-semibold text-sm text-foreground">{item.symbol}</p>
                                    <p className="text-xs text-muted-foreground">{item.trades} {t('trades')}</p>
@@ -2022,12 +2024,12 @@ export default function Analytics() {
                                       labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]}>
+                                    <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={chartBarRadius}>
                                       {directionBreakdownData.map((entry) => (
                                         <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
                                       ))}
                                     </Bar>
-                                    <Bar dataKey="trades" fill={CHART.muted} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="trades" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -2052,8 +2054,8 @@ export default function Analytics() {
                                       labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                                    <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                                    <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                                    <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={chartBarRadius} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -2074,20 +2076,20 @@ export default function Analytics() {
                               <CardContent className="space-y-2">
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('date')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{bestTrade.date}</span>
+                                  <span className="text-sm font-semibold text-foreground">{bestTrade.date}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('symbol')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{bestTrade.symbol}</span>
+                                  <span className="text-sm font-semibold text-foreground">{bestTrade.symbol}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('direction')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{bestTrade.direction}</span>
+                                  <span className="text-sm font-semibold text-foreground">{bestTrade.direction}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-profit dark:text-profit">
-                                    {(() => { const pl = getTradeRealizedPL(bestTrade) ?? 0; return `${pl >= 0 ? '+' : ''}${pl.toFixed(2)}`; })()}
+                                    {pnl.formatTrade(bestTrade)}
                                   </span>
                                 </div>
                               </CardContent>
@@ -2097,7 +2099,7 @@ export default function Analytics() {
                           {worstTrade && (getTradeRealizedPL(worstTrade) ?? 0) < 0 && (
                             <Card>
                               <CardHeader>
-                                <CardTitle className="text-base text-red-900 dark:text-red-300 flex items-center gap-2">
+                                <CardTitle className="text-base text-loss flex items-center gap-2">
                                   <AlertCircle className="w-4 h-4" />
                                   {t('worstTradeSingle')}
                                 </CardTitle>
@@ -2105,20 +2107,20 @@ export default function Analytics() {
                               <CardContent className="space-y-2">
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('date')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{worstTrade.date}</span>
+                                  <span className="text-sm font-semibold text-foreground">{worstTrade.date}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('symbol')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{worstTrade.symbol}</span>
+                                  <span className="text-sm font-semibold text-foreground">{worstTrade.symbol}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('direction')}:</span>
-                                  <span className="text-sm font-semibold dark:text-slate-200">{worstTrade.direction}</span>
+                                  <span className="text-sm font-semibold text-foreground">{worstTrade.direction}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
                                   <span className="text-lg font-bold text-loss dark:text-loss">
-                                    {(getTradeRealizedPL(worstTrade) ?? 0).toFixed(2)}
+                                    {pnl.formatTrade(worstTrade)}
                                   </span>
                                 </div>
                               </CardContent>
@@ -2200,7 +2202,7 @@ export default function Analytics() {
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
-                        <Bar dataKey="count" fill={CHART.line} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="count" fill={CHART.line} radius={chartBarRadius} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -2226,9 +2228,9 @@ export default function Analytics() {
                         labelStyle={{ color: 'hsl(var(--foreground))' }}
                       />
                       <Legend />
-                      <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name="Win Rate (%)" radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="roi" yAxisId="right" fill={CHART.profit} name={t('roi')} radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="trades" yAxisId="left" fill={CHART.muted} name={t('noOfTrades')} radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name="Win Rate (%)" radius={chartBarRadius} />
+                      <Bar dataKey="roi" yAxisId="right" fill={CHART.profit} name={t('roi')} radius={chartBarRadius} />
+                      <Bar dataKey="trades" yAxisId="left" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -2246,18 +2248,18 @@ export default function Analytics() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-muted/40 rounded-md text-center">
+                      <div className="p-3 bg-muted rounded-md text-center">
                         <p className="text-xl font-bold text-foreground">{account.winRate}%</p>
                         <p className="text-xs text-muted-foreground">{t('winRate')}</p>
                       </div>
                       <div className="p-3 bg-profit/10 dark:bg-profit/10 rounded-lg text-center">
-                        <p className={`text-xl font-bold ${account.roi >= 0 ? 'text-profit dark:text-profit' : 'text-red-700 dark:text-loss'}`}>
+                        <p className={`text-xl font-bold ${account.roi >= 0 ? 'text-profit dark:text-profit' : 'text-loss'}`}>
                           {account.roi > 0 ? '+' : ''}{account.roi.toFixed(2)}%
                         </p>
                         <p className="text-xs text-muted-foreground">{t('roi')}</p>
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-100 dark:bg-card rounded-lg">
+                    <div className="p-3 bg-muted rounded-lg">
                       <div className="flex justify-between mb-1">
                         <span className="text-sm text-muted-foreground">{t('totalPLLabel')}:</span>
                         <span className={`font-bold ${account.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
@@ -2416,8 +2418,8 @@ export default function Analytics() {
                         </thead>
                         <tbody>
                           {timeSlotData.map((s) => (
-                            <tr key={s.slotStart} className="border-b border-slate-100 dark:border-slate-800">
-                              <td className="py-1.5 px-2 font-medium text-slate-800 dark:text-slate-200">{s.slot}</td>
+                            <tr key={s.slotStart} className="border-b border-border">
+                              <td className="py-1.5 px-2 font-medium text-foreground">{s.slot}</td>
                               <td className="py-1.5 px-2 text-right text-muted-foreground">{s.trades}</td>
                               <td className={`py-1.5 px-2 text-right font-semibold ${s.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>{s.winRate}%</td>
                               <td className={`py-1.5 px-2 text-right ${s.avgPL >= 0 ? 'text-profit' : 'text-loss'}`}>{s.avgPL >= 0 ? '+' : ''}{s.avgPL}</td>
@@ -2553,9 +2555,9 @@ export default function Analytics() {
                               labelStyle={{ color: 'hsl(var(--foreground))' }}
                             />
                             <Legend />
-                            <Bar dataKey="win" name={t('ratingWin')} fill={CHART.profit} radius={[6, 6, 0, 0]} />
-                            <Bar dataKey="breakeven" name={t('ratingBreakeven')} fill={CHART.warning} radius={[6, 6, 0, 0]} />
-                            <Bar dataKey="loss" name={t('ratingLoss')} fill={CHART.loss} radius={[6, 6, 0, 0]} />
+                            <Bar dataKey="win" name={t('ratingWin')} fill={CHART.profit} radius={chartBarRadius} />
+                            <Bar dataKey="breakeven" name={t('ratingBreakeven')} fill={CHART.warning} radius={chartBarRadius} />
+                            <Bar dataKey="loss" name={t('ratingLoss')} fill={CHART.loss} radius={chartBarRadius} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -2609,8 +2611,8 @@ export default function Analytics() {
                           ) : (
                             <div className="space-y-1.5">
                               {stage.items.map((it) => (
-                                <div key={it.tag} className="flex justify-between items-center px-3 py-1.5 bg-muted/30 rounded-lg">
-                                  <span className="text-sm text-slate-800 dark:text-slate-200 truncate">{it.tag}</span>
+                                <div key={it.tag} className="flex justify-between items-center px-3 py-1.5 bg-muted rounded-lg">
+                                  <span className="text-sm text-foreground truncate">{it.tag}</span>
                                   <span className="flex items-center gap-3 shrink-0">
                                     <span className="text-xs text-muted-foreground">×{it.total}</span>
                                     <span className={`text-xs font-semibold ${it.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>{it.winRate}%</span>
@@ -2653,8 +2655,8 @@ export default function Analytics() {
                             labelStyle={{ color: 'hsl(var(--foreground))' }}
                           />
                           <Legend />
-                          <Bar dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                          <Bar dataKey="avgPL" yAxisId="right" name={t('avgPLLabel')} radius={[8, 8, 0, 0]}>
+                          <Bar dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                          <Bar dataKey="avgPL" yAxisId="right" name={t('avgPLLabel')} radius={chartBarRadius}>
                             {confidenceData.map((d, i) => (
                               <Cell key={i} fill={d.avgPL >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))'} />
                             ))}
@@ -2668,18 +2670,18 @@ export default function Analytics() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-amber-900 dark:text-amber-300 flex items-center justify-between">
+                  <CardTitle className="text-warning flex items-center justify-between">
                     <span>{t('avgConfidence')}</span>
                     <span className="text-2xl">{hasConfidenceData ? `${avgConfidence}⭐` : '—'}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {!hasConfidenceData ? (
-                    <p className="text-xs text-amber-700 dark:text-amber-300">{t('noConfidenceData')}</p>
+                    <p className="text-xs text-warning">{t('noConfidenceData')}</p>
                   ) : (
                     confidenceData.filter((d) => d.trades > 0).map((d) => (
-                      <div key={d.level} className="flex justify-between items-center px-3 py-2 bg-muted/30 rounded-lg">
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{d.level}</span>
+                      <div key={d.level} className="flex justify-between items-center px-3 py-2 bg-muted rounded-lg">
+                        <span className="text-sm font-semibold text-foreground">{d.level}</span>
                         <span className="flex items-center gap-3 shrink-0">
                           <span className="text-xs text-muted-foreground">×{d.trades}</span>
                           <span className={`text-xs font-semibold ${d.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>{d.winRate}%</span>
@@ -2716,8 +2718,8 @@ export default function Analytics() {
                           labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={[8, 8, 0, 0]} />
-                        <Bar dataKey="avgPL" yAxisId="right" fill={CHART.profit} name={t('avgPLLabel')} radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                        <Bar dataKey="avgPL" yAxisId="right" fill={CHART.profit} name={t('avgPLLabel')} radius={chartBarRadius} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -2829,7 +2831,7 @@ export default function Analytics() {
                   <CardContent className="p-0 overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border bg-muted/30 text-xs text-muted-foreground">
+                        <tr className="border-b border-border bg-muted text-xs text-muted-foreground">
                           <th className="text-left py-2 px-3 font-medium">{t('entryConditionsTab')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('trades')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('winRate')}</th>
@@ -2839,7 +2841,7 @@ export default function Analytics() {
                       </thead>
                       <tbody>
                         {confluenceByFreq.map((row) => (
-                          <tr key={row.tag} className="border-b border-slate-100 dark:border-slate-800">
+                          <tr key={row.tag} className="border-b border-border">
                             <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
                             <td className="py-2 px-3 text-right tabular-nums text-muted-foreground">{row.trades}</td>
                             <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-profit" : "text-loss"}`}>{row.winRate}%</td>
@@ -2872,13 +2874,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{t('mostFrequentMistake')}</span>
-                    <Activity className="w-4 h-4 text-amber-500" />
+                    <span className="text-xs font-medium text-warning">{t('mostFrequentMistake')}</span>
+                    <Activity className="w-4 h-4 text-warning" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-amber-900 dark:text-amber-200 truncate" title={mistakeByFreq[0]?.tag}>
+                  <p className="mt-2 text-lg font-bold text-warning truncate" title={mistakeByFreq[0]?.tag}>
                     {mistakeByFreq[0]?.tag || "—"}
                   </p>
-                  <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80">
+                  <p className="text-[11px] text-warning/80">
                     {mistakeByFreq[0] ? `${mistakeByFreq[0].trades}×` : t('noData')}
                   </p>
                 </CardContent>
@@ -2902,13 +2904,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{t('leastHarmfulMistake')}</span>
-                    <TrendingUp className="w-4 h-4 text-slate-500" />
+                    <span className="text-xs font-medium text-muted-foreground">{t('leastHarmfulMistake')}</span>
+                    <TrendingUp className="w-4 h-4 text-muted-foreground" />
                   </div>
                   <p className="mt-2 text-lg font-bold text-foreground truncate" title={bestMistakeAvoid?.tag}>
                     {bestMistakeAvoid?.tag || "—"}
                   </p>
-                  <p className="text-[11px] text-slate-600/80 dark:text-slate-400/80">
+                  <p className="text-[11px] text-muted-foreground">
                     {bestMistakeAvoid ? `${bestMistakeAvoid.avgPL >= 0 ? "+" : ""}${bestMistakeAvoid.avgPL} ${t('perTrade')}` : t('noData')}
                   </p>
                 </CardContent>
@@ -2960,7 +2962,7 @@ export default function Analytics() {
                   <CardContent className="p-0 overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border bg-muted/30 text-xs text-muted-foreground">
+                        <tr className="border-b border-border bg-muted text-xs text-muted-foreground">
                           <th className="text-left py-2 px-3 font-medium">{t('mistakesTab')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('trades')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('winRate')}</th>
@@ -2970,7 +2972,7 @@ export default function Analytics() {
                       </thead>
                       <tbody>
                         {mistakeByFreq.map((row) => (
-                          <tr key={row.tag} className="border-b border-slate-100 dark:border-slate-800">
+                          <tr key={row.tag} className="border-b border-border">
                             <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
                             <td className="py-2 px-3 text-right tabular-nums text-muted-foreground">{row.trades}</td>
                             <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-profit" : "text-loss"}`}>{row.winRate}%</td>

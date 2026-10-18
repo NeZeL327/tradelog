@@ -1002,9 +1002,9 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
               {/* Partial closes — zachowana logika, kompaktowy panel */}
               {formData.status !== "Planned" && formData.status !== "Missed" && (
-                <div className={cn(sectionClass, "bg-amber-500/[0.04] dark:bg-amber-400/[0.06] border-amber-500/15")}>
+                <div className={cn(sectionClass, "bg-ds-warn-tint border-ds-line")}>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700/80 dark:text-amber-300/90">Częściowe zamknięcia</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-ds-warn">Częściowe zamknięcia</p>
                     <Button type="button" size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={addScaleOut}>
                       <Plus className="w-3 h-3 mr-1" /> Dodaj
                     </Button>
@@ -1125,7 +1125,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
               {/* Ocena + emocje */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div className={cn(sectionClass, "bg-amber-500/[0.05] border-amber-500/20")}>
+                <div className={cn(sectionClass, "bg-ds-warn-tint border-ds-line")}>
                   <Label className={labelClass}>Ocena jakości zagrania</Label>
                   <div className="flex items-center gap-1 mt-1.5">
                     {[1, 2, 3, 4, 5].map((n) => (
@@ -1145,8 +1145,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                           className={cn(
                             "w-5 h-5",
                             n <= formData.setup_confidence
-                              ? "fill-amber-400 text-amber-400"
-                              : "fill-transparent text-slate-300 dark:text-slate-600"
+                              ? "fill-ds-warn text-ds-warn"
+                              : "fill-transparent text-ds-text3"
                           )}
                         />
                       </button>
@@ -1209,7 +1209,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
               </div>
 
               {/* Screenshots */}
-              <div className={cn(sectionClass, "bg-slate-500/[0.03] dark:bg-white/[0.02]")}>
+              <div className={cn(sectionClass, "bg-ds-s2")}>
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Screeny — podgląd od razu, wysyłka po „Zapisz”
                 </p>
@@ -1251,7 +1251,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                             ? "text-profit"
                             : resolveOutcome() === "Loss"
                               ? "text-loss"
-                              : "text-amber-600"
+                              : "text-ds-warn"
                         )}
                       >
                         {resolveOutcome() === "Breakeven" ? "BE" : resolveOutcome()}

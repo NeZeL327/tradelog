@@ -57,7 +57,7 @@ export default function StrategyDetails() {
       <div className="min-h-screen flex items-center justify-center">
         <Card>
           <CardContent className="py-12 text-center">
-            <AlertCircle className="w-12 h-12 mx-auto text-slate-400 mb-4" />
+            <AlertCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <p>Strategia nie znaleziona</p>
           </CardContent>
         </Card>
@@ -120,8 +120,8 @@ export default function StrategyDetails() {
   }));
 
   return (
-    <div className="w-full min-h-0 space-y-6 dashboard-surface">
-      <div className="max-w-none mx-0 space-y-6">
+    <div className="w-full min-h-0 space-y-3 dashboard-surface">
+      <div className="max-w-none mx-0 space-y-3">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Button
@@ -145,7 +145,7 @@ export default function StrategyDetails() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <TrendingUp className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-3xl font-bold text-foreground">{winRate}%</p>
+                <p className="text-[22px] font-semibold text-foreground">{winRate}%</p>
                 <p className="text-sm text-muted-foreground">Win Rate</p>
               </div>
             </CardContent>
@@ -155,7 +155,7 @@ export default function StrategyDetails() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <Award className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-3xl font-bold text-foreground">{strategyTrades.length}</p>
+                <p className="text-[22px] font-semibold text-foreground">{strategyTrades.length}</p>
                 <p className="text-sm text-muted-foreground">Transakcji</p>
               </div>
             </CardContent>
@@ -164,8 +164,8 @@ export default function StrategyDetails() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <Target className="w-8 h-8 mx-auto mb-2" style={{ color: totalPL >= 0 ? '#10b981' : 'hsl(var(--loss))' }} />
-                <p className={`text-3xl font-bold ${totalPL >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>
+                <Target className={`w-8 h-8 mx-auto mb-2 ${totalPL >= 0 ? "text-profit" : "text-loss"}`} />
+                <p className={`text-[22px] font-semibold ${totalPL >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>
                   {totalPL > 0 ? '+' : ''}{totalPL.toFixed(2)}
                 </p>
                 <p className="text-sm text-muted-foreground">Łączny P&L</p>
@@ -176,14 +176,14 @@ export default function StrategyDetails() {
           <Card>
             <CardContent className="pt-6">
               <div className="text-center">
-                <Star className="w-8 h-8 mx-auto text-amber-500 mb-2" />
+                <Star className="w-8 h-8 mx-auto text-warning mb-2" />
                 <div className="flex justify-center gap-1 mb-2">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
                       className="w-4 h-4"
-                      fill={i < (strategy.performance_rating || 0) ? '#fbbf24' : '#e5e7eb'}
-                      color={i < (strategy.performance_rating || 0) ? 'hsl(var(--warning))' : '#d1d5db'}
+                      fill={i < (strategy.performance_rating || 0) ? "hsl(var(--warning))" : "none"}
+                      color={i < (strategy.performance_rating || 0) ? "hsl(var(--warning))" : "hsl(var(--border))"}
                     />
                   ))}
                 </div>
@@ -329,7 +329,7 @@ export default function StrategyDetails() {
 
         {/* Komentarz */}
         {strategy.comments && (
-          <Card className="border-l-2 border-primary bg-card">
+          <Card className="border border-border bg-card">
             <CardHeader>
               <CardTitle className="text-foreground text-lg">Opinia o strategii</CardTitle>
             </CardHeader>

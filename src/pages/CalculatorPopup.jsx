@@ -30,9 +30,9 @@ import {
 
 const VERDICT_BOX = {
   rose: "border-loss/30 bg-loss/10 text-loss dark:text-loss",
-  amber: "border-amber-300/80 bg-amber-500/10 text-amber-900 dark:text-amber-200",
+  amber: "border-warning/30 bg-warning/10 text-warning",
   emerald: "border-profit/30 bg-profit/10 text-profit dark:text-profit",
-  orange: "border-orange-300/80 bg-orange-500/15 text-orange-900 dark:text-orange-200",
+  orange: "border-transparent bg-ds-warn-tint text-ds-warn",
 };
 
 /**
@@ -74,7 +74,7 @@ export default function CalculatorPopup() {
             type="button"
             className={cn(
               "rounded px-2 py-0.5 text-[10px] font-medium",
-              kind === "aplus" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"
+              kind === "aplus" ? "bg-muted text-foreground" : "hover:bg-muted text-muted-foreground"
             )}
             onClick={() => setKind("aplus")}
           >
@@ -84,7 +84,7 @@ export default function CalculatorPopup() {
             type="button"
             className={cn(
               "rounded px-2 py-0.5 text-[10px] font-medium",
-              kind === "m1" ? "bg-primary text-primary-foreground" : "hover:bg-muted text-muted-foreground"
+              kind === "m1" ? "bg-muted text-foreground" : "hover:bg-muted text-muted-foreground"
             )}
             onClick={() => setKind("m1")}
           >

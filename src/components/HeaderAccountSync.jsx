@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarCheck2, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
-import { useLanguage } from "@/components/LanguageProvider";
 import { getTrades, getTradingAccounts } from "@/lib/localStorage";
 import { isTradingAccountActive } from "@/lib/utils";
 import { importMtHistoryFile } from "@/lib/mtHistorySync";
-import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -17,14 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-function todayIso() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
 
 const HISTORY_ACCEPT =
   ".csv,.xml,.xlsx,.xlsm,text/csv,text/xml,application/xml,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -67,8 +56,6 @@ function measureAccountSelectWidth(names, trigger) {
 
 export default function HeaderAccountSync() {
   const { user } = useAuth();
-  const { t } = useLanguage();
-  const location = useLocation();
   const queryClient = useQueryClient();
   const fileRef = useRef(null);
   const triggerRef = useRef(null);
@@ -77,10 +64,6 @@ export default function HeaderAccountSync() {
   const [importing, setImporting] = useState(false);
   const [menuOffset, setMenuOffset] = useState(8);
   const [selectWidth, setSelectWidth] = useState(SELECT_MIN_PX);
-  const planActive = location.pathname.toLowerCase().includes("/dayplan");
-  const planHref = `${createPageUrl("DayPlan")}?date=${todayIso()}${
-    accountId ? `&account=${encodeURIComponent(accountId)}` : ""
-  }`;
 
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts", user?.id],
@@ -187,7 +170,7 @@ export default function HeaderAccountSync() {
   const menuWidthStyle = { width: menuWidth, minWidth: menuWidth, maxWidth: menuWidth };
 
   return (
-    <div className="header-cluster flex h-8 items-center gap-0.5">
+    <div className="flex h-8 items-center rounded-lg border border-border bg-muted">
       <Select
         value={accountId || undefined}
         onValueChange={chooseAccount}
@@ -225,24 +208,7 @@ export default function HeaderAccountSync() {
           ))}
         </SelectContent>
       </Select>
-      <span className="header-cluster-sep" aria-hidden />
-      <Button
-        asChild
-        type="button"
-        variant="ghost"
-        title={t("dayPlan") || "Plan dnia"}
-        aria-label={t("dayPlan") || "Plan dnia"}
-        aria-current={planActive ? "page" : undefined}
-        className={`h-7 gap-1.5 px-2.5 text-[12px] font-mono hover:bg-white/5 ${
-          planActive ? "bg-white/5 text-primary" : "text-foreground"
-        }`}
-      >
-        <Link to={planHref}>
-          <CalendarCheck2 className="h-3.5 w-3.5" />
-          <span className="hidden lg:inline">{t("dayPlan") || "Plan dnia"}</span>
-        </Link>
-      </Button>
-      <span className="header-cluster-sep" aria-hidden />
+      <span className="h-4 w-px shrink-0 bg-border" aria-hidden />
       <input
         ref={fileRef}
         type="file"
@@ -256,7 +222,7 @@ export default function HeaderAccountSync() {
         disabled={!selected || importing}
         onClick={onImportClick}
         title="Szybki import transakcji CSV/XML/XLSX na wybrane konto"
-        className="h-7 gap-1.5 px-2.5 text-[12px] font-mono text-foreground hover:bg-white/5"
+        className="h-7 gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-foreground hover:bg-background"
       >
         <Upload className={`h-3.5 w-3.5 ${importing ? "animate-pulse" : ""}`} />
         {importing ? "Importowanie..." : "Import"}

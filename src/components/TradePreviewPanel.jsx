@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
 import { toast } from "sonner";
+import { usePnlDisplay } from "@/hooks/use-pnl-display";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import ImageViewer from "@/components/common/ImageViewer";
 import TradePreviewChart from "@/components/TradePreviewChart";
 import TradePreviewPhotos from "@/components/TradePreviewPhotos";
+import { PlanVsActual, TradeLevelsDiagram } from "@/components/TradePlanCard";
 import {
   EmotionTab,
   ExecutionsTab,
@@ -30,10 +32,14 @@ import {
 } from "@/lib/tradeTags";
 import {
   cn,
+  directionLabel,
+  getTradeMoneyRisk,
   getTradeRealizedPL,
   tradeOutcomeDisplay,
+  tradeRealizedR,
   tradeStatusDisplay,
 } from "@/lib/utils";
+import { formatChartPrice, tradePriceLevels } from "@/lib/tradePreviewMarketData";
 import { getDateFormat } from "@/lib/userSettings";
 import {
   TABS,
@@ -60,6 +66,7 @@ export default function TradePreviewPanel({
 }) {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const pnl = usePnlDisplay();
   const dateFormat = getDateFormat();
   const [tab, setTab] = useState("stats");
   const [fieldsOpen, setFieldsOpen] = useState(false);
@@ -143,6 +150,30 @@ export default function TradePreviewPanel({
   const held = formatHeldDuration(trade);
   const opened = formatOpenedLabel(trade, dateFormat);
   const closed = formatClosedLabel(trade, dateFormat);
+  const realizedR = trade ? tradeRealizedR(trade) : null;
+  const moneyRisk = trade ? getTradeMoneyRisk(trade) : null;
+  const levels = trade ? tradePriceLevels(trade) : null;
+  const outcomeKey = String(trade?.outcome || "").toLowerCase();
+  const outcomeTone = outcomeKey === "win" ? "profit" : outcomeKey === "loss" ? "loss" : "neutral";
+  const kpis = [
+    {
+      label: "Result",
+      value: netPl == null ? "—" : pnl.formatTrade(trade),
+      tone: plTone(netPl),
+      sub: [realizedR != null ? `${formatSigned(realizedR)}R` : null, gross !== null ? `Gross ${formatSigned(gross)}` : null, roi !== null ? `ROI ${formatSigned(roi)}%` : null].filter(Boolean).join(" · "),
+    },
+    { label: "Duration", value: held || "—", sub: closed ? `Closed ${closed}` : "" },
+    { label: "Status", value: trade?.outcome ? tradeOutcomeDisplay(trade.outcome) : tradeStatusDisplay(trade?.status) || "—", tone: outcomeTone, sub: tradeStatusDisplay(trade?.status) || "" },
+    { label: "Risk", value: moneyRisk ? pnl.formatAmount(moneyRisk) : "—", sub: "" },
+  ];
+  const planRows = [
+    { label: "Setup", value: strategy?.name || trade?.setup || null },
+    { label: "Direction", value: trade?.direction ? directionLabel(trade.direction, t) : null },
+    { label: "Entry", value: levels?.entry != null ? formatChartPrice(levels.entry) : null },
+    { label: "Planned stop", value: levels?.sl != null ? formatChartPrice(levels.sl) : null, color: "var(--ds-neg)" },
+    { label: "Actual exit", value: levels?.exit != null ? formatChartPrice(levels.exit) : null },
+    { label: "Risk", value: moneyRisk ? pnl.formatAmount(moneyRisk) : null },
+  ];
 
   const goNeighbor = async (neighbor) => {
     if (!neighbor || !onSelectTrade) return;
@@ -190,119 +221,82 @@ export default function TradePreviewPanel({
       >
         <SheetContent
           side="right"
-          className="!top-0 !bottom-0 !h-[100dvh] !max-h-[100dvh] !w-[min(100vw,52rem)] sm:!max-w-none p-0 gap-0 overflow-hidden flex flex-col bg-[hsl(var(--window-bg))] text-card-foreground border-l border-[hsl(var(--window-border))] shadow-[var(--window-shadow)] [&>button.absolute]:hidden"
+          className="trade-preview-panel p-0 gap-0 overflow-hidden flex flex-col text-ds-text [&>button.absolute]:hidden"
         >
           <SheetTitle className="sr-only">Trade Preview</SheetTitle>
           <SheetDescription className="sr-only">Podgląd szczegółów transakcji</SheetDescription>
 
-          <div className="px-5 pt-4 pb-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[17px] font-semibold tracking-tight">Trade Preview</h2>
-              <button
-                type="button"
-                className="h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5"
-                onClick={() => handleOpenChange(false)}
-                aria-label="Zamknij"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="mt-3 flex items-center gap-2">
-              <div className="flex items-center gap-1.5 min-w-0 flex-1 flex-wrap">
+          <div className="px-6 pt-5 pb-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  className="h-7 w-7 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-[8px] text-ds-text3 transition-colors duration-200 hover:bg-ds-s3 hover:text-ds-text disabled:opacity-30"
                   disabled={!prevTrade}
                   onClick={() => goNeighbor(prevTrade)}
                   aria-label="Poprzednia transakcja"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <span className="text-[15px] font-semibold truncate">{trade?.symbol || "—"}</span>
                 <button
                   type="button"
-                  className="h-7 w-7 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-[8px] text-ds-text3 transition-colors duration-200 hover:bg-ds-s3 hover:text-ds-text disabled:opacity-30"
                   disabled={!nextTrade}
                   onClick={() => goNeighbor(nextTrade)}
                   aria-label="Następna transakcja"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
-                <PreviewSideBadge direction={trade?.direction} t={t} />
-                <PreviewChip tone="warning">{tradeStatusDisplay(trade?.status)}</PreviewChip>
-                {trade?.outcome ? (
-                  <PreviewChip
-                    tone={
-                      String(trade.outcome).toLowerCase() === "win"
-                        ? "profit"
-                        : String(trade.outcome).toLowerCase() === "loss"
-                          ? "loss"
-                          : "neutral"
-                    }
-                  >
-                    {tradeOutcomeDisplay(trade.outcome)}
-                  </PreviewChip>
-                ) : null}
               </div>
-              <button
-                type="button"
-                className="shrink-0 h-8 inline-flex items-center gap-1.5 rounded-lg border border-border/80 bg-background/40 px-2.5 text-[12px] font-medium text-foreground hover:bg-white/5"
-                onClick={() => setTab("chart")}
-              >
-                <Play className="h-3.5 w-3.5 fill-current" />
-                Replay
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="h-8 inline-flex items-center gap-1.5 rounded-[10px] border border-ds-line bg-ds-s2 px-3 text-[12px] font-medium text-ds-text2 transition-colors duration-200 hover:bg-ds-s3 hover:text-ds-text"
+                  onClick={() => setTab("chart")}
+                >
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  Replay
+                </button>
+                <button
+                  type="button"
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-[8px] text-ds-text3 transition-colors duration-200 hover:bg-ds-s3 hover:text-ds-text"
+                  onClick={() => handleOpenChange(false)}
+                  aria-label="Zamknij"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Opened {opened}
-              {closed ? ` • Closed ${closed}` : ""}
-              {held ? ` • Held ${held}` : ""}
-            </p>
+            <h2 className="mt-3 truncate text-[24px] font-medium leading-tight tracking-[-0.01em] text-ds-text">
+              {trade?.symbol || "—"}{trade?.direction ? ` ${directionLabel(trade.direction, t)}` : ""}
+            </h2>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-ds-text2">
+              <span>{opened}</span>
+              {tradeIndex >= 0 ? <><span className="text-ds-text3">•</span><span>Trade #{tradeIndex + 1}</span></> : null}
+              <span className="text-ds-text3">•</span>
+              <PreviewSideBadge direction={trade?.direction} t={t} />
+              <PreviewChip tone="warning">{tradeStatusDisplay(trade?.status)}</PreviewChip>
+              {trade?.outcome ? <PreviewChip tone={outcomeTone}>{tradeOutcomeDisplay(trade.outcome)}</PreviewChip> : null}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-[16px] border border-ds-line bg-ds-s2 sm:grid-cols-4">
+              {kpis.map((kpi, index) => (
+                <div key={kpi.label} className={cn("min-w-0 px-4 py-3.5", index % 2 ? "border-l border-ds-line" : "", index >= 2 ? "border-t border-ds-line sm:border-t-0" : "", index === 2 ? "sm:border-l" : "")}>
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-ds-text3">{kpi.label}</p>
+                  <p className={cn("mt-2 truncate text-[22px] font-medium leading-none tabular-nums", kpi.tone ? toneClass(kpi.tone) : "text-ds-text")}>{kpi.value}</p>
+                  <p className="mt-1.5 min-h-[15px] truncate text-[11px] text-ds-text3">{kpi.sub}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {tab === "chart" ? (
-            <div className="px-5 pb-1 flex items-baseline gap-2.5">
-              <span className="text-[11px] text-muted-foreground">NET P&L</span>
-              <span className={cn("text-lg font-bold tabular-nums", toneClass(plTone(netPl)))}>
-                {netPl == null ? "—" : formatSigned(netPl)}
-              </span>
-              {roi !== null && (
-                <span className={cn("text-[11px] tabular-nums", toneClass(plTone(roi)))}>
-                  ROI {formatSigned(roi)}%
-                </span>
-              )}
-            </div>
-          ) : (
-            <div className="px-5 pb-3">
-              <div className="rounded-xl border border-white/[0.06] bg-black/20 p-4">
-                <p className="text-[11px] font-medium tracking-wide text-muted-foreground">NET P&L</p>
-                <p className={cn("mt-1.5 text-[34px] leading-none font-bold tabular-nums tracking-tight", toneClass(plTone(netPl)))}>
-                  {netPl == null ? "—" : formatSigned(netPl)}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {roi !== null && (
-                    <span className={cn("text-[11px] px-2.5 py-1 rounded-full bg-profit/10 border border-profit/20", toneClass(plTone(roi)))}>
-                      ROI {formatSigned(roi)}%
-                    </span>
-                  )}
-                  {gross !== null && (
-                    <span className="text-[11px] px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-muted-foreground">
-                      Gross {formatSigned(gross)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="px-5 pb-2">
-            <TabStrip tabs={TABS} value={tab} onChange={setTab} />
+          <div className="px-6 pb-2">
+            <TabStrip tabs={TABS} value={tab} onChange={setTab} variant="line" />
           </div>
 
           <div className={cn(
-            "flex-1 min-h-0 px-5 py-1",
+            "flex-1 min-h-0 px-6 py-1",
             tab === "chart" ? "overflow-hidden flex flex-col" : "overflow-y-auto"
           )}>
             {tab === "stats" && (
@@ -324,8 +318,14 @@ export default function TradePreviewPanel({
             )}
             {tab === "executions" && <ExecutionsTab trade={trade} />}
             {tab === "chart" && (
-              <div className="flex-1 min-h-0">
-                <TradePreviewChart trade={trade} />
+              <div className="flex-1 min-h-0 grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
+                <div className="min-h-[280px] sm:min-h-0">
+                  <TradePreviewChart trade={trade} />
+                </div>
+                <div className="min-h-0 space-y-3 overflow-y-auto pb-3">
+                  <TradeLevelsDiagram levels={levels} title="Price levels" />
+                  <PlanVsActual title="Plan vs actual" rows={planRows} />
+                </div>
               </div>
             )}
             {tab === "photos" && (
@@ -365,11 +365,11 @@ export default function TradePreviewPanel({
             {tab === "running_pl" && <RunningPlTab trade={trade} />}
           </div>
 
-          <div className="mt-auto shrink-0 border-t border-white/[0.06] px-5 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] flex items-center gap-3">
+          <div className="mt-auto shrink-0 border-t border-ds-line px-6 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] flex items-center gap-3">
             <Button
               type="button"
               variant="outline"
-              className="h-10 px-5 bg-transparent border-border/80 text-muted-foreground hover:text-foreground"
+              className="h-10 px-5"
               onClick={() => handleOpenChange(false)}
             >
               Close
@@ -377,7 +377,7 @@ export default function TradePreviewPanel({
             {onEdit && (
               <Button
                 type="button"
-                className="h-10 flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                className="h-10 flex-1"
                 onClick={() => onEdit(trade)}
               >
                 Go to trade details

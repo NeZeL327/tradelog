@@ -38,7 +38,7 @@ export default function LanguageToggle({ className = "", variant = "light" }) {
                 ? "text-white/70 hover:text-white"
                 : "text-muted-foreground hover:text-foreground",
               isActive
-                ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.45)]"
+                ? "bg-ds-s3 text-ds-text hover:bg-ds-s3 hover:text-ds-text"
                 : null
             )}
             aria-pressed={isActive}

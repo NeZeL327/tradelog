@@ -17,7 +17,7 @@ export function MetricRow({ className, children }) {
   return (
     <div
       className={cn(
-        "dashboard-kpi-row grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 rounded-lg border border-border bg-card overflow-hidden",
+        "dashboard-kpi-row grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 rounded-[16px] border border-ds-line bg-card overflow-hidden",
         className
       )}
     >

@@ -10,27 +10,26 @@ export default function AnimatedPublicBackground() {
       {/* Siatka – subtelna, wolny ruch */}
       <div className="hero-grid animated-public-grid" />
 
-      {/* Mesh glow – jeden gradient, bardzo wolna pulsacja */}
-      <div className="public-mesh-glow absolute inset-0" />
+      {/* Mesh glow — very soft cyan wash only */}
+      <div className="public-mesh-glow absolute inset-0 opacity-40" />
 
-      {/* Dwa orby – dobrze widoczne, wolny drift */}
       <motion.div
-        className="absolute -top-24 -right-20 w-[32rem] h-[32rem] rounded-full bg-profit/35 blur-[75px]"
+        className="absolute -top-24 -right-20 h-[32rem] w-[32rem] rounded-full bg-primary/12 blur-[90px]"
         animate={{
           x: [0, 28, 0],
           y: [0, -20, 0],
           scale: [1, 1.08, 1],
-          opacity: [0.7, 1, 0.7],
+          opacity: [0.35, 0.55, 0.35],
         }}
         transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
-        className="absolute -bottom-32 -left-20 w-[30rem] h-[30rem] rounded-full bg-primary/20 blur-[80px]"
+        className="absolute -bottom-32 -left-20 h-[30rem] w-[30rem] rounded-full bg-primary/8 blur-[100px]"
         animate={{
           x: [0, -24, 0],
           y: [0, 24, 0],
           scale: [1.05, 1, 1.05],
-          opacity: [0.65, 0.95, 0.65],
+          opacity: [0.25, 0.4, 0.25],
         }}
         transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
       />

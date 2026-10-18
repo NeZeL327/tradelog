@@ -67,7 +67,7 @@ export default function Home() {
               >
                 <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
                   <img
-                    src="/aikeeptrade-icon-hires.png"
+                    src="/aikeeptrade-icon-192.png"
                     alt=""
                     width="20"
                     height="20"

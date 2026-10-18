@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 const Panel = React.forwardRef(({ className, as: Comp = "div", ...props }, ref) => (
   <Comp
     ref={ref}
-    className={cn("rounded-xl border border-border bg-card text-card-foreground", className)}
+    className={cn("rounded-[16px] border border-ds-line bg-card text-card-foreground", className)}
     {...props}
   />
 ))

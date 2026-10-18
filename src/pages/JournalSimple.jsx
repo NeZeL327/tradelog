@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import JournalMobileList from "../components/JournalMobileList";
 import { useLanguage } from "@/components/LanguageProvider";
+import { usePnlDisplay } from "@/hooks/use-pnl-display";
 import { directionBadgeClass, directionLabel, getActiveAccountIds, getTradeRealizedPL, isClosedTrade, isTradingAccountActive, normalizeTradeStatus, tradeBelongsToActiveAccount, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
 import { formatTradeDate, formatTradeClock, formatTradeClockDate, getDateFormat } from "@/lib/userSettings";
@@ -54,7 +55,7 @@ const TradeFormNew = lazy(() => import("../components/TradeFormNew"));
 
 const FormFallback = () => (
   <div className="flex justify-center py-10">
-    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+    <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin" />
   </div>
 );
 
@@ -118,7 +119,7 @@ function MiniCalendar({ from, to, onSelect }) {
       </div>
       <div className="grid grid-cols-7 mb-1">
         {DAYS_PL.map(d => (
-          <div key={d} className="text-center text-[10px] font-medium text-slate-400 py-0.5">{d}</div>
+          <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-0.5">{d}</div>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-y-0.5">
@@ -136,7 +137,7 @@ function MiniCalendar({ from, to, onSelect }) {
               onClick={() => handleDay(d)}
               className={[
                 "text-xs h-7 w-full rounded transition-colors",
-                isFrom || isTo ? "bg-primary text-primary-foreground font-semibold" : "",
+                isFrom || isTo ? "bg-muted text-primary font-semibold" : "",
                 inRange ? "bg-primary/10 text-foreground rounded-none" : "",
                 isNow && !isFrom && !isTo ? "font-bold text-primary" : "",
                 !isFrom && !isTo && !inRange ? "text-foreground hover:bg-muted" : "",
@@ -151,9 +152,12 @@ function MiniCalendar({ from, to, onSelect }) {
   );
 }
 
+const JOURNAL_PAGE_SIZE = 40;
+
 export default function JournalSimple({ mode = "all" }) {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const pnl = usePnlDisplay();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const isPlannedMode = mode === "planned";
@@ -284,7 +288,6 @@ export default function JournalSimple({ mode = "all" }) {
     queryKey: ['trades', user?.id],
     queryFn: () => getTrades(user?.id),
     enabled: !!user?.id,
-    staleTime: 30_000,
     placeholderData: [],
   });
 
@@ -294,15 +297,19 @@ export default function JournalSimple({ mode = "all" }) {
     enabled: !!user?.id
   });
 
-  const activeAccounts = accounts.filter(isTradingAccountActive);
-  const activeAccountIds = getActiveAccountIds(accounts);
-  const tradesFromActiveAccounts = trades.filter((trade) => {
-    if (tradeBelongsToActiveAccount(trade, activeAccountIds)) return true;
-    // Planned/missed are often saved before an account is chosen.
-    // Keep them on those lists; dashboard P&L still ignores trades without account_id.
-    const status = normalizeTradeStatus(trade?.status);
-    return (status === "planned" || status === "missed") && !trade?.account_id;
-  });
+  const activeAccounts = useMemo(
+    () => accounts.filter(isTradingAccountActive),
+    [accounts]
+  );
+  const tradesFromActiveAccounts = useMemo(() => {
+    const activeAccountIds = getActiveAccountIds(accounts);
+    return trades.filter((trade) => {
+      if (tradeBelongsToActiveAccount(trade, activeAccountIds)) return true;
+      // Planned/missed are often saved before an account is chosen.
+      const status = normalizeTradeStatus(trade?.status);
+      return (status === "planned" || status === "missed") && !trade?.account_id;
+    });
+  }, [accounts, trades]);
 
   const { data: strategies = [] } = useQuery({
     queryKey: ['strategies', user?.id],
@@ -493,6 +500,13 @@ export default function JournalSimple({ mode = "all" }) {
   }, [accounts]);
 
   // Filter and search (base)
+  const {
+    baseFilteredTrades,
+    filteredTrades,
+    plannedTrades,
+    missedTrades,
+    displayTrades,
+  } = useMemo(() => {
   const baseFilteredTrades = tradesFromActiveAccounts.filter(t => {
     if (searchTerm && !(t.symbol || "").toLowerCase().includes(searchTerm.toLowerCase())) return false;
 
@@ -543,6 +557,27 @@ export default function JournalSimple({ mode = "all" }) {
     : isMissedMode
       ? missedTrades
       : executedTrades;
+  return { baseFilteredTrades, filteredTrades, plannedTrades, missedTrades, displayTrades };
+  }, [
+    tradesFromActiveAccounts,
+    searchTerm,
+    dateRange.from,
+    dateRange.to,
+    timeFilters,
+    accountFilters,
+    statusFilters,
+    outcomeFilters,
+    sortField,
+    sortOrder,
+    isPlannedMode,
+    isMissedMode,
+  ]);
+  const [visibleCount, setVisibleCount] = useState(JOURNAL_PAGE_SIZE);
+  useEffect(() => {
+    setVisibleCount(JOURNAL_PAGE_SIZE);
+  }, [searchTerm, dateRange.from, dateRange.to, timeFilters, accountFilters, statusFilters, outcomeFilters, mode]);
+  const visibleTrades = displayTrades.slice(0, visibleCount);
+  const visiblePlanned = plannedTrades.slice(0, visibleCount);
   const toggleStatusFilter = (value) => {
     setStatusFilters(prev => {
       if (value === "all") return ["all"];
@@ -639,14 +674,14 @@ export default function JournalSimple({ mode = "all" }) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <p className="text-slate-600">Please log in to view your journal</p>
+          <p className="text-muted-foreground">Please log in to view your journal</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-0 space-y-4 dashboard-surface">
+    <div className="w-full min-h-0 space-y-3 dashboard-surface">
       <div className="w-full mx-auto space-y-4">
         {isFetching && trades.length === 0 && (
           <p className="text-sm text-muted-foreground">Ładowanie transakcji…</p>
@@ -671,12 +706,12 @@ export default function JournalSimple({ mode = "all" }) {
                 {selectedTrades.size} {selectedTrades.size === 1 ? 'trade' : 'trades'} selected
               </span>
             </div>
-            <div className="h-6 w-px bg-slate-300 dark:bg-slate-600"></div>
+            <div className="h-6 w-px bg-border"></div>
             <Button 
               size="sm" 
               variant="outline" 
               onClick={() => setSelectedTrades(new Set())}
-              className="border-slate-300 dark:border-slate-600"
+              className="border-border"
             >
               Clear
             </Button>
@@ -684,7 +719,7 @@ export default function JournalSimple({ mode = "all" }) {
               size="sm" 
               variant="destructive" 
               onClick={handleBulkDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-loss text-white hover:bg-loss/90"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete Selected
@@ -724,19 +759,19 @@ export default function JournalSimple({ mode = "all" }) {
             { key: "planned",label: t('planned'),          count: stats.planned, active: statusFilters.includes("Planned"),  accent: "amber",   onClick: () => { setStatusFilters(["Planned"]); setOutcomeFilters(["all"]); } },
           ];
           const accentMap = {
-            slate:   { dot: "bg-slate-400",   text: "text-slate-700 dark:text-slate-200",   badgeActive: "bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100" },
+            slate:   { dot: "bg-muted-foreground",   text: "text-muted-foreground",   badgeActive: "bg-muted text-foreground" },
             lime:    { dot: "bg-primary",     text: "text-foreground",                          badgeActive: "bg-primary/15 text-primary" },
             emerald: { dot: "bg-profit", text: "text-profit dark:text-profit", badgeActive: "bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit" },
-            yellow:  { dot: "bg-yellow-500",  text: "text-yellow-700 dark:text-yellow-300", badgeActive: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/60 dark:text-yellow-200" },
-            orange:  { dot: "bg-orange-500",  text: "text-orange-700 dark:text-orange-300", badgeActive: "bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-200" },
+            yellow:  { dot: "bg-profit",  text: "text-profit", badgeActive: "bg-profit/10 text-profit" },
+            orange:  { dot: "bg-warning",  text: "text-warning", badgeActive: "bg-warning/10 text-warning" },
             red:     { dot: "bg-loss",     text: "text-loss dark:text-loss",       badgeActive: "bg-loss/10 text-loss" },
-            amber:   { dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-300",   badgeActive: "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200" },
+            amber:   { dot: "bg-warning",   text: "text-warning",   badgeActive: "bg-warning/10 text-warning" },
           };
           return (
-            <div className="flex flex-col lg:flex-row lg:items-end gap-3">
+            <div className="overflow-hidden rounded-[12px] border border-border bg-card shadow-none">
               <div
                 role="tablist"
-                className="flex-1 app-h-scroll items-end gap-1 border-b border-border px-1 lg:flex-wrap lg:overflow-visible"
+                className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8"
               >
                 {tabs.map((tab) => {
                   const a = accentMap[tab.accent];
@@ -747,10 +782,8 @@ export default function JournalSimple({ mode = "all" }) {
                       role="tab"
                       aria-selected={tab.active}
                       onClick={tab.onClick}
-                      className={`group relative shrink-0 inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-t-xl border border-b-0 transition-colors duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-                        tab.active
-                          ? `bg-card border-border -mb-px ${a.text}`
-                          : "bg-muted/40 border-transparent text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                      className={`group relative inline-flex min-h-[64px] flex-col items-start justify-center gap-1 border-b border-r border-border px-3 py-2 text-left focus-visible:outline-none ${
+                        tab.active ? `bg-muted ${a.text}` : "text-muted-foreground hover:bg-muted"
                       }`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${a.dot} ${tab.active ? "opacity-100" : "opacity-60"}`} />
@@ -765,20 +798,12 @@ export default function JournalSimple({ mode = "all" }) {
                     </button>
                   );
                 })}
-              </div>
-              <div
-                className={`shrink-0 rounded-xl border px-4 py-2.5 shadow-sm transition-colors ${
-                  stats.totalPL >= 0
-                    ? 'bg-profit/10 dark:bg-profit/10 border-profit/20 dark:border-profit/30'
-                    : 'bg-loss/10 dark:bg-red-950/60 border-loss/20 dark:border-red-800'
-                }`}
-              >
-                <p className={`text-[11px] font-semibold uppercase tracking-wide ${stats.totalPL >= 0 ? 'text-profit dark:text-profit' : 'text-red-700 dark:text-red-300'}`}>
-                  {t('totalPL')}
-                </p>
-                <p data-private className={`text-xl font-bold leading-tight ${stats.totalPL >= 0 ? 'text-profit dark:text-profit' : 'text-red-700 dark:text-red-300'}`}>
-                  {stats.totalPL >= 0 ? '+' : ''}{stats.totalPL.toFixed(2)}
-                </p>
+                <div className="flex min-h-[64px] flex-col justify-center border-b border-border px-3 py-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ds-text2">{t('totalPL')}</p>
+                  <p data-private className={`text-[18px] font-semibold leading-tight ${stats.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
+                    {pnl.formatTrades(statsSource)}
+                  </p>
+                </div>
               </div>
             </div>
           );
@@ -790,7 +815,7 @@ export default function JournalSimple({ mode = "all" }) {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Search by symbol..."
                     value={searchTerm}
@@ -803,10 +828,10 @@ export default function JournalSimple({ mode = "all" }) {
               <div className="flex flex-wrap gap-2 sm:gap-3 items-center w-full md:w-auto">
                 <label className="flex items-center gap-2 cursor-pointer min-h-10">
                   <div 
-                    className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
+                    className={`w-4 h-4 rounded-full border ${
                       statusFilters.includes("all")
-                        ? 'bg-primary border-primary'
-                        : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
+                        ? 'border-ds-accent bg-ds-accent'
+                        : 'border-border bg-muted hover:bg-accent'
                     }`}
                     onClick={() => { toggleStatusFilter("all"); setOutcomeFilters(["all"]); }}
                   >
@@ -820,10 +845,10 @@ export default function JournalSimple({ mode = "all" }) {
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div 
-                    className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
+                    className={`w-4 h-4 rounded-full border ${
                       statusFilters.includes("Open")
-                        ? 'bg-primary border-primary'
-                        : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
+                        ? 'border-ds-accent bg-ds-accent'
+                        : 'border-border bg-muted hover:bg-accent'
                     }`}
                     onClick={() => { toggleStatusFilter("Open"); setOutcomeFilters(["all"]); }}
                   >
@@ -837,10 +862,10 @@ export default function JournalSimple({ mode = "all" }) {
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div 
-                    className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
+                    className={`w-4 h-4 rounded-full border ${
                       statusFilters.includes("Closed")
-                        ? 'bg-primary border-primary'
-                        : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
+                        ? 'border-ds-accent bg-ds-accent'
+                        : 'border-border bg-muted hover:bg-accent'
                     }`}
                     onClick={() => { toggleStatusFilter("Closed"); setOutcomeFilters(["all"]); }}
                   >
@@ -854,10 +879,10 @@ export default function JournalSimple({ mode = "all" }) {
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div 
-                    className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm hover:shadow-md ${
+                    className={`w-4 h-4 rounded-full border ${
                       statusFilters.includes("Planned")
-                        ? 'bg-primary border-primary'
-                        : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
+                        ? 'border-ds-accent bg-ds-accent'
+                        : 'border-border bg-muted hover:bg-accent'
                     }`}
                     onClick={() => { toggleStatusFilter("Planned"); setOutcomeFilters(["all"]); }}
                   >
@@ -875,7 +900,7 @@ export default function JournalSimple({ mode = "all" }) {
                 <button
                   type="button"
                   onClick={() => setAccountFilterOpen((prev) => !prev)}
-                  className="relative w-full sm:w-[220px] h-10 px-4 py-2 border border-border bg-card rounded-lg text-sm flex items-center justify-center hover:bg-muted/40"
+                  className="relative w-full sm:w-[220px] h-10 px-4 py-2 border border-border bg-card rounded-lg text-sm flex items-center justify-center hover:bg-muted"
                 >
                   <span className="truncate text-center w-full pr-4">
                     {activeAccountFilterLabel || (t('allAccounts') || 'All Accounts')}
@@ -883,19 +908,19 @@ export default function JournalSimple({ mode = "all" }) {
                   {accountFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
                 </button>
                 {accountFilterOpen && (
-                  <div className="absolute left-0 mt-2 z-20 w-full rounded-md border border-border bg-popover shadow-lg p-2 max-h-64 overflow-y-auto">
+                  <div className="absolute left-0 mt-2 z-20 w-full rounded-md border border-border bg-popover shadow-none p-2 max-h-64 overflow-y-auto">
                     <button
                       type="button"
                       onClick={() => {
                         toggleAccountFilter("all");
                       }}
-                      className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted/40"
+                      className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted"
                     >
                       <span className="text-sm text-foreground truncate">{t('allAccounts') || 'All Accounts'}</span>
                       <div
-                        className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
+                        className={`w-4 h-4 rounded-full border transition-all ${
                           accountFilters.includes("all")
-                            ? 'bg-primary border-primary'
+                            ? 'border-ds-accent bg-ds-accent'
                             : 'bg-background border-border'
                         }`}
                       >
@@ -915,13 +940,13 @@ export default function JournalSimple({ mode = "all" }) {
                           onClick={() => {
                             toggleAccountFilter(String(account.id));
                           }}
-                          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted/40"
+                          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted"
                         >
                           <span className="text-sm text-foreground truncate">{account.name}</span>
                           <div
-                            className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
+                            className={`w-4 h-4 rounded-full border transition-all ${
                               isSelected
-                                ? 'bg-primary border-primary'
+                                ? 'border-ds-accent bg-ds-accent'
                                 : 'bg-background border-border'
                             }`}
                           >
@@ -941,13 +966,13 @@ export default function JournalSimple({ mode = "all" }) {
                 <button
                   type="button"
                   onClick={() => setTimeFilterOpen((prev) => !prev)}
-                  className="relative w-full sm:min-w-[160px] h-10 px-4 py-2 border border-border bg-card rounded-lg text-sm flex items-center justify-center hover:bg-muted/40"
+                  className="relative w-full sm:min-w-[160px] h-10 px-4 py-2 border border-border bg-card rounded-lg text-sm flex items-center justify-center hover:bg-muted"
                 >
                   <span className="truncate text-center w-full pr-4">{activeTimeFilterLabel}</span>
                   {timeFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
                 </button>
                 {timeFilterOpen && (
-                  <div className="absolute right-0 mt-2 z-20 w-full rounded-md border border-border bg-popover shadow-lg p-2">
+                  <div className="absolute right-0 mt-2 z-20 w-full rounded-md border border-border bg-popover shadow-none p-2">
                     {[
                       { value: "all", label: timeFilterLabels.all },
                       { value: "day", label: timeFilterLabels.day },
@@ -963,13 +988,13 @@ export default function JournalSimple({ mode = "all" }) {
                             toggleTimeFilter(option.value);
                             setDateRange({ from: undefined, to: undefined });
                           }}
-                          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted/40"
+                          className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md hover:bg-muted"
                         >
                           <span className="text-sm text-foreground">{option.label}</span>
                           <div
-                            className={`w-5 h-5 rounded-full border-[3px] transition-all shadow-sm ${
+                            className={`w-4 h-4 rounded-full border transition-all ${
                               isChecked
-                                ? 'bg-primary border-primary'
+                                ? 'border-ds-accent bg-ds-accent'
                                 : 'bg-background border-border'
                             }`}
                           >
@@ -993,7 +1018,7 @@ export default function JournalSimple({ mode = "all" }) {
                   onClick={() => setDatePickerOpen((prev) => !prev)}
                   className={`relative flex items-center gap-2 px-3 py-2 h-10 border rounded-md text-sm transition-colors ${
                     dateRangeActive
-                      ? "border-primary bg-primary/10 text-foreground"
+                      ? "border-border bg-ds-s3 text-foreground"
                       : "border-border bg-card text-foreground"
                   }`}
                 >
@@ -1002,7 +1027,7 @@ export default function JournalSimple({ mode = "all" }) {
                   {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
                 {datePickerOpen && (
-                  <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-30 max-w-[calc(100vw-1.5rem)] rounded-lg border border-border bg-popover shadow-md p-3">
+                  <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-30 max-w-[calc(100vw-1.5rem)] rounded-lg border border-border bg-popover shadow-none p-3">
                     <MiniCalendar
                       from={dateRange.from}
                       to={dateRange.to}
@@ -1012,8 +1037,8 @@ export default function JournalSimple({ mode = "all" }) {
                       }}
                     />
                     {(dateRange.from || dateRange.to) && (
-                      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-                        <span className="text-[11px] text-slate-400">
+                      <div className="mt-2 pt-2 border-t border-border flex items-center justify-between">
+                        <span className="text-[11px] text-muted-foreground">
                           {dateRange.from && dateRange.to
                             ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
                             : dateRange.from
@@ -1021,10 +1046,10 @@ export default function JournalSimple({ mode = "all" }) {
                               : ""}
                         </span>
                         <div className="flex gap-2">
-                          <button type="button" onClick={() => { setDateRange({ from: "", to: "" }); }} className="text-[11px] text-slate-400 hover:text-loss px-2 py-0.5 rounded hover:bg-muted/40">
+                          <button type="button" onClick={() => { setDateRange({ from: "", to: "" }); }} className="text-[11px] text-muted-foreground hover:text-loss px-2 py-0.5 rounded hover:bg-muted">
                             Wyczyść
                           </button>
-                          <button type="button" onClick={() => setDatePickerOpen(false)} className="text-[11px] text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-0.5 rounded">
+                          <button type="button" onClick={() => setDatePickerOpen(false)} className="rounded border border-border bg-ds-s3 px-3 py-0.5 text-[11px] text-ds-text hover:bg-accent">
                             Zamknij
                           </button>
                         </div>
@@ -1041,7 +1066,7 @@ export default function JournalSimple({ mode = "all" }) {
           <Card className="bg-card border-border">
             <CardContent className="p-0">
               <div className="hidden md:block overflow-x-auto w-full">
-                <table className="journal-table w-full table-fixed text-xs border-collapse [&_th]:px-1.5 [&_td]:px-1.5 [&_th]:py-2 [&_td]:py-2 [&_th]:leading-tight [&_td]:leading-tight [&_th]:overflow-hidden [&_th]:text-ellipsis [&_td]:overflow-hidden [&_td]:text-ellipsis [&_button]:min-h-0 [&_button]:min-w-0">
+                <table className="journal-table w-full min-w-[1180px] text-xs border-collapse [&_th]:px-1.5 [&_td]:px-1.5 [&_th]:py-2 [&_td]:py-2 [&_th]:leading-tight [&_td]:leading-tight [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
                 <thead className="bg-transparent border-b border-border">
                   <tr>
                     {visibleColumns.status && (
@@ -1090,10 +1115,10 @@ export default function JournalSimple({ mode = "all" }) {
                     <th className="text-center px-1.5 py-1 w-8">
                       <div 
                         onClick={toggleAllTrades}
-                        className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
+                        className={`w-4 h-4 rounded-[4px] border cursor-pointer transition-colors duration-150 mx-auto ${
                           displayTrades.length > 0 && selectedTrades.size === displayTrades.length
-                            ? 'bg-primary border-primary'
-                            : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
+                            ? 'border-ds-accent bg-ds-accent'
+                            : 'border-ds-frame bg-transparent hover:border-ds-text3'
                         }`}
                       >
                         {displayTrades.length > 0 && selectedTrades.size === displayTrades.length && (
@@ -1106,10 +1131,10 @@ export default function JournalSimple({ mode = "all" }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayTrades.map((trade) => (
+                  {visibleTrades.map((trade) => (
                     <tr
                       key={trade.id}
-                      className="border-b border-border hover:bg-muted/40 transition-colors cursor-pointer"
+                      className={`border-b border-border transition-colors cursor-pointer ${selectedTrades.has(trade.id) ? "bg-accent" : "hover:bg-muted"}`}
                       onClick={(event) => handleRowPreview(trade, event)}
                     >
                       {visibleColumns.status && (
@@ -1120,11 +1145,11 @@ export default function JournalSimple({ mode = "all" }) {
                           </Badge>
                         </td>
                       )}
-                      <td className="px-1 py-1 text-xs text-slate-900 dark:text-slate-100 max-w-[92px] truncate" title={accountNameById[String(trade.account_id)] || '-'}>
+                      <td className="px-1 py-1 text-xs text-foreground max-w-[92px] truncate" title={accountNameById[String(trade.account_id)] || '-'}>
                         {accountNameById[String(trade.account_id)] || '-'}
                       </td>
                       {visibleColumns.date && (
-                        <td className="px-1.5 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                        <td className="px-1.5 py-1 text-sm text-foreground whitespace-nowrap">
                           <div>{formatTradeClockDate(trade, "entry", dateFormat) || fmtDate(trade.date)}</div>
                           {(trade.entry_time || trade.time) && (
                             <div className="text-[10px] text-muted-foreground">
@@ -1134,7 +1159,7 @@ export default function JournalSimple({ mode = "all" }) {
                         </td>
                       )}
                       {visibleColumns.symbol && (
-                        <td className="px-1.5 py-1 text-sm font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.symbol}</td>
+                        <td className="px-1.5 py-1 text-sm font-semibold text-foreground whitespace-nowrap">{trade.symbol}</td>
                       )}
                       {visibleColumns.direction && (
                         <td className="px-1.5 py-1">
@@ -1143,11 +1168,11 @@ export default function JournalSimple({ mode = "all" }) {
                           </Badge>
                         </td>
                       )}
-                      <td className="px-1 py-1 text-xs text-slate-900 dark:text-slate-100 max-w-[92px] truncate" title={strategyNameById[String(trade.strategy_id)] || '-'}>
+                      <td className="px-1 py-1 text-xs text-foreground max-w-[92px] truncate" title={strategyNameById[String(trade.strategy_id)] || '-'}>
                         {strategyNameById[String(trade.strategy_id)] || '-'}
                       </td>
                       {visibleColumns.entry && (
-                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                        <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap">
                           <div>{trade.entry_price ?? '-'}</div>
                           {(trade.entry_time || trade.time) && (
                             <div className="text-[10px] text-muted-foreground">
@@ -1156,10 +1181,10 @@ export default function JournalSimple({ mode = "all" }) {
                           )}
                         </td>
                       )}
-                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? trade.stop_loss_amount ?? trade.stop_loss ?? '-'}</td>
-                      <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? trade.take_profit_amount ?? trade.take_profit ?? '-'}</td>
+                      <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap">{trade.stop_loss_pips ?? trade.stop_loss_amount ?? trade.stop_loss ?? '-'}</td>
+                      <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap">{trade.take_profit_pips ?? trade.take_profit_amount ?? trade.take_profit ?? '-'}</td>
                       {visibleColumns.exit && (
-                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                        <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap">
                           <div>{trade.exit_price ?? '-'}</div>
                           {(trade.exit_time || (trade.close_date && trade.close_date !== trade.date)) && (
                             <div className="text-[10px] text-muted-foreground">
@@ -1172,7 +1197,7 @@ export default function JournalSimple({ mode = "all" }) {
                         </td>
                       )}
                       {visibleColumns.position && (
-                        <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap max-w-[72px] truncate" title={String(trade.position_size || '')}>{trade.position_size}</td>
+                        <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap max-w-[72px] truncate" title={String(trade.position_size || '')}>{trade.position_size}</td>
                       )}
                       {visibleColumns.pl && (
                         <td className="px-1.5 py-1">
@@ -1188,13 +1213,13 @@ export default function JournalSimple({ mode = "all" }) {
                               <span className={`text-sm font-semibold ${
                                 pl > 0 ? 'text-profit' :
                                 pl < 0 ? 'text-loss' :
-                                'text-slate-600'
+                                'text-muted-foreground'
                               }`} title={trade.commission != null ? `Commission: ${trade.commission}` : undefined}>
-                                {pl > 0 ? '+' : ''}{pl.toFixed(2)}
+                                {pnl.formatTrade(trade)}
                               </span>
                             </div>
                             );
-                          })() : <span className="text-sm text-slate-400">-</span>}
+                          })() : <span className="text-sm text-muted-foreground">-</span>}
                         </td>
                       )}
                       {visibleColumns.outcome && (
@@ -1213,15 +1238,15 @@ export default function JournalSimple({ mode = "all" }) {
                               <button
                                 key={`${trade.id}-shot-${index}`}
                                 type="button"
-                                className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-muted shrink-0"
+                                className="h-7 w-7 rounded-[6px] overflow-hidden border border-border bg-muted shrink-0"
                                 onClick={() => openQuickImage(imageUrl)}
                                 title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
                               >
-                                <img src={imageUrl} alt={`${t('screenshot') || 'Screenshot'} ${index + 1}`} className="h-full w-full object-cover" />
+                                <img src={imageUrl} alt={`${t('screenshot') || 'Screenshot'} ${index + 1}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                               </button>
                             ))
                           ) : (
-                            <span className="text-xs text-slate-400">-</span>
+                            <span className="text-xs text-muted-foreground">-</span>
                           )}
                         </div>
                       </td>
@@ -1244,10 +1269,10 @@ export default function JournalSimple({ mode = "all" }) {
                         <div 
                           data-row-action
                           onClick={() => toggleTradeSelection(trade.id)}
-                          className={`w-4 h-4 rounded-full border-[2px] cursor-pointer transition-all mx-auto shadow-sm hover:shadow-md ${
+                          className={`w-4 h-4 rounded-[4px] border cursor-pointer transition-colors duration-150 mx-auto ${
                             selectedTrades.has(trade.id)
-                              ? 'bg-primary border-primary'
-                              : 'bg-muted/50 border-border hover:border-primary hover:bg-accent'
+                              ? 'border-ds-accent bg-ds-accent'
+                              : 'border-ds-frame bg-transparent hover:border-ds-text3'
                           }`}
                         >
                           {selectedTrades.has(trade.id) && (
@@ -1264,7 +1289,7 @@ export default function JournalSimple({ mode = "all" }) {
             </div>
               <div className="md:hidden p-3">
                 <JournalMobileList
-                  trades={displayTrades}
+                  trades={visibleTrades}
                   t={t}
                   accountNameById={accountNameById}
                   strategyNameById={strategyNameById}
@@ -1277,18 +1302,25 @@ export default function JournalSimple({ mode = "all" }) {
                   <p className="text-muted-foreground">No trades to display</p>
                 </div>
               )}
+              {displayTrades.length > visibleTrades.length && (
+                <div className="flex justify-center border-t border-border px-3 py-3">
+                  <Button type="button" variant="outline" onClick={() => setVisibleCount((count) => count + JOURNAL_PAGE_SIZE)}>
+                    {t("showMore") || "Pokaż więcej"} ({visibleTrades.length}/{displayTrades.length})
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
 
         {!isSingleStatusMode && (statusFilters.includes("all") || statusFilters.includes("Planned")) && (
-          <Card className="bg-muted/40 border-border">
+          <Card className="border-border bg-card">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-yellow-700">{t('plannedTrades')}</CardTitle>
+              <CardTitle className="text-foreground">{t('plannedTrades')}</CardTitle>
               <Button
                 size="icon"
                 variant="ghost"
-                className="text-yellow-700 hover:text-yellow-800"
+                className="text-muted-foreground hover:text-foreground"
                 onClick={() => setPlannedOpen(prev => !prev)}
                 aria-label={t('plannedTrades')}
               >
@@ -1298,7 +1330,7 @@ export default function JournalSimple({ mode = "all" }) {
             {plannedOpen ? (
               <CardContent className="p-0">
                 <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full table-fixed divide-y divide-slate-200 dark:divide-[#23233a] text-xs [&_th]:px-1 [&_td]:px-1 [&_th]:py-1 [&_td]:py-1 [&_th]:leading-tight [&_td]:leading-tight [&_th]:overflow-hidden [&_th]:text-ellipsis [&_td]:overflow-hidden [&_td]:text-ellipsis [&_button]:min-h-0 [&_button]:min-w-0">
+                  <table className="journal-table w-full min-w-[980px] divide-y divide-border text-xs [&_th]:px-1.5 [&_td]:px-1.5 [&_th]:py-2 [&_td]:py-2 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
                     <thead>
                       <tr>
                         {visibleColumns.date && (
@@ -1325,20 +1357,20 @@ export default function JournalSimple({ mode = "all" }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {plannedTrades.map((trade) => (
+                      {visiblePlanned.map((trade) => (
                         <tr
                           key={trade.id}
-                          className="border-b border-slate-100 dark:border-slate-700 hover:bg-yellow-100 dark:hover:bg-yellow-900 transition-colors cursor-pointer"
+                          className="border-b border-border hover:bg-muted transition-colors cursor-pointer"
                           onClick={(event) => handleRowPreview(trade, event)}
                         >
                           {visibleColumns.date && (
-                            <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{fmtDate(trade.date)}</td>
+                            <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap">{fmtDate(trade.date)}</td>
                           )}
-                          <td className="px-1 py-1 text-xs text-slate-900 dark:text-slate-100 max-w-[92px] truncate" title={accountNameById[String(trade.account_id)] || '-'}>
+                          <td className="px-1 py-1 text-xs text-foreground max-w-[92px] truncate" title={accountNameById[String(trade.account_id)] || '-'}>
                             {accountNameById[String(trade.account_id)] || '-'}
                           </td>
                           {visibleColumns.symbol && (
-                            <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.symbol}</td>
+                            <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap">{trade.symbol}</td>
                           )}
                           {visibleColumns.direction && (
                             <td className="px-1 py-1">
@@ -1347,14 +1379,14 @@ export default function JournalSimple({ mode = "all" }) {
                               </Badge>
                             </td>
                           )}
-                          <td className="px-1 py-1 text-xs text-slate-900 dark:text-slate-100 max-w-[92px] truncate" title={strategyNameById[String(trade.strategy_id)] || '-'}>
+                          <td className="px-1 py-1 text-xs text-foreground max-w-[92px] truncate" title={strategyNameById[String(trade.strategy_id)] || '-'}>
                             {strategyNameById[String(trade.strategy_id)] || '-'}
                           </td>
-                          <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.entry_price ?? '-'}</td>
-                          <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
-                          <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
+                          <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap">{trade.entry_price ?? '-'}</td>
+                          <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
+                          <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
                           {visibleColumns.notes && (
-                            <td className="px-1 py-1 text-sm text-slate-900 dark:text-slate-100 line-clamp-2">{trade.notes}</td>
+                            <td className="px-1 py-1 text-sm text-foreground line-clamp-2">{trade.notes}</td>
                           )}
                           <td className="px-1 py-1">
                             <div className="flex items-center gap-1 w-[72px]">
@@ -1363,15 +1395,15 @@ export default function JournalSimple({ mode = "all" }) {
                                   <button
                                     key={`${trade.id}-planned-shot-${index}`}
                                     type="button"
-                                    className="h-7 w-7 rounded-[6px] overflow-hidden border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-muted shrink-0"
+                                    className="h-7 w-7 rounded-[6px] overflow-hidden border border-border bg-muted shrink-0"
                                     onClick={() => openQuickImage(imageUrl)}
                                     title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
                                   >
-                                    <img src={imageUrl} alt={`${t('screenshot') || 'Screenshot'} ${index + 1}`} className="h-full w-full object-cover" />
+                                    <img src={imageUrl} alt={`${t('screenshot') || 'Screenshot'} ${index + 1}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                                   </button>
                                 ))
                               ) : (
-                                <span className="text-xs text-slate-400">-</span>
+                                <span className="text-xs text-muted-foreground">-</span>
                               )}
                             </div>
                           </td>
@@ -1402,7 +1434,7 @@ export default function JournalSimple({ mode = "all" }) {
                 </div>
                 <div className="md:hidden p-3">
                   <JournalMobileList
-                    trades={plannedTrades}
+                    trades={visiblePlanned}
                     t={t}
                     accountNameById={accountNameById}
                     strategyNameById={strategyNameById}
@@ -1414,10 +1446,17 @@ export default function JournalSimple({ mode = "all" }) {
                     <EmptyState description={t('noTradesToDisplay')} />
                   </div>
                 )}
+                {plannedTrades.length > visiblePlanned.length && (
+                  <div className="flex justify-center border-t border-border px-3 py-3">
+                    <Button type="button" variant="outline" onClick={() => setVisibleCount((count) => count + JOURNAL_PAGE_SIZE)}>
+                      {t("showMore") || "Pokaż więcej"} ({visiblePlanned.length}/{plannedTrades.length})
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             ) : (
               <CardContent className="p-4">
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-muted-foreground">
                   {t('plannedTrades')}: {plannedTrades.length}
                 </p>
               </CardContent>
@@ -1512,22 +1551,22 @@ export default function JournalSimple({ mode = "all" }) {
         >
           <AlertDialogContent className="bg-card border-border">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-slate-900 dark:text-white">
+              <AlertDialogTitle className="text-foreground">
                 {deleteDialog.mode === "bulk" ? "Usunąć zaznaczone transakcje?" : "Usunąć transakcję?"}
               </AlertDialogTitle>
-              <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
+              <AlertDialogDescription className="text-muted-foreground">
                 {deleteDialog.mode === "bulk"
                   ? `Ta operacja usunie ${deleteDialog.count} transakcje i nie da sie jej cofnac.`
                   : "Ta operacja usunie transakcje i nie da sie jej cofnac."}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="dark:bg-card dark:text-slate-200 dark:border-slate-700">
+              <AlertDialogCancel className="bg-card text-foreground border-border">
                 Anuluj
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmDelete}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="bg-loss text-white hover:bg-loss/90"
               >
                 Usuń
               </AlertDialogAction>

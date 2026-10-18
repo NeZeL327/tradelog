@@ -1,38 +1,48 @@
+// Hex values (not CSS vars) because recharts passes these as SVG attributes.
 export const CHART = {
-  profit: "hsl(var(--profit))",
-  loss: "hsl(var(--loss))",
-  accent: "hsl(var(--primary))",
-  line: "hsl(var(--primary))",
-  muted: "hsl(var(--muted-foreground))",
-  grid: "hsl(var(--border))",
-  axis: "hsl(var(--muted-foreground))",
-  long: "hsl(var(--profit))",
-  short: "hsl(var(--loss))",
-  warning: "hsl(var(--warning))",
+  profit: "#7DDC6B",
+  loss: "#F2555F",
+  accent: "#6B7CFF",
+  line: "#6B7CFF",
+  muted: "#7A8299",
+  grid: "rgba(128, 140, 165, 0.12)",
+  axis: "#7A8299",
+  long: "#7DDC6B",
+  short: "#F2555F",
+  warning: "#E6B83A",
+  neutral: "#9099B2",
 };
 
 export const chartTooltipStyle = {
-  backgroundColor: "hsl(var(--popover))",
-  border: "1px solid hsl(var(--border))",
-  borderRadius: 8,
+  backgroundColor: "var(--ds-glass)",
+  border: "1px solid var(--ds-frame)",
+  borderRadius: 12,
   fontSize: 12,
-  fontFamily: '"JetBrains Mono", ui-monospace, monospace',
-  color: "hsl(var(--popover-foreground))",
-  boxShadow: "none",
+  fontFamily: "var(--font-sans)",
+  color: "var(--ds-text)",
+  boxShadow: "var(--ds-shadow-pop)",
 };
 
 export const chartLegendStyle = {
   fontSize: 11,
-  fontFamily: '"JetBrains Mono", ui-monospace, monospace',
-  color: "hsl(var(--muted-foreground))",
+  fontFamily: "var(--font-sans)",
+  color: "var(--ds-text2)",
 };
 
 export const chartGridProps = {
-  stroke: "hsl(var(--border))",
-  strokeOpacity: 0.45,
+  stroke: "rgba(128, 140, 165, 0.12)",
   vertical: false,
 };
 
+const prefersReducedMotion =
+  typeof window !== "undefined" && typeof window.matchMedia === "function"
+    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    : true;
+
 export const chartSeriesProps = {
-  isAnimationActive: false,
+  isAnimationActive: !prefersReducedMotion,
+  animationDuration: 400,
+  animationEasing: "ease-out",
 };
+
+export const chartBarRadius = [6, 6, 0, 0];

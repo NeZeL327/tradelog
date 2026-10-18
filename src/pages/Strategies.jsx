@@ -15,7 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "@/components/LanguageProvider";
 import { cn, getActiveAccountIds, getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
-import { CHART, chartTooltipStyle, chartGridProps } from "@/lib/chartTheme";
+import { CHART, chartTooltipStyle, chartGridProps, chartSeriesProps, chartBarRadius } from "@/lib/chartTheme";
 import QuoteLine from "@/components/QuoteLine";
 
 export default function Strategies() {
@@ -99,8 +99,8 @@ export default function Strategies() {
   });
 
   return (
-    <div className="w-full min-h-0 space-y-6 dashboard-surface">
-      <div className="max-w-none mx-0 space-y-6">
+    <div className="w-full min-h-0 space-y-3 dashboard-surface">
+      <div className="max-w-none mx-0 space-y-3">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <div className="min-w-0">
             <h1 className="cyber-page-title">{t('tradingStrategies')}</h1>
@@ -150,7 +150,7 @@ export default function Strategies() {
           const yMin = Math.floor(rawMin - pad);
           const yMax = Math.ceil(rawMax + pad);
           return (
-            <Card className="shadow-md">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-foreground">
                   <TrendingUp className="w-5 h-5 text-muted-foreground" />
@@ -164,10 +164,10 @@ export default function Strategies() {
                     <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <YAxis domain={[yMin, yMax]} stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
                     <Tooltip contentStyle={chartTooltipStyle} />
-                    <Legend />
-                    <Bar dataKey="winRate" fill={CHART.line} name="Win Rate (%)" />
-                    <Bar dataKey="avgPL" fill={CHART.profit} name="Średni P&L" />
-                    <Bar dataKey="trades" fill={CHART.accent} name="Liczba transakcji" />
+                    <Legend iconType="circle" iconSize={8} />
+                    <Bar dataKey="winRate" fill={CHART.accent} name="Win Rate (%)" radius={chartBarRadius} maxBarSize={56} {...chartSeriesProps} />
+                    <Bar dataKey="avgPL" fill={CHART.profit} name="Średni P&L" radius={chartBarRadius} maxBarSize={56} {...chartSeriesProps} />
+                    <Bar dataKey="trades" fill={CHART.neutral} name="Liczba transakcji" radius={chartBarRadius} maxBarSize={56} {...chartSeriesProps} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -201,10 +201,10 @@ export default function Strategies() {
         </div>
 
         {strategies.length === 0 && !showForm && (
-          <Card className="shadow-md">
+          <Card>
             <CardContent className="text-center py-12">
-              <Brain className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-              <p className="text-slate-600 dark:text-slate-400">{t('noStrategiesYet')}</p>
+              <Brain className="w-16 h-16 mx-auto text-ds-text2 mb-4" />
+              <p className="text-ds-text2">{t('noStrategiesYet')}</p>
             </CardContent>
           </Card>
         )}
@@ -261,9 +261,9 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      <Card className="shadow-md">
+      <Card>
         <CardHeader>
-          <CardTitle className="dark:text-white">{strategy ? "Edytuj strategię" : "Nowa strategia"}</CardTitle>
+          <CardTitle>{strategy ? "Edytuj strategię" : "Nowa strategia"}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
@@ -508,8 +508,8 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
                       >
                         <Star
                           className="w-6 h-6"
-                          fill={rating <= (formData.performance_rating || 0) ? '#fbbf24' : 'none'}
-                          color={rating <= (formData.performance_rating || 0) ? 'hsl(var(--warning))' : '#d1d5db'}
+                          fill={rating <= (formData.performance_rating || 0) ? "hsl(var(--warning))" : "none"}
+                          color={rating <= (formData.performance_rating || 0) ? "hsl(var(--warning))" : "hsl(var(--border))"}
                         />
                       </button>
                     ))}
@@ -554,34 +554,28 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
 }
 
 function StrategyCard({ strategy, stats, onEdit, onDelete }) {
-  const accent = strategy.color || "#64748b";
+  const accent = strategy.color || "var(--ds-text3)";
   const statusStyles = {
     Aktywna: "bg-profit/12 text-profit dark:text-profit border-profit/25",
-    Testowa: "bg-amber-500/12 text-amber-900 dark:text-amber-200 border-amber-500/25",
-    Archiwalna: "bg-slate-500/12 text-slate-700 dark:text-slate-300 border-slate-500/25",
+    Testowa: "bg-warning/12 text-warning border-warning/25",
+    Archiwalna: "bg-muted text-muted-foreground border-border",
   };
 
   return (
     <Card
       className={cn(
-        "relative h-full overflow-hidden rounded-xl border border-border",
+        "relative h-full overflow-hidden rounded-ds-lg border border-ds-line",
         "bg-card",
-        "transition-colors duration-200 hover:border-primary/35",
+        "transition-colors duration-200 hover:border-ds-frame",
       )}
     >
       {/* Top accent bar + soft glow */}
       <div
-        className="absolute inset-x-0 top-0 z-[1] h-[4px]"
-        style={{
-          background: `linear-gradient(90deg, ${accent}, ${accent}cc, transparent)`,
-        }}
-      />
-      <div
-        className="pointer-events-none absolute -top-8 left-1/2 h-24 w-[70%] -translate-x-1/2 rounded-full opacity-[0.12] blur-2xl"
-        style={{ backgroundColor: accent }}
+        className="absolute inset-x-0 top-0 z-[1] h-px"
+        style={{ background: `linear-gradient(90deg, ${accent}, transparent 70%)` }}
       />
 
-      <CardHeader className="relative z-[2] border-b border-border/60 bg-muted/25 pb-4 pt-5">
+      <CardHeader className="relative z-[2] border-b border-border pb-4 pt-5">
         <div className="flex justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -596,7 +590,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
               </Badge>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-primary">
                 {strategy.category}
               </span>
               {strategy.performance_rating > 0 && (
@@ -605,7 +599,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
                     <Star
                       key={i}
                       className="h-3.5 w-3.5"
-                      fill={i < strategy.performance_rating ? "#fbbf24" : "none"}
+                      fill={i < strategy.performance_rating ? "hsl(var(--warning))" : "none"}
                       color={i < strategy.performance_rating ? "hsl(var(--warning))" : "hsl(var(--muted-foreground))"}
                     />
                   ))}
@@ -617,7 +611,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
+              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={() => { window.location.href = `${createPageUrl("StrategyDetails")}?id=${strategy.id}`; }}
               title="Szczegóły strategii"
             >
@@ -626,7 +620,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
+              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={onEdit}
               title="Edytuj strategię"
             >
@@ -648,12 +642,12 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
       <CardContent className="relative z-[2] space-y-4 pt-5">
         {stats && stats.trades > 0 && (
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <div className="rounded-md border border-border bg-card p-3 text-center">
+            <div className="rounded-md border border-border bg-muted p-3 text-center">
               <Target className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
               <p className="text-lg font-bold tabular-nums text-foreground">{stats.winRate}%</p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Win Rate</p>
             </div>
-            <div className="rounded-md border border-border bg-card p-3 text-center">
+            <div className="rounded-md border border-border bg-muted p-3 text-center">
               <TrendingUp className="mx-auto mb-1 h-5 w-5 text-profit dark:text-profit" />
               <p
                 className={cn(
@@ -668,7 +662,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
               </p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Średni P&amp;L</p>
             </div>
-            <div className="rounded-md border border-border bg-card p-3 text-center">
+            <div className="rounded-md border border-border bg-muted p-3 text-center">
               <Award className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
               <p className="text-lg font-bold tabular-nums text-foreground">{stats.trades}</p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Transakcje</p>
@@ -679,10 +673,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
         {stats && stats.trades > 0 && (
           <div
             className={cn(
-              "flex items-center justify-between rounded-xl border px-4 py-3 shadow-inner",
-              parseFloat(stats.totalPL) >= 0
-                ? "border-profit/80 bg-gradient-to-r from-profit/10 to-profit/5 dark:border-profit/25 dark:from-profit/10 dark:to-profit/5"
-                : "border-loss/80 bg-gradient-to-r from-loss/10 to-loss/5 dark:border-loss/25 dark:from-loss/10 dark:to-loss/5"
+              "flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3",
             )}
           >
             <span className="text-sm font-semibold text-foreground/90">Łączny P&amp;L</span>
@@ -701,15 +692,15 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
         )}
 
         {strategy.description && (
-          <div className="rounded-xl border border-border/80 bg-muted/30 p-3">
+          <div className="rounded-xl border border-border bg-muted p-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Opis</p>
             <p className="text-sm leading-relaxed text-foreground/85">{strategy.description}</p>
           </div>
         )}
 
         {strategy.rules && (
-          <div className="rounded-xl border border-primary/25 bg-primary/5 p-3 dark:bg-primary/10">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">Zasady</p>
+          <div className="rounded-xl border border-border bg-muted p-3">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ds-text2">Zasady</p>
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{strategy.rules}</p>
           </div>
         )}
@@ -743,14 +734,14 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
         </div>
 
         {strategy.target_rr && (
-          <div className="flex items-center justify-between rounded-xl border border-amber-200/80 bg-gradient-to-r from-amber-50/90 to-amber-50/30 px-4 py-3 dark:border-amber-500/20 dark:from-amber-950/35 dark:to-amber-950/10">
-            <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">Docelowy R:R</span>
-            <span className="text-xl font-bold tabular-nums text-amber-700 dark:text-amber-300">1:{strategy.target_rr}</span>
+          <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3">
+            <span className="text-sm font-semibold text-warning">Docelowy R:R</span>
+            <span className="text-xl font-bold tabular-nums text-warning">1:{strategy.target_rr}</span>
           </div>
         )}
 
         {strategy.notes && (
-          <div className="rounded-xl border border-border/80 bg-muted/30 p-3">
+          <div className="rounded-xl border border-border bg-muted p-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notatki</p>
             <p className="text-sm leading-relaxed text-foreground/85">{strategy.notes}</p>
           </div>

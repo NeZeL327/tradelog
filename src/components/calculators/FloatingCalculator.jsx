@@ -54,9 +54,9 @@ const DEFAULT_H = 520;
 
 const VERDICT_BOX = {
   rose: "border-loss/30 bg-loss/10 text-loss dark:text-loss",
-  amber: "border-amber-300/80 bg-amber-500/10 text-amber-900 dark:text-amber-200",
+  amber: "border-warning/30 bg-warning/10 text-warning",
   emerald: "border-profit/30 bg-profit/10 text-profit dark:text-profit",
-  orange: "border-orange-300/80 bg-orange-500/15 text-orange-900 dark:text-orange-200",
+  orange: "border-transparent bg-ds-warn-tint text-ds-warn",
 };
 
 function clamp(n, min, max) {
@@ -286,7 +286,7 @@ function CompactAPlusBody() {
                           onCheckedChange={() => update(group.id, opt.id)}
                           className="h-3 w-3"
                         />
-                        <span className="flex-1 truncate text-slate-800 dark:text-slate-200">{opt.label}</span>
+                        <span className="flex-1 truncate text-foreground">{opt.label}</span>
                         <span className={cn("tabular-nums text-[9px] shrink-0", pointsToneClass(opt.points))}>
                           {formatPoints(opt.points)}
                         </span>
@@ -400,7 +400,7 @@ function CompactM1Body() {
               />
               <span className="flex-1 min-w-0">
                 <span className="font-semibold text-foreground">{opt.code}</span>
-                <span className="text-slate-700 dark:text-slate-300"> — {opt.label}</span>
+                <span className="text-muted-foreground"> — {opt.label}</span>
               </span>
               <span className={cn("tabular-nums text-[9px] shrink-0", pointsToneClass(opt.points))}>
                 {formatM1Points(opt.points)}
@@ -572,7 +572,7 @@ export default function FloatingCalculator() {
     <div
       className={cn(
         "flex flex-col overflow-hidden bg-card text-card-foreground",
-        inPip ? "h-full w-full rounded-none border-0 shadow-none" : "rounded-xl border border-border shadow-2xl h-full"
+        inPip ? "h-full w-full rounded-none border-0 shadow-none" : "rounded-xl border border-border bg-card shadow-none h-full"
       )}
     >
       <div
@@ -702,13 +702,13 @@ export default function FloatingCalculator() {
               </Button>
             </div>
           )}
-          <div className="flex gap-1 px-2 py-1.5 border-b border-border/50 bg-muted/20 shrink-0">
+          <div className="flex gap-1 px-2 py-1.5 border-b border-border bg-muted shrink-0">
             <button
               type="button"
               className={cn(
                 "flex-1 rounded-md px-2 py-0.5 text-[10px] font-medium transition",
                 ui.kind === "aplus"
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-background text-foreground"
                   : "hover:bg-muted text-muted-foreground"
               )}
               onClick={() => persist({ kind: "aplus" })}
@@ -720,7 +720,7 @@ export default function FloatingCalculator() {
               className={cn(
                 "flex-1 rounded-md px-2 py-0.5 text-[10px] font-medium transition",
                 ui.kind === "m1"
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-background text-foreground"
                   : "hover:bg-muted text-muted-foreground"
               )}
               onClick={() => persist({ kind: "m1" })}
@@ -766,7 +766,7 @@ export default function FloatingCalculator() {
               type="button"
               onClick={() => persist({ open: true, minimized: false })}
               className={cn(
-                "fixed bottom-4 right-4 h-11 w-11 rounded-full shadow-lg border border-border",
+                "fixed bottom-4 right-4 h-11 w-11 rounded-full border border-border bg-card shadow-none",
                 "bg-card text-foreground hover:bg-muted transition flex items-center justify-center",
                 "z-[55]"
               )}

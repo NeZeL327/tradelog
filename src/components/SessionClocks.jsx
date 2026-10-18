@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { loadLocalUserSettings } from "@/lib/userSettings";
 
+// Trading day opens Asia, then London, then New York.
 const CLOCKS = [
+  { id: "asia", label: "ASIA", zone: "Asia/Tokyo", title: "Asia / Tokyo session" },
   { id: "ldn", label: "LDN", zone: "Europe/London", title: "London session" },
   { id: "ny", label: "NY", zone: "America/New_York", title: "New York session" },
-  { id: "asia", label: "ASIA", zone: "Asia/Tokyo", title: "Asia / Tokyo session" },
 ];
 
 function zoneHour(now, timeZone) {
@@ -95,28 +96,28 @@ export default function SessionClocks() {
 
   return (
     <div
-      className="header-cluster hidden h-8 items-center gap-0 sm:flex"
+      className="hidden h-[32px] shrink-0 items-center rounded-full border border-ds-line bg-ds-s2 px-1 lg:flex"
       aria-label="Godziny sesji tradingowych"
     >
       {CLOCKS.map((clock, index) => {
         const open = isSessionOpen(now, clock.zone);
         return (
           <div key={clock.id} className="flex items-center">
-            {index > 0 ? <span className="header-cluster-sep" aria-hidden /> : null}
+            {index > 0 ? <span className="h-3.5 w-px shrink-0 bg-ds-line" aria-hidden /> : null}
             <div
               title={clock.title}
               className="flex items-center gap-1.5 px-2 py-0.5"
             >
               <span
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                  open ? "bg-profit" : "bg-muted-foreground/35"
+                  open ? "bg-ds-pos opacity-80 shadow-[0_0_6px_var(--ds-pos)]" : "bg-ds-text3 opacity-40"
                 }`}
                 aria-hidden
               />
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <span className={`text-[10px] font-medium uppercase tracking-[0.08em] ${open ? "text-ds-text2" : "text-ds-text3"}`}>
                 {clock.label}
               </span>
-              <span className="data-mono text-[11px] font-medium tabular-nums text-foreground">
+              <span className={`data-mono text-[11px] tabular-nums ${open ? "font-medium text-ds-text" : "text-ds-text3"}`}>
                 {formatTime(now, clock.zone, prefs.use12h)}
               </span>
             </div>

@@ -288,6 +288,10 @@ export const AuthProvider = ({ children }) => {
     window.location.href = '/';
   };
 
+  const patchUser = (partial) => {
+    setUser((prev) => (prev ? { ...prev, ...partial } : prev));
+  };
+
   const navigateToRegister = () => {
     window.location.href = '/register';
   };
@@ -306,6 +310,7 @@ export const AuthProvider = ({ children }) => {
       navigateToLogin,
       navigateToRegister,
       checkSession: refreshProfile,
+      patchUser,
     }}>
       {children}
     </AuthContext.Provider>

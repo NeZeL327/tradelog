@@ -1,0 +1,896 @@
+/* Design-system skin. Colors come from --ds-* tokens in index.css; dark-only rules require html.dark. */
+
+/* ---------- Canvas: base, top glow, grain ---------- */
+html.dark .app-atmosphere {
+  position: relative;
+  padding: 28px 20px 20px !important;
+  background-color: var(--ds-bg) !important;
+  background-image: none !important;
+}
+
+/* Top glow on its own layer so it can drift via transform/opacity only (compositor, no repaints). */
+html.dark .app-atmosphere.app-atmosphere::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: -420px;
+  left: 50%;
+  z-index: 0;
+  width: 1800px;
+  height: 1240px;
+  margin-left: -900px;
+  pointer-events: none;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, #2a4a8a 0%, rgba(16, 26, 51, 0.92) 40%, transparent 72%);
+  opacity: 0.9;
+  animation: ds-glow-drift 26s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+@keyframes ds-glow-drift {
+  0% { transform: translate3d(-3%, 0, 0) scale(1); opacity: 0.82; }
+  50% { opacity: 1; }
+  100% { transform: translate3d(3%, 2%, 0) scale(1.06); opacity: 0.88; }
+}
+
+@media (min-width: 1280px) {
+  html.dark .app-atmosphere {
+    padding: 32px 40px !important;
+  }
+}
+
+html.dark .app-atmosphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- App frame ---------- */
+html.dark .app-window {
+  position: relative;
+  z-index: 1;
+  border-radius: 24px !important;
+  background: linear-gradient(180deg, rgba(14, 22, 42, 0.42), rgba(9, 13, 24, 0.72) 360px, rgba(8, 11, 20, 0.82) 720px) !important;
+  border: 0 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 60px 160px -24px rgba(0, 0, 0, 0.7),
+    0 24px 60px -12px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Gradient hairline: brighter top edge fading to the bottom; a mask keeps only the 1px ring.
+   Drawn inside the box because .app-window clips overflow at its padding edge. */
+html.dark .app-window::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--ds-frame-top), var(--ds-frame-bottom) 55%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+html.dark .app-atmosphere header,
+html.dark .app-atmosphere main,
+html.dark .app-side-nav {
+  background-color: transparent !important;
+  color: var(--ds-text);
+  border-color: var(--ds-line) !important;
+}
+
+/* ---------- Surfaces ---------- */
+html.dark .app-atmosphere .bg-card,
+html.dark .app-atmosphere .ref-skin .bg-card {
+  background-color: var(--ds-s2) !important;
+  border-color: var(--ds-line) !important;
+  color: var(--ds-text);
+  box-shadow: none !important;
+  border-radius: 16px;
+}
+
+html.dark [role="dialog"],
+html.dark [role="alertdialog"],
+html.dark [role="menu"],
+html.dark [role="listbox"],
+html.dark [data-radix-popper-content-wrapper] > div {
+  background-color: #0b0f1a !important;
+  border: 1px solid var(--ds-frame) !important;
+  color: var(--ds-text) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(18px);
+}
+
+html.dark [role="dialog"],
+html.dark [role="alertdialog"] {
+  border-radius: 16px !important;
+}
+
+html.dark [role="menu"],
+html.dark [role="listbox"] {
+  border-radius: 12px !important;
+}
+
+html.dark [role="menuitem"]:hover,
+html.dark [role="menuitem"][data-highlighted],
+html.dark [role="option"][data-highlighted] {
+  background: var(--ds-s3) !important;
+  color: var(--ds-text) !important;
+}
+
+/* ---------- Icon rail ---------- */
+html.dark .app-side-nav .dock-scroll {
+  overflow-x: hidden !important;
+  scrollbar-width: none;
+}
+
+html.dark .app-side-nav .dock-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+html.dark .app-side-nav .dock-logo {
+  filter: drop-shadow(0 0 10px rgba(107, 124, 255, 0.45));
+}
+
+@media (max-width: 639px) {
+  html.dark .app-atmosphere {
+    padding: 8px !important;
+  }
+
+  .app-side-nav {
+    width: 52px !important;
+  }
+}
+
+html.dark .app-side-nav .app-dock-link {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html.dark .app-side-nav .app-dock-link[data-active="true"] {
+  background: var(--ds-s3) !important;
+  color: var(--ds-text) !important;
+}
+
+html.dark .app-side-nav .app-dock-link[data-active="true"] svg {
+  filter: drop-shadow(0 0 6px rgba(232, 236, 245, 0.45));
+}
+
+/* Active bar: 2px, flush on the rail's right edge, centered on the active tile. */
+.app-side-nav .dock-item[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 2px;
+  height: 18px;
+  transform: translateY(-50%);
+  border-radius: 2px 0 0 2px;
+  background: var(--ds-text);
+  box-shadow: 0 0 8px rgba(232, 236, 245, 0.35);
+  pointer-events: none;
+}
+
+.app-side-nav .dock-avatar[data-active="true"] {
+  border-color: var(--ds-text2);
+  box-shadow: 0 0 12px rgba(232, 236, 245, 0.18);
+}
+
+/* Mouse clicks never leave a ring on the rail; keyboard focus still gets the global :focus-visible ring. */
+.app-side-nav :focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+html.dark [data-radix-popper-content-wrapper] > .ds-glass-tip {
+  background: var(--ds-glass) !important;
+  border: 1px solid var(--ds-frame) !important;
+  border-radius: 10px !important;
+  padding: 5px 10px !important;
+  font-size: 12px;
+  color: var(--ds-text) !important;
+  box-shadow: var(--ds-shadow-pop) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+html.dark .app-side-nav .dock-plus {
+  box-shadow: var(--ds-accent-glow);
+}
+
+/* ---------- Text & status colors ---------- */
+html.dark .app-atmosphere .text-foreground,
+html.dark .app-atmosphere .text-card-foreground,
+html.dark .app-atmosphere .text-slate-900,
+html.dark .app-atmosphere .text-slate-800,
+html.dark .app-atmosphere .text-slate-700,
+html.dark .app-atmosphere .dark\:text-slate-100,
+html.dark .app-atmosphere .dark\:text-slate-200,
+html.dark .app-atmosphere .dark\:text-white {
+  color: var(--ds-text) !important;
+}
+
+html.dark .app-atmosphere .text-muted-foreground,
+html.dark .app-atmosphere .text-slate-600,
+html.dark .app-atmosphere .text-slate-500,
+html.dark .app-atmosphere .text-slate-400,
+html.dark .app-atmosphere .text-slate-300 {
+  color: var(--ds-text2) !important;
+}
+
+html.dark .app-atmosphere .text-profit,
+html.dark .app-atmosphere .text-emerald-400,
+html.dark .app-atmosphere .text-emerald-500,
+html.dark .app-atmosphere .text-green-400,
+html.dark .app-atmosphere .text-green-500 {
+  color: var(--ds-pos) !important;
+}
+
+html.dark .app-atmosphere .text-loss,
+html.dark .app-atmosphere .text-red-400,
+html.dark .app-atmosphere .text-red-500,
+html.dark .app-atmosphere .text-rose-400 {
+  color: var(--ds-neg) !important;
+}
+
+html.dark .app-atmosphere .text-warning,
+html.dark .app-atmosphere .text-amber-400,
+html.dark .app-atmosphere .text-amber-500 {
+  color: var(--ds-warn) !important;
+}
+
+/* ---------- Borders & shadows ---------- */
+html.dark .app-atmosphere .border-border,
+html.dark .app-atmosphere .border-border\/80,
+html.dark .app-atmosphere .border-border\/70,
+html.dark .app-atmosphere .border-slate-100,
+html.dark .app-atmosphere .border-slate-200,
+html.dark .app-atmosphere .border-slate-300,
+html.dark .app-atmosphere .dark\:border-slate-600,
+html.dark .app-atmosphere .dark\:border-slate-700,
+html.dark .app-atmosphere .dark\:border-slate-800 {
+  border-color: var(--ds-line) !important;
+}
+
+html.dark .app-atmosphere .shadow-sm,
+html.dark .app-atmosphere .shadow-md,
+html.dark .app-atmosphere .shadow-lg,
+html.dark .app-atmosphere .shadow-inner {
+  box-shadow: none !important;
+}
+
+/* ---------- Inputs ---------- */
+html.dark .app-atmosphere input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.dark .app-atmosphere textarea,
+html.dark .app-atmosphere select,
+html.dark .app-atmosphere [role="combobox"],
+html.dark [role="dialog"] input:not([type="checkbox"]):not([type="radio"]),
+html.dark [role="dialog"] textarea,
+html.dark [role="dialog"] select,
+html.dark [role="dialog"] [role="combobox"] {
+  background-color: var(--ds-s2);
+  border-color: var(--ds-line);
+  color: var(--ds-text);
+  border-radius: 10px;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+html.dark .app-atmosphere input::placeholder,
+html.dark .app-atmosphere textarea::placeholder,
+html.dark [role="dialog"] input::placeholder,
+html.dark [role="dialog"] textarea::placeholder {
+  color: var(--ds-text3);
+}
+
+html.dark .app-atmosphere :focus-visible,
+html.dark [role="dialog"] :focus-visible {
+  outline: 2px solid var(--ds-focus) !important;
+  outline-offset: 2px;
+}
+
+html.dark .app-atmosphere input:focus,
+html.dark .app-atmosphere textarea:focus,
+html.dark .app-atmosphere select:focus {
+  border-color: var(--ds-sel-line) !important;
+}
+
+/* ---------- Buttons ---------- */
+html.dark .app-atmosphere button.bg-primary,
+html.dark [role="dialog"] button.bg-primary,
+html.dark [role="alertdialog"] button.bg-primary {
+  background-color: var(--ds-accent) !important;
+  color: #ffffff !important;
+  border: 1px solid transparent !important;
+  box-shadow: 0 0 16px rgba(107, 124, 255, 0.3) !important;
+}
+
+html.dark .app-atmosphere .bg-red-600,
+html.dark [role="alertdialog"] .bg-red-600 {
+  background-color: var(--ds-neg) !important;
+  color: #ffffff !important;
+}
+
+html.dark .app-atmosphere .hover\:bg-yellow-100:hover,
+html.dark .app-atmosphere .dark\:hover\:bg-yellow-900:hover,
+html.dark .app-atmosphere .hover\:bg-white\/5:hover,
+html.dark [role="dialog"] .hover\:bg-white\/5:hover {
+  background-color: var(--ds-s3) !important;
+}
+
+/* ---------- Tables: header micro-labels, rows as separate rounded strips ---------- */
+html.dark .app-atmosphere main table,
+html.dark [role="dialog"] table {
+  border-collapse: separate !important;
+  border-spacing: 0 6px !important;
+  padding-inline: 8px;
+}
+
+html.dark .app-atmosphere main table thead,
+html.dark .app-atmosphere main table thead tr,
+html.dark .app-atmosphere main table thead th,
+html.dark [role="dialog"] table thead th {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+html.dark .app-atmosphere main table thead th,
+html.dark [role="dialog"] table thead th,
+html.dark .journal-table th {
+  color: var(--ds-text3) !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+}
+
+html.dark .app-atmosphere main table tbody tr,
+html.dark [role="dialog"] table tbody tr {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+html.dark .app-atmosphere main table tbody td,
+html.dark [role="dialog"] table tbody td {
+  background: var(--ds-s2);
+  color: var(--ds-text);
+  border-top: 1px solid transparent !important;
+  border-bottom: 1px solid transparent !important;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+html.dark .app-atmosphere main table tbody td:first-child,
+html.dark [role="dialog"] table tbody td:first-child {
+  border-left: 1px solid transparent !important;
+  border-radius: 12px 0 0 12px;
+}
+
+html.dark .app-atmosphere main table tbody td:last-child,
+html.dark [role="dialog"] table tbody td:last-child {
+  border-right: 1px solid transparent !important;
+  border-radius: 0 12px 12px 0;
+}
+
+html.dark .app-atmosphere main table tbody td:only-child {
+  border-radius: 12px;
+}
+
+html.dark .app-atmosphere main table tbody tr:hover td {
+  background: var(--ds-s3);
+}
+
+html.dark .app-atmosphere main table tbody tr.bg-accent td,
+html.dark .app-atmosphere main table tbody tr[data-state="selected"] td,
+html.dark .app-atmosphere main table tbody tr[data-row-selected="true"] td {
+  background: var(--ds-sel) !important;
+  border-color: rgba(107, 124, 255, 0.45) !important;
+}
+
+/* ---------- Tabs (radix) ---------- */
+html.dark .app-atmosphere [role="tab"] {
+  transition: color 180ms ease, border-color 180ms ease;
+}
+
+/* ---------- Day strip ---------- */
+html.dark .day-strip,
+.day-strip {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 48px, #000 calc(100% - 48px), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 48px, #000 calc(100% - 48px), transparent 100%);
+}
+
+.day-strip::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------- Scrollbars ---------- */
+html.dark * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+html.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ---------- Legacy decorative pseudo-elements ---------- */
+html.dark .app-atmosphere .cyber-panel::before,
+html.dark .app-atmosphere .cyber-stat-tile::before,
+html.dark .app-atmosphere .cyber-trade-card::before,
+html.dark .app-atmosphere .ocean-stat-card::before {
+  display: none !important;
+}
+
+/* ---------- Page titles ---------- */
+html.dark .cyber-page-title {
+  font-size: 1.2rem !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.015em !important;
+  color: var(--ds-text) !important;
+}
+
+html.dark .cyber-page-sub,
+html.dark .dash-page-sub {
+  color: var(--ds-text2) !important;
+  font-size: 0.85rem !important;
+}
+
+html.dark .app-atmosphere header {
+  min-height: 48px;
+}
+
+/* ---------- LIGHT mode keeps a plain light shell ---------- */
+html:not(.dark) .app-atmosphere {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text);
+}
+
+html:not(.dark) .app-atmosphere header,
+html:not(.dark) .app-atmosphere main,
+html:not(.dark) .app-side-nav {
+  background: transparent !important;
+  color: var(--ds-text);
+  border-color: var(--ds-line) !important;
+}
+
+html:not(.dark) .app-window {
+  background: var(--ds-s1) !important;
+  border-color: var(--ds-frame) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06) !important;
+}
+
+html:not(.dark) .app-atmosphere .bg-card,
+html:not(.dark) .app-atmosphere [role="dialog"] {
+  background: #ffffff;
+  color: var(--ds-text);
+  border-color: var(--ds-line);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+/* ---------- Toasts (sonner) on tokens ---------- */
+.ds-toaster {
+  --normal-bg: var(--ds-glass);
+  --normal-border: var(--ds-frame);
+  --normal-text: var(--ds-text);
+  --border-radius: var(--ds-radius-md);
+  font-family: var(--font-sans);
+}
+.ds-toaster [data-sonner-toast] {
+  box-shadow: var(--ds-shadow-pop);
+  font-size: 13px;
+}
+.ds-toaster [data-sonner-toast] [data-description] {
+  color: var(--ds-text2);
+}
+.ds-toaster [data-sonner-toast][data-type="success"] [data-icon] { color: var(--ds-pos); }
+.ds-toaster [data-sonner-toast][data-type="error"] [data-icon] { color: var(--ds-neg); }
+.ds-toaster [data-sonner-toast][data-type="warning"] [data-icon] { color: var(--ds-warn); }
+.ds-toaster [data-sonner-toast][data-type="error"] { border-color: color-mix(in srgb, var(--ds-neg) 40%, transparent); }
+
+/* ---------- Focus: one visible ring for keyboard users ---------- */
+:where(a, button, summary, [role="button"], [role="tab"], [role="menuitem"], [role="option"], [role="checkbox"], [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--ds-focus);
+  outline-offset: 2px;
+}
+
+/* ---------- Motion ---------- */
+.app-content-pad > :first-child {
+  animation: ds-page-enter var(--ds-dur) var(--ds-ease) both;
+}
+@keyframes ds-page-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.ds-rise,
+.ds-stagger > * {
+  animation: ds-rise 200ms var(--ds-ease) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+.ds-stagger > :nth-child(1) { --i: 3; }
+.ds-stagger > :nth-child(2) { --i: 4; }
+.ds-stagger > :nth-child(n + 3) { --i: 5; }
+@keyframes ds-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.ds-fade {
+  animation: ds-fade var(--ds-dur) var(--ds-ease) both;
+}
+@keyframes ds-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ---------- Top bar: quiet glass pill groups, 32px controls ---------- */
+.app-topbar .ds-pill-group,
+.app-topbar .topbar-account > div {
+  height: 32px !important;
+  padding: 2px !important;
+  gap: 2px;
+  border-radius: 999px !important;
+  border: 1px solid var(--ds-line) !important;
+  background: var(--ds-s2) !important;
+  box-shadow: var(--ds-inset);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.app-topbar .ds-pill-group button {
+  height: 26px !important;
+  padding-inline: 10px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  color: var(--ds-text3) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.app-topbar .ds-pill-group button:hover {
+  color: var(--ds-text2) !important;
+}
+.app-topbar .ds-pill-group button[aria-pressed="true"] {
+  color: var(--ds-text) !important;
+  background: var(--ds-s3) !important;
+}
+.app-topbar .topbar-account [role="combobox"],
+.app-topbar .topbar-account button {
+  height: 26px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--ds-text2) !important;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.app-topbar .topbar-account [role="combobox"]:hover,
+.app-topbar .topbar-account button:hover {
+  background: var(--ds-s3) !important;
+  color: var(--ds-text) !important;
+}
+.app-topbar .topbar-account > div > span[aria-hidden] {
+  background: var(--ds-line) !important;
+}
+.app-topbar .topbar-account {
+  min-width: 150px;
+}
+.app-topbar .topbar-account > div {
+  min-width: 0;
+}
+.app-topbar .topbar-account [role="combobox"] {
+  flex-shrink: 1 !important;
+  min-width: 0;
+}
+.app-topbar .topbar-account [role="combobox"] > span {
+  overflow: hidden !important;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Day-view aside tabs: underline only (beats the legacy radix tab skins in both themes) ---------- */
+html main.cyber-dashboard.dash-scr aside .aside-tab[role="tab"][data-state] {
+  margin-bottom: -1px;
+  font-size: 13px !important;
+  color: var(--ds-text3) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+html main.cyber-dashboard.dash-scr aside .aside-tab[role="tab"][data-state]:hover {
+  color: var(--ds-text) !important;
+  background: var(--ds-s2) !important;
+}
+html main.cyber-dashboard.dash-scr aside .aside-tab[role="tab"][data-state="active"] {
+  color: var(--ds-text) !important;
+  font-weight: 500 !important;
+}
+.aside-tab-indicator {
+  transition: transform 200ms var(--ds-ease), width 200ms var(--ds-ease);
+}
+
+/* ---------- Trade preview: centered glass panel over a dimmed, blurred backdrop ---------- */
+[data-state]:has(+ .trade-preview-panel) {
+  background: var(--ds-backdrop) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+html .trade-preview-panel[role="dialog"] {
+  inset: 0 !important;
+  margin: auto;
+  width: min(calc(100vw - 32px), 1100px) !important;
+  max-width: none !important;
+  height: min(calc(100dvh - 48px), 940px) !important;
+  max-height: none !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border: 0 !important;
+  border-radius: 24px !important;
+  background: color-mix(in srgb, var(--ds-s1) 96%, transparent) !important;
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.trade-preview-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--ds-frame-top), var(--ds-frame-bottom) 55%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.trade-preview-panel[data-state="open"] {
+  animation: ds-pop-in var(--ds-dur) var(--ds-ease) both !important;
+}
+.trade-preview-panel[data-state="closed"] {
+  animation: ds-pop-out 150ms ease-in both !important;
+}
+@keyframes ds-pop-in {
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ds-pop-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: scale(0.98); }
+}
+@media (max-width: 639px) {
+  html .trade-preview-panel[role="dialog"] {
+    width: 100vw !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* ---------- Day view fills the window: frame padding + header + content padding ---------- */
+.day-shell {
+  --ds-chrome: 128px;
+  min-height: calc(100dvh - var(--ds-chrome));
+}
+@media (min-width: 1280px) {
+  .day-shell { --ds-chrome: 146px; }
+}
+@media (max-width: 639px) {
+  .day-shell { min-height: 0; }
+}
+.day-tile:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ---------- Calendar: direction-aware month slide, staggered cells, glass day drawer ---------- */
+:root {
+  --cal-pos: var(--ds-pos);
+  --cal-neg: var(--ds-neg);
+}
+html:not(.dark) {
+  --cal-pos: color-mix(in srgb, var(--ds-pos) 64%, #000);
+  --cal-neg: color-mix(in srgb, var(--ds-neg) 82%, #000);
+}
+.cal-slide {
+  animation: cal-slide-next 200ms var(--ds-ease) both;
+}
+.cal-slide[data-dir="prev"] {
+  animation-name: cal-slide-prev;
+}
+.cal-slide[data-dir="none"] {
+  animation-name: ds-fade;
+}
+@keyframes cal-slide-next {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cal-slide-prev {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: none; }
+}
+.cal-slide .cal-cell {
+  animation: ds-fade 180ms var(--ds-ease) both;
+  animation-delay: calc(min(var(--i, 0), 41) * 6ms);
+}
+.cal-panel aside,
+.cal-drawer aside {
+  border-left: 0 !important;
+}
+[data-state]:has(+ .cal-drawer) {
+  background: var(--ds-backdrop) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+html .cal-drawer[role="dialog"] {
+  border: 0 !important;
+  border-left: 1px solid var(--ds-frame) !important;
+  background: color-mix(in srgb, var(--ds-s1) 96%, transparent) !important;
+  box-shadow: -24px 0 80px rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+html.dark .app-side-nav .dock-plus {
+  transition: box-shadow 150ms ease, transform 150ms ease;
+}
+html.dark .app-side-nav .dock-plus:hover {
+  box-shadow: 0 0 0 1px rgba(107, 124, 255, 0.5), 0 0 32px rgba(107, 124, 255, 0.7);
+  animation: ds-plus-pulse 1.6s ease-in-out infinite;
+}
+@keyframes ds-plus-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(107, 124, 255, 0.5), 0 0 22px rgba(107, 124, 255, 0.55); }
+  50% { box-shadow: 0 0 0 2px rgba(107, 124, 255, 0.55), 0 0 40px rgba(107, 124, 255, 0.9); }
+}
+
+/* ---------- Pressed state: `scale` composes with any transform utility already on the element ---------- */
+.app-atmosphere button:not(:disabled):active,
+[role="dialog"] button:not(:disabled):active,
+[role="alertdialog"] button:not(:disabled):active,
+.ds-press:active {
+  scale: 0.98;
+}
+
+/* ---------- Cursor spotlight: --spot-x/--spot-y come from useSpotlight (fine pointers only) ---------- */
+.ds-spot {
+  position: relative;
+}
+.ds-spot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  background: radial-gradient(260px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(255, 255, 255, 0.06), transparent 65%);
+}
+tr.ds-spot::after {
+  border-radius: 12px;
+}
+html:not(.dark) .ds-spot::after {
+  background: radial-gradient(260px circle at var(--spot-x, 50%) var(--spot-y, 50%), rgba(107, 124, 255, 0.07), transparent 65%);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ds-spot:hover::after {
+    opacity: 1;
+  }
+}
+
+/* ---------- Day trades table: accent-tinted hairline on hover ---------- */
+html.dark .app-atmosphere main table.day-trades tbody tr:hover td {
+  border-top-color: rgba(107, 124, 255, 0.28) !important;
+  border-bottom-color: rgba(107, 124, 255, 0.28) !important;
+}
+html.dark .app-atmosphere main table.day-trades tbody tr:hover td:first-child {
+  border-left-color: rgba(107, 124, 255, 0.28) !important;
+}
+html.dark .app-atmosphere main table.day-trades tbody tr:hover td:last-child {
+  border-right-color: rgba(107, 124, 255, 0.28) !important;
+}
+
+/* ---------- Selected day tile: one light sweep per selection ---------- */
+.day-tile-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  transform: translateX(110%);
+  animation: ds-sheen 600ms var(--ds-ease) both;
+}
+html:not(.dark) .day-tile-sheen {
+  background: linear-gradient(105deg, transparent 30%, rgba(107, 124, 255, 0.12) 50%, transparent 70%);
+}
+@keyframes ds-sheen {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(110%); }
+}
+
+/* ---------- Top bar: inactive options recede by weight; color stays at AA contrast ---------- */
+.app-topbar .ds-pill-group button {
+  font-weight: 500 !important;
+}
+.app-topbar .ds-pill-group button[aria-pressed="true"] {
+  font-weight: 600 !important;
+}
+
+/* ---------- Glass confirmations and toasts ---------- */
+html.dark [role="alertdialog"] {
+  background-color: var(--ds-glass) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.ds-toaster [data-sonner-toast] {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  html.dark .app-atmosphere.app-atmosphere::before {
+    animation: none !important;
+  }
+  .day-tile-sheen {
+    display: none;
+  }
+  html.dark .app-side-nav .dock-plus:hover {
+    animation: none !important;
+  }
+}
+
+/* ---------- Charts (recharts): theme only, applies to every chart ---------- */
+.recharts-cartesian-axis-line,
+.recharts-cartesian-axis-tick-line {
+  stroke: var(--ds-line) !important;
+}
+.recharts-cartesian-axis-tick-value,
+.recharts-polar-angle-axis-tick-value,
+.recharts-polar-radius-axis-tick-value {
+  fill: var(--ds-text3) !important;
+  font-family: var(--font-sans);
+  font-size: 11px;
+}
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line,
+.recharts-polar-grid line,
+.recharts-polar-grid path {
+  stroke: var(--ds-line) !important;
+}
+.recharts-legend-item-text {
+  color: var(--ds-text2) !important;
+  font-size: 11px;
+}
+.recharts-default-tooltip {
+  background: var(--ds-glass) !important;
+  border: 1px solid var(--ds-frame) !important;
+  border-radius: var(--ds-radius-md) !important;
+  box-shadow: var(--ds-shadow-pop);
+  color: var(--ds-text) !important;
+  font-family: var(--font-sans);
+  font-size: 12px;
+}
+.recharts-tooltip-label { color: var(--ds-text2) !important; }
+.recharts-tooltip-cursor { fill: var(--ds-s2) !important; stroke: var(--ds-line) !important; }

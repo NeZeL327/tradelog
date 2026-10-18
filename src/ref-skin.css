@@ -1,0 +1,126 @@
+/* Dashboard skin. Wins .bg-card only when a later, more specific rule does not. */
+html.dark .ref-skin {
+  background: transparent !important;
+  color: var(--ds-text) !important;
+  font-family: var(--font-sans) !important;
+}
+
+html.dark .ref-skin .cyber-page-title {
+  font-size: 1.05rem !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--ds-text) !important;
+}
+
+html.dark .ref-skin .dash-page-sub {
+  color: var(--ds-text2) !important;
+  font-size: 0.75rem !important;
+}
+
+html.dark .ref-skin .cyber-panel,
+html.dark .ref-skin .cyber-stat-tile,
+html.dark .ref-skin .cyber-trade-card,
+html.dark .ref-skin .cyber-gauge,
+html.dark .ref-skin .cyber-hero,
+html.dark .ref-skin .ocean-stat-card,
+html.dark .ref-skin .dashboard-kpi-row,
+html.dark .ref-skin .bg-card {
+  background: var(--ds-s2) !important;
+  border: 1px solid var(--ds-line) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+html.dark .ref-skin .cyber-stat-tile::before,
+html.dark .ref-skin .cyber-trade-card::before,
+html.dark .ref-skin .cyber-panel::before {
+  display: none !important;
+}
+
+html.dark .ref-skin .cyber-panel-title,
+html.dark .ref-skin .dash-panel-title,
+html.dark .ref-skin .cyber-stat-label {
+  color: var(--ds-text2) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+html.dark .ref-skin .dashboard-kpi-row {
+  gap: 10px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+html.dark .ref-skin .dashboard-kpi-row > * {
+  background: var(--ds-s2) !important;
+  border: 1px solid var(--ds-line) !important;
+  border-radius: 12px !important;
+  border-right: 1px solid var(--ds-line) !important;
+}
+
+html.dark .ref-skin .data-mono {
+  font-family: var(--font-sans) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+html.dark .ref-skin .cyber-stat-value-win,
+html.dark .ref-skin .text-profit {
+  color: var(--ds-pos) !important;
+}
+
+html.dark .ref-skin .cyber-stat-value-loss,
+html.dark .ref-skin .text-loss {
+  color: #ff5d7a !important;
+}
+
+html.dark .ref-skin .cyber-stat-value-cyan {
+  color: var(--ds-accent) !important;
+}
+
+html.dark .ref-skin .text-muted-foreground {
+  color: var(--ds-text2) !important;
+}
+
+html.dark .ref-skin .dash-ctrl {
+  height: 32px !important;
+  border-radius: 8px !important;
+  background: var(--ds-s2) !important;
+  border: 1px solid var(--ds-line) !important;
+  color: var(--ds-text) !important;
+  font-size: 12px !important;
+}
+
+html.dark .ref-skin table thead th {
+  color: var(--ds-text2) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  background: transparent !important;
+}
+
+html.dark .ref-skin table tbody tr:hover {
+  background: #173044 !important;
+}
+
+html.dark .ref-skin .recharts-cartesian-grid line {
+  stroke: var(--ds-line) !important;
+}
+
+html.dark .ref-skin .recharts-text {
+  fill: var(--ds-text2) !important;
+}
+
+html.dark .ref-skin .ocean-stat-card .data-mono {
+  font-size: 1.35rem !important;
+  color: var(--ds-text) !important;
+}
+
+html.dark .ref-skin .dash-cal-day.bg-primary\/20 {
+  background: var(--ds-s3) !important;
+  color: var(--ds-text) !important;
+  box-shadow: none !important;
+}

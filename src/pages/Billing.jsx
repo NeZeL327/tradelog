@@ -21,11 +21,11 @@ const priceId = import.meta.env.VITE_STRIPE_PRICE_ID;
 const STATUS_CONFIG = {
   active:     { label: "Aktywna",      color: "bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit border-profit/30 dark:border-profit/30", dot: "bg-profit", icon: CheckCircle2 },
   trialing:   { label: "Trial",        color: "bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit border-profit/30 dark:border-profit/30", dot: "bg-profit", icon: CheckCircle2 },
-  past_due:   { label: "Zaległa",      color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border-amber-300 dark:border-amber-700",             dot: "bg-amber-500",   icon: AlertTriangle },
-  canceled:   { label: "Anulowana",    color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-loss",     icon: XCircle },
-  incomplete: { label: "Niekompletna", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-loss",     icon: XCircle },
-  unpaid:     { label: "Nieopłacona",  color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-loss",     icon: XCircle },
-  free:       { label: "Nieaktywna",   color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-300 dark:border-red-700",                         dot: "bg-loss",     icon: XCircle },
+  past_due:   { label: "Zaległa",      color: "bg-warning/10 text-warning border-warning/30", dot: "bg-warning", icon: AlertTriangle },
+  canceled:   { label: "Anulowana",    color: "bg-loss/10 text-loss border-loss/30", dot: "bg-loss", icon: XCircle },
+  incomplete: { label: "Niekompletna", color: "bg-loss/10 text-loss border-loss/30", dot: "bg-loss", icon: XCircle },
+  unpaid:     { label: "Nieopłacona",  color: "bg-loss/10 text-loss border-loss/30", dot: "bg-loss", icon: XCircle },
+  free:       { label: "Nieaktywna",   color: "bg-loss/10 text-loss border-loss/30", dot: "bg-loss", icon: XCircle },
 };
 
 const FEATURES = [
@@ -61,10 +61,10 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-2">
             <Eye className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold text-slate-900 dark:text-white">Podgląd importu</span>
+            <span className="font-semibold text-foreground">Podgląd importu</span>
             <Badge variant="secondary" className="text-xs">{FORMAT_LABELS[preview.format] || preview.format}</Badge>
           </div>
-          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
+          <button onClick={onCancel} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
         </div>
 
         <div className="p-4 space-y-3 overflow-auto flex-1">
@@ -80,7 +80,7 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
               <thead className="bg-muted/30">
                 <tr>
                   {cols.map((c) => (
-                    <th key={c} className="px-2 py-1.5 text-left font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                    <th key={c} className="px-2 py-1.5 text-left font-semibold text-muted-foreground uppercase tracking-wide">
                       {c.replace(/_/g, " ")}
                     </th>
                   ))}
@@ -90,8 +90,8 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
                 {visibleRows.map((row, i) => (
                   <tr key={i} className="border-t border-border">
                     {cols.map((c) => (
-                      <td key={c} className="px-2 py-1.5 text-slate-700 dark:text-slate-300">
-                        {row[c] || <span className="text-slate-400">—</span>}
+                      <td key={c} className="px-2 py-1.5 text-muted-foreground">
+                        {row[c] || <span className="text-muted-foreground">—</span>}
                       </td>
                     ))}
                   </tr>
@@ -100,7 +100,7 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
             </table>
           </div>
           {preview.rows.length > 5 && (
-            <p className="text-xs text-slate-400 text-center">…i {preview.rows.length - 5} więcej wierszy</p>
+            <p className="text-xs text-muted-foreground text-center">…i {preview.rows.length - 5} więcej wierszy</p>
           )}
         </div>
 
@@ -219,7 +219,7 @@ export default function Billing() {
           "flex items-center justify-between px-5 py-4 rounded-xl border",
           isPremium
             ? "bg-profit/10 dark:bg-profit/10 border-profit/20 dark:border-profit/30"
-            : "bg-loss/10 dark:bg-red-950/20 border-loss/20 dark:border-red-900"
+            : "bg-ds-neg-tint border-ds-line"
         )}>
           <div className="flex items-center gap-3">
             {isPremium
@@ -227,7 +227,7 @@ export default function Billing() {
               : <XCircle className="h-6 w-6 text-loss shrink-0" />
             }
             <div>
-              <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              <p className="text-sm font-semibold text-foreground">
                 {isPremium ? "Subskrypcja aktywna" : "Brak aktywnej subskrypcji"}
               </p>
               {isPremium && currentPeriodEnd && (
@@ -255,8 +255,8 @@ export default function Billing() {
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-md bg-primary flex items-center justify-center shrink-0">
-                  <CreditCard className="h-6 w-6 text-primary-foreground" />
+                <div className="w-12 h-12 rounded-md border border-primary/35 bg-muted flex items-center justify-center shrink-0">
+                  <CreditCard className="h-6 w-6 text-primary" />
                 </div>
                 <div>
                   <CardTitle className="text-lg">AiKeepTrade Pro</CardTitle>
@@ -265,11 +265,11 @@ export default function Billing() {
               </div>
               <div className="text-right">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-slate-900 dark:text-white">$9.9</span>
+                  <span className="text-3xl font-bold text-foreground">$9.9</span>
                   <span className="text-sm text-muted-foreground">/ {t("billingPerMonth")}</span>
                 </div>
                 {trialEligible && !isPremium && (
-                  <Badge className="mt-1 bg-primary hover:bg-primary/90 text-primary-foreground text-xs">14 dni gratis</Badge>
+                  <Badge className="mt-1 border-primary/35 bg-muted text-primary text-xs">14 dni gratis</Badge>
                 )}
               </div>
             </div>
@@ -279,7 +279,7 @@ export default function Billing() {
               {FEATURES.map(({ icon: Icon, label }) => (
                 <div key={label} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/30">
                   <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                  <span className="text-xs text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
+                  <span className="text-xs text-muted-foreground leading-tight">{label}</span>
                 </div>
               ))}
             </div>
@@ -325,7 +325,7 @@ export default function Billing() {
         <Card className="border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Clock className="h-4 w-4 text-slate-400" />
+              <Clock className="h-4 w-4 text-muted-foreground" />
               {t("billingStatusTitle")}
             </CardTitle>
           </CardHeader>
@@ -338,7 +338,7 @@ export default function Billing() {
               </div>
             )}
             {["past_due", "incomplete", "unpaid"].includes(subscription.status) && (
-              <div className="flex items-center gap-2 rounded-lg border border-amber-400/30 bg-amber-50 dark:bg-amber-950/20 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-300">
+              <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs text-warning">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                 {t("billingTrialEnded")}
               </div>
@@ -356,9 +356,9 @@ export default function Billing() {
         <Card className="border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Download className="h-4 w-4 text-slate-400" />
+              <Download className="h-4 w-4 text-muted-foreground" />
               Eksport danych
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 animate-pulse">⚠ W budowie</span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/30 animate-pulse">⚠ W budowie</span>
             </CardTitle>
             <CardDescription className="text-xs">
               Pobierz swoje transakcje lub pełną kopię zapasową wszystkich danych
@@ -376,7 +376,7 @@ export default function Billing() {
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  <p className="text-sm font-semibold text-foreground">
                     {isExportingCSV ? "Eksportowanie…" : "Eksport CSV"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">Transakcje — gotowe do re-importu lub Excela</p>
@@ -393,7 +393,7 @@ export default function Billing() {
                   <FileJson className="h-4 w-4 text-profit" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  <p className="text-sm font-semibold text-foreground">
                     {isExporting ? "Pobieranie…" : "Kopia zapasowa (JSON)"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">Wszystkie dane: transakcje, notatki, konta…</p>
@@ -413,9 +413,9 @@ export default function Billing() {
         <Card className="border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Upload className="h-4 w-4 text-slate-400" />
+              <Upload className="h-4 w-4 text-muted-foreground" />
               Import transakcji
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 border border-amber-300 dark:border-amber-700 animate-pulse">⚠ W budowie</span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/30 animate-pulse">⚠ W budowie</span>
             </CardTitle>
             <CardDescription className="text-xs">
               Wczytaj transakcje z CSV — obsługujemy własny format, MT4/MT5 i TradingView
@@ -426,7 +426,7 @@ export default function Billing() {
             {/* Supported formats badges */}
             <div className="flex flex-wrap gap-1.5">
               {Object.entries(FORMAT_LABELS).map(([key, label]) => (
-                <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-muted text-xs text-slate-600 dark:text-slate-400 border border-border">
+                <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-xs text-muted-foreground border border-border">
                   <FileUp className="h-3 w-3" />
                   {label}
                 </span>
@@ -450,10 +450,10 @@ export default function Billing() {
                 <FileUp className="h-5 w-5 text-muted-foreground" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                <p className="text-sm font-medium text-muted-foreground">
                   {dragOver ? "Upuść plik tutaj" : "Kliknij lub przeciągnij plik CSV"}
                 </p>
-                <p className="text-xs text-slate-400 mt-1">Format wykrywany automatycznie</p>
+                <p className="text-xs text-muted-foreground mt-1">Format wykrywany automatycznie</p>
               </div>
             </div>
 
@@ -469,10 +469,10 @@ export default function Billing() {
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Wymagane kolumny (własny format):</p>
               <div className="p-3 rounded-lg bg-muted/30 border border-border">
-                <code className="text-[11px] text-slate-600 dark:text-slate-400 break-all">
+                <code className="text-[11px] text-muted-foreground break-all">
                   date, symbol, direction, quantity, entry_price, exit_price, profit_loss
                 </code>
-                <p className="text-[11px] text-slate-400 mt-1.5">
+                <p className="text-[11px] text-muted-foreground mt-1.5">
                   Pobierz szablon przez "Eksport CSV" — możesz go edytować i re-importować.
                 </p>
               </div>
@@ -486,13 +486,13 @@ export default function Billing() {
           <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowHistory((p) => !p)}>
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <History className="h-4 w-4 text-slate-400" />
+                <History className="h-4 w-4 text-muted-foreground" />
                 Historia importów
                 {importHistory.length > 0 && (
                   <Badge variant="secondary" className="text-xs">{importHistory.length}</Badge>
                 )}
               </CardTitle>
-              <ChevronRight className={cn("h-4 w-4 text-slate-400 transition-transform", showHistory && "rotate-90")} />
+              <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", showHistory && "rotate-90")} />
             </div>
           </CardHeader>
 
@@ -500,18 +500,18 @@ export default function Billing() {
             <CardContent>
               {isLoadingHistory ? (
                 <div className="flex items-center justify-center py-6">
-                  <RefreshCw className="h-4 w-4 animate-spin text-slate-400" />
+                  <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
                 </div>
               ) : importHistory.length === 0 ? (
-                <p className="text-xs text-slate-400 py-4 text-center">Brak historii importów</p>
+                <p className="text-xs text-muted-foreground py-4 text-center">Brak historii importów</p>
               ) : (
                 <div className="space-y-2">
                   {importHistory.map((item) => (
                     <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30 text-xs">
                       <div className="space-y-0.5">
-                        <p className="font-medium text-slate-800 dark:text-slate-200">
+                        <p className="font-medium text-foreground">
                           {FORMAT_LABELS[item.format] || item.format}
-                          <span className="ml-2 font-mono text-slate-400">{item.fileName}</span>
+                          <span className="ml-2 font-mono text-muted-foreground">{item.fileName}</span>
                         </p>
                         <p className="text-muted-foreground">{formatHistoryDate(item.importedAt)}</p>
                       </div>
@@ -520,7 +520,7 @@ export default function Billing() {
                           ✓ {item.successRows}
                         </span>
                         {item.errorRows > 0 && (
-                          <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+                          <span className="px-2 py-0.5 rounded-full bg-loss/10 text-loss">
                             ✗ {item.errorRows}
                           </span>
                         )}

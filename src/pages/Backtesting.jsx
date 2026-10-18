@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   FlaskConical,
+  SearchX,
   Plus,
   Pencil,
   Trash2,
@@ -70,7 +71,7 @@ import {
   Legend,
 } from "recharts";
 import { useLanguage } from "@/components/LanguageProvider";
-import { CHART, chartTooltipStyle, chartGridProps } from "@/lib/chartTheme";
+import { CHART, chartTooltipStyle, chartGridProps, chartBarRadius } from "@/lib/chartTheme";
 import QuoteLine from "@/components/QuoteLine";
 import { formatTradeDate, getDateFormat } from "@/lib/userSettings";
 import { loadTradeTagLists, saveTradeTagLists } from "@/lib/tradeTags";
@@ -80,6 +81,8 @@ import ImageViewer from "@/components/common/ImageViewer";
 import ScreenshotField, { isImageFile } from "@/components/common/ScreenshotField";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SkeletonRows } from "@/components/ui/skeleton-block";
+import { EmptyState } from "@/components/ui/empty-state";
 import { EmotionsInlinePanel, createEmptyEmotions, normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
 
 const OUTCOMES = ["Win", "Loss", "Breakeven"];
@@ -135,7 +138,7 @@ function GradeStars({ value, size = "w-3.5 h-3.5" }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <Star
           key={i}
-          className={`${size} ${i <= n ? "fill-amber-400 text-amber-400" : "fill-transparent text-slate-300 dark:text-slate-600"}`}
+          className={`${size} ${i <= n ? "fill-warning text-warning" : "fill-transparent text-muted-foreground"}`}
         />
       ))}
     </span>
@@ -825,7 +828,7 @@ export default function Backtesting() {
             <div className="flex items-center justify-between gap-2 md:gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground truncate">{t("backtestKpiTests")}</p>
-                <div className="mt-1.5 text-xl md:text-2xl font-bold text-foreground tabular-nums">{stats.total}</div>
+                <div className="mt-1.5 text-[20px] font-semibold text-foreground tabular-nums">{stats.total}</div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{stats.wins}W / {stats.losses}L / {stats.be}BE</p>
               </div>
               <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--primary)) ${stats.total > 0 ? 100 : 0}%, hsl(var(--border)) 0)` }} />
@@ -838,7 +841,7 @@ export default function Backtesting() {
             <div className="flex items-center justify-between gap-2 md:gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground truncate">{t("backtestKpiWinRate")}</p>
-                <div className="mt-1.5 text-xl md:text-2xl font-bold text-foreground tabular-nums">
+                <div className="mt-1.5 text-[20px] font-semibold text-foreground tabular-nums">
                   {stats.total ? `${stats.winRate.toFixed(1)}%` : "—"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{stats.wins} {t("wins")} / {stats.total}</p>
@@ -853,12 +856,12 @@ export default function Backtesting() {
             <div className="flex items-center justify-between gap-2 md:gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground truncate">{t("backtestKpiAvgR")}</p>
-                <div className={`mt-1.5 text-xl md:text-2xl font-bold tabular-nums ${stats.avgR >= 0 ? "text-profit" : "text-loss"}`}>
+                <div className={`mt-1.5 text-[20px] font-semibold tabular-nums ${stats.avgR >= 0 ? "text-profit" : "text-loss"}`}>
                   {stats.total ? stats.avgR.toFixed(2) : "—"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{t("backtestColR")}</p>
               </div>
-              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--profit)) ${Math.max(0, Math.min(100, Math.round((stats.avgR / 2) * 100)))}%, #e5e7eb 0)` }} />
+              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--profit)) ${Math.max(0, Math.min(100, Math.round((stats.avgR / 2) * 100)))}%, var(--ds-s3) 0)` }} />
             </div>
           </CardContent>
         </Card>
@@ -868,12 +871,12 @@ export default function Backtesting() {
             <div className="flex items-center justify-between gap-2 md:gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground truncate">{t("backtestKpiSumR")}</p>
-                <div className={`mt-1.5 text-xl md:text-2xl font-bold tabular-nums ${stats.sumR >= 0 ? "text-profit" : "text-loss"}`}>
+                <div className={`mt-1.5 text-[20px] font-semibold tabular-nums ${stats.sumR >= 0 ? "text-profit" : "text-loss"}`}>
                   {stats.total ? `${stats.sumR >= 0 ? "+" : ""}${stats.sumR.toFixed(2)}` : "—"}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 truncate">{t("profitFactor")}: {stats.profitFactor}</p>
+                <p className="text-xs text-muted-foreground mt-1 truncate">{t("profitFactor")}: {stats.total ? stats.profitFactor : "—"}</p>
               </div>
-              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumR >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"} ${Math.min(100, Math.abs(stats.sumR) * 5)}%, #e5e7eb 0)` }} />
+              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumR >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"} ${Math.min(100, Math.abs(stats.sumR) * 5)}%, var(--ds-s3) 0)` }} />
             </div>
           </CardContent>
         </Card>
@@ -883,14 +886,14 @@ export default function Backtesting() {
             <div className="flex items-center justify-between gap-2 md:gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground truncate">{t("backtestKpiSumAmount")}</p>
-                <div className={`mt-1.5 text-xl md:text-2xl font-bold tabular-nums ${stats.sumAmount >= 0 ? "text-profit" : "text-loss"}`}>
+                <div className={`mt-1.5 text-[20px] font-semibold tabular-nums ${stats.sumAmount >= 0 ? "text-profit" : "text-loss"}`}>
                   {stats.amountCount
                     ? stats.sumAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })
                     : "—"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{stats.amountCount} {t("backtestKpiTests")}</p>
               </div>
-              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumAmount >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"} ${Math.min(100, Math.abs(stats.sumAmount) / 10)}%, #e5e7eb 0)` }} />
+              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumAmount >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"} ${Math.min(100, Math.abs(stats.sumAmount) / 10)}%, var(--ds-s3) 0)` }} />
             </div>
           </CardContent>
         </Card>
@@ -908,7 +911,7 @@ export default function Backtesting() {
         <div className="cyber-gauge">
           <div className="cyber-gauge-ring" style={{ background: `conic-gradient(hsl(var(--primary)) ${pfGauge}%, hsl(var(--border)) 0)` }} />
           <div className="cyber-gauge-label">
-            <span className="cyber-gauge-value">{stats.profitFactor}</span>
+            <span className="cyber-gauge-value">{stats.total ? stats.profitFactor : "—"}</span>
             <span className="cyber-gauge-cap">{t("profitFactor")}</span>
           </div>
         </div>
@@ -1060,11 +1063,11 @@ export default function Backtesting() {
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">{t("loading")}</div>
+            <SkeletonRows rows={5} />
           ) : entries.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground">{t("backtestEmpty")}</div>
+            <EmptyState icon={FlaskConical} description={t("backtestEmpty")} className="m-4" />
           ) : filteredEntries.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground">{t("backtestEmptyFiltered")}</div>
+            <EmptyState icon={SearchX} description={t("backtestEmptyFiltered")} className="m-4" />
           ) : (
             <table className="w-full text-sm">
               <thead>
@@ -1108,10 +1111,10 @@ export default function Backtesting() {
                         <Circle className="w-4 h-4 text-muted-foreground/50 mx-auto" aria-label={t("backtestEntryNo")} />
                       )}
                     </td>
-                    <td className="p-3 whitespace-nowrap text-slate-900 dark:text-slate-100">
+                    <td className="p-3 whitespace-nowrap text-foreground">
                       {formatTradeDate(row.date, dateFmt)}
                     </td>
-                    <td className="p-3 font-medium text-slate-900 dark:text-slate-100 uppercase">
+                    <td className="p-3 font-medium text-foreground uppercase">
                       {row.symbol || "—"}
                     </td>
                     <td className="p-3">
@@ -1137,7 +1140,7 @@ export default function Backtesting() {
                             ? "text-profit dark:text-profit font-medium"
                             : row.outcome === "Loss"
                               ? "text-loss dark:text-loss font-medium"
-                              : "text-amber-600 dark:text-amber-400 font-medium"
+                              : "text-warning font-medium"
                         }
                       >
                         {row.outcome === "Win"
@@ -1158,7 +1161,7 @@ export default function Backtesting() {
                           ? "text-loss dark:text-loss"
                           : toNumberSafe(row.amount) !== null && toNumberSafe(row.amount) > 0
                             ? "text-profit dark:text-profit"
-                            : "text-slate-700 dark:text-slate-300"
+                            : "text-muted-foreground"
                       }`}
                     >
                       {toNumberSafe(row.amount) !== null
@@ -1328,7 +1331,7 @@ export default function Backtesting() {
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
               <Tooltip contentStyle={chartTooltipStyle} />
               <Legend />
-              <Bar dataKey="tests" fill="hsl(var(--primary) / 0.7)" name={t("backtestBarTests")} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="tests" fill="hsl(var(--primary) / 0.7)" name={t("backtestBarTests")} radius={chartBarRadius} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -1370,11 +1373,11 @@ export default function Backtesting() {
           className="w-full flex items-center justify-between gap-3 p-4 rounded-md border border-border bg-card hover:bg-accent/40 transition text-left"
         >
           <span className="flex items-center gap-3">
-            <span className="flex items-center justify-center w-9 h-9 rounded-md bg-primary text-primary-foreground">
+            <span className="flex items-center justify-center w-9 h-9 rounded-md border border-primary/35 bg-muted text-primary">
               <BarChart3 className="w-5 h-5" />
             </span>
             <span>
-              <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">{t("advancedAnalytics")}</span>
+              <span className="block text-sm font-semibold text-foreground">{t("advancedAnalytics")}</span>
               <span className="block text-xs text-muted-foreground">{t("backtestResultsTitle")}</span>
             </span>
           </span>
@@ -1415,7 +1418,7 @@ export default function Backtesting() {
                       <tbody>
                         {strategyComparison.map((row) => (
                           <tr key={row.id} className="border-b border-border/80 hover:bg-muted/20 transition-colors">
-                            <td className="p-3 max-w-[200px] truncate font-medium text-slate-900 dark:text-slate-100" title={row.name}>{row.name}</td>
+                            <td className="p-3 max-w-[200px] truncate font-medium text-foreground" title={row.name}>{row.name}</td>
                             <td className="p-3 text-right tabular-nums">{row.tests}</td>
                             <td className="p-3 text-right tabular-nums">{row.winRate.toFixed(1)}%</td>
                             <td className={`p-3 text-right tabular-nums ${row.avgR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>{row.avgR.toFixed(2)}</td>
@@ -1462,7 +1465,7 @@ export default function Backtesting() {
                           <tbody>
                             {grp.rows.map((r) => (
                               <tr key={r.key} className="border-b border-border/70 hover:bg-muted/20">
-                                <td className="p-2.5 font-medium text-slate-900 dark:text-slate-100 truncate max-w-[140px]" title={r.key}>{r.key}</td>
+                                <td className="p-2.5 font-medium text-foreground truncate max-w-[140px]" title={r.key}>{r.key}</td>
                                 <td className="p-2.5 text-right tabular-nums">{r.tests}</td>
                                 <td className="p-2.5 text-right tabular-nums">{r.winRate.toFixed(0)}%</td>
                                 <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
@@ -1504,7 +1507,7 @@ export default function Backtesting() {
                         <tbody>
                           {tagStats.confluences.map((r) => (
                             <tr key={r.key} className="border-b border-border/70 hover:bg-muted/20">
-                              <td className="p-2.5 font-medium text-slate-900 dark:text-slate-100 truncate max-w-[160px]" title={r.key}>{r.key}</td>
+                              <td className="p-2.5 font-medium text-foreground truncate max-w-[160px]" title={r.key}>{r.key}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.tests}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.winRate.toFixed(0)}%</td>
                               <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
@@ -1542,7 +1545,7 @@ export default function Backtesting() {
                         <tbody>
                           {tagStats.mistakes.map((r) => (
                             <tr key={r.key} className="border-b border-border/70 hover:bg-muted/20">
-                              <td className="p-2.5 font-medium text-slate-900 dark:text-slate-100 truncate max-w-[160px]" title={r.key}>{r.key}</td>
+                              <td className="p-2.5 font-medium text-foreground truncate max-w-[160px]" title={r.key}>{r.key}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.tests}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.winRate.toFixed(0)}%</td>
                               <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
@@ -1573,7 +1576,7 @@ export default function Backtesting() {
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                       <Tooltip contentStyle={chartTooltipStyle} />
-                      <Bar dataKey="count" name={t("backtestKpiTests")} radius={[4, 4, 0, 0]}>
+                      <Bar dataKey="count" name={t("backtestKpiTests")} radius={chartBarRadius}>
                         {rDistribution.map((b, i) => (
                           <Cell key={i} fill={b.max <= 0 ? CHART.loss : CHART.profit} />
                         ))}
@@ -1598,7 +1601,7 @@ export default function Backtesting() {
                         <p className="text-2xl font-bold tabular-nums text-profit dark:text-profit">
                           {Number(bestWorstByR.best.r_multiple).toFixed(2)}R
                         </p>
-                        <p className="text-sm text-slate-600 dark:text-slate-300 truncate">
+                        <p className="text-sm text-muted-foreground truncate">
                           {bestWorstByR.best.strategy_name || strategyName(bestWorstByR.best.strategy_id)}
                         </p>
                         <p className="text-xs text-muted-foreground">{formatTradeDate(bestWorstByR.best.date, dateFmt)}</p>
@@ -1622,7 +1625,7 @@ export default function Backtesting() {
                         <p className="text-2xl font-bold tabular-nums text-loss dark:text-loss">
                           {Number(bestWorstByR.worst.r_multiple).toFixed(2)}R
                         </p>
-                        <p className="text-sm text-slate-600 dark:text-slate-300 truncate">
+                        <p className="text-sm text-muted-foreground truncate">
                           {bestWorstByR.worst.strategy_name || strategyName(bestWorstByR.worst.strategy_id)}
                         </p>
                         <p className="text-xs text-muted-foreground">{formatTradeDate(bestWorstByR.worst.date, dateFmt)}</p>
@@ -1662,7 +1665,7 @@ export default function Backtesting() {
                 </p>
                 <div className="flex flex-wrap gap-1.5 pt-2">
                   {detailRow.symbol ? (
-                    <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs font-semibold uppercase">{detailRow.symbol}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-muted text-xs font-semibold uppercase">{detailRow.symbol}</span>
                   ) : null}
                   {detailRow.direction ? (
                     <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${detailRow.direction === "Short" ? "bg-loss/10 dark:bg-loss/10 text-loss dark:text-loss" : "bg-profit/10 dark:bg-profit/10 text-profit dark:text-profit"}`}>{detailRow.direction}</span>
@@ -1683,10 +1686,10 @@ export default function Backtesting() {
                     className="w-full flex items-center justify-between gap-3 p-3 rounded-md border border-border bg-card hover:border-primary/50 transition text-left"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="flex items-center justify-center w-8 h-8 rounded-md bg-primary text-primary-foreground">
+                      <span className="flex items-center justify-center w-8 h-8 rounded-md border border-primary/35 bg-muted text-primary">
                         <Brain className="w-4 h-4" />
                       </span>
-                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      <span className="text-sm font-semibold text-foreground">
                         Pokaż dziennik emocji
                       </span>
                     </span>
@@ -1726,7 +1729,7 @@ export default function Backtesting() {
                 {detailRow.tags ? (
                   <div className="flex flex-wrap gap-1.5">
                     {String(detailRow.tags).split(",").map((tg) => tg.trim()).filter(Boolean).map((tg, i) => (
-                      <span key={i} className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-200">#{tg}</span>
+                      <span key={i} className="px-2 py-0.5 rounded-md bg-muted text-xs text-muted-foreground">#{tg}</span>
                     ))}
                   </div>
                 ) : null}
@@ -1780,7 +1783,7 @@ export default function Backtesting() {
                         ? "text-profit dark:text-profit"
                         : detailRow.outcome === "Loss"
                           ? "text-loss dark:text-loss"
-                          : "text-amber-600 dark:text-amber-400"
+                          : "text-warning"
                     }`}>
                       {detailRow.outcome === "Win"
                         ? t("backtestOutcomeWin")
@@ -1964,7 +1967,7 @@ export default function Backtesting() {
 
             {/* Sekcja: ceny */}
             <div className="rounded-lg border border-border p-3 bg-muted/30">
-              <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">Poziomy cen (opcjonalne)</p>
+              <p className="text-xs font-semibold text-muted-foreground mb-2">Poziomy cen (opcjonalne)</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <Label className="text-xs">Entry</Label>
@@ -2071,7 +2074,7 @@ export default function Backtesting() {
                       className="p-0.5 transition-transform hover:scale-110"
                       aria-label={`Ocena ${n}`}
                     >
-                      <Star className={`w-6 h-6 ${n <= form.grade ? "fill-amber-400 text-amber-400" : "fill-transparent text-slate-300 dark:text-slate-600"}`} />
+                      <Star className={`w-6 h-6 ${n <= form.grade ? "fill-warning text-warning" : "fill-transparent text-muted-foreground"}`} />
                     </button>
                   ))}
                 </div>
@@ -2086,11 +2089,11 @@ export default function Backtesting() {
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-md bg-primary text-primary-foreground">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-md border border-primary/35 bg-muted text-primary">
                     <Brain className="w-4 h-4" />
                   </span>
                   <span>
-                    <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">Dziennik emocji</span>
+                    <span className="block text-sm font-semibold text-foreground">Dziennik emocji</span>
                     <span className="block text-xs text-muted-foreground">przed · w trakcie · po</span>
                   </span>
                 </span>

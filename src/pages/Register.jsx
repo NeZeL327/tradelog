@@ -204,7 +204,7 @@ export default function Register() {
         >
           <div className="inline-flex items-center justify-center mb-6 md:justify-start">
             <img
-              src="/aikeeptrade-icon-hires.png"
+              src="/aikeeptrade-icon-192.png"
               alt="AiKeepTrade"
               height="80"
               className="h-20 w-auto object-contain drop-shadow-2xl"

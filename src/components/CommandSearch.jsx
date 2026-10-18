@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import {
-  LayoutDashboard, BookOpen, Calendar, CalendarCheck2, ListTodo, AlarmClockOff,
-  BarChart3, FlaskConical, Brain, Calculator, NotebookPen, Target,
-  FileBarChart, ClipboardList, Wallet, Settings as SettingsIcon,
+  LayoutDashboard, BookOpen, Calendar,
+  BarChart3, FlaskConical, Brain, Calculator, Wallet, Settings as SettingsIcon,
   CandlestickChart,
 } from "lucide-react";
 import { createPageUrl } from "@/utils";
@@ -23,18 +22,11 @@ function navItems(t) {
     { title: t("dashboard"), url: createPageUrl("Dashboard"), icon: LayoutDashboard },
     { title: t("journal"), url: createPageUrl("Journal"), icon: BookOpen },
     { title: t("calendar"), url: createPageUrl("Calendar"), icon: Calendar },
-    { title: t("dayPlan") || "Plan dnia", url: createPageUrl("DayPlan"), icon: CalendarCheck2 },
-    { title: t("plannedTrades") || "Planned", url: createPageUrl("Planned"), icon: ListTodo },
-    { title: t("missedTrades") || "Missed", url: createPageUrl("Missed"), icon: AlarmClockOff },
     { title: t("tradeDetails"), url: "/trade", icon: CandlestickChart },
     { title: t("analytics"), url: createPageUrl("Analytics"), icon: BarChart3 },
     { title: t("backtesting"), url: createPageUrl("Backtesting"), icon: FlaskConical },
     { title: t("strategies"), url: createPageUrl("Strategies"), icon: Brain },
-    { title: t("goals") || "Cele", url: createPageUrl("Goals"), icon: Target },
     { title: t("calculators"), url: createPageUrl("Calculators"), icon: Calculator },
-    { title: t("notes"), url: createPageUrl("Notes"), icon: NotebookPen },
-    { title: t("reports") || "Raporty", url: createPageUrl("Raporty"), icon: FileBarChart },
-    { title: t("processReview") || "Przegląd procesu", url: createPageUrl("ProcessReview"), icon: ClipboardList },
     { title: t("accounts"), url: createPageUrl("Accounts"), icon: Wallet },
     { title: t("settings"), url: createPageUrl("Settings"), icon: SettingsIcon },
   ];
@@ -102,7 +94,7 @@ export default function CommandSearch({ variant = "sidebar" }) {
       onClick={openCommandSearch}
       className={
         isSidebar
-          ? "flex w-full h-[30px] items-center gap-2 rounded border border-[#3e484f]/40 bg-[#191b23] px-2 text-[13px] font-normal text-[#bdc8d1] hover:text-[#e1e2ec] transition-colors group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+          ? "flex w-full h-[30px] items-center gap-2 rounded-[10px] border border-ds-line bg-ds-s2 px-2.5 text-[13px] font-normal text-ds-text3 hover:bg-ds-s3 hover:text-ds-text transition-colors group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
           : "hidden md:flex h-8 items-center gap-2 rounded-lg border border-border/70 bg-background/40 px-3 text-[12px] text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors min-w-[11.5rem] max-w-[16rem]"
       }
       aria-label={t("search")}

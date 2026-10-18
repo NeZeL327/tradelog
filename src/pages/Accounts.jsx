@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { AccountImportButton } from "@/components/AccountImportExport";
 import MtAccountLink from "@/components/MtAccountLink";
 import QuoteLine from "@/components/QuoteLine";
+import { SkeletonCardGrid } from "@/components/ui/skeleton-block";
+import { usePnlDisplay } from "@/hooks/use-pnl-display";
 
 export default function Accounts() {
   const { user } = useAuth();
@@ -112,10 +114,10 @@ export default function Accounts() {
   if (!user) {
     return (
       <div className="w-full min-h-[40vh] dashboard-surface p-6">
-        <div className="max-w-none mx-0 space-y-6">
+        <div className="max-w-none mx-0 space-y-3">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">Wymagane logowanie</h1>
-            <p className="text-slate-600 dark:text-slate-400">Musisz się zalogować, aby zarządzać kontami handlowymi.</p>
+            <h1 className="cyber-page-title mb-4">Wymagane logowanie</h1>
+            <p className="cyber-page-sub">Musisz się zalogować, aby zarządzać kontami handlowymi.</p>
           </div>
         </div>
       </div>
@@ -124,13 +126,12 @@ export default function Accounts() {
 
   if (isLoading || isTradesLoading) {
     return (
-      <div className="w-full min-h-[40vh] dashboard-surface p-6">
-        <div className="max-w-none mx-0 space-y-6">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin mx-auto"></div>
-            <p className="text-slate-600 dark:text-slate-400 mt-4">Ładowanie kont...</p>
-          </div>
+      <div className="w-full min-h-[40vh] dashboard-surface space-y-3">
+        <div className="space-y-1.5">
+          <h1 className="cyber-page-title">Konta tradingowe</h1>
+          <p className="cyber-page-sub">Ładowanie kont…</p>
         </div>
+        <SkeletonCardGrid count={3} />
       </div>
     );
   }
@@ -143,8 +144,8 @@ export default function Accounts() {
   });
 
   return (
-    <div className="w-full min-h-0 dashboard-surface space-y-6">
-      <div className="max-w-none mx-0 space-y-6">
+    <div className="w-full min-h-0 dashboard-surface space-y-3">
+      <div className="max-w-none mx-0 space-y-3">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex-1">
             <h1 className="cyber-page-title">Konta tradingowe</h1>
@@ -200,8 +201,8 @@ export default function Accounts() {
         {accounts.length === 0 ? (
           <div className="text-center py-12 px-4">
             <Wallet className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-2">Brak kont handlowych</h3>
-            <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">Rozpocznij od dodania pierwszego konta tradingowego.</p>
+            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-2">Brak kont handlowych</h3>
+            <p className="text-muted-foreground mb-6 text-sm">Rozpocznij od dodania pierwszego konta tradingowego.</p>
             <Dialog open={showForm} onOpenChange={(open) => {
               setShowForm(open);
               if (!open) setEditingAccount(null);
@@ -227,8 +228,8 @@ export default function Accounts() {
         ) : visibleAccounts.length === 0 ? (
           <div className="text-center py-12 px-4">
             <Wallet className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-2">Brak kont w tym filtrze</h3>
-            <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">Zmień filtr na „Pokaż wszystkie” lub aktywuj konto przełącznikiem.</p>
+            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-2">Brak kont w tym filtrze</h3>
+            <p className="text-muted-foreground mb-6 text-sm">Zmień filtr na „Pokaż wszystkie” lub aktywuj konto przełącznikiem.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -266,7 +267,7 @@ export default function Accounts() {
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingAccount && deleteMutation.mutate(deletingAccount.id)}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-loss text-white hover:bg-loss/90"
             >
               Usuń
             </AlertDialogAction>
@@ -278,15 +279,16 @@ export default function Accounts() {
 }
 
 function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onToggleActive }) {
+  const pnl = usePnlDisplay();
   const accountTypeColors = {
-    Live: "#10b981",
-    Demo: "#64748b",
-    Challenge: "#9FE870",
-    Funded: "hsl(var(--warning))"
+    Live: "var(--ds-pos)",
+    Demo: "var(--ds-text2)",
+    Challenge: "var(--ds-warn)",
+    Funded: "var(--ds-warn)"
   };
   const initialBalance = parseFloat(account.initial_balance) || 0;
   const currentBalance = parseFloat(account.current_balance);
-  const accentColor = account.color || accountTypeColors[account.account_type] || "#64748b";
+  const accentColor = account.color || accountTypeColors[account.account_type] || "var(--ds-text2)";
   const isAccountActive = account.is_active !== false && account.status !== 'Inactive';
 
   const accountTrades = trades.filter(
@@ -313,10 +315,10 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
   const getStatusColor = (status) => {
     switch (status) {
       case 'Active': return 'text-profit';
-      case 'Inactive': return 'text-gray-500';
-      case 'Suspended': return 'text-yellow-600';
+      case 'Inactive': return 'text-muted-foreground';
+      case 'Suspended': return 'text-warning';
       case 'Closed': return 'text-loss';
-      default: return 'text-gray-500';
+      default: return 'text-muted-foreground';
     }
   };
 
@@ -331,7 +333,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
   };
 
   const getAccountTypeColor = () => {
-    return "border-l-4 bg-card border border-border hover:border-primary/30";
+    return "bg-card border border-border";
   };
 
   const getAccountDividerColor = () => {
@@ -342,29 +344,26 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
     const baseClasses = "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium";
     switch (account.account_type) {
       case 'Live':
-        return <Badge className={`${baseClasses} bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit`}>Live</Badge>;
+        return <Badge className={`${baseClasses} bg-profit/10 text-profit dark:bg-profit/10`}>Live</Badge>;
       case 'Demo':
         return <Badge className={`${baseClasses} bg-muted text-foreground`}>Demo</Badge>;
       case 'Challenge':
-        return <Badge className={`${baseClasses} bg-primary/15 text-primary`}>Challenge</Badge>;
+        return <Badge className={`${baseClasses} bg-warning/10 text-warning`}>Challenge</Badge>;
       case 'Funded':
-        return <Badge className={`${baseClasses} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200`}>Funded</Badge>;
+        return <Badge className={`${baseClasses} bg-warning/10 text-warning`}>Funded</Badge>;
       default:
-        return <Badge className={`${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200`}>{account.account_type}</Badge>;
+        return <Badge className={`${baseClasses} bg-muted text-foreground`}>{account.account_type}</Badge>;
     }
   };
 
   return (
     <Card className={`transition-colors duration-200 ${getAccountTypeColor()} ${isAccountActive ? '' : 'opacity-75'}`} style={{ borderLeftColor: accentColor }}>
       <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              {getAccountTypeBadge()}
-              <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: accentColor }} />
-            </div>
+        <div className="flex flex-col gap-3">
+          <div className="order-2 min-w-0">
             <div className="flex items-center gap-2 min-w-0">
-              <CardTitle className="text-base sm:text-lg truncate">{account.name}</CardTitle>
+              <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: accentColor }} aria-hidden="true" />
+              <CardTitle className="min-w-0 truncate text-[18px] font-semibold" title={account.name}>{account.name}</CardTitle>
               <MtAccountLink
                 account={account}
                 userId={user?.id}
@@ -376,15 +375,19 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
                 }}
               />
             </div>
-            <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2 flex-wrap">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ds-text2">
               {account.broker && <span className="truncate">{account.broker}</span>}
               {account.account_number && <span className="truncate">Nr: {account.account_number}</span>}
-              <span className={`${getStatusColor(account.status)} whitespace-nowrap`}>{getStatusText(account.status)}</span>
-              <span className={`whitespace-nowrap ${isAccountActive ? 'text-profit dark:text-profit' : 'text-slate-500 dark:text-slate-400'}`}>
+              {account.status && !['Active', 'Inactive'].includes(account.status) && (
+                <span className={`${getStatusColor(account.status)} whitespace-nowrap`}>{getStatusText(account.status)}</span>
+              )}
+              <span className={`whitespace-nowrap ${isAccountActive ? 'text-ds-pos' : 'text-ds-text3'}`}>
                 {isAccountActive ? 'Aktywne' : 'Nieaktywne'}
               </span>
             </div>
           </div>
+          <div className="order-1 flex items-center justify-between gap-2">
+            {getAccountTypeBadge()}
           <div className="flex gap-1 flex-shrink-0">
             <AccountImportButton
               account={account}
@@ -395,10 +398,10 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
                 queryClient.refetchQueries({ queryKey: ['trades', user?.id] });
               }}
             />
-            <Button size="sm" variant="outline" onClick={() => onEdit(account)} className="h-8 w-8 p-0">
+            <Button size="sm" variant="outline" onClick={() => onEdit(account)} className="h-8 w-8 p-0" aria-label={`Edytuj konto ${account.name}`} title="Edytuj">
               <Edit className="w-3.5 h-3.5" />
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onDelete(account)} className="h-8 w-8 p-0 text-loss hover:text-red-700">
+            <Button size="sm" variant="outline" onClick={() => onDelete(account)} className="h-8 w-8 p-0 text-ds-neg hover:text-ds-neg" aria-label={`Usuń konto ${account.name}`} title="Usuń">
               <Trash className="w-3.5 h-3.5" />
             </Button>
             <Button
@@ -413,50 +416,54 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
               <Power className="w-3.5 h-3.5" />
             </Button>
           </div>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="space-y-1">
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Kapitał</span>
-            <div className="font-semibold text-sm">{displayedBalance.toFixed(2)} {account.currency}</div>
+            <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Kapitał</span>
+            <div className="text-[20px] font-semibold tabular-nums">{displayedBalance.toFixed(2)} {account.currency}</div>
           </div>
           <div className="space-y-1">
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">P&L</span>
-            <div className={`font-semibold text-sm ${profitLoss >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>
-              {profitLoss >= 0 ? '+' : ''}{profitLoss?.toFixed(2)} {account.currency}
-            </div>
-            <div className={`text-xs ${profitLoss >= 0 ? 'text-profit/70 dark:text-profit/60' : 'text-loss/70 dark:text-loss/60'}`}>
-              ({profitLossPercent}%)
+            <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">P&L</span>
+            <div className={`text-[20px] font-semibold tabular-nums ${profitLoss >= 0 ? 'text-profit' : 'text-loss'}`}>
+              {pnl.mode === "percent"
+                ? `${Number(profitLossPercent) > 0 ? "+" : ""}${profitLossPercent}%`
+                : `${profitLoss >= 0 ? "+" : ""}${Number(profitLoss || 0).toFixed(2)} ${account.currency || ""}`}
             </div>
           </div>
         </div>
 
         {/* Statystyki */}
         <div className={`pt-3 border-t ${getAccountDividerColor()}`}>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
-            <div className="text-center sm:text-left">
-              <span className="text-muted-foreground block">Transakcje</span>
+          <div className="grid grid-cols-3 gap-x-3 gap-y-3 text-[13px]">
+            <div className="min-w-0">
+              <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Transakcje</span>
               <div className="font-semibold mt-0.5">{totalTrades}</div>
             </div>
-            <div className="text-center sm:text-left">
-              <span className="text-muted-foreground block">Win Rate</span>
-              <div className="font-semibold mt-0.5 text-profit dark:text-profit">{winRate}%</div>
+            <div className="min-w-0">
+              <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Win Rate</span>
+              <div className="font-semibold mt-0.5 text-profit">{winRate}%</div>
             </div>
-            <div className="text-center sm:text-left">
-              <span className="text-muted-foreground block">W/L Ratio</span>
+            <div className="min-w-0">
+              <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">W/L Ratio</span>
               <div className="font-semibold mt-0.5">{winningTrades}:{losingTrades}</div>
             </div>
-            <div className="text-center sm:text-left">
-              <span className="text-muted-foreground block">Śr. zysk</span>
-              <div className="font-semibold mt-0.5 text-profit dark:text-profit">
-                {avgWin >= 0 ? "+" : ""}{avgWin.toFixed(2)} {account.currency}
+            <div className="min-w-0">
+              <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Śr. zysk</span>
+              <div className="font-semibold mt-0.5 text-profit">
+                {pnl.mode === "percent"
+                  ? (initialBalance > 0 ? `${avgWin >= 0 ? "+" : ""}${((avgWin / initialBalance) * 100).toFixed(2)}%` : "—")
+                  : `${avgWin >= 0 ? "+" : ""}${avgWin.toFixed(2)} ${account.currency || ""}`}
               </div>
             </div>
-            <div className="text-center sm:text-left">
-              <span className="text-muted-foreground block">Śr. strata</span>
-              <div className="font-semibold mt-0.5 text-loss dark:text-loss">
-                {avgLoss.toFixed(2)} {account.currency}
+            <div className="min-w-0">
+              <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Śr. strata</span>
+              <div className="font-semibold mt-0.5 text-loss">
+                {pnl.mode === "percent"
+                  ? (initialBalance > 0 ? `${((avgLoss / initialBalance) * 100).toFixed(2)}%` : "—")
+                  : `${avgLoss.toFixed(2)} ${account.currency || ""}`}
               </div>
             </div>
           </div>
@@ -464,23 +471,23 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
 
         {(account.max_daily_loss_percent || account.max_account_loss || account.profit_target) && (
           <div className={`pt-3 border-t ${getAccountDividerColor()}`}>
-            <div className="grid grid-cols-3 gap-2 text-xs space-y-2">
+            <div className="grid grid-cols-3 gap-3 text-[13px]">
               {account.max_daily_loss_percent && (
-                <div className="text-center sm:text-left">
-                  <span className="text-muted-foreground block">Max strata</span>
+                <div className="min-w-0">
+                  <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Max strata</span>
                   <div className="font-semibold mt-0.5">{account.max_daily_loss_percent}%</div>
                 </div>
               )}
               {account.max_account_loss && (
-                <div className="text-center sm:text-left">
-                  <span className="text-muted-foreground block">Limit konta</span>
+                <div className="min-w-0">
+                  <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Limit konta</span>
                   <div className="font-semibold mt-0.5">{account.max_account_loss}%</div>
                 </div>
               )}
               {account.profit_target && (
-                <div className="text-center sm:text-left">
-                  <span className="text-muted-foreground block">Cel zysku</span>
-                  <div className="font-semibold mt-0.5 text-profit dark:text-profit">{account.profit_target}</div>
+                <div className="min-w-0">
+                  <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Cel zysku</span>
+                  <div className="font-semibold mt-0.5 text-profit">{account.profit_target}</div>
                 </div>
               )}
             </div>
@@ -489,7 +496,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
 
         {account.notes && (
           <div className={`pt-3 border-t ${getAccountDividerColor()}`}>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{account.notes}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">{account.notes}</p>
           </div>
         )}
       </CardContent>
@@ -499,9 +506,9 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
 
 function AccountForm({ account, onSubmit, onCancel, isLoading }) {
   const accountTypeColors = {
-    Live: "#10b981",
-    Demo: "#64748b",
-    Challenge: "#9FE870",
+    Live: "#7DDC6B",
+    Demo: "#9099B2",
+    Challenge: "#E6B83A",
     Funded: "hsl(var(--warning))"
   };
   const [formData, setFormData] = useState(account || {
@@ -602,7 +609,7 @@ function AccountForm({ account, onSubmit, onCancel, isLoading }) {
     >
       <Card className="bg-card border border-border">
         <CardHeader>
-          <CardTitle className="dark:text-white">{account ? "Edytuj konto" : "Nowe konto"}</CardTitle>
+          <CardTitle>{account ? "Edytuj konto" : "Nowe konto"}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

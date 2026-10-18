@@ -90,8 +90,8 @@ export function PreviewSideBadge({ direction, t }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-2 py-[3px] text-[10px] font-semibold uppercase tracking-wide",
-        short ? "bg-loss text-white" : "bg-profit text-primary-foreground"
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.08em] before:h-1.5 before:w-1.5 before:rounded-full before:bg-current before:content-['']",
+        short ? "bg-[color:var(--ds-neg-tint)] text-ds-neg" : "bg-[color:var(--ds-pos-tint)] text-ds-pos"
       )}
     >
       {directionLabel(direction, t) || "—"}
@@ -101,13 +101,13 @@ export function PreviewSideBadge({ direction, t }) {
 
 export function PreviewChip({ children, tone = "neutral" }) {
   const tones = {
-    warning: "bg-warning/15 text-warning",
-    profit: "bg-profit/15 text-profit",
-    loss: "bg-loss/15 text-loss",
-    neutral: "bg-muted text-muted-foreground",
+    warning: "bg-[color:var(--ds-warn-tint)] text-ds-warn",
+    profit: "bg-[color:var(--ds-pos-tint)] text-ds-pos",
+    loss: "bg-[color:var(--ds-neg-tint)] text-ds-neg",
+    neutral: "bg-ds-s3 text-ds-text2",
   };
   return (
-    <span className={cn("inline-flex items-center rounded-md px-2 py-[3px] text-[10px] font-medium", tones[tone])}>
+    <span className={cn("inline-flex items-center rounded-full px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.08em]", tones[tone])}>
       {children}
     </span>
   );
@@ -190,7 +190,7 @@ export function StatsFieldsModal({ open, onOpenChange, selected, onSave }) {
           {STATS_FIELDS.map((field) => {
             const checked = draft.includes(field.id);
             return (
-              <label key={field.id} className="flex items-center gap-2.5 text-sm cursor-pointer rounded-md px-1 py-1.5 hover:bg-white/5">
+              <label key={field.id} className="flex items-center gap-2.5 text-sm cursor-pointer rounded-md px-1 py-1.5 hover:bg-muted">
                 <Checkbox
                   checked={checked}
                   onCheckedChange={(value) => {
@@ -231,7 +231,7 @@ export function StatsTab({ trade, visibleIds, onOpenSettings, t, settingsInRow =
         return (
           <div
             key={id}
-            className="flex items-center justify-between gap-3 min-h-[2.35rem] border-b border-white/[0.06] last:border-0"
+            className="flex items-center justify-between gap-3 min-h-[2.35rem] border-b border-border last:border-0"
           >
             <span className="text-[13px] text-muted-foreground">{field.label}</span>
             <div className="flex items-center gap-2 shrink-0">
@@ -250,7 +250,7 @@ export function StatsTab({ trade, visibleIds, onOpenSettings, t, settingsInRow =
                 <button
                   type="button"
                   onClick={onOpenSettings}
-                  className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
                   aria-label="Dostosuj widoczne pola"
                 >
                   <Settings2 className="h-3.5 w-3.5" />
@@ -436,12 +436,12 @@ export function EmotionTab({ trade, emotionDraft, onDraftChange, onSave, saving 
 
 export function NotesTab({ notesDraft, onDraftChange, onSave, saving, compact = false }) {
   return (
-    <div className="space-y-3 h-full flex flex-col min-h-0">
+    <div className="flex flex-col space-y-3">
       <Textarea
         value={notesDraft}
         onChange={(e) => onDraftChange(e.target.value)}
         rows={compact ? 5 : 10}
-        className={cn("flex-1 min-h-0 resize-none", compact ? "min-h-[5rem]" : "min-h-[200px]")}
+        className={cn("w-full resize-y", compact ? "min-h-[5rem]" : "min-h-[200px]")}
       />
       <Button type="button" onClick={onSave} disabled={saving} className="self-start">
         Zapisz notatki
@@ -464,7 +464,7 @@ export function RunningPlTab({ trade }) {
   const last = values[values.length - 1];
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-white/[0.06] bg-black/20 p-4">
+      <div className="rounded-xl border border-border bg-muted p-4">
         <p className="text-[11px] text-muted-foreground mb-2">Running P&L</p>
         <Sparkline values={values} width={640} height={140} fill className="w-full" />
         <p className={cn("mt-3 text-sm font-semibold tabular-nums", toneClass(plTone(last)))}>
@@ -507,17 +507,17 @@ export function emptyEmotionDraft(trade) {
 export function TabStrip({ tabs, value, onChange, variant = "pill" }) {
   if (variant === "line") {
     return (
-      <div className="flex gap-0 overflow-x-auto border-b border-white/[0.08]">
+      <div className="flex gap-4 overflow-x-auto border-b border-ds-line">
         {tabs.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => onChange(item.id)}
             className={cn(
-              "h-9 shrink-0 px-3 text-[12px] font-medium border-b-2 -mb-px transition-colors",
+              "h-10 shrink-0 px-0.5 text-[13px] font-medium border-b-2 -mb-px transition-colors duration-200",
               value === item.id
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
+                ? "border-ds-text text-ds-text"
+                : "border-transparent text-ds-text3 hover:text-ds-text2"
             )}
           >
             {item.label}
@@ -527,7 +527,7 @@ export function TabStrip({ tabs, value, onChange, variant = "pill" }) {
     );
   }
   return (
-    <div className="flex gap-0.5 overflow-x-auto rounded-lg bg-white/[0.04] p-1">
+    <div className="flex gap-0.5 overflow-x-auto rounded-lg bg-muted p-1">
       {tabs.map((item) => (
         <button
           key={item.id}
@@ -536,7 +536,7 @@ export function TabStrip({ tabs, value, onChange, variant = "pill" }) {
           className={cn(
             "h-7 shrink-0 px-2 rounded-md text-[11px] font-medium transition-colors",
             value === item.id
-              ? "bg-primary text-primary-foreground shadow-[0_0_12px_hsl(var(--primary)/0.35)]"
+              ? "bg-background text-foreground"
               : "text-muted-foreground hover:text-foreground"
           )}
         >

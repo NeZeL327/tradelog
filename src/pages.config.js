@@ -56,16 +56,8 @@ const Billing = lazy(() => import('./pages/Billing'));
 const Calendar = lazy(() => import('./pages/Calendar'));
 const CalculatorPopup = lazy(() => import('./pages/CalculatorPopup'));
 const Calculators = lazy(() => import('./pages/Calculators'));
-const Checklist = lazy(() => import('./pages/Checklist'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-const DayPlan = lazy(() => import('./pages/DayPlan'));
-const Goals = lazy(() => import('./pages/Goals'));
 const Journal = lazy(() => import('./pages/Journal'));
-const Missed = lazy(() => import('./pages/Missed'));
-const Notes = lazy(() => import('./pages/Notes'));
-const Planned = lazy(() => import('./pages/Planned'));
-const Raporty = lazy(() => import('./pages/Raporty'));
-const ProcessReview = lazy(() => import('./pages/ProcessReview'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Strategies = lazy(() => import('./pages/Strategies'));
 const StrategyDetails = lazy(() => import('./pages/StrategyDetails'));
@@ -81,16 +73,8 @@ export const PAGES = {
     "Calendar": Calendar,
     "CalculatorPopup": CalculatorPopup,
     "Calculators": Calculators,
-    "Checklist": Checklist,
     "Dashboard": Dashboard,
-    "DayPlan": DayPlan,
-    "Goals": Goals,
     "Journal": Journal,
-    "Planned": Planned,
-    "Missed": Missed,
-    "Notes": Notes,
-    "Raporty": Raporty,
-    "ProcessReview": ProcessReview,
     "Settings": Settings,
     "Strategies": Strategies,
     "StrategyDetails": StrategyDetails,

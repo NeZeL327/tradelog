@@ -474,7 +474,7 @@ export default function Calculators() {
                       <span className="truncate text-sm">{item.name}</span>
                     </button>
                     <button type="button" className="p-1" onClick={() => toggleFavorite(item.id)} aria-label="Ulubione">
-                      <Star className={cn("w-3.5 h-3.5", hub.favorites?.[item.id] ? "fill-amber-400 text-amber-400" : "text-muted-foreground")} />
+                      <Star className={cn("w-3.5 h-3.5", hub.favorites?.[item.id] ? "fill-warning text-warning" : "text-muted-foreground")} />
                     </button>
                     <ItemMenu
                       onEdit={() => { selectId(item.id); setSettingsOpen(true); }}
@@ -661,7 +661,7 @@ export default function Calculators() {
                   </div>
                 </div>
                 <p className="text-center text-3xl font-bold text-primary">{setupScore.gradeLabel}</p>
-                <p className={cn("text-center text-sm font-medium", setupScore.requiredOk ? "text-profit" : "text-amber-400")}>
+                <p className={cn("text-center text-sm font-medium", setupScore.requiredOk ? "text-profit" : "text-warning")}>
                   {setupScore.requiredOk ? "Warunki spełnione" : "Warunki nie spełnione"}
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-xs">

@@ -1,21 +1,70 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from '@/lib/AuthContext';
-import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Calendar as CalendarIcon, Eye } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, startOfWeek, endOfWeek } from "date-fns";
-import { pl, enUS } from "date-fns/locale";
+import { addDays, addMonths, addYears, endOfWeek, startOfMonth, startOfWeek } from "date-fns";
+import { enUS, pl } from "date-fns/locale";
+import { useAuth } from "@/lib/AuthContext";
+import { getStrategies, getTrades, getTradingAccounts } from "@/lib/localStorage";
 import { useLanguage } from "@/components/LanguageProvider";
-import { directionBadgeClass, directionLabel, getTradeRealizedPL, isTradingAccountActive, tradeOutcomeBadgeClass, tradeOutcomeToneClass, tradeStatusBadgeClass, tradeOutcomeDisplay } from "@/lib/utils";
-import TradePreviewPanel from "../components/TradePreviewPanel";
-import { goToTradeDetails } from "@/lib/tradeDetailsNav";
-import { formatTradeDate, formatTradeClock, getDateFormat } from "@/lib/userSettings";
-import QuoteLine from "@/components/QuoteLine";
 import { useUserSettings } from "@/hooks/use-user-settings";
+import { usePnlDisplay } from "@/hooks/use-pnl-display";
+import { getActiveAccountIds, getTradeRealizedPL, isClosedTrade, tradeBelongsToActiveAccount } from "@/lib/utils";
+import { goToTradeDetails } from "@/lib/tradeDetailsNav";
+import { createPageUrl } from "@/utils";
+import TradePreviewPanel from "../components/TradePreviewPanel";
+import {
+  buildDayIndex, buildInsights, buildMonth, buildWeek, buildYear, dateOfKey, dayKeyOf, matchesFilters,
+} from "@/lib/calendarAggregates";
+import { makeValueFormat, useMediaQuery } from "@/components/calendar/calendarUi";
+import CalendarToolbar from "@/components/calendar/CalendarToolbar";
+import CalendarFilters, { EMPTY_FILTERS, buildFilterDefs } from "@/components/calendar/CalendarFilters";
+import { InsightsRow, MonthSummary } from "@/components/calendar/CalendarMonthSummary";
+import CalendarMonthGrid from "@/components/calendar/CalendarMonthGrid";
+import { WeekView, YearHeatmap } from "@/components/calendar/CalendarAltViews";
+import { CalendarAgenda, CalendarEmpty, CalendarSkeleton } from "@/components/calendar/CalendarStates";
+import CalendarDayPanel from "@/components/calendar/CalendarDayPanel";
+
+const isWeekend = (date) => date.getDay() === 0 || date.getDay() === 6;
+
+// Keyboard map for the month grid; returns the next focused date or null for unhandled keys.
+function nextFocusDate(key, date, { shiftKey, hideWeekends }) {
+  const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[key];
+  if (step) {
+    let next = addDays(date, step);
+    while (hideWeekends && isWeekend(next)) next = addDays(next, Math.sign(step));
+    return next;
+  }
+  if (key === "Home") return startOfWeek(date, { weekStartsOn: 1 });
+  if (key === "End") return addDays(endOfWeek(date, { weekStartsOn: 1 }), hideWeekends ? -2 : 0);
+  if (key === "PageUp") return shiftKey ? addYears(date, -1) : addMonths(date, -1);
+  if (key === "PageDown") return shiftKey ? addYears(date, 1) : addMonths(date, 1);
+  return null;
+}
+
+// The roving tab stop must sit on a rendered cell: a hidden weekend falls back to its Friday,
+// a key outside the grid to the first visible day of the month.
+function resolveGridFocus(month, focusKey, hideWeekends) {
+  const visible = month.weeks.flatMap((week) => week.cells).filter((cell) => !(hideWeekends && isWeekend(cell.date)));
+  if (visible.some((cell) => cell.key === focusKey)) return focusKey;
+  const date = dateOfKey(focusKey);
+  if (hideWeekends && isWeekend(date)) {
+    const friday = dayKeyOf(addDays(date, date.getDay() === 6 ? -1 : -2));
+    if (visible.some((cell) => cell.key === friday)) return friday;
+  }
+  return (visible.find((cell) => cell.inMonth) || visible[0]).key;
+}
+
+function useCalendarData(userId) {
+  const trades = useQuery({ queryKey: ["trades", userId], queryFn: () => getTrades(userId), enabled: !!userId });
+  const accounts = useQuery({ queryKey: ["accounts", userId], queryFn: () => getTradingAccounts(userId), enabled: !!userId });
+  const strategies = useQuery({ queryKey: ["strategies", userId], queryFn: () => getStrategies(userId), enabled: !!userId });
+  return {
+    trades: trades.data || [],
+    accounts: accounts.data || [],
+    strategies: strategies.data || [],
+    isLoading: trades.isLoading || accounts.isLoading,
+  };
+}
 
 export default function Calendar() {
   const { t, language } = useLanguage();
@@ -23,70 +72,125 @@ export default function Calendar() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { show_weekends: showWeekends } = useUserSettings();
-  const locale = language === 'pl' ? pl : enUS;
-  const dateFormat = getDateFormat();
-  const fmtDate = (d) => formatTradeDate(d, dateFormat);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(null);
+  const pnl = usePnlDisplay();
+  const plText = language === "pl";
+  const locale = plText ? pl : enUS;
+  const todayKey = dayKeyOf(new Date());
+  const isWide = useMediaQuery("(min-width: 1280px)");
+  const isMobile = useMediaQuery("(max-width: 767px)");
+  const { trades, accounts, strategies, isLoading } = useCalendarData(user?.id);
+
+  const [monthDate, setMonthDate] = useState(() => startOfMonth(new Date()));
+  const [focusKey, setFocusKey] = useState(todayKey);
+  const [selectedKey, setSelectedKey] = useState("");
+  const [slideDir, setSlideDir] = useState("none");
+  const [view, setView] = useState("month");
+  const [unit, setUnit] = useState("pnl");
+  const [density, setDensity] = useState("comfortable");
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [viewingTrade, setViewingTrade] = useState(null);
 
-  const normalizeTradeStatus = (status) => {
-    const normalized = String(status || "").toLowerCase();
-    if (["open", "otwarta", "aktywna"].includes(normalized)) return "open";
-    if (["closed", "wykonana", "zamknięta", "zamknieta", "executed"].includes(normalized)) return "closed";
-    if (["breakeven", "be", "na zero"].includes(normalized)) return "breakeven";
-    if (["planned", "planowana"].includes(normalized)) return "planned";
-    return "default";
+  // Same trade set as Dashboard and Analytics: active accounts, closed/breakeven only.
+  const activeIds = useMemo(() => getActiveAccountIds(accounts), [accounts]);
+  const baseTrades = useMemo(
+    () => trades.filter((trade) => tradeBelongsToActiveAccount(trade, activeIds) && isClosedTrade(trade)),
+    [trades, activeIds],
+  );
+  const strategyOf = useCallback(
+    (trade) => strategies.find((item) => String(item.id) === String(trade?.strategy_id))?.name || String(trade?.setup || "").trim(),
+    [strategies],
+  );
+  const filterDefs = useMemo(
+    () => buildFilterDefs({ trades: baseTrades, accounts, strategyOf, plText, t }),
+    [baseTrades, accounts, strategyOf, plText, t],
+  );
+  const filteredTrades = useMemo(
+    () => baseTrades.filter((trade) => matchesFilters(trade, filters, strategyOf)),
+    [baseTrades, filters, strategyOf],
+  );
+  const dayIndex = useMemo(() => buildDayIndex(filteredTrades), [filteredTrades]);
+  const month = useMemo(() => buildMonth(dayIndex, monthDate), [dayIndex, monthDate]);
+  const insights = useMemo(() => buildInsights(dayIndex, month), [dayIndex, month]);
+  const week = useMemo(() => (view === "week" ? buildWeek(dayIndex, dateOfKey(focusKey)) : null), [view, dayIndex, focusKey]);
+  const year = useMemo(() => (view === "year" ? buildYear(dayIndex, monthDate.getFullYear()) : null), [view, dayIndex, monthDate]);
+  const monthsWithData = useMemo(() => new Set([...dayIndex.keys()].map((key) => key.slice(0, 7))), [dayIndex]);
+  const latestKey = useMemo(() => [...dayIndex.keys()].sort().pop() || "", [dayIndex]);
+
+  // Drop filter values that no longer exist in the data (e.g. an account was deactivated).
+  useEffect(() => {
+    setFilters((prev) => {
+      const next = { ...prev };
+      Object.keys(prev).forEach((id) => {
+        const def = filterDefs.find((item) => item.id === id);
+        if (prev[id] !== "all" && !def?.options.some((option) => option.value === prev[id])) next[id] = "all";
+      });
+      return Object.keys(next).some((id) => next[id] !== prev[id]) ? next : prev;
+    });
+  }, [filterDefs]);
+
+  const hasR = useMemo(() => [...dayIndex.values()].some((bucket) => bucket.rCount > 0), [dayIndex]);
+  const activeUnit = unit === "r" && !hasR ? "pnl" : unit;
+  const fmt = makeValueFormat(pnl, activeUnit);
+  const hideWeekends = showWeekends === false && !month.weekendTrades;
+  const filtered = Object.values(filters).some((value) => value !== "all");
+  const gridFocusKey = resolveGridFocus(month, focusKey, hideWeekends);
+
+  const goToDate = useCallback((date) => {
+    const key = dayKeyOf(date);
+    const nextMonth = startOfMonth(date);
+    setFocusKey(key);
+    setMonthDate((current) => {
+      if (current.getTime() === nextMonth.getTime()) return current;
+      setSlideDir(nextMonth > current ? "next" : "prev");
+      return nextMonth;
+    });
+  }, []);
+
+  const selectDay = useCallback((key) => {
+    goToDate(dateOfKey(key));
+    setSelectedKey(key);
+  }, [goToDate]);
+
+  const shiftPeriod = (delta) => {
+    const base = dateOfKey(focusKey);
+    if (view === "week") return goToDate(addDays(base, delta * 7));
+    if (view === "year") return goToDate(addYears(base, delta));
+    const target = addMonths(monthDate, delta);
+    return goToDate(target.getMonth() === new Date().getMonth() && target.getFullYear() === new Date().getFullYear() ? new Date() : target);
   };
 
-  const isCalendarVisibleTrade = (trade) => {
-    const status = normalizeTradeStatus(trade?.status);
-    return status === "open" || status === "closed" || status === "breakeven";
+  const handleGridKey = (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      selectDay(gridFocusKey);
+      return;
+    }
+    const next = nextFocusDate(event.key, dateOfKey(gridFocusKey), { shiftKey: event.shiftKey, hideWeekends });
+    if (!next) return;
+    event.preventDefault();
+    goToDate(next);
   };
 
-  // Hide trades belonging to inactive or deleted accounts everywhere in the calendar view.
-  const isFromActiveAccount = (trade) => {
-    if (!trade?.account_id) return false;
-    const account = accounts.find((a) => String(a.id) === String(trade.account_id));
-    return isTradingAccountActive(account);
-  };
-
-  const getTradeStatusLabel = (trade) => {
-    const status = normalizeTradeStatus(trade?.status);
-    if (status === "closed") return t('closedStatus') || 'Closed';
-    if (status === "breakeven") return t('breakevenStatus') || 'Breakeven';
-    return t('openStatus') || 'Open';
-  };
-
-  const { data: trades = [] } = useQuery({
-    queryKey: ['trades', user?.id],
-    queryFn: () => getTrades(user?.id),
-    enabled: !!user?.id,
-  });
-
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts', user?.id],
-    queryFn: () => getTradingAccounts(user?.id),
-    enabled: !!user?.id,
-  });
-
-  const { data: strategies = [] } = useQuery({
-    queryKey: ['strategies', user?.id],
-    queryFn: () => getStrategies(user?.id),
-    enabled: !!user?.id,
-  });
+  // Esc closes the inline panel; the drawer and the trade preview handle Esc themselves.
+  useEffect(() => {
+    if (!selectedKey || !isWide || viewingTrade) return undefined;
+    const onKey = (event) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      setSelectedKey("");
+      document.querySelector(`[role="grid"] [data-day="${selectedKey}"]`)?.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedKey, isWide, viewingTrade]);
 
   const handleViewTrade = (trade) => {
     if (!trade) return;
-    const symbolTrades = trades.filter(t => t.symbol === trade.symbol && isCalendarVisibleTrade(t) && isFromActiveAccount(t));
-    const wins = symbolTrades.filter(t => t.outcome === "Win").length;
+    const symbolTrades = baseTrades.filter((item) => item.symbol === trade.symbol);
+    const wins = symbolTrades.filter((item) => item.outcome === "Win").length;
     const total = symbolTrades.length;
-    const totalPLForSymbol = symbolTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
-    const avgPLForSymbol = total ? (totalPLForSymbol / total) : 0;
-
-    const account = accounts.find(a => String(a.id) === String(trade.account_id));
-    const strategy = strategies.find(s => String(s.id) === String(trade.strategy_id));
-
+    const totalPL = symbolTrades.reduce((sum, item) => sum + (getTradeRealizedPL(item) ?? 0), 0);
+    const account = accounts.find((item) => String(item.id) === String(trade.account_id));
+    const strategy = strategies.find((item) => String(item.id) === String(trade.strategy_id));
     setViewingTrade({
       ...trade,
       accountName: account?.name || "",
@@ -95,492 +199,140 @@ export default function Calendar() {
         total,
         wins,
         winRate: total ? ((wins / total) * 100).toFixed(1) : "0.0",
-        totalPL: totalPLForSymbol.toFixed(2),
-        avgPL: avgPLForSymbol.toFixed(2)
-      }
+        totalPL: totalPL.toFixed(2),
+        avgPL: (total ? totalPL / total : 0).toFixed(2),
+      },
     });
   };
 
-  // Get calendar days
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-  const visibleCalendarDays = showWeekends === false
-    ? calendarDays.filter((day) => {
-        const weekday = day.getDay();
-        return weekday !== 0 && weekday !== 6;
-      })
-    : calendarDays;
-
-  // Group trades by date — exclude trades from inactive accounts entirely.
-  const calendarVisibleTrades = trades.filter((t) => isCalendarVisibleTrade(t) && isFromActiveAccount(t));
-
-  const tradesByDate = {};
-  calendarVisibleTrades.forEach(trade => {
-    if (!tradesByDate[trade.date]) {
-      tradesByDate[trade.date] = [];
-    }
-    tradesByDate[trade.date].push(trade);
-  });
-
-  // Get trades for selected date
-  const selectedTrades = selectedDate 
-    ? calendarVisibleTrades.filter(t => isSameDay(new Date(t.date), selectedDate))
-    : [];
-
-  // Calculate stats for a day
-  const getDayStats = (date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    const dayTrades = tradesByDate[dateStr] || [];
-    const wins = dayTrades.filter(t => t.outcome === "Win").length;
-    const losses = dayTrades.filter(t => t.outcome === "Loss").length;
-    const totalPL = dayTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
-    
-    return { trades: dayTrades.length, wins, losses, totalPL };
+  const unitOptions = [
+    { id: "money", label: pnl.currencyLabel, title: plText ? "Wyniki w walucie konta" : "Results in account currency" },
+    { id: "percent", label: "%", title: plText ? "Wyniki jako % salda konta" : "Results as % of account balance" },
+    hasR ? { id: "r", label: "R", title: plText ? "Wyniki w R (tylko w kalendarzu)" : "Results in R (calendar only)" } : null,
+  ].filter(Boolean);
+  const onUnit = (id) => {
+    if (id === "r") return setUnit("r");
+    setUnit("pnl");
+    return pnl.setMode(id);
   };
 
-  const handlePrevMonth = () => setCurrentDate(subMonths(currentDate, 1));
-  const handleNextMonth = () => setCurrentDate(addMonths(currentDate, 1));
-  const handleToday = () => {
-    setCurrentDate(new Date());
-    setSelectedDate(new Date());
+  const panelOpen = Boolean(selectedKey);
+  const panelProps = {
+    dayKey: selectedKey,
+    bucket: dayIndex.get(selectedKey) || null,
+    pnl,
+    fmt,
+    plText,
+    locale,
+    t,
+    accounts,
+    onOpenTrade: handleViewTrade,
+    onClose: () => setSelectedKey(""),
+    onOpenDashboard: () => navigate(`${createPageUrl("Dashboard")}?date=${selectedKey}`),
   };
+  const emptyState = (
+    <CalendarEmpty
+      plText={plText}
+      filtered={filtered}
+      latestKey={latestKey}
+      locale={locale}
+      onJump={() => goToDate(dateOfKey(latestKey))}
+      onClearFilters={() => setFilters(EMPTY_FILTERS)}
+    />
+  );
 
-  const weekDays = (language === 'pl'
-    ? ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd']
-    : [t('monday'), t('tuesday'), t('wednesday'), t('thursday'), t('friday'), t('saturday'), t('sunday')]
-  ).slice(0, showWeekends === false ? 5 : 7);
+  const monthBody = isMobile ? (
+    month.tradingDays ? <CalendarAgenda month={month} fmt={fmt} plText={plText} locale={locale} selectedKey={selectedKey} onSelect={selectDay} /> : emptyState
+  ) : (
+    <CalendarMonthGrid
+      month={month}
+      fmt={fmt}
+      plText={plText}
+      locale={locale}
+      todayKey={todayKey}
+      selectedKey={selectedKey}
+      focusKey={gridFocusKey}
+      onFocusKey={setFocusKey}
+      onSelect={selectDay}
+      onKeyNav={handleGridKey}
+      hideWeekends={hideWeekends}
+      density={density}
+      slideDir={slideDir}
+    />
+  );
 
   return (
-    <div className="w-full min-h-0 space-y-6 dashboard-surface">
-      <div className="max-w-none mx-0 space-y-6">
-        <div className="flex justify-between items-center gap-4">
-          <div>
-            <h1 className="cyber-page-title">{t('tradingCalendar')}</h1>
-            <p className="cyber-page-sub">{t('browseTradesInCalendar')}</p>
-          </div>
-          <QuoteLine className="hidden lg:flex shrink-0" />
-        </div>
+    <div className="w-full min-h-0 space-y-3 dashboard-surface">
+      <CalendarToolbar
+        plText={plText}
+        locale={locale}
+        monthDate={monthDate}
+        monthsWithData={monthsWithData}
+        onShift={shiftPeriod}
+        onToday={() => goToDate(new Date())}
+        onPickMonth={(date) => goToDate(date.getMonth() === new Date().getMonth() && date.getFullYear() === new Date().getFullYear() ? new Date() : date)}
+        view={view}
+        onView={setView}
+        unitValue={activeUnit === "r" ? "r" : pnl.mode}
+        unitOptions={unitOptions}
+        onUnit={onUnit}
+        density={density}
+        onDensity={setDensity}
+        periodLabel={{ month: plText ? "miesiąc" : "month", week: plText ? "tydzień" : "week", year: plText ? "rok" : "year" }[view]}
+      />
+      <CalendarFilters defs={filterDefs} filters={filters} onChange={setFilters} plText={plText} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Calendar */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <Button variant="outline" size="icon" onClick={handlePrevMonth} className="cyber-btn-outline">
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                
-                <div className="text-center">
-                  <h2 className="text-2xl font-bold text-foreground">
-                    {format(currentDate, 'LLLL yyyy', { locale })}
-                  </h2>
-                </div>
-
-                <Button variant="outline" size="icon" onClick={handleNextMonth} className="cyber-btn-outline">
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              <Button onClick={handleToday} variant="outline" className="w-full mt-4 cyber-btn-outline">
-                <CalendarIcon className="w-4 h-4 mr-2" />
-                {t('today')}
-              </Button>
-            </CardHeader>
-
-            <CardContent className="p-0">
-              <div className={`grid gap-2 ${showWeekends === false ? "grid-cols-5" : "grid-cols-7"}`}>
-                {/* Week day headers */}
-                {weekDays.map(day => (
-                  <div key={day} className="calendar-weekday text-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground py-2">
-                    {day}
-                  </div>
-                ))}
-
-                {/* Calendar days */}
-                {visibleCalendarDays.map((day, index) => {
-                  const stats = getDayStats(day);
-                  const isCurrentMonth = isSameMonth(day, currentDate);
-                  const isSelected = selectedDate && isSameDay(day, selectedDate);
-                  const isTodayDay = isToday(day);
-                  const hasTrades = stats.trades > 0;
-
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedDate(day)}
-                      className={`
-                        calendar-day relative p-3 rounded-lg transition-all duration-200 min-h-[80px]
-                        ${!isCurrentMonth ? 'opacity-30 calendar-day-outside' : ''}
-                        ${isSelected ? 'calendar-day-selected' : 'hover:bg-accent/60'}
-                        ${isTodayDay && !isSelected ? 'calendar-day-today' : ''}
-                        ${hasTrades ? 'cursor-pointer' : 'cursor-default'}
-                      `}
-                    >
-                      <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                        {format(day, 'd')}
-                      </div>
-
-                      {hasTrades && (
-                        <div className="mt-1 space-y-1">
-                          <div className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                            {stats.trades} {stats.trades === 1 ? t('transaction') : t('transactions')}
-                          </div>
-                          <div className={`text-xs font-bold ${stats.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
-                            {stats.totalPL >= 0 ? '+' : ''}{stats.totalPL.toFixed(0)}
-                          </div>
-                          <div className="flex gap-1 justify-center">
-                            {stats.wins > 0 && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-profit"></div>
-                            )}
-                            {stats.losses > 0 && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-loss"></div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Selected Day Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="dark:text-white">
-                {selectedDate 
-                  ? format(selectedDate, 'd MMMM yyyy', { locale })
-                  : t('selectDay')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {selectedDate && selectedTrades.length > 0 ? (
-                <div className="space-y-4">
-                  {/* Day Summary */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-muted/40 rounded-md text-center">
-                      <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">{t('trades')}</p>
-                      <p className="text-xl font-bold text-foreground">{selectedTrades.length}</p>
-                    </div>
-                    <div className={`p-3 rounded-lg text-center ${
-                      selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) >= 0 
-                        ? 'bg-profit/10 dark:bg-profit/10' 
-                        : 'bg-loss/10 dark:bg-loss/10'
-                    }`}>
-                      <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">P&L</p>
-                      <p className={`text-xl font-bold ${
-                        selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0) >= 0 
-                          ? 'text-profit dark:text-profit' 
-                          : 'text-loss dark:text-loss'
-                      }`}>
-                        {selectedTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Trade List */}
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                    {selectedTrades.map(trade => {
-                      const account = accounts.find(a => a.id === trade.account_id);
-                      const strategy = strategies.find(s => s.id === trade.strategy_id);
-                      
-                      return (
-                        <div key={trade.id} className="p-4 bg-muted/30 rounded-lg border border-border">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">{trade.symbol}</h3>
-                              <p className="text-xs text-slate-600 dark:text-slate-400">{formatTradeClock(trade, "entry") || trade.open_time || trade.time || '--:--'}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge className={tradeStatusBadgeClass(trade.status)}>
-                                {getTradeStatusLabel(trade)}
-                              </Badge>
-                              <Badge className={directionBadgeClass(trade.direction)}>
-                                {directionLabel(trade.direction, t)}
-                              </Badge>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleViewTrade(trade)}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-
-                          {account && (
-                            <p className="text-xs text-slate-600 dark:text-slate-400 mb-1">
-                              <span className="font-medium">{t('account')}:</span> {account.name}
-                            </p>
-                          )}
-
-                          {strategy && (
-                            <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
-                              <span className="font-medium">{t('strategy')}:</span> {strategy.name}
-                            </p>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-2 mt-3">
-                            <div>
-                              <p className="text-xs text-muted-foreground">{t('entry')}</p>
-                              <p className="font-semibold text-sm dark:text-slate-100">{trade.entry_price}</p>
-                            </div>
-                            {trade.exit_price && (
-                              <div>
-                                <p className="text-xs text-muted-foreground">{t('exit')}</p>
-                                <p className="font-semibold text-sm dark:text-slate-100">{trade.exit_price}</p>
-                              </div>
-                            )}
-                          </div>
-
-                          {(() => {
-                            const pl = getTradeRealizedPL(trade);
-                            if (pl == null) return null;
-                            return (
-                            <div className={`mt-3 p-2 rounded-lg text-center ${tradeOutcomeToneClass(trade.outcome)}`}>
-                              <div className="flex items-center justify-center gap-2">
-                                {trade.outcome === "Win" ? (
-                                  <TrendingUp className="w-4 h-4 text-profit dark:text-profit" />
-                                ) : trade.outcome === "Loss" ? (
-                                  <TrendingDown className="w-4 h-4 text-loss dark:text-loss" />
-                                ) : null}
-                                <span className={`font-bold ${
-                                  trade.outcome === "Win" ? 'text-profit dark:text-profit' : 
-                                  trade.outcome === "Loss" ? 'text-loss dark:text-loss' : 
-                                  'text-amber-600 dark:text-amber-300'
-                                }`}>
-                                  {pl > 0 ? '+' : ''}{pl.toFixed(2)}
-                                </span>
-                              </div>
-                            </div>
-                            );
-                          })()}
-
-                          {trade.notes && (
-                            <p className="text-xs text-slate-600 dark:text-slate-400 mt-3 line-clamp-2">
-                              {trade.notes}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ) : selectedDate ? (
-                <div className="text-center py-12">
-                  <CalendarIcon className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-                  <p className="text-slate-600 dark:text-slate-400">{t('noTradesThisDay')}</p>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <CalendarIcon className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-                  <p className="text-slate-600 dark:text-slate-400">{t('clickDayToSee')}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Month Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="dark:text-white">{t('monthSummary')} - {format(currentDate, 'LLLL yyyy', { locale })}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {(() => {
-                const monthTrades = calendarVisibleTrades.filter(t => {
-                  const tradeDate = new Date(t.date);
-                  return isSameMonth(tradeDate, currentDate);
-                });
-                const wins = monthTrades.filter(t => t.outcome === "Win").length;
-                const losses = monthTrades.filter(t => t.outcome === "Loss").length;
-                const totalPL = monthTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
-                const decided = wins + losses;
-                const winRate = decided > 0 ? ((wins / decided) * 100).toFixed(1) : 0;
-
-                return (
+      {isLoading ? <CalendarSkeleton plText={plText} /> : (
+        <div className={`grid items-start gap-3 ${isWide && panelOpen ? "grid-cols-[minmax(0,1fr)_400px]" : "grid-cols-1"}`}>
+          <div className="min-w-0 space-y-3">
+            {view === "month" ? (
+              <>
+                {month.tradingDays ? (
                   <>
-                    <div className="p-4 bg-muted/40 rounded-md text-center">
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{t('trades')}</p>
-                      <p className="text-3xl font-bold text-slate-900 dark:text-white">{monthTrades.length}</p>
-                    </div>
-                    <div className="p-4 bg-muted/40 rounded-md text-center">
-                      <p className="text-sm text-muted-foreground mb-2">{t('winRate')}</p>
-                      <p className="text-3xl font-bold tabular-nums text-foreground">{winRate}%</p>
-                    </div>
-                    <div className="p-4 bg-muted/40 rounded-md text-center">
-                      <p className="text-sm text-muted-foreground mb-2">{t('wins')}</p>
-                      <p className="text-3xl font-bold tabular-nums text-profit">{wins}</p>
-                    </div>
-                    <div className="p-4 bg-muted/40 rounded-md text-center">
-                      <p className="text-sm text-muted-foreground mb-2">{t('totalPL')}</p>
-                      <p className={`text-3xl font-bold tabular-nums ${totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
-                        {totalPL >= 0 ? '+' : ''}{totalPL.toFixed(2)}
-                      </p>
-                    </div>
+                    <MonthSummary month={month} fmt={fmt} plText={plText} locale={locale} onPickDay={selectDay} stacked={isWide && panelOpen} />
+                    <InsightsRow insights={insights} pnl={pnl} plText={plText} locale={locale} />
                   </>
-                );
-              })()}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Executed Trades List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="dark:text-white">{t('completedTrades')} - {format(currentDate, 'LLLL yyyy', { locale })}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-transparent border-b border-border">
-                  <tr>
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{language === 'pl' ? 'Data' : 'Date'}</th>
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('symbol')}</th>
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('account')}</th>
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('strategy')}</th>
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('direction')}</th>
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('entry')}</th>
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('exit')}</th>
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('profitLoss')}</th>
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('outcome')}</th>
-                    <th className="text-right p-4 text-sm font-semibold text-slate-700 dark:text-slate-300">{t('actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    const isClosedStatus = (status) => [
-                      "Closed",
-                      "closed",
-                      "Breakeven",
-                      "breakeven",
-                      "BE",
-                      "Wykonana",
-                      "Zamknięta",
-                      "Zamknieta",
-                      "Zamknięte",
-                      "Executed"
-                    ].includes(status);
-
-                    const monthExecutedTrades = trades
-                      .filter(t => {
-                        const tradeDate = new Date(t.date);
-                        return isSameMonth(tradeDate, currentDate) && isClosedStatus(t.status) && isFromActiveAccount(t);
-                      })
-                      .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                    return monthExecutedTrades.map((trade) => {
-                      const account = accounts.find(a => a.id === trade.account_id);
-                      const strategy = strategies.find(s => s.id === trade.strategy_id);
-                      
-                      return (
-                        <tr key={trade.id} className="border-b border-border hover:bg-muted/40 transition-colors">
-                          <td className="p-4 text-sm text-slate-900 dark:text-slate-100">
-                            {fmtDate(trade.date)}
-                            {trade.open_time && <div className="text-xs text-muted-foreground">{t('open')}: {formatTradeClock(trade, "entry") || trade.open_time}</div>}
-                            {trade.close_time && <div className="text-xs text-muted-foreground">{t('close')}: {trade.close_time}</div>}
-                          </td>
-                          <td className="p-4">
-                            <div className="font-semibold text-slate-900 dark:text-slate-100">{trade.symbol}</div>
-                            {trade.timeframe && <div className="text-xs text-muted-foreground">{trade.timeframe}</div>}
-                          </td>
-                          <td className="p-4 text-sm text-slate-600 dark:text-slate-400">{account?.name || '-'}</td>
-                          <td className="p-4 text-sm text-slate-600 dark:text-slate-400">{strategy?.name || '-'}</td>
-                          <td className="p-4">
-                            <Badge className={directionBadgeClass(trade.direction)}>
-                              {directionLabel(trade.direction, t)}
-                            </Badge>
-                          </td>
-                          <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.entry_price}</td>
-                          <td className="p-4 text-sm text-slate-900 dark:text-slate-100">{trade.exit_price || '-'}</td>
-                          <td className="p-4">
-                            {(() => {
-                              const pl = getTradeRealizedPL(trade);
-                              if (pl == null) return <span className="text-slate-400">-</span>;
-                              return (
-                              <div className="flex items-center gap-1">
-                                {pl > 0 ? (
-                                  <TrendingUp className="w-4 h-4 text-profit" />
-                                ) : pl < 0 ? (
-                                  <TrendingDown className="w-4 h-4 text-loss" />
-                                ) : null}
-                                <span className={`font-semibold ${
-                                  pl > 0 ? 'text-profit' : 
-                                  pl < 0 ? 'text-loss' : 
-                                  'text-slate-600'
-                                }`}>
-                                  {pl > 0 ? '+' : ''}{pl.toFixed(2)}
-                                </span>
-                              </div>
-                              );
-                            })()}
-                          </td>
-                          <td className="p-4">
-                            {trade.outcome && (
-                              <Badge variant="outline" className={tradeOutcomeBadgeClass(trade.outcome)}>
-                                {tradeOutcomeDisplay(trade.outcome)}
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleViewTrade(trade)}
-                                className="text-muted-foreground hover:text-foreground hover:bg-muted"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    });
-                  })()}
-                </tbody>
-              </table>
-
-              {(() => {
-                const isClosedStatus = (status) => [
-                  "Closed",
-                  "closed",
-                  "Breakeven",
-                  "breakeven",
-                  "BE",
-                  "Wykonana",
-                  "Zamknięta",
-                  "Zamknieta",
-                  "Zamknięte",
-                  "Executed"
-                ].includes(status);
-
-                const monthExecutedTrades = trades.filter(t => {
-                  const tradeDate = new Date(t.date);
-                  return isSameMonth(tradeDate, currentDate) && isClosedStatus(t.status) && isFromActiveAccount(t);
-                });
-                
-                return monthExecutedTrades.length === 0 && (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">{t('noCompletedTrades')}</p>
-                  </div>
-                );
-              })()}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                ) : (!isMobile ? emptyState : null)}
+                {monthBody}
+              </>
+            ) : null}
+            {view === "week" && week ? (
+              <WeekView
+                week={week}
+                fmt={fmt}
+                plText={plText}
+                locale={locale}
+                t={t}
+                todayKey={todayKey}
+                selectedKey={selectedKey}
+                onSelect={selectDay}
+                onOpenTrade={handleViewTrade}
+                hideWeekends={hideWeekends}
+                stacked={isMobile}
+              />
+            ) : null}
+            {view === "year" && year ? (
+              <YearHeatmap
+                year={year}
+                yearNumber={monthDate.getFullYear()}
+                fmt={fmt}
+                plText={plText}
+                locale={locale}
+                todayKey={todayKey}
+                selectedKey={selectedKey}
+                onPick={(key) => { setView("month"); selectDay(key); }}
+              />
+            ) : null}
+          </div>
+          <CalendarDayPanel inline={isWide} open={panelOpen} {...panelProps} />
+        </div>
+      )}
 
       <TradePreviewPanel
         open={viewingTrade !== null}
         trade={viewingTrade}
-        trades={calendarVisibleTrades}
-        strategy={strategies.find((s) => String(s.id) === String(viewingTrade?.strategy_id)) || null}
+        trades={baseTrades}
+        strategy={strategies.find((item) => String(item.id) === String(viewingTrade?.strategy_id)) || null}
         onOpenChange={(next) => {
           if (!next) setViewingTrade(null);
         }}
@@ -588,7 +340,7 @@ export default function Calendar() {
         onEdit={(tradeToEdit) => {
           if (!tradeToEdit?.id) return;
           setViewingTrade(null);
-          goToTradeDetails(navigate, tradeToEdit, calendarVisibleTrades);
+          goToTradeDetails(navigate, tradeToEdit, baseTrades);
         }}
         onPatched={(patch) => {
           setViewingTrade((prev) => (prev ? { ...prev, ...patch } : prev));

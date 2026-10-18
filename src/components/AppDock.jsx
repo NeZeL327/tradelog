@@ -1,70 +1,41 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  AlarmClockOff,
   BarChart3,
   BookOpen,
   Brain,
   Calculator,
   Calendar,
-  CalendarCheck2,
   CandlestickChart,
-  ChevronDown,
-  ChevronUp,
-  ClipboardList,
   CreditCard,
-  FileBarChart,
   FlaskConical,
   LayoutDashboard,
-  ListChecks,
-  ListTodo,
+  Bell,
   LogOut,
-  MoreHorizontal,
-  NotebookPen,
   Plus,
   Settings,
-  Target,
+  Snowflake,
   Wallet,
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 import ThoughtOfDay from "@/components/ThoughtOfDay";
-import {
-  ALL_NAV_ITEMS,
-  DOCK_MAX,
-  loadDockShortcuts,
-  resolveDockItems,
-  saveDockShortcuts,
-} from "@/lib/navDock";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ALL_NAV_ITEMS } from "@/lib/navDock";
 import { cn } from "@/lib/utils";
+import { createPageUrl } from "@/utils";
 
 const ICONS = {
   LayoutDashboard,
   BookOpen,
-  CalendarCheck2,
   Calendar,
-  ListTodo,
-  AlarmClockOff,
   CandlestickChart,
   BarChart3,
   FlaskConical,
   Brain,
-  Target,
   Calculator,
-  NotebookPen,
-  FileBarChart,
-  ClipboardList,
-  ListChecks,
   Wallet,
   CreditCard,
   Settings,
-};
-
-const GROUP_LABELS = {
-  trading: { pl: "Trading", en: "Trading" },
-  analysis: { pl: "Analiza", en: "Analysis" },
-  tools: { pl: "Narzędzia", en: "Tools" },
-  workspace: { pl: "Materiały", en: "Workspace" },
-  account: { pl: "Konto", en: "Account" },
 };
 
 function normalizePath(p) {
@@ -76,256 +47,179 @@ function isActivePath(current, url) {
   const c = normalizePath(current);
   const u = normalizePath(url);
   if (u === "/trade") return c === "/trade" || c.startsWith("/trade/");
+  if (u === "/dashboard" && (c === "/" || c === "/dashboard")) return true;
   return c === u;
 }
 
+function DockTip({ label, children }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="right" sideOffset={10} className="ds-glass-tip">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 export default function AppDock({ user, onLogout }) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const location = useLocation();
-  const [keys, setKeys] = useState(() => loadDockShortcuts(user?.id));
-  const [shortcutOpen, setShortcutOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const navigate = useNavigate();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef(null);
 
-  useEffect(() => {
-    setKeys(loadDockShortcuts(user?.id));
-  }, [user?.id]);
+  const settingsItem = ALL_NAV_ITEMS.find((item) => item.key === "settings");
+  const settingsUrl = settingsItem?.url || "/Settings";
+  const profileUrl = `${settingsUrl}?section=profile`;
 
-  const { primary, more } = useMemo(() => resolveDockItems(t, keys), [t, keys]);
-  const lang = language === "en" ? "en" : "pl";
-
-  const persist = (next) => {
-    const saved = saveDockShortcuts(user?.id, next);
-    setKeys(saved);
-  };
-
-  const addShortcut = (key) => {
-    if (keys.includes(key) || keys.length >= DOCK_MAX) return;
-    persist([...keys, key]);
-  };
-
-  const removeShortcut = (key) => {
-    if (keys.length <= 3) return;
-    persist(keys.filter((k) => k !== key));
-  };
-
-  const moveShortcut = (key, direction) => {
-    const idx = keys.indexOf(key);
-    if (idx < 0) return;
-    const next = [...keys];
-    const swap = idx + direction;
-    if (swap < 0 || swap >= next.length) return;
-    [next[idx], next[swap]] = [next[swap], next[idx]];
-    persist(next);
-  };
-
-  const groupedAll = useMemo(() => {
-    const groups = {};
-    for (const item of ALL_NAV_ITEMS) {
-      if (!groups[item.group]) groups[item.group] = [];
-      groups[item.group].push({
+  const navItems = useMemo(
+    () =>
+      ALL_NAV_ITEMS.filter((item) => item.key !== "settings").map((item) => ({
         ...item,
         title: t(item.titleKey) || item.fallbackTitle,
-      });
-    }
-    return groups;
-  }, [t]);
+      })),
+    [t]
+  );
+
+  const onSettingsPage = isActivePath(location.pathname, settingsUrl);
+  const section = new URLSearchParams(location.search).get("section");
+  const profileActive = onSettingsPage && (!section || section === "profile");
+  const settingsActive = onSettingsPage && !profileActive;
+
+  useEffect(() => {
+    setSettingsOpen(false);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!settingsOpen) return undefined;
+    const onPointer = (event) => {
+      if (!settingsRef.current?.contains(event.target)) setSettingsOpen(false);
+    };
+    document.addEventListener("mousedown", onPointer);
+    return () => document.removeEventListener("mousedown", onPointer);
+  }, [settingsOpen]);
+
+  const addLabel = t("addTrade") || "Dodaj transakcję";
+  const notificationsLabel = t("notifications") || "Powiadomienia";
+  const settingsLabel = t("settings") || "Ustawienia";
+  const profileLabel = t("profile") || "Profil";
 
   return (
+    <TooltipProvider delayDuration={150} skipDelayDuration={100}>
     <nav
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-[var(--app-edge,0.5rem)] pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      className="app-side-nav relative z-40 flex h-full w-[60px] shrink-0 flex-col items-center border-r border-ds-line bg-transparent py-3"
       aria-label={t("mainNav") || "Nawigacja główna"}
     >
-      <div className="app-dock-bar pointer-events-auto relative flex items-center border border-[hsl(var(--window-border)/0.85)] bg-[hsl(var(--app-shell)/0.96)] shadow-xl backdrop-blur-md">
-        <ThoughtOfDay />
-        <span className="app-dock-sep mx-0.5 w-px bg-border/80" aria-hidden />
+      <Link
+        to={createPageUrl("Dashboard")}
+        title="AiKeepTrade"
+        className="dock-logo mb-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-ds-accent transition-[filter] duration-200 hover:brightness-125"
+      >
+        <Snowflake className="h-[22px] w-[22px]" strokeWidth={2} />
+        <span className="sr-only">AiKeepTrade</span>
+      </Link>
 
-        <div className="flex min-w-0 items-center gap-0.5 overflow-x-auto scrollbar-none">
-          {primary.map((item) => {
-            const Icon = ICONS[item.iconName] || LayoutDashboard;
-            const active = isActivePath(location.pathname, item.url);
-            return (
-              <Link
-                key={item.key}
-                to={item.url}
-                title={item.title}
-                className={cn(
-                  "app-dock-link relative flex shrink-0 flex-col items-center justify-center font-semibold transition-colors",
-                  active ? "text-primary" : "text-muted-foreground hover:bg-primary/10 hover:text-foreground"
-                )}
-              >
-                <Icon className="h-5 w-5" strokeWidth={active ? 2.35 : 1.85} />
-                <span className="hidden max-w-[5rem] truncate sm:inline">{item.title}</span>
-                {active && (
-                  <span className="absolute inset-x-3 bottom-0.5 h-0.5 rounded-full bg-primary" aria-hidden />
-                )}
-              </Link>
-            );
-          })}
-        </div>
-
-        <span className="app-dock-sep mx-0.5 w-px bg-border/80" aria-hidden />
-
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => {
-              setShortcutOpen((v) => !v);
-              setMoreOpen(false);
-            }}
-            className="app-dock-link flex flex-row items-center gap-1 font-semibold text-primary hover:bg-primary/10"
-            aria-expanded={shortcutOpen}
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("addShortcut") || "Skrót"}</span>
-          </button>
-          {shortcutOpen && (
-            <div className="absolute bottom-[calc(100%+10px)] right-0 z-[80] max-h-[60vh] w-[min(300px,calc(100vw-1.5rem))] overflow-y-auto rounded-xl border border-border bg-[hsl(var(--window-bg))] p-3 shadow-xl">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-[11px] font-semibold text-foreground">
-                  {t("addShortcutTitle") || "Dodaj skrót do paska"}
-                </p>
-                <span className="text-[10px] text-muted-foreground">{keys.length}/{DOCK_MAX}</span>
-              </div>
-              {keys.length > 0 && (
-                <div className="mb-3 rounded-lg border border-border/70 p-2">
-                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {t("dockOrder") || "Kolejność na pasku"}
-                  </p>
-                  <ul className="space-y-0.5">
-                    {keys.map((key, index) => {
-                      const item = ALL_NAV_ITEMS.find((row) => row.key === key);
-                      if (!item) return null;
-                      const title = t(item.titleKey) || item.fallbackTitle;
-                      return (
-                        <li key={key} className="flex items-center justify-between gap-2 rounded-md px-1 py-1 hover:bg-white/5">
-                          <span className="truncate text-[12px]">{title}</span>
-                          <span className="flex items-center gap-0.5">
-                            <button
-                              type="button"
-                              disabled={index === 0}
-                              onClick={() => moveShortcut(key, -1)}
-                              className="rounded p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                              aria-label={`${t("moveUp") || "W górę"} ${title}`}
-                            >
-                              <ChevronUp className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              disabled={index === keys.length - 1}
-                              onClick={() => moveShortcut(key, 1)}
-                              className="rounded p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                              aria-label={`${t("moveDown") || "W dół"} ${title}`}
-                            >
-                              <ChevronDown className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => removeShortcut(key)}
-                              className="ml-1 text-[10px] text-muted-foreground hover:text-loss"
-                              aria-label={`${t("remove") || "Usuń"} ${title}`}
-                            >
-                              −
-                            </button>
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-              {Object.entries(groupedAll).map(([group, items]) => (
-                <div key={group} className="mb-3 last:mb-0">
-                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    {GROUP_LABELS[group]?.[lang] || group}
-                  </p>
-                  <ul className="space-y-0.5">
-                    {items.map((item) => {
-                      const onDock = keys.includes(item.key);
-                      const Icon = ICONS[item.iconName] || LayoutDashboard;
-                      return (
-                        <li key={item.key} className="flex items-center justify-between gap-2 rounded-md px-1.5 py-1 hover:bg-white/5">
-                          <span className="flex min-w-0 items-center gap-2 text-[12px] text-foreground/90">
-                            <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                            <span className="truncate">{item.title}</span>
-                          </span>
-                          {onDock ? (
-                            <button
-                              type="button"
-                              onClick={() => removeShortcut(item.key)}
-                              className="text-[10px] text-muted-foreground hover:text-loss"
-                              aria-label={`${t("remove") || "Usuń"} ${item.title}`}
-                            >
-                              −
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={keys.length >= DOCK_MAX}
-                              onClick={() => addShortcut(item.key)}
-                              className="flex h-5 w-5 items-center justify-center rounded bg-primary/20 text-primary disabled:opacity-40"
-                              aria-label={`${t("add") || "Dodaj"} ${item.title}`}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </button>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ))}
+      <div className="dock-scroll flex min-h-0 w-full flex-1 flex-col items-center gap-2 overflow-y-auto py-1">
+        {navItems.map((item) => {
+          const Icon = ICONS[item.iconName] || LayoutDashboard;
+          const active = isActivePath(location.pathname, item.url);
+          return (
+            // Full-width row so the active bar can sit flush on the rail's right edge.
+            <div key={item.key} className="dock-item relative flex w-full shrink-0 justify-center" data-active={active ? "true" : "false"}>
+              <DockTip label={item.title}>
+                <Link
+                  to={item.url}
+                  aria-current={active ? "page" : undefined}
+                  data-active={active ? "true" : "false"}
+                  className={cn(
+                    "app-dock-link relative flex shrink-0 items-center justify-center transition-colors duration-200",
+                    active
+                      ? "bg-ds-s3 text-ds-text"
+                      : "text-ds-text3 hover:bg-ds-s2 hover:text-ds-text"
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                  <span className="sr-only">{item.title}</span>
+                </Link>
+              </DockTip>
             </div>
-          )}
-        </div>
-
-        <div className="relative">
+          );
+        })}
+        <span className="my-2 h-px w-6 shrink-0 bg-ds-line" aria-hidden="true" />
+        <DockTip label={addLabel}>
           <button
             type="button"
-            onClick={() => {
-              setMoreOpen((v) => !v);
-              setShortcutOpen(false);
-            }}
-            className="app-dock-link flex flex-row items-center gap-1 font-semibold text-muted-foreground hover:bg-primary/10 hover:text-foreground"
-            aria-expanded={moreOpen}
+            onClick={() => navigate(`${createPageUrl("Journal")}?add=1`)}
+            className="dock-plus ds-press flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ds-accent text-white transition-[filter] duration-200 hover:brightness-110"
           >
-            <MoreHorizontal className="h-5 w-5" />
-            <span className="hidden sm:inline">{t("navMore") || "Więcej"}</span>
+            <Plus className="h-4 w-4 shrink-0" strokeWidth={2} />
+            <span className="sr-only">{addLabel}</span>
           </button>
-          {moreOpen && (
-            <div className="absolute bottom-[calc(100%+10px)] right-0 z-[80] max-h-[60vh] w-[min(260px,calc(100vw-1.5rem))] overflow-y-auto rounded-xl border border-border bg-[hsl(var(--window-bg))] p-2 shadow-xl">
-              {more.map((item) => {
-                const Icon = ICONS[item.iconName] || LayoutDashboard;
-                const active = isActivePath(location.pathname, item.url);
-                return (
-                  <Link
-                    key={item.key}
-                    to={item.url}
-                    onClick={() => setMoreOpen(false)}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md px-2 py-1.5 text-[12px]",
-                      active ? "bg-primary/10 text-primary" : "text-foreground/90 hover:bg-primary/5"
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {item.title}
-                  </Link>
-                );
-              })}
+        </DockTip>
+      </div>
+
+      <div className="mt-auto flex w-full flex-col items-center gap-2 px-1.5 pt-3">
+        <ThoughtOfDay drop="up" compact />
+        <DockTip label={notificationsLabel}>
+          <Link
+            to={`${settingsUrl}?section=notifications`}
+            className="app-dock-link flex shrink-0 items-center justify-center text-ds-text3 transition-colors duration-200 hover:bg-ds-s2 hover:text-ds-text"
+          >
+            <Bell className="h-4 w-4" strokeWidth={1.5} />
+            <span className="sr-only">{notificationsLabel}</span>
+          </Link>
+        </DockTip>
+        <div className="relative" ref={settingsRef}>
+          <DockTip label={settingsLabel}>
+            <button
+              type="button"
+              aria-expanded={settingsOpen}
+              data-active={settingsActive ? "true" : "false"}
+              onClick={() => setSettingsOpen((open) => !open)}
+              className={cn(
+                "app-dock-link flex items-center justify-center text-ds-text3 transition-colors duration-200 hover:bg-ds-s2 hover:text-ds-text",
+                settingsActive && "bg-ds-s3 text-ds-text"
+              )}
+            >
+              <Settings className="h-4 w-4" strokeWidth={1.5} />
+              <span className="sr-only">{settingsLabel}</span>
+            </button>
+          </DockTip>
+          {settingsOpen ? (
+            <div className="absolute bottom-0 left-[calc(100%+8px)] z-[80] w-44 rounded-xl border border-ds-frame bg-ds-s1 p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-md">
+              <Link
+                to={settingsUrl}
+                onClick={() => setSettingsOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] text-ds-text hover:bg-ds-s3"
+              >
+                <Settings className="h-3.5 w-3.5 text-ds-text2" />
+                {t("settings") || "Ustawienia"}
+              </Link>
               <button
                 type="button"
                 onClick={() => {
-                  setMoreOpen(false);
+                  setSettingsOpen(false);
                   onLogout?.();
                 }}
-                className="mt-1 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] text-loss hover:bg-white/5"
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] text-ds-neg hover:bg-ds-s3"
               >
                 <LogOut className="h-3.5 w-3.5" />
-                {t("logout") || "Wyloguj"}
+                {t("logout") || "Wyloguj się"}
               </button>
             </div>
-          )}
+          ) : null}
         </div>
+        <DockTip label={profileLabel}>
+          <Link
+            to={profileUrl}
+            data-active={profileActive ? "true" : "false"}
+            className="dock-avatar mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-ds-frame bg-ds-s3 text-[12px] font-semibold text-ds-text transition-[border-color,box-shadow] duration-200"
+          >
+            <span className="sr-only">{profileLabel}</span>
+            {(user?.email || "A").slice(0, 1).toUpperCase()}
+          </Link>
+        </DockTip>
       </div>
     </nav>
+    </TooltipProvider>
   );
 }

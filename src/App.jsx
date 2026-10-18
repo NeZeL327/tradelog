@@ -5,10 +5,12 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import Login from './pages/Login';
+import { Skeleton } from '@/components/ui/skeleton';
+import { SkeletonKpiRow, SkeletonRows } from '@/components/ui/skeleton-block';
 
 const VisualEditAgent = import.meta.env.DEV
   ? lazy(() => import('@/lib/VisualEditAgent'))
@@ -27,12 +29,19 @@ const Contact = lazy(() => import('./pages/Contact'));
 const Features = lazy(() => import('./pages/Features'));
 
 const { Pages, Layout, mainPage } = pagesConfig;
+// Retired pages: old bookmarks land on the Dashboard instead of a 404.
+const REMOVED_PAGE_PATHS = ["/planned", "/Planned", "/missed", "/Missed"];
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 
 const PageFallback = () => (
-  <div className="flex items-center justify-center min-h-[40vh]">
-    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+  <div role="status" aria-label="Loading" className="space-y-4 py-2">
+    <div className="space-y-2">
+      <Skeleton className="h-5 w-48" />
+      <Skeleton className="h-3 w-72 max-w-full" />
+    </div>
+    <SkeletonKpiRow count={5} />
+    <SkeletonRows rows={6} className="rounded-ds-lg border border-ds-line p-3" />
   </div>
 );
 
@@ -55,8 +64,23 @@ const PageShell = ({ children }) => (
 );
 
 const RouteFallback = () => (
-  <div className="fixed inset-0 flex items-center justify-center bg-[hsl(var(--app-shell))]">
-    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+  <div role="status" aria-label="Loading" className="fixed inset-0 flex bg-ds-bg p-0 sm:p-6">
+    <div className="flex flex-1 overflow-hidden rounded-none border border-ds-frame bg-ds-s1 sm:rounded-ds-xl">
+      <div className="hidden w-[72px] flex-col items-center gap-4 border-r border-ds-line py-4 sm:flex">
+        {Array.from({ length: 8 }).map((_, idx) => <Skeleton key={idx} className="h-8 w-8 rounded-ds-sm" />)}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex h-12 items-center justify-between border-b border-ds-line px-4">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-7 w-56 max-w-[50%]" />
+        </div>
+        <div className="space-y-4 p-4 sm:p-6">
+          <Skeleton className="h-5 w-48" />
+          <SkeletonKpiRow count={5} />
+          <SkeletonRows rows={5} className="p-0" />
+        </div>
+      </div>
+    </div>
   </div>
 );
 
@@ -169,6 +193,9 @@ const AuthenticatedApp = () => {
             />
           );
         })}
+        {REMOVED_PAGE_PATHS.map((path) => (
+          <Route key={`removed-${path}`} path={path} element={<Navigate to="/dashboard" replace />} />
+        ))}
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </Suspense>
@@ -192,7 +219,7 @@ function App() {
           </Router>
         </LanguageProvider>
         <Toaster />
-        <SonnerToaster richColors position="top-right" closeButton />
+        <SonnerToaster className="ds-toaster" position="top-right" closeButton />
         {import.meta.env.DEV && (
           <Suspense fallback={null}>
             <VisualEditAgent />

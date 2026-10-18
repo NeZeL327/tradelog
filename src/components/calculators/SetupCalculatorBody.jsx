@@ -289,7 +289,7 @@ export default function SetupCalculatorBody({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">
                     {cond.name}
-                    {cond.required ? <span className="ml-1 text-[10px] text-amber-400">REQ</span> : null}
+                    {cond.required ? <span className="ml-1 text-[10px] text-warning">REQ</span> : null}
                   </p>
                   {cond.type !== "boolean" && (
                     <div className="mt-1">{valueInput(cond, actual, (v) => onExtraValues({ ...extraValues, [cond.id]: v }))}</div>

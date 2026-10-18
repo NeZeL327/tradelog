@@ -162,9 +162,9 @@ function IntensityLegend({ value = 0, variant = "full" }) {
   }
 
   return (
-    <div className="rounded-xl border border-amber-500/25 bg-gradient-to-b from-amber-500/[0.08] to-transparent p-1.5 space-y-1">
+    <div className="rounded-xl border border-ds-line bg-ds-warn-tint p-1.5 space-y-1">
       <div className="flex items-center justify-between gap-2 px-1">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-800/90 dark:text-amber-200/90">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-ds-warn">
           Skala intensywności
         </p>
         <p className="text-[9px] text-muted-foreground">1 = mało · 5 = dużo</p>
@@ -178,7 +178,7 @@ function IntensityLegend({ value = 0, variant = "full" }) {
               className={cn(
                 "flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition-colors",
                 active
-                  ? "bg-amber-400/20 ring-1 ring-amber-400/40"
+                  ? "bg-ds-warn-tint ring-1 ring-ds-warn"
                   : "hover:bg-muted/40"
               )}
             >
@@ -260,7 +260,7 @@ function AutoGrowTextarea({
     if (!String(value || "").trim()) return null;
     return (
       <p className={cn(
-        "text-slate-600 dark:text-slate-300 whitespace-pre-wrap break-words",
+        "text-ds-text2 whitespace-pre-wrap break-words",
         className
       )}>
         {value}
@@ -300,17 +300,17 @@ function SetupConfidenceBlock({
 
   return (
     <div className={cn(
-      "rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30",
+      "rounded-lg border border-ds-line bg-ds-warn-tint",
       compact ? "space-y-1.5 p-2" : "space-y-2 p-4"
     )}>
       <Label className={cn(
-        "block font-semibold text-slate-900 dark:text-slate-100 shrink-0",
+        "block font-semibold text-ds-text shrink-0",
         compact ? "text-[11px]" : "text-sm"
       )}>
         {t("setupConfidence")}
       </Label>
       {!compact && (
-        <p className="text-xs text-slate-500 dark:text-slate-400 shrink-0">
+        <p className="text-xs text-ds-text3 shrink-0">
           {t("setupConfidenceHint")}
         </p>
       )}
@@ -327,7 +327,7 @@ function SetupConfidenceBlock({
       {!readOnly && (
         <div>
           <p className={cn(
-            "font-medium text-slate-500 dark:text-slate-400",
+            "font-medium text-ds-text3",
             compact ? "text-[10px] mb-0.5" : "text-xs mb-1"
           )}>
             {t("setupConfidenceCommentLabel")}
@@ -344,7 +344,7 @@ function SetupConfidenceBlock({
       {readOnly && hasComment && (
         <div>
           <p className={cn(
-            "font-medium text-slate-500 dark:text-slate-400",
+            "font-medium text-ds-text3",
             compact ? "text-[10px] mb-0.5" : "text-xs mb-1"
           )}>
             {t("setupConfidenceCommentLabel")}

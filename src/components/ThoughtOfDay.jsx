@@ -18,7 +18,7 @@ function savedStorageKey() {
   return `aikeep_quote_saved_${todayKey()}`;
 }
 
-export default function ThoughtOfDay() {
+export default function ThoughtOfDay({ drop = "up", compact = false }) {
   const { t, language } = useLanguage();
   const rootRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -103,23 +103,28 @@ export default function ThoughtOfDay() {
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex h-9 items-center justify-center gap-1.5 rounded-lg px-2 transition-colors",
-          open ? "bg-sky-500/15 text-sky-300" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+          "flex h-8 w-8 items-center justify-center rounded-[10px] transition-colors",
+          open ? "bg-ds-s3 text-ds-text" : "text-ds-text2 hover:bg-ds-s3 hover:text-ds-text"
         )}
       >
-        <Lightbulb className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-        <span className="hidden max-w-[4.5rem] truncate text-[10px] font-medium lg:inline">
-          {t("thoughtOfDay") || "Myśl dnia"}
-        </span>
+        <Lightbulb className="h-[15px] w-[15px] shrink-0" strokeWidth={1.5} />
+        {compact ? null : (
+          <span className="hidden max-w-[4.5rem] truncate text-[10px] font-medium lg:inline">
+            {t("thoughtOfDay") || "Myśl dnia"}
+          </span>
+        )}
       </button>
 
       {open ? (
         <div
           role="dialog"
           aria-label={t("thoughtOfDay") || "Myśl dnia"}
-          className="absolute bottom-[calc(100%+10px)] left-0 z-[80] w-[min(280px,calc(100vw-2rem))] rounded-xl border border-border/60 bg-[hsl(222_28%_9%)] p-3 shadow-xl"
+          className={cn(
+            "absolute z-[80] w-[min(280px,calc(100vw-2rem))] rounded-xl border border-border bg-popover p-3",
+            drop === "down" ? "left-0 top-[calc(100%+8px)]" : "bottom-[calc(100%+10px)] left-0"
+          )}
         >
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-300/90">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-ds-text2">
             {t("thoughtOfDay") || "Myśl dnia"}
           </p>
           {hidden ? (
@@ -130,7 +135,7 @@ export default function ThoughtOfDay() {
               <button
                 type="button"
                 onClick={showAgain}
-                className="text-[12px] font-medium text-sky-300 hover:underline"
+                className="text-[12px] font-medium text-ds-text hover:underline"
               >
                 {t("quoteShowAgain") || "Pokaż ponownie"}
               </button>
@@ -139,20 +144,20 @@ export default function ThoughtOfDay() {
             <>
               <p className="text-[13px] leading-snug text-foreground/90">“{quote}”</p>
               {saved ? (
-                <p className="mt-2 text-[11px] text-sky-300/90">{t("quoteSaved") || "Zapisano"}</p>
+                <p className="mt-2 text-[11px] text-ds-text2">{t("quoteSaved") || "Zapisano"}</p>
               ) : null}
               <div className="mt-3 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={saveQuote}
-                  className="rounded-md bg-sky-500 px-2.5 py-1 text-[11px] font-semibold text-slate-950 hover:bg-sky-400"
+                  className="rounded-md border border-border bg-ds-s3 px-2.5 py-1 text-[11px] font-semibold text-ds-accent"
                 >
                   {t("quoteSave") || "Zapisz"}
                 </button>
                 <button
                   type="button"
                   onClick={hideToday}
-                  className="rounded-md px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                  className="rounded-md px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-ds-s3 hover:text-foreground"
                 >
                   {t("quoteHideToday") || "Ukryj na dziś"}
                 </button>
