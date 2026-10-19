@@ -16,6 +16,7 @@ import { dateOfKey, winRate } from "@/lib/calendarAggregates";
 import { directionLabel, getTradeMoneyRisk, getTradeRealizedPL, tradeRealizedR } from "@/lib/utils";
 import { formatTradeClock } from "@/lib/userSettings";
 import { MICRO, capFirst, formatR, glowOf, percent, toneOf } from "@/components/calendar/calendarUi";
+import NoteMarkdownView from "@/components/NoteMarkdownView";
 
 const byClock = (a, b) => String(formatTradeClock(a, "entry") || a.open_time || "").localeCompare(String(formatTradeClock(b, "entry") || b.open_time || ""));
 
@@ -99,7 +100,7 @@ function DayPanelBody({ dayKey, bucket, pnl, fmt, plText, locale, t, accounts, o
       {notes.map((row) => (
         <div key={row.id}>
           <AsideHeading>{row.symbol || "—"}</AsideHeading>
-          <p className="mt-1.5 whitespace-pre-line text-[12px] leading-[18px] text-ds-text2">{row.notes}</p>
+          <NoteMarkdownView className="mt-1.5 text-[12px] leading-[18px]" value={row.notes} />
         </div>
       ))}
     </div>

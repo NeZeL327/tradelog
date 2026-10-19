@@ -3,7 +3,6 @@ import { Info, Settings2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmotionsPanelContent, normalizeEmotions } from "@/components/EmotionsPanel";
+import NoteMarkdownEditor from "@/components/NoteMarkdownEditor";
 import EditableTagChips from "@/components/EditableTagChips";
 import Sparkline from "@/components/Sparkline";
 import {
@@ -437,11 +437,10 @@ export function EmotionTab({ trade, emotionDraft, onDraftChange, onSave, saving 
 export function NotesTab({ notesDraft, onDraftChange, onSave, saving, compact = false }) {
   return (
     <div className="flex flex-col space-y-3">
-      <Textarea
+      <NoteMarkdownEditor
         value={notesDraft}
-        onChange={(e) => onDraftChange(e.target.value)}
-        rows={compact ? 5 : 10}
-        className={cn("w-full resize-y", compact ? "min-h-[5rem]" : "min-h-[200px]")}
+        onChange={onDraftChange}
+        compact={compact}
       />
       <Button type="button" onClick={onSave} disabled={saving} className="self-start">
         Zapisz notatki

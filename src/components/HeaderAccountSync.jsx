@@ -7,6 +7,7 @@ import { getTrades, getTradingAccounts } from "@/lib/localStorage";
 import { isTradingAccountActive } from "@/lib/utils";
 import { importMtHistoryFile } from "@/lib/mtHistorySync";
 import { Button } from "@/components/ui/button";
+import ImportResultDialog from "@/components/ImportResultDialog";
 import {
   Select,
   SelectContent,
@@ -14,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { createPageUrl } from "@/utils";
 
 const HISTORY_ACCEPT =
   ".csv,.xml,.xlsx,.xlsm,text/csv,text/xml,application/xml,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -64,6 +66,7 @@ export default function HeaderAccountSync() {
   const [importing, setImporting] = useState(false);
   const [menuOffset, setMenuOffset] = useState(8);
   const [selectWidth, setSelectWidth] = useState(SELECT_MIN_PX);
+  const [result, setResult] = useState(null);
 
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts", user?.id],
@@ -130,21 +133,41 @@ export default function HeaderAccountSync() {
         existingTrades: existing,
       });
       if (result.empty) {
-        toast.error("W pliku nie ma pozycji buy/sell.", { id: loading });
+        setResult({
+          imported: 0,
+          skipped: result.skipped,
+          empty: true,
+          fileName: file.name,
+          accountName: selected.name,
+        });
         return;
       }
       if (!result.imported) {
-        toast.info("Wszystkie transakcje z tego raportu są już na koncie.", { id: loading });
+        setResult({
+          imported: 0,
+          skipped: result.skipped,
+          empty: false,
+          fileName: file.name,
+          accountName: selected.name,
+        });
         return;
       }
-      const skippedMsg = result.skipped > 0 ? `, pominięto ${result.skipped} duplikatów` : "";
-      toast.success(`Dodano ${result.imported} transakcji do ${selected.name}${skippedMsg}`, {
-        id: loading,
+      setResult({
+        imported: result.imported,
+        skipped: result.skipped,
+        empty: false,
+        fileName: file.name,
+        accountName: selected.name,
       });
       refreshTrades();
     } catch (err) {
-      toast.error(err?.message || "Import nie powiódł się.", { id: loading });
+      setResult({
+        fileName: file.name,
+        accountName: selected.name,
+        errorMessage: err?.message || "Import nie powiódł się.",
+      });
     } finally {
+      toast.dismiss(loading);
       importLock.current = false;
       setImporting(false);
     }
@@ -170,6 +193,18 @@ export default function HeaderAccountSync() {
   const menuWidthStyle = { width: menuWidth, minWidth: menuWidth, maxWidth: menuWidth };
 
   return (
+    <>
+      <ImportResultDialog
+        open={Boolean(result)}
+        onOpenChange={(next) => { if (!next) setResult(null); }}
+        imported={result?.imported}
+        skipped={result?.skipped}
+        empty={Boolean(result?.empty)}
+        fileName={result?.fileName}
+        accountName={result?.accountName}
+        errorMessage={result?.errorMessage}
+        journalHref={createPageUrl("Journal")}
+      />
     <div className="flex h-8 items-center rounded-lg border border-border bg-muted">
       <Select
         value={accountId || undefined}
@@ -228,5 +263,6 @@ export default function HeaderAccountSync() {
         {importing ? "Importowanie..." : "Import"}
       </Button>
     </div>
+    </>
   );
 }

@@ -20,12 +20,15 @@ import { Download, Upload, FileSpreadsheet } from "lucide-react";
 import { createTradesBatch, getTrades } from "@/lib/localStorage";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
+import ImportResultDialog from "@/components/ImportResultDialog";
 import {
   BROKER_LABELS,
   IMPORT_BROKERS,
   filterNewTrades,
   parseTradesFromUpload,
 } from "@/lib/csv-trade-import";
+import { summarizeImportedTrades } from "@/lib/importResultView";
+import { createPageUrl } from "@/utils";
 
 export function AccountExportButton({ account, trades }) {
   const exportToCSV = () => {
@@ -94,6 +97,7 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
   const [parsing, setParsing] = useState(false);
   const [preview, setPreview] = useState(null);
   const [parseError, setParseError] = useState("");
+  const [result, setResult] = useState(null);
 
   const resetDialog = () => {
     setSelectedFile(null);
@@ -215,9 +219,20 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
 
     if (!preview?.newCount) {
       if (preview?.total > 0) {
-        toast.info("Wszystkie transakcje z tego pliku są już w dzienniku.");
+        setResult({
+          imported: 0,
+          skipped: preview.skipped,
+          fileName: selectedFile.name,
+          accountName: account.name,
+        });
       } else {
-        toast.error(parseError || "Brak transakcji do importu — wybierz inny plik.");
+        setResult({
+          imported: 0,
+          empty: true,
+          fileName: selectedFile.name,
+          accountName: account.name,
+          errorMessage: parseError || undefined,
+        });
       }
       return;
     }
@@ -228,12 +243,18 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
     let successCount = 0;
     let errorCount = 0;
     let skipped = preview.skipped || 0;
-    let format = preview.format || broker;
+    let writeError = "";
 
     try {
       const toImport = preview.newTrades || [];
       if (!toImport.length) {
-        toast.info("Brak nowych transakcji do importu.", { id: loadingToast, duration: 5000 });
+        toast.dismiss(loadingToast);
+        setResult({
+          imported: 0,
+          skipped,
+          fileName: selectedFile.name,
+          accountName: account.name,
+        });
         return;
       }
 
@@ -247,36 +268,32 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
       } catch (err) {
         console.error("Batch import error:", err);
         errorCount = toImport.length;
-        toast.error(`Błąd zapisu: ${err.message || "Firestore"}`);
+        writeError = err.message || "";
       }
 
-      const brokerLabel = BROKER_LABELS[format] || BROKER_LABELS[broker] || broker;
-      const skippedMsg = skipped > 0 ? `, pominięto ${skipped} duplikatów` : "";
+      const summary = summarizeImportedTrades(successCount > 0 ? toImport : []);
+      toast.dismiss(loadingToast);
+      setResult({
+        imported: successCount,
+        skipped,
+        errors: errorCount > 0 ? errorCount : undefined,
+        fileName: selectedFile.name,
+        accountName: account.name,
+        errorMessage: writeError || undefined,
+        ...summary,
+      });
 
-      if (successCount === 0 && errorCount > 0) {
-        toast.error(`❌ Nie udało się zapisać transakcji (${errorCount} błędów)`, {
-          id: loadingToast,
-          duration: 8000,
-        });
-        return;
+      if (successCount > 0) {
+        onImportSuccess?.({ imported: successCount, skipped, errors: errorCount });
       }
-
-      if (errorCount === 0) {
-        toast.success(
-          `✅ Dodano ${successCount} ${successCount === 1 ? "nową transakcję" : "nowych transakcji"} (${brokerLabel})${skippedMsg}`,
-          { id: loadingToast, duration: 6000 }
-        );
-      } else {
-        toast.warning(`⚠️ Dodano ${successCount}, błędów: ${errorCount}${skippedMsg}`, {
-          id: loadingToast,
-          duration: 6000,
-        });
-      }
-
-      onImportSuccess?.({ imported: successCount, skipped, errors: errorCount });
       handleOpenChange(false);
     } catch (err) {
-      toast.error(`❌ Błąd importu: ${err.message || "Nieznany błąd"}`, { id: loadingToast });
+      toast.dismiss(loadingToast);
+      setResult({
+        fileName: selectedFile.name,
+        accountName: account.name,
+        errorMessage: err.message || "Nieznany błąd",
+      });
     } finally {
       setImporting(false);
     }
@@ -284,6 +301,21 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
 
   return (
     <>
+      <ImportResultDialog
+        open={Boolean(result)}
+        onOpenChange={(next) => { if (!next) setResult(null); }}
+        imported={result?.imported}
+        skipped={result?.skipped}
+        errors={result?.errors}
+        empty={Boolean(result?.empty)}
+        fileName={result?.fileName}
+        accountName={result?.accountName}
+        dateFrom={result?.dateFrom}
+        dateTo={result?.dateTo}
+        symbols={result?.symbols}
+        errorMessage={result?.errorMessage}
+        journalHref={createPageUrl("Journal")}
+      />
       <input
         ref={fileInputRef}
         type="file"

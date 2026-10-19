@@ -14,7 +14,6 @@ import {
   LogOut,
   Plus,
   Settings,
-  Snowflake,
   Wallet,
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -112,10 +111,16 @@ export default function AppDock({ user, onLogout }) {
       <Link
         to={createPageUrl("Dashboard")}
         title="AiKeepTrade"
-        className="dock-logo mb-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-ds-accent transition-[filter] duration-200 hover:brightness-125"
+        aria-label="AiKeepTrade"
+        className="dock-logo mb-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-ds-accent transition-[filter] duration-200 hover:brightness-125"
       >
-        <Snowflake className="h-[22px] w-[22px]" strokeWidth={2} />
-        <span className="sr-only">AiKeepTrade</span>
+        <img
+          src="/aikeeptrade-icon-192.png"
+          alt="AiKeepTrade"
+          width="32"
+          height="32"
+          className="h-8 w-8 rounded-md object-contain"
+        />
       </Link>
 
       <div className="dock-scroll flex min-h-0 w-full flex-1 flex-col items-center gap-2 overflow-y-auto py-1">

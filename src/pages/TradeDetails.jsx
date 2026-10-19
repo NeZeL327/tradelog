@@ -4,6 +4,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, BarChart3, CalendarDays, ChevronLeft, ChevronRight, Info, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import ImageViewer from "@/components/common/ImageViewer";
 import TradePreviewChart from "@/components/TradePreviewChart";
 import TradePreviewPhotos from "@/components/TradePreviewPhotos";
@@ -185,47 +192,45 @@ function NotesDock({
         <p className="text-[13px] font-semibold">Notes</p>
         <Info className="h-3.5 w-3.5 text-muted-foreground" />
       </div>
-      <div className="px-4 pb-2 flex flex-wrap items-center gap-1.5 shrink-0">
-        <button
-          type="button"
-          onClick={() => onNotesViewChange("trade")}
-          className={cn(
-            "h-8 px-2.5 rounded-lg text-[12px] font-medium inline-flex items-center gap-1.5 border",
-            notesView === "trade"
-              ? "bg-muted text-foreground border-border"
-              : "bg-transparent text-muted-foreground border-border hover:text-foreground"
-          )}
-        >
-          <BarChart3 className="h-3.5 w-3.5" />
-          Trade note
-        </button>
-        <button
-          type="button"
-          onClick={() => onNotesViewChange("journal")}
-          className={cn(
-            "h-8 px-2.5 rounded-lg text-[12px] font-medium inline-flex items-center gap-1.5 border",
-            notesView === "journal"
-              ? "bg-muted text-foreground border-border"
-              : "bg-transparent text-muted-foreground border-border hover:text-foreground"
-          )}
-        >
-          <CalendarDays className="h-3.5 w-3.5" />
-          Journal
-        </button>
-        <select
+      <div className="flex flex-wrap items-center gap-2 px-4 pb-2 shrink-0">
+        <div className="ds-pill-group" role="group" aria-label="Widok notatek">
+          <button
+            type="button"
+            onClick={() => onNotesViewChange("trade")}
+            aria-pressed={notesView === "trade"}
+          >
+            <BarChart3 className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+            Trade note
+          </button>
+          <button
+            type="button"
+            onClick={() => onNotesViewChange("journal")}
+            aria-pressed={notesView === "journal"}
+          >
+            <CalendarDays className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+            Journal
+          </button>
+        </div>
+        <Select
           value={journalRange}
-          onChange={(e) => {
+          onValueChange={(value) => {
             onNotesViewChange("journal");
-            onJournalRangeChange(e.target.value);
+            onJournalRangeChange(value);
           }}
-          className="h-8 rounded-lg border border-border bg-muted px-2 text-[12px] text-foreground"
-          aria-label="Zakres Journal"
         >
-          <option value="day">Dzień</option>
-          <option value="week">Tydzień</option>
-          <option value="month">Miesiąc</option>
-          <option value="all">Wszystkie</option>
-        </select>
+          <SelectTrigger
+            aria-label="Zakres Journal"
+            className="ds-pill-select w-auto min-w-[7.5rem] justify-between px-3 text-left [&>span]:pr-5 [&>span]:text-left"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="border-ds-frame bg-ds-glass">
+            <SelectItem value="day">Dzień</SelectItem>
+            <SelectItem value="week">Tydzień</SelectItem>
+            <SelectItem value="month">Miesiąc</SelectItem>
+            <SelectItem value="all">Wszystkie</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="px-4 pb-4">
         {notesView === "journal" ? (

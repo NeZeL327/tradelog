@@ -93,19 +93,6 @@ export function getScaleOutPnl(trade, scaleOut) {
   return (price - entry) * size * sign;
 }
 
-export function getTradeScreenshots(trade) {
-  const slots = [trade?.screenshot_1, trade?.screenshot_2, trade?.screenshot_3].filter(Boolean);
-  const legacy = Array.isArray(trade?.chart_screenshots)
-    ? trade.chart_screenshots.map((item) => (typeof item === "string" ? item : item?.url)).filter(Boolean)
-    : [];
-  const seen = new Set();
-  return [...slots, ...legacy].filter((url) => {
-    if (seen.has(url)) return false;
-    seen.add(url);
-    return true;
-  });
-}
-
 const PHOTO_SLOTS = ["screenshot_1", "screenshot_2", "screenshot_3"];
 
 export function getTradePhotoItems(trade) {
@@ -134,6 +121,10 @@ export function getTradePhotoItems(trade) {
     });
   });
   return items;
+}
+
+export function getTradeScreenshots(trade) {
+  return getTradePhotoItems(trade).map((item) => item.url);
 }
 
 export function nextScreenshotPatch(trade, url) {

@@ -13,6 +13,9 @@ import {
 import { useAuth } from "@/lib/AuthContext";
 import { createTrade } from "@/lib/localStorage";
 import { toast } from "sonner";
+import ImportResultDialog from "@/components/ImportResultDialog";
+import { summarizeImportedTrades } from "@/lib/importResultView";
+import { createPageUrl } from "@/utils";
 
 export function ImportButton({ onImportSuccess, accounts, strategies }) {
   const { user } = useAuth();
@@ -21,6 +24,8 @@ export function ImportButton({ onImportSuccess, accounts, strategies }) {
   const [importData, setImportData] = React.useState(null);
   const [isImporting, setIsImporting] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [fileName, setFileName] = React.useState("");
+  const [result, setResult] = React.useState(null);
 
   const parseCSV = (content) => {
     const lines = content.split("\n");
@@ -131,6 +136,7 @@ export function ImportButton({ onImportSuccess, accounts, strategies }) {
     if (!file) return;
 
     setError("");
+    setFileName(file.name);
     const reader = new FileReader();
 
     reader.onload = (event) => {
@@ -174,21 +180,25 @@ export function ImportButton({ onImportSuccess, accounts, strategies }) {
         }
       }
 
+      const snapshot = importData;
       setShowDialog(false);
       setImportData(null);
-      
+      setResult({
+        imported: successCount,
+        errors: failCount > 0 ? failCount : undefined,
+        fileName,
+        ...summarizeImportedTrades(snapshot),
+      });
       if (successCount > 0) {
-        toast.success(`Zaimportowano ${successCount} transakcji!`);
         onImportSuccess?.();
-      }
-      
-      if (failCount > 0) {
-        toast.warning(`${failCount} transakcji pominięto (brakuje wymaganych danych)`);
       }
     } catch (err) {
       const errorMsg = err.message || "Błąd podczas importu transakcji";
       setError(errorMsg);
-      toast.error(errorMsg);
+      setResult({
+        fileName,
+        errorMessage: errorMsg,
+      });
     } finally {
       setIsImporting(false);
     }
@@ -196,6 +206,18 @@ export function ImportButton({ onImportSuccess, accounts, strategies }) {
 
   return (
     <>
+      <ImportResultDialog
+        open={Boolean(result)}
+        onOpenChange={(next) => { if (!next) setResult(null); }}
+        imported={result?.imported}
+        errors={result?.errors}
+        fileName={result?.fileName}
+        dateFrom={result?.dateFrom}
+        dateTo={result?.dateTo}
+        symbols={result?.symbols}
+        errorMessage={result?.errorMessage}
+        journalHref={createPageUrl("Journal")}
+      />
       <input
         ref={fileInputRef}
         type="file"

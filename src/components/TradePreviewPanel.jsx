@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { toast } from "sonner";
 import { usePnlDisplay } from "@/hooks/use-pnl-display";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -48,6 +48,7 @@ import {
   formatOpenedLabel,
   formatSigned,
   getGrossPl,
+  getTradeScreenshots,
   loadVisibleStatsFields,
   plTone,
   saveVisibleStatsFields,
@@ -166,6 +167,13 @@ export default function TradePreviewPanel({
     { label: "Status", value: trade?.outcome ? tradeOutcomeDisplay(trade.outcome) : tradeStatusDisplay(trade?.status) || "—", tone: outcomeTone, sub: tradeStatusDisplay(trade?.status) || "" },
     { label: "Risk", value: moneyRisk ? pnl.formatAmount(moneyRisk) : "—", sub: "" },
   ];
+  const photoCount = trade ? getTradeScreenshots(trade).length : 0;
+  const tabs = useMemo(
+    () => TABS.map((item) => (
+      item.id === "photos" ? { ...item, label: `${item.label} · ${photoCount}` } : item
+    )),
+    [photoCount]
+  );
   const planRows = [
     { label: "Setup", value: strategy?.name || trade?.setup || null },
     { label: "Direction", value: trade?.direction ? directionLabel(trade.direction, t) : null },
@@ -248,24 +256,14 @@ export default function TradePreviewPanel({
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="h-8 inline-flex items-center gap-1.5 rounded-[10px] border border-ds-line bg-ds-s2 px-3 text-[12px] font-medium text-ds-text2 transition-colors duration-200 hover:bg-ds-s3 hover:text-ds-text"
-                  onClick={() => setTab("chart")}
-                >
-                  <Play className="h-3.5 w-3.5 fill-current" />
-                  Replay
-                </button>
-                <button
-                  type="button"
-                  className="h-8 w-8 inline-flex items-center justify-center rounded-[8px] text-ds-text3 transition-colors duration-200 hover:bg-ds-s3 hover:text-ds-text"
-                  onClick={() => handleOpenChange(false)}
-                  aria-label="Zamknij"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+              <button
+                type="button"
+                className="h-8 w-8 inline-flex items-center justify-center rounded-[8px] text-ds-text3 transition-colors duration-200 hover:bg-ds-s3 hover:text-ds-text"
+                onClick={() => handleOpenChange(false)}
+                aria-label="Zamknij"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
             <h2 className="mt-3 truncate text-[24px] font-medium leading-tight tracking-[-0.01em] text-ds-text">
@@ -292,12 +290,12 @@ export default function TradePreviewPanel({
           </div>
 
           <div className="px-6 pb-2">
-            <TabStrip tabs={TABS} value={tab} onChange={setTab} variant="line" />
+            <TabStrip tabs={tabs} value={tab} onChange={setTab} variant="line" />
           </div>
 
           <div className={cn(
             "flex-1 min-h-0 px-6 py-1",
-            tab === "chart" ? "overflow-hidden flex flex-col" : "overflow-y-auto"
+            tab === "chart" || tab === "photos" ? "overflow-hidden flex flex-col" : "overflow-y-auto"
           )}>
             {tab === "stats" && (
               <StatsTab
@@ -329,15 +327,17 @@ export default function TradePreviewPanel({
               </div>
             )}
             {tab === "photos" && (
-              <TradePreviewPhotos
-                trade={trade}
-                userId={user?.id}
-                persistPatch={persistPatch}
-                onOpenImage={(src) => {
-                  setViewerImage(src);
-                  setViewerOpen(true);
-                }}
-              />
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+                <TradePreviewPhotos
+                  trade={trade}
+                  userId={user?.id}
+                  persistPatch={persistPatch}
+                  onOpenImage={(src) => {
+                    setViewerImage(src);
+                    setViewerOpen(true);
+                  }}
+                />
+              </div>
             )}
             {tab === "emotion" && (
               <EmotionTab

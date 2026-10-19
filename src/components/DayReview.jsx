@@ -7,6 +7,7 @@ import ImageViewer from "@/components/common/ImageViewer";
 import { DISCIPLINE_FORMULA, computeDisciplineScore, computeSessionDiscipline } from "@/lib/disciplineInsights";
 import { tradeMistakes } from "@/lib/calendarAggregates";
 import { getTradeScreenshots } from "@/lib/tradePreviewStats";
+import { firstNoteLine, stripNoteMarkdown } from "@/lib/noteMarkdown";
 import { getTradeRealizedPL } from "@/lib/utils";
 
 export const INK = "var(--ds-text)";
@@ -395,7 +396,7 @@ export function DaySummary({ notes, scoreLabel, scoreValue, tags, emptyText }) {
           <div className="space-y-2">
             {notes.slice(0, 3).map((row) => (
               <p key={row.id} className="line-clamp-4">
-                <span style={{ color: INK }}>{row.symbol || "—"}. </span>{row.notes}
+                <span style={{ color: INK }}>{row.symbol || "—"}. </span>{stripNoteMarkdown(row.notes)}
               </p>
             ))}
           </div>
@@ -442,7 +443,7 @@ export function JournalPreview({ rows, describe, onOpenTrade, emptyText, noShots
     <div className="space-y-3">
       {preview.map((trade) => {
         const info = describe(trade);
-        const noteLine = String(trade.notes || "").trim().split(/\r?\n/)[0];
+        const noteLine = firstNoteLine(trade.notes);
         return (
           <div key={trade.id}>
             <button type="button" onClick={() => onOpenTrade(trade)} className="-mx-2 block w-[calc(100%+16px)] rounded-[10px] px-2 py-1 text-left transition-colors duration-150 hover:bg-ds-s3">
@@ -693,7 +694,7 @@ export function DayFindings({ summaryTitle, summary, findingsTitle, items, empty
             {items.map((item, index) => (
               <div key={item.id}>
                 <FindingTitle index={index + 1} title={item.title} badge={item.badge ? <TagPill tag={item.badge} kind={item.badgeKind} /> : null} />
-                {item.note ? <p className="mt-1.5 line-clamp-3 text-[12px] leading-[18px]" style={{ color: MUTED }}>{item.note}</p> : null}
+                {item.note ? <p className="mt-1.5 line-clamp-3 text-[12px] leading-[18px]" style={{ color: MUTED }}>{stripNoteMarkdown(item.note)}</p> : null}
                 <div className="mt-2"><KeyValueTable rows={item.rows} /></div>
                 <button
                   type="button"

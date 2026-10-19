@@ -103,11 +103,185 @@ html.dark [role="alertdialog"],
 html.dark [role="menu"],
 html.dark [role="listbox"],
 html.dark [data-radix-popper-content-wrapper] > div {
-  background-color: #0b0f1a !important;
+  background-color: #0a0e18 !important;
   border: 1px solid var(--ds-frame) !important;
   color: var(--ds-text) !important;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55) !important;
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Custom dropdowns (no Radix role) — opaque glass over tables */
+.ds-float-panel {
+  isolation: isolate;
+  background-color: var(--ds-s1);
+  color: var(--ds-text);
+  border: 1px solid var(--ds-frame);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+html.dark .ds-float-panel,
+html.dark .app-atmosphere .bg-popover {
+  background-color: #0a0e18 !important;
+}
+html:not(.dark) .ds-float-panel,
+html:not(.dark) .app-atmosphere .bg-popover,
+html:not(.dark) [role="menu"],
+html:not(.dark) [role="listbox"],
+html:not(.dark) [data-radix-popper-content-wrapper] > div {
+  background-color: #ffffff !important;
+}
+
+@keyframes ds-float-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.ds-float-in {
+  animation: ds-float-in 150ms ease-out both;
+}
+
+.journal-filter-trigger {
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--ds-frame);
+  background: var(--ds-s2);
+  color: var(--ds-text);
+}
+.journal-filter-trigger[data-open="true"] {
+  border-color: var(--ds-accent);
+  box-shadow: none;
+}
+.journal-filter-trigger:focus {
+  outline: none;
+}
+.journal-filter-trigger:focus-visible {
+  box-shadow: 0 0 0 2px var(--ds-focus);
+}
+.journal-filter-chevron {
+  transition: transform 150ms ease;
+}
+.journal-filter-trigger[data-open="true"] .journal-filter-chevron {
+  transform: rotate(180deg);
+}
+
+.journal-date-panel {
+  position: absolute;
+  z-index: 200;
+  top: auto;
+  right: 12px;
+  width: 320px;
+  min-width: 320px;
+  max-width: calc(100vw - 32px);
+  padding: 16px;
+}
+@media (max-width: 767px) {
+  .journal-date-panel {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+.journal-cal-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--ds-frame);
+  background: var(--ds-s2);
+  color: var(--ds-text2);
+}
+.journal-cal-nav:hover {
+  background: var(--ds-s3);
+}
+.journal-cal-nav:focus {
+  outline: none;
+}
+.journal-cal-nav:focus-visible {
+  box-shadow: 0 0 0 2px var(--ds-focus);
+}
+
+.journal-cal-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 36px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  border-radius: 10px;
+  color: var(--ds-text);
+  background: transparent;
+  outline: none;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.journal-cal-day:hover:not(:disabled):not([data-edge="true"]) {
+  background: var(--ds-s3);
+}
+.journal-cal-day:focus:not(:focus-visible) {
+  box-shadow: none;
+}
+.journal-cal-day:focus-visible {
+  box-shadow: 0 0 0 2px var(--ds-focus);
+}
+.journal-cal-day[data-muted="true"] {
+  color: var(--ds-text3);
+  opacity: 0.4;
+}
+.journal-cal-day[data-today="true"]:not([data-edge="true"]) {
+  box-shadow: inset 0 0 0 1px var(--ds-accent);
+}
+.journal-cal-day[data-in-range="true"] {
+  border-radius: 0;
+  background: color-mix(in srgb, #6B7CFF 18%, transparent);
+}
+.journal-cal-day[data-edge="true"] {
+  background: #6B7CFF;
+  color: #fff;
+  border-radius: 999px;
+}
+.journal-cal-day[data-range-start="true"]:not([data-range-end="true"]) {
+  border-radius: 999px 0 0 999px;
+}
+.journal-cal-day[data-range-end="true"]:not([data-range-start="true"]) {
+  border-radius: 0 999px 999px 0;
+}
+
+.journal-cal-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--ds-frame);
+  background: var(--ds-s2);
+  color: var(--ds-text2);
+  font-size: 12px;
+}
+.journal-cal-action:hover {
+  background: var(--ds-s3);
+}
+.journal-cal-action:focus {
+  outline: none;
+}
+.journal-cal-action:focus-visible {
+  box-shadow: 0 0 0 2px var(--ds-focus);
+}
+.journal-cal-action-primary {
+  border-color: transparent;
+  background: #6B7CFF;
+  color: #fff;
+}
+.journal-cal-action-primary:hover {
+  background: #7b8aff;
 }
 
 html.dark [role="dialog"],
@@ -354,6 +528,13 @@ html.dark .journal-table th {
   text-transform: uppercase !important;
 }
 
+.journal-stat-grid > * {
+  min-width: 0;
+}
+.journal-stat-grid > button[aria-selected="true"] {
+  background: var(--ds-s3);
+}
+
 html.dark .app-atmosphere main table tbody tr,
 html.dark [role="dialog"] table tbody tr {
   background: transparent !important;
@@ -542,6 +723,82 @@ html:not(.dark) .app-atmosphere [role="dialog"] {
 @keyframes ds-fade {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* ---------- Reusable glass pills (Notes filters, etc.) ---------- */
+.ds-pill-group {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  overflow: hidden;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 999px;
+  border: 1px solid var(--ds-line);
+  background: var(--ds-s2);
+  box-shadow: var(--ds-inset);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.ds-pill-group button,
+html.dark main.cyber-dashboard.dash-scr .ds-pill-group button {
+  display: inline-flex;
+  height: 26px;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding-inline: 10px;
+  font-size: 13px !important;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ds-text3);
+  box-shadow: none;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.ds-pill-group button:hover,
+html.dark main.cyber-dashboard.dash-scr .ds-pill-group button:hover {
+  color: var(--ds-text2);
+}
+.ds-pill-group button[aria-pressed="true"],
+html.dark main.cyber-dashboard.dash-scr .ds-pill-group button[aria-pressed="true"] {
+  background: var(--ds-s3);
+  color: var(--ds-text);
+  font-weight: 600;
+}
+.ds-pill-group button:focus-visible,
+.ds-pill-select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ds-focus);
+}
+.ds-pill-select,
+html.dark main.cyber-dashboard.dash-scr .ds-pill-select,
+html.dark main.cyber-dashboard.dash-scr button.ds-pill-select[role="combobox"] {
+  height: 32px !important;
+  width: auto;
+  min-width: 7.5rem;
+  border-radius: 999px !important;
+  border: 1px solid var(--ds-line) !important;
+  background: var(--ds-s2) !important;
+  box-shadow: var(--ds-inset);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--ds-text2) !important;
+  font-size: 13px !important;
+  font-weight: 500;
+  line-height: 1;
+}
+.ds-pill-select:hover {
+  background: var(--ds-s3) !important;
+  color: var(--ds-text) !important;
+}
+.ds-pill-select svg {
+  width: 16px;
+  height: 16px;
+  color: var(--ds-text3);
+  opacity: 1 !important;
+  stroke-width: 1.5;
 }
 
 /* ---------- Top bar: quiet glass pill groups, 32px controls ---------- */

@@ -120,7 +120,7 @@ export default function ThoughtOfDay({ drop = "up", compact = false }) {
           role="dialog"
           aria-label={t("thoughtOfDay") || "Myśl dnia"}
           className={cn(
-            "absolute z-[80] w-[min(280px,calc(100vw-2rem))] rounded-xl border border-border bg-popover p-3",
+            "ds-float-panel absolute z-[80] w-[min(280px,calc(100vw-2rem))] rounded-xl p-3",
             drop === "down" ? "left-0 top-[calc(100%+8px)]" : "bottom-[calc(100%+10px)] left-0"
           )}
         >

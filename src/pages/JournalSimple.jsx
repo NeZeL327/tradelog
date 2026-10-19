@@ -90,7 +90,13 @@ function MiniCalendar({ from, to, onSelect }) {
 
   const firstDow = (() => { const d = new Date(view.year, view.month, 1).getDay(); return d === 0 ? 6 : d - 1; })();
   const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
-  const cells = [...Array(firstDow).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+  const prevMonthDays = new Date(view.year, view.month, 0).getDate();
+  const trailing = (7 - ((firstDow + daysInMonth) % 7)) % 7;
+  const cells = [
+    ...Array.from({ length: firstDow }, (_, i) => ({ d: prevMonthDays - firstDow + i + 1, inMonth: false })),
+    ...Array.from({ length: daysInMonth }, (_, i) => ({ d: i + 1, inMonth: true })),
+    ...Array.from({ length: trailing }, (_, i) => ({ d: i + 1, inMonth: false })),
+  ];
 
   const handleDay = (d) => {
     if (!d) return;
@@ -105,45 +111,46 @@ function MiniCalendar({ from, to, onSelect }) {
   };
 
   return (
-    <div className="w-[224px] select-none">
-      <div className="flex items-center justify-between mb-2">
-        <button type="button" onClick={prevMonth} className="p-1 rounded hover:bg-accent text-muted-foreground">
-          <ChevronLeft className="w-4 h-4" />
+    <div className="w-full select-none">
+      <div className="mb-3 flex items-center gap-2">
+        <button type="button" onClick={prevMonth} className="journal-cal-nav" aria-label="Previous month">
+          <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="text-sm font-semibold text-foreground">
+        <span className="flex-1 text-center text-sm font-semibold text-ds-text">
           {MONTHS_PL[view.month]} {view.year}
         </span>
-        <button type="button" onClick={nextMonth} className="p-1 rounded hover:bg-accent text-muted-foreground">
-          <ChevronRight className="w-4 h-4" />
+        <button type="button" onClick={nextMonth} className="journal-cal-nav" aria-label="Next month">
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
-      <div className="grid grid-cols-7 mb-1">
+      <div className="mb-1 grid grid-cols-7">
         {DAYS_PL.map(d => (
-          <div key={d} className="text-center text-[10px] font-medium text-muted-foreground py-0.5">{d}</div>
+          <div key={d} className="py-1 text-center text-[11px] font-medium text-ds-text3">{d}</div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-y-0.5">
-        {cells.map((d, i) => {
-          if (!d) return <div key={i} />;
-          const s = toStr(d);
-          const isFrom = s === from;
-          const isTo = s === to;
-          const inRange = from && to && s > from && s < to;
-          const isNow = s === todayStr;
+      <div className="grid grid-cols-7">
+        {cells.map((cell, i) => {
+          const d = cell.inMonth ? cell.d : null;
+          const s = cell.inMonth ? toStr(cell.d) : "";
+          const isFrom = cell.inMonth && s === from;
+          const isTo = cell.inMonth && s === to;
+          const inRange = Boolean(cell.inMonth && from && to && s > from && s < to);
+          const isNow = cell.inMonth && s === todayStr;
           return (
             <button
               key={i}
               type="button"
+              disabled={!cell.inMonth}
               onClick={() => handleDay(d)}
-              className={[
-                "text-xs h-7 w-full rounded transition-colors",
-                isFrom || isTo ? "bg-muted text-primary font-semibold" : "",
-                inRange ? "bg-primary/10 text-foreground rounded-none" : "",
-                isNow && !isFrom && !isTo ? "font-bold text-primary" : "",
-                !isFrom && !isTo && !inRange ? "text-foreground hover:bg-muted" : "",
-              ].join(" ").trim()}
+              data-muted={cell.inMonth ? undefined : "true"}
+              data-today={isNow ? "true" : undefined}
+              data-in-range={inRange ? "true" : undefined}
+              data-edge={isFrom || isTo ? "true" : undefined}
+              data-range-start={isFrom ? "true" : undefined}
+              data-range-end={isTo ? "true" : undefined}
+              className="journal-cal-day"
             >
-              {d}
+              {cell.d}
             </button>
           );
         })}
@@ -578,15 +585,6 @@ export default function JournalSimple({ mode = "all" }) {
   }, [searchTerm, dateRange.from, dateRange.to, timeFilters, accountFilters, statusFilters, outcomeFilters, mode]);
   const visibleTrades = displayTrades.slice(0, visibleCount);
   const visiblePlanned = plannedTrades.slice(0, visibleCount);
-  const toggleStatusFilter = (value) => {
-    setStatusFilters(prev => {
-      if (value === "all") return ["all"];
-      const withoutAll = prev.filter(v => v !== "all");
-      const exists = withoutAll.includes(value);
-      const next = exists ? withoutAll.filter(v => v !== value) : [...withoutAll, value];
-      return next.length ? next : ["all"];
-    });
-  };
 
   const toggleTimeFilter = (value) => {
     setTimeFilters((prev) => {
@@ -756,7 +754,6 @@ export default function JournalSimple({ mode = "all" }) {
             { key: "wins",   label: t('wins'),             count: stats.wins,    active: outcomeFilters.includes("Win"),     accent: "yellow",  onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Win"]); } },
             { key: "be",     label: "BE",                  count: stats.breakeven, active: outcomeFilters.includes("Breakeven"), accent: "orange",  onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Breakeven"]); } },
             { key: "losses", label: t('losses'),           count: stats.losses,  active: outcomeFilters.includes("Loss"),    accent: "red",     onClick: () => { setStatusFilters(["all"]);    setOutcomeFilters(["Loss"]); } },
-            { key: "planned",label: t('planned'),          count: stats.planned, active: statusFilters.includes("Planned"),  accent: "amber",   onClick: () => { setStatusFilters(["Planned"]); setOutcomeFilters(["all"]); } },
           ];
           const accentMap = {
             slate:   { dot: "bg-muted-foreground",   text: "text-muted-foreground",   badgeActive: "bg-muted text-foreground" },
@@ -765,13 +762,12 @@ export default function JournalSimple({ mode = "all" }) {
             yellow:  { dot: "bg-profit",  text: "text-profit", badgeActive: "bg-profit/10 text-profit" },
             orange:  { dot: "bg-warning",  text: "text-warning", badgeActive: "bg-warning/10 text-warning" },
             red:     { dot: "bg-loss",     text: "text-loss dark:text-loss",       badgeActive: "bg-loss/10 text-loss" },
-            amber:   { dot: "bg-warning",   text: "text-warning",   badgeActive: "bg-warning/10 text-warning" },
           };
           return (
             <div className="overflow-hidden rounded-[12px] border border-border bg-card shadow-none">
               <div
                 role="tablist"
-                className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8"
+                className="journal-stat-grid grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7"
               >
                 {tabs.map((tab) => {
                   const a = accentMap[tab.accent];
@@ -783,7 +779,9 @@ export default function JournalSimple({ mode = "all" }) {
                       aria-selected={tab.active}
                       onClick={tab.onClick}
                       className={`group relative inline-flex min-h-[64px] flex-col items-start justify-center gap-1 border-b border-r border-border px-3 py-2 text-left focus-visible:outline-none ${
-                        tab.active ? `bg-muted ${a.text}` : "text-muted-foreground hover:bg-muted"
+                        tab.active
+                          ? `${a.text} bg-ds-s3 shadow-[inset_0_0_0_1px_var(--ds-accent)]`
+                          : "text-muted-foreground hover:bg-muted"
                       }`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${a.dot} ${tab.active ? "opacity-100" : "opacity-60"}`} />
@@ -798,7 +796,7 @@ export default function JournalSimple({ mode = "all" }) {
                     </button>
                   );
                 })}
-                <div className="flex min-h-[64px] flex-col justify-center border-b border-border px-3 py-2">
+                <div className="flex min-h-[64px] flex-col justify-center border-b border-r border-border px-3 py-2 col-span-2 md:col-span-3 lg:col-span-1">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-ds-text2">{t('totalPL')}</p>
                   <p data-private className={`text-[18px] font-semibold leading-tight ${stats.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
                     {pnl.formatTrades(statsSource)}
@@ -810,105 +808,32 @@ export default function JournalSimple({ mode = "all" }) {
         })()}
 
         {/* Filters */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder="Search by symbol..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+        <Card className="relative z-50 isolate overflow-visible">
+          <CardContent className="overflow-visible p-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search by symbol..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-10 rounded-lg pl-10"
+                />
               </div>
-              {!isSingleStatusMode && (
-              <div className="flex flex-wrap gap-2 sm:gap-3 items-center w-full md:w-auto">
-                <label className="flex items-center gap-2 cursor-pointer min-h-10">
-                  <div 
-                    className={`w-4 h-4 rounded-full border ${
-                      statusFilters.includes("all")
-                        ? 'border-ds-accent bg-ds-accent'
-                        : 'border-border bg-muted hover:bg-accent'
-                    }`}
-                    onClick={() => { toggleStatusFilter("all"); setOutcomeFilters(["all"]); }}
-                  >
-                    {statusFilters.includes("all") && (
-                      <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </div>
-                  <span>{t('all')}</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <div 
-                    className={`w-4 h-4 rounded-full border ${
-                      statusFilters.includes("Open")
-                        ? 'border-ds-accent bg-ds-accent'
-                        : 'border-border bg-muted hover:bg-accent'
-                    }`}
-                    onClick={() => { toggleStatusFilter("Open"); setOutcomeFilters(["all"]); }}
-                  >
-                    {statusFilters.includes("Open") && (
-                      <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </div>
-                  <span>{t('openStatus')}</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <div 
-                    className={`w-4 h-4 rounded-full border ${
-                      statusFilters.includes("Closed")
-                        ? 'border-ds-accent bg-ds-accent'
-                        : 'border-border bg-muted hover:bg-accent'
-                    }`}
-                    onClick={() => { toggleStatusFilter("Closed"); setOutcomeFilters(["all"]); }}
-                  >
-                    {statusFilters.includes("Closed") && (
-                      <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </div>
-                  <span>{t('closedStatus')}</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <div 
-                    className={`w-4 h-4 rounded-full border ${
-                      statusFilters.includes("Planned")
-                        ? 'border-ds-accent bg-ds-accent'
-                        : 'border-border bg-muted hover:bg-accent'
-                    }`}
-                    onClick={() => { toggleStatusFilter("Planned"); setOutcomeFilters(["all"]); }}
-                  >
-                    {statusFilters.includes("Planned") && (
-                      <svg className="w-full h-full text-white" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </div>
-                  <span>{t('plannedStatus')}</span>
-                </label>
-              </div>
-              )}
-              <div className="relative w-full sm:w-auto" ref={accountFilterRef}>
+              <div className="relative z-10 w-full shrink-0 md:w-[220px]" ref={accountFilterRef}>
                 <button
                   type="button"
+                  data-open={accountFilterOpen ? "true" : undefined}
                   onClick={() => setAccountFilterOpen((prev) => !prev)}
-                  className="relative w-full sm:w-[220px] h-10 px-4 py-2 border border-border bg-card rounded-lg text-sm flex items-center justify-center hover:bg-muted"
+                  className="journal-filter-trigger relative flex w-full items-center justify-center px-4 py-2 text-sm hover:bg-ds-s3"
                 >
-                  <span className="truncate text-center w-full pr-4">
+                  <span className="w-full truncate pr-4 text-center">
                     {activeAccountFilterLabel || (t('allAccounts') || 'All Accounts')}
                   </span>
-                  {accountFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
+                  <ChevronDown className="journal-filter-chevron absolute right-3 h-4 w-4" />
                 </button>
                 {accountFilterOpen && (
-                  <div className="absolute left-0 mt-2 z-20 w-full rounded-md border border-border bg-popover shadow-none p-2 max-h-64 overflow-y-auto">
+                  <div className="ds-float-panel ds-float-in absolute left-0 z-[80] mt-2 max-h-64 w-full overflow-y-auto rounded-[16px] p-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -962,17 +887,18 @@ export default function JournalSimple({ mode = "all" }) {
                   </div>
                 )}
               </div>
-              <div className="relative w-full sm:w-auto sm:ml-auto" ref={timeFilterRef}>
+              <div className="relative z-10 w-full shrink-0 md:w-[168px]" ref={timeFilterRef}>
                 <button
                   type="button"
+                  data-open={timeFilterOpen ? "true" : undefined}
                   onClick={() => setTimeFilterOpen((prev) => !prev)}
-                  className="relative w-full sm:min-w-[160px] h-10 px-4 py-2 border border-border bg-card rounded-lg text-sm flex items-center justify-center hover:bg-muted"
+                  className="journal-filter-trigger relative flex w-full items-center justify-center px-4 py-2 text-sm hover:bg-ds-s3"
                 >
-                  <span className="truncate text-center w-full pr-4">{activeTimeFilterLabel}</span>
-                  {timeFilterOpen ? <ChevronUp className="absolute right-3 w-4 h-4" /> : <ChevronDown className="absolute right-3 w-4 h-4" />}
+                  <span className="w-full truncate pr-4 text-center">{activeTimeFilterLabel}</span>
+                  <ChevronDown className="journal-filter-chevron absolute right-3 h-4 w-4" />
                 </button>
                 {timeFilterOpen && (
-                  <div className="absolute right-0 mt-2 z-20 w-full rounded-md border border-border bg-popover shadow-none p-2">
+                  <div className="ds-float-panel ds-float-in absolute right-0 z-[80] mt-2 w-full rounded-[16px] p-2">
                     {[
                       { value: "all", label: timeFilterLabels.all },
                       { value: "day", label: timeFilterLabels.day },
@@ -1012,22 +938,21 @@ export default function JournalSimple({ mode = "all" }) {
               </div>
 
               {/* Date range picker */}
-              <div className="relative" ref={datePickerRef}>
+              <div className="w-full shrink-0 md:w-auto" ref={datePickerRef}>
                 <button
                   type="button"
+                  data-open={datePickerOpen ? "true" : undefined}
                   onClick={() => setDatePickerOpen((prev) => !prev)}
-                  className={`relative flex items-center gap-2 px-3 py-2 h-10 border rounded-md text-sm transition-colors ${
-                    dateRangeActive
-                      ? "border-border bg-ds-s3 text-foreground"
-                      : "border-border bg-card text-foreground"
+                  className={`journal-filter-trigger relative flex w-full items-center gap-2 px-4 py-2 text-sm md:w-auto ${
+                    dateRangeActive && !datePickerOpen ? "bg-ds-s3" : ""
                   }`}
                 >
-                  <CalendarRange className="w-4 h-4 shrink-0" />
-                  <span className="truncate max-w-[150px]">{dateRangeLabel}</span>
-                  {datePickerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <CalendarRange className="h-4 w-4 shrink-0" />
+                  <span className="max-w-[150px] truncate">{dateRangeLabel}</span>
+                  <ChevronDown className="journal-filter-chevron h-4 w-4 shrink-0" />
                 </button>
                 {datePickerOpen && (
-                  <div className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-30 max-w-[calc(100vw-1.5rem)] rounded-lg border border-border bg-popover shadow-none p-3">
+                  <div className="journal-date-panel ds-float-panel ds-float-in absolute mt-2">
                     <MiniCalendar
                       from={dateRange.from}
                       to={dateRange.to}
@@ -1037,8 +962,8 @@ export default function JournalSimple({ mode = "all" }) {
                       }}
                     />
                     {(dateRange.from || dateRange.to) && (
-                      <div className="mt-2 pt-2 border-t border-border flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">
+                      <div className="mt-3 flex items-center justify-between gap-2 border-t border-ds-frame pt-3">
+                        <span className="text-[11px] text-ds-text3">
                           {dateRange.from && dateRange.to
                             ? `${dateRange.from.split("-").reverse().join(".")} – ${dateRange.to.split("-").reverse().join(".")}`
                             : dateRange.from
@@ -1046,10 +971,10 @@ export default function JournalSimple({ mode = "all" }) {
                               : ""}
                         </span>
                         <div className="flex gap-2">
-                          <button type="button" onClick={() => { setDateRange({ from: "", to: "" }); }} className="text-[11px] text-muted-foreground hover:text-loss px-2 py-0.5 rounded hover:bg-muted">
+                          <button type="button" onClick={() => { setDateRange({ from: "", to: "" }); }} className="journal-cal-action">
                             Wyczyść
                           </button>
-                          <button type="button" onClick={() => setDatePickerOpen(false)} className="rounded border border-border bg-ds-s3 px-3 py-0.5 text-[11px] text-ds-text hover:bg-accent">
+                          <button type="button" onClick={() => setDatePickerOpen(false)} className="journal-cal-action journal-cal-action-primary">
                             Zamknij
                           </button>
                         </div>
@@ -1063,7 +988,7 @@ export default function JournalSimple({ mode = "all" }) {
         </Card>
 
         {(isSingleStatusMode || statusFilters.includes("all") || statusFilters.some(s => s !== "Planned" && s !== "Missed")) && (
-          <Card className="bg-card border-border">
+          <Card className="relative z-0 bg-card border-border">
             <CardContent className="p-0">
               <div className="hidden md:block overflow-x-auto w-full">
                 <table className="journal-table w-full min-w-[1180px] text-xs border-collapse [&_th]:px-1.5 [&_td]:px-1.5 [&_th]:py-2 [&_td]:py-2 [&_th]:leading-tight [&_td]:leading-tight [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
@@ -1287,7 +1212,7 @@ export default function JournalSimple({ mode = "all" }) {
                 </tbody>
               </table>
             </div>
-              <div className="md:hidden p-3">
+              <div className="relative z-0 md:hidden p-3">
                 <JournalMobileList
                   trades={visibleTrades}
                   t={t}
@@ -1432,7 +1357,7 @@ export default function JournalSimple({ mode = "all" }) {
                     </tbody>
                   </table>
                 </div>
-                <div className="md:hidden p-3">
+                <div className="relative z-0 md:hidden p-3">
                   <JournalMobileList
                     trades={visiblePlanned}
                     t={t}
