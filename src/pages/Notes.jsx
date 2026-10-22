@@ -31,6 +31,13 @@ import { TextAlign } from '@tiptap/extension-text-align';
 import { storage } from '@/lib/firebase';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
+  IMAGE_ACCEPT,
+  filesFromClipboard,
+  imageUploadMessage,
+  isImageFile,
+  prepareImageFile,
+} from "@/lib/imageUpload";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -539,23 +546,41 @@ export default function Notes() {
 
   const handleImageUpload = async (file) => {
     if (!file || !user?.id) return;
-    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowed.includes(file.type)) { toast.error('Dozwolone formaty: JPG, PNG, GIF, WEBP'); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error('Plik jest za duży (max 5 MB)'); return; }
     setIsUploadingImage(true);
     try {
-      const path = `notes-images/${user.id}/${Date.now()}-${file.name}`;
+      const ready = await prepareImageFile(file);
+      if (ready.size > 5 * 1024 * 1024) {
+        toast.error(t("imageTooLargeNotes"));
+        return;
+      }
+      const path = `notes-images/${user.id}/${Date.now()}-${ready.name}`;
       const sRef = storageRef(storage, path);
-      await uploadBytes(sRef, file);
+      await uploadBytes(sRef, ready);
       const url = await getDownloadURL(sRef);
-      editor?.chain().focus().setImage({ src: url, alt: file.name }).run();
+      editor?.chain().focus().setImage({ src: url, alt: ready.name }).run();
     } catch (e) {
       console.error(e);
-      toast.error('Nie udało się wgrać obrazka');
+      toast.error(imageUploadMessage(e, t));
     } finally {
       setIsUploadingImage(false);
     }
   };
+
+  const handleImageUploadRef = useRef(handleImageUpload);
+  handleImageUploadRef.current = handleImageUpload;
+
+  useEffect(() => {
+    if (!editor) return undefined;
+    const onPaste = (e) => {
+      const files = filesFromClipboard(e.clipboardData).filter(isImageFile);
+      if (!files.length) return;
+      e.preventDefault();
+      void handleImageUploadRef.current(files[0]);
+    };
+    const el = editor.view.dom;
+    el.addEventListener("paste", onPaste, true);
+    return () => el.removeEventListener("paste", onPaste, true);
+  }, [editor]);
 
   const handleSetLink = () => {
     if (!editor) return;
@@ -1122,7 +1147,7 @@ export default function Notes() {
                     onClick={() => imageInputRef.current?.click()}>
                     <ImagePlus className="h-3.5 w-3.5" />
                   </button>
-                  <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
+                  <input ref={imageInputRef} type="file" accept={IMAGE_ACCEPT} className="hidden"
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ''; }} />
 
                   {/* Table */}

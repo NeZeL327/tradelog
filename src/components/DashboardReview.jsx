@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { format, isSameMonth, isToday } from "date-fns";
 import { enUS, pl } from "date-fns/locale";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { directionLabel, getTradeMoneyRisk, getTradeRealizedPL, tradeRealizedR } from "@/lib/utils";
 import { formatTradeClock } from "@/lib/userSettings";
 import { Skeleton } from "@/components/ui/skeleton";
+import DayNotesBubble from "@/components/DayNotesBubble";
 import { createPageUrl } from "@/utils";
 import {
   AsideHeading,
@@ -101,6 +102,9 @@ export default function DashboardReview({
 }) {
   const locale = language === "pl" ? pl : enUS;
   const plText = language === "pl";
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesFocusId, setNotesFocusId] = useState(null);
+  const summaryRef = useRef(null);
   const trades = closedTrades || [];
   const selectedKey = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
   const dayTrades = selectedKey ? (tradesByDate?.[selectedKey] || []) : [];
@@ -118,6 +122,26 @@ export default function DashboardReview({
     .filter((row) => row.notes);
   const dayTags = tagEntries(dayTrades);
   const sessions = sessionRows(dayTrades, getTradeRealizedPL);
+  const noteSections = dayTrades.map((trade) => ({
+    id: trade.id,
+    symbol: trade.symbol || "—",
+    direction: directionLabel(trade.direction, t),
+    time: formatTradeClock(trade) || "—",
+    result: pnl.formatTrade(trade),
+    resultColor: tone(getTradeRealizedPL(trade) ?? 0),
+    notes: String(trade.notes || "").trim(),
+    trade,
+  }));
+
+  useEffect(() => {
+    setNotesOpen(false);
+    setNotesFocusId(null);
+  }, [selectedKey]);
+
+  const openNotes = (id = null) => {
+    setNotesFocusId(id);
+    setNotesOpen(true);
+  };
 
   const monthDays = (calendarDays || []).filter((day) => isSameMonth(day, calendarDate));
   const daySums = new Map(monthDays.map((day) => {
@@ -217,6 +241,8 @@ export default function DashboardReview({
       findingsTitle={plText ? "Transakcje dnia" : "Day trades"}
       items={findingItems}
       emptyText={plText ? "Wybierz dzień z transakcjami na pasku powyżej." : "Pick a day with trades in the strip above."}
+      onReadNote={(item) => openNotes(item.id)}
+      readMoreLabel={t("readMore")}
     />
   );
 
@@ -331,7 +357,18 @@ export default function DashboardReview({
               )}
               metrics={dayMetrics}
             >
-              <NestPanel title={plText ? "Podsumowanie" : "Summary"}>
+              <NestPanel
+                title={plText ? "Podsumowanie" : "Summary"}
+                panelRef={summaryRef}
+                hint={dayTrades.length ? t("showAll") : undefined}
+                onActivate={dayTrades.length ? () => {
+                  if (notesOpen) {
+                    setNotesOpen(false);
+                    return;
+                  }
+                  openNotes();
+                } : undefined}
+              >
                 <DaySummary
                   notes={dayNotes}
                   scoreLabel={plText ? "Wynik dnia" : "Day result"}
@@ -340,6 +377,8 @@ export default function DashboardReview({
                   emptyText={dayTrades.length
                     ? (plText ? "Brak notatek dla tego dnia." : "No notes for this day.")
                     : (plText ? "Brak transakcji tego dnia." : "No trades this day.")}
+                  onReadMore={dayTrades.length ? () => openNotes() : undefined}
+                  readMoreLabel={t("readMore")}
                 />
               </NestPanel>
               <NestPanel title={plText ? "Podgląd dziennika" : "Journal preview"}>
@@ -355,6 +394,8 @@ export default function DashboardReview({
                   emptyText={plText ? "Brak transakcji do podglądu." : "No trades to preview."}
                   noShotsText={plText ? "Brak zrzutów ekranu dla tych transakcji." : "No screenshots for these trades."}
                   shotLabel={plText ? "Zrzut ekranu" : "Screenshot"}
+                  onReadNote={(trade) => openNotes(trade.id)}
+                  readMoreLabel={t("readMore")}
                 />
               </NestPanel>
             </DayStatsSection>
@@ -378,6 +419,20 @@ export default function DashboardReview({
           />
         </div>
       </DayShell>
+      <DayNotesBubble
+        open={notesOpen}
+        onOpenChange={setNotesOpen}
+        anchorRef={summaryRef}
+        title={t("daySummaryTitle")}
+        dateLabel={selectedDate ? format(selectedDate, "d MMMM yyyy", { locale }) : ""}
+        countLabel={dayTrades.length ? countLabel(dayTrades.length, plText) : ""}
+        sections={noteSections}
+        scoreLabel={plText ? "Wynik dnia" : "Day result"}
+        scoreValue={dayTrades.length ? `${dayWins}W · ${dayLosses}L` : ""}
+        tags={dayTags}
+        onOpenTrade={onOpenTrade}
+        focusId={notesFocusId}
+      />
     </div>
   );
 }

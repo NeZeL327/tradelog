@@ -430,6 +430,25 @@ export function AccountImportButton({ account, existingTrades = [], onImportSucc
                       Przykład ({preview.sample.symbol}):
                     </p>
                     <p>
+                      Otwarcie:{" "}
+                      <strong>
+                        {[preview.sample.date, preview.sample.entry_time || preview.sample.time]
+                          .filter(Boolean)
+                          .join(" ") || "—"}
+                      </strong>
+                    </p>
+                    <p>
+                      Zamknięcie:{" "}
+                      <strong>
+                        {[
+                          preview.sample.close_date || preview.sample.date,
+                          preview.sample.exit_time,
+                        ]
+                          .filter(Boolean)
+                          .join(" ") || "—"}
+                      </strong>
+                    </p>
+                    <p>
                       Profit z pliku: <strong>{preview.sample.profit_loss_gross ?? "—"}</strong>
                     </p>
                     <p>

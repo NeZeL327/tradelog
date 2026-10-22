@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, ZoomIn, ZoomOut } from "lucide-react";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import SafeImage from "@/components/common/SafeImage";
 
 export default function ImageViewer({ open, onOpenChange, imageUrl }) {
   const [zoom, setZoom] = React.useState(1);
@@ -80,9 +81,9 @@ export default function ImageViewer({ open, onOpenChange, imageUrl }) {
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
           >
-            <img 
-              src={imageUrl} 
-              alt="Receipt" 
+            <SafeImage
+              src={imageUrl}
+              alt="Receipt"
               style={{
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                 transition: dragging ? "none" : "transform 0.2s"

@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { ImageOff, ImagePlus, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ImagePlus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,43 +11,35 @@ import {
   nextScreenshotPatch,
   removeScreenshotPatch,
 } from "@/lib/tradePreviewStats";
+import { useLanguage } from "@/components/LanguageProvider";
+import SafeImage from "@/components/common/SafeImage";
+import {
+  IMAGE_ACCEPT,
+  filesFromClipboard,
+  imageUploadMessage,
+  isImageFile,
+  isTypingTarget,
+  prepareImageFile,
+} from "@/lib/imageUpload";
 
-function isImageFile(file) {
-  if (!file) return false;
-  if (file.type?.startsWith("image/")) return true;
-  return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(file.name || "");
-}
-
-function PhotoCard({ item, busy, onOpen, onSaveCaption, onRemove }) {
-  const [broken, setBroken] = useState(false);
-
+function PhotoCard({ item, busy, onOpen, onSaveCaption, onRemove, captionPlaceholder, removeLabel }) {
   return (
     <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-black/15">
       <button
         type="button"
         className="block w-full"
-        onClick={() => {
-          if (!broken) onOpen(item.url);
-        }}
+        onClick={() => onOpen(item.url)}
       >
-        {broken ? (
-          <div className="flex min-h-[8rem] flex-col items-center justify-center gap-1.5 bg-black/30 px-3 py-6">
-            <ImageOff className="h-4 w-4 text-muted-foreground" />
-            <span className="text-[11px] text-muted-foreground">Nie udało się wczytać zdjęcia</span>
-          </div>
-        ) : (
-          <img
-            src={item.url}
-            alt={item.caption || "Zdjęcie transakcji"}
-            className="max-h-36 min-h-[8rem] w-full bg-black/30 object-contain"
-            onError={() => setBroken(true)}
-          />
-        )}
+        <SafeImage
+          src={item.url}
+          alt={item.caption || ""}
+          className="max-h-36 min-h-[8rem] w-full bg-black/30 object-contain"
+        />
       </button>
       <div className="flex items-center gap-2 p-2">
         <Input
           defaultValue={item.caption}
-          placeholder="Opis / nazwa"
+          placeholder={captionPlaceholder}
           className="h-8 text-[12px]"
           onBlur={(e) => {
             const next = e.target.value;
@@ -61,7 +53,7 @@ function PhotoCard({ item, busy, onOpen, onSaveCaption, onRemove }) {
           className="h-8 w-8 shrink-0 text-loss"
           disabled={busy}
           onClick={() => onRemove(item)}
-          aria-label="Usuń zdjęcie"
+          aria-label={removeLabel}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
@@ -76,6 +68,7 @@ export default function TradePreviewPhotos({
   persistPatch,
   onOpenImage,
 }) {
+  const { t } = useLanguage();
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -88,36 +81,52 @@ export default function TradePreviewPhotos({
   const addFiles = async (fileList) => {
     const files = Array.from(fileList || []).filter(isImageFile);
     if (!files.length) {
-      toast.error("Wybierz plik graficzny (JPG, PNG, WebP).");
+      toast.error(t("imageUnsupported"));
       return;
     }
     if (!userId) {
-      toast.error("Musisz być zalogowany.");
+      toast.error(t("mustBeLoggedIn"));
       return;
     }
     setBusy(true);
     try {
       let current = trade;
       for (const file of files) {
-        const url = await persistTradeScreenshot(userId, file);
+        const ready = await prepareImageFile(file);
+        const url = await persistTradeScreenshot(userId, ready);
         const patch = nextScreenshotPatch(current, url);
         await persist(patch);
         current = { ...current, ...patch };
       }
-      toast.success("Zdjęcie zapisane");
+      toast.success(t("imageSaved"));
     } catch (err) {
-      toast.error(err?.message || "Nie udało się dodać zdjęcia");
+      toast.error(imageUploadMessage(err, t) || err?.message || t("imageAddFailed"));
     } finally {
       setBusy(false);
     }
   };
+
+  const addFilesRef = useRef(addFiles);
+  addFilesRef.current = addFiles;
+
+  useEffect(() => {
+    const onPaste = (e) => {
+      if (isTypingTarget(e.target)) return;
+      const files = filesFromClipboard(e.clipboardData).filter(isImageFile);
+      if (!files.length) return;
+      e.preventDefault();
+      void addFilesRef.current(files);
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, []);
 
   const removeItem = async (item) => {
     setBusy(true);
     try {
       await persist(removeScreenshotPatch(trade, item));
     } catch (err) {
-      toast.error(err?.message || "Nie udało się usunąć zdjęcia");
+      toast.error(err?.message || t("imageRemoveFailed"));
     } finally {
       setBusy(false);
     }
@@ -127,7 +136,7 @@ export default function TradePreviewPhotos({
     try {
       await persist(captionPatch(trade, item, caption));
     } catch (err) {
-      toast.error(err?.message || "Nie udało się zapisać opisu");
+      toast.error(err?.message || t("imageCaptionFailed"));
     }
   };
 
@@ -151,7 +160,9 @@ export default function TradePreviewPhotos({
         }}
       >
         <ImagePlus className="mx-auto h-5 w-5 text-muted-foreground" />
-        <p className="mt-2 text-[12px] text-muted-foreground">Przeciągnij zdjęcie albo wgraj z dysku</p>
+        <p className="mt-2 text-[12px] text-muted-foreground">
+          {busy ? t("imageProcessing") : t("imageDropHint")}
+        </p>
         <Button
           type="button"
           size="sm"
@@ -160,12 +171,12 @@ export default function TradePreviewPhotos({
           disabled={busy}
           onClick={() => inputRef.current?.click()}
         >
-          Wgraj zdjęcie
+          {t("uploadPhoto")}
         </Button>
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept={IMAGE_ACCEPT}
           multiple
           className="hidden"
           onChange={(e) => {
@@ -177,7 +188,7 @@ export default function TradePreviewPhotos({
 
       {items.length === 0 ? (
         <p className="py-4 text-center text-sm text-muted-foreground">
-          Brak zdjęć przypisanych do tej transakcji.
+          {t("noTradePhotos")}
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -189,6 +200,8 @@ export default function TradePreviewPhotos({
               onOpen={onOpenImage}
               onSaveCaption={saveCaption}
               onRemove={removeItem}
+              captionPlaceholder={t("photoCaption")}
+              removeLabel={t("remove")}
             />
           ))}
         </div>

@@ -4,6 +4,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -317,6 +318,32 @@ export const updateTrade = async (userId, tradeId, tradeData) => {
     await updateDoc(refDoc, { ...tradeData, updatedAt: serverTimestamp() });
     const snapshot = await getDoc(refDoc);
     return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+  });
+};
+
+/** Patch listed fields only — no updatedAt. Used by the one-time MT5 time-fix tool. */
+export const patchTradesFieldsBatch = async (userId, patches = []) => {
+  return runSafe('patchTradesFieldsBatch', async () => {
+    if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const list = (Array.isArray(patches) ? patches : []).filter((item) => item?.id);
+    if (!list.length) return 0;
+
+    for (let i = 0; i < list.length; i += TRADE_BATCH_LIMIT) {
+      const chunk = list.slice(i, i + TRADE_BATCH_LIMIT);
+      const batch = writeBatch(db);
+      for (const item of chunk) {
+        const fields = { ...(item.fields || {}) };
+        for (const key of item.deleteKeys || []) {
+          fields[key] = deleteField();
+        }
+        const cleaned = stripUndefinedDeep(fields);
+        if (!cleaned || !Object.keys(cleaned).length) continue;
+        const refDoc = doc(db, 'users', String(userId), 'trades', String(item.id));
+        batch.update(refDoc, cleaned);
+      }
+      await batch.commit();
+    }
+    return list.length;
   });
 };
 

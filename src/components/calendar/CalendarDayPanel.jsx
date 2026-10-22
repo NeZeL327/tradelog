@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ArrowUpRight, X } from "lucide-react";
+import DayNotesBubble from "@/components/DayNotesBubble";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import {
   AsideHeading,
@@ -57,6 +59,8 @@ function reviewItems({ trades, pnl, plText, t, accounts, onOpenTrade }) {
 }
 
 function DayPanelBody({ dayKey, bucket, pnl, fmt, plText, locale, t, accounts, onOpenTrade, onClose, onOpenDashboard }) {
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesFocusId, setNotesFocusId] = useState(null);
   const trades = [...(bucket?.trades || [])].sort(byClock);
   const has = trades.length > 0;
   const value = fmt.value(bucket);
@@ -64,6 +68,27 @@ function DayPanelBody({ dayKey, bucket, pnl, fmt, plText, locale, t, accounts, o
   const discipline = sessionDisciplineMetric(trades, plText);
   const notes = trades.map((trade) => ({ id: trade.id, symbol: trade.symbol, notes: String(trade.notes || "").trim() })).filter((row) => row.notes);
   const emptyText = plText ? "Brak transakcji tego dnia." : "No trades this day.";
+  const dayTags = tagEntries(trades);
+  const noteSections = trades.map((trade) => ({
+    id: trade.id,
+    symbol: trade.symbol || "—",
+    direction: directionLabel(trade.direction, t),
+    time: formatTradeClock(trade, "entry") || "—",
+    result: fmt.trade(trade),
+    resultColor: toneOf(getTradeRealizedPL(trade)),
+    notes: String(trade.notes || "").trim(),
+    trade,
+  }));
+
+  useEffect(() => {
+    setNotesOpen(false);
+    setNotesFocusId(null);
+  }, [dayKey]);
+
+  const openNotes = (id = null) => {
+    setNotesFocusId(id);
+    setNotesOpen(true);
+  };
 
   const review = (
     <DayFindings
@@ -96,6 +121,8 @@ function DayPanelBody({ dayKey, bucket, pnl, fmt, plText, locale, t, accounts, o
         emptyText={emptyText}
         noShotsText={plText ? "Brak zrzutów ekranu dla tych transakcji." : "No screenshots for these trades."}
         shotLabel={plText ? "Zrzut ekranu" : "Screenshot"}
+        onReadNote={(trade) => openNotes(trade.id)}
+        readMoreLabel={t("readMore")}
       />
       {notes.map((row) => (
         <div key={row.id}>
@@ -151,6 +178,19 @@ function DayPanelBody({ dayKey, bucket, pnl, fmt, plText, locale, t, accounts, o
           ]}
         />
       </div>
+      <DayNotesBubble
+        open={notesOpen}
+        onOpenChange={setNotesOpen}
+        title={t("daySummaryTitle")}
+        dateLabel={capFirst(format(dateOfKey(dayKey), "d MMMM yyyy", { locale }))}
+        countLabel={has ? tradeCountLabel(trades.length, plText) : ""}
+        sections={noteSections}
+        scoreLabel={plText ? "Wynik dnia" : "Day result"}
+        scoreValue={has ? `${bucket.wins}W · ${bucket.losses}L` : ""}
+        tags={dayTags}
+        onOpenTrade={onOpenTrade}
+        focusId={notesFocusId}
+      />
     </div>
   );
 }

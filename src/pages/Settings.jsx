@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { User, Globe, Shield, Bell, Trash2, RotateCcw, Lock, Check } from "lucide-react";
+import { User, Globe, Shield, Bell, Trash2, RotateCcw, Lock, Check, Wrench } from "lucide-react";
+import Mt5TimeFixTool from "@/components/Mt5TimeFixTool";
 import { toast } from "sonner";
 import {
   applyTheme,
@@ -156,6 +157,7 @@ export default function Settings() {
       preferences: "Preferencje",
       trading: "Trading",
       notifications: "Powiadomienia",
+      tools: "Narzędzia jednorazowe",
       trash: "Kosz trade'ów",
       name: "Imię i nazwisko",
       email: "Email",
@@ -206,6 +208,7 @@ export default function Settings() {
       preferences: "Preferences",
       trading: "Trading",
       notifications: "Notifications",
+      tools: "One-time tools",
       trash: "Trade Trash",
       name: "Full Name",
       email: "Email",
@@ -259,6 +262,7 @@ export default function Settings() {
     { id: 'trading', label: t.trading, icon: Shield },
     { id: 'notifications', label: t.notifications, icon: Bell },
     { id: 'privacy', label: t.privacy, icon: Lock },
+    { id: 'tools', label: t.tools, icon: Wrench },
     { id: 'trash', label: t.trash, icon: Trash2 },
   ];
 
@@ -746,7 +750,19 @@ export default function Settings() {
               </Card>
             )}
 
-            {activeSection !== 'trash' && (
+            {activeSection === "tools" && (
+              <Card className="border-border">
+                <CardHeader>
+                  <CardTitle>{t.tools}</CardTitle>
+                  <CardDescription>Korekta godzin importu MT5</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Mt5TimeFixTool userId={authUser?.id} language={settings.language || "pl"} />
+                </CardContent>
+              </Card>
+            )}
+
+            {activeSection !== 'trash' && activeSection !== 'tools' && (
               <div className="flex justify-end">
                 <Button
                   onClick={handleSave}

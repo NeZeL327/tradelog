@@ -1,8 +1,18 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ImagePlus, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { persistReportScreenshot } from "@/lib/localStorage";
 import ImageViewer from "@/components/common/ImageViewer";
+import SafeImage from "@/components/common/SafeImage";
+import {
+  IMAGE_ACCEPT,
+  filesFromClipboard,
+  imageUploadMessage,
+  isImageFile,
+  isTypingTarget,
+  prepareImageFile,
+} from "@/lib/imageUpload";
 
 const MAX_IMAGES = 12;
 
@@ -20,24 +30,44 @@ export default function ReportScreenshots({
 
   const addFiles = async (fileList) => {
     if (!userId || readOnly) return;
-    const files = [...fileList].filter((f) => f.type?.startsWith("image/"));
-    if (!files.length) return;
+    const files = [...(fileList || [])].filter(isImageFile);
+    if (!files.length) {
+      toast.error(t("imageUnsupported"));
+      return;
+    }
     const room = MAX_IMAGES - (images?.length || 0);
     if (room <= 0) return;
     setUploading(true);
     try {
       const next = [...(images || [])];
       for (const file of files.slice(0, room)) {
-        const url = await persistReportScreenshot(userId, file);
+        const ready = await prepareImageFile(file);
+        const url = await persistReportScreenshot(userId, ready);
         if (url) next.push(url);
       }
       onChange?.(next);
     } catch (err) {
-      console.error(err);
+      toast.error(imageUploadMessage(err, t));
     } finally {
       setUploading(false);
     }
   };
+
+  const addFilesRef = useRef(addFiles);
+  addFilesRef.current = addFiles;
+
+  useEffect(() => {
+    if (readOnly) return undefined;
+    const onPaste = (e) => {
+      if (isTypingTarget(e.target)) return;
+      const files = filesFromClipboard(e.clipboardData).filter(isImageFile);
+      if (!files.length) return;
+      e.preventDefault();
+      void addFilesRef.current(files);
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, [readOnly]);
 
   const removeAt = (idx) => {
     if (readOnly) return;
@@ -71,7 +101,7 @@ export default function ReportScreenshots({
           <input
             ref={inputRef}
             type="file"
-            accept="image/*"
+            accept={IMAGE_ACCEPT}
             multiple
             className="hidden"
             onChange={(e) => {
@@ -80,7 +110,10 @@ export default function ReportScreenshots({
             }}
           />
           {uploading ? (
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+            <>
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
+              <p className="mt-2 text-xs text-muted-foreground">{t("imageProcessing")}</p>
+            </>
           ) : (
             <>
               <ImagePlus className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
@@ -107,7 +140,7 @@ export default function ReportScreenshots({
                 className="w-full h-full"
                 onClick={() => setViewerUrl(url)}
               >
-                <img src={url} alt="" className="w-full h-full object-cover" />
+                <SafeImage src={url} alt="" className="w-full h-full object-cover" />
               </button>
               {!readOnly && (
                 <Button

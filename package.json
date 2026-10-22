@@ -70,6 +70,7 @@
     "embla-carousel-react": "^8.5.2",
     "firebase": "^10.14.1",
     "framer-motion": "^11.16.4",
+    "heic-to": "^1.6.6",
     "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
     "jsonwebtoken": "^9.0.3",
@@ -95,6 +96,7 @@
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.171.0",
+    "utif2": "^4.1.0",
     "vaul": "^1.1.2",
     "zod": "^3.24.2"
   },

@@ -1,6 +1,7 @@
 /** Shared CSV/XML/XLSX trade import parsers + deduplication for Accounts / Billing */
 
 import { isXlsxFileName, xlsxArrayBufferToCsvText } from "./xlsx-to-rows.js";
+import { serverToLocal } from "./brokerTime.js";
 import {
   filterNewTrades,
   normalizeTicket,
@@ -594,6 +595,20 @@ function parseFundedNextRow(r, accountId, brokerId) {
   return finalizeTrade(trade);
 }
 
+/** MT4/MT5 file clock is broker server time; convert open and close independently. */
+function applyMt4BrokerTimes(open, close, brokerId) {
+  if (brokerId !== "mt4") return { open, close };
+
+  const localOpen =
+    open.date && open.time ? serverToLocal(open.date, open.time) : { date: "", time: "" };
+  const nextOpen = localOpen.date ? localOpen : open;
+
+  if (!close.time) return { open: nextOpen, close };
+
+  const localClose = serverToLocal(close.date || open.date, close.time);
+  return { open: nextOpen, close: localClose.date ? localClose : close };
+}
+
 /**
  * MetaTrader 4/5 (EN + PL headers) → same journal fields as FundedNext.
  * PL: Czas, Pozycja, Symbol, Typ, Wolumen, Cena, Prowizja, Swap, Zysk
@@ -638,7 +653,7 @@ function parseMT4Row(r, accountId, brokerId) {
 
   if (type && !isBuySell) return null;
 
-  const open = splitDateTime(
+  const openRaw = splitDateTime(
     getField(
       r,
       "open time",
@@ -651,9 +666,10 @@ function parseMT4Row(r, accountId, brokerId) {
       "datetime"
     )
   );
-  const close = splitDateTime(
+  const closeRaw = splitDateTime(
     getField(r, "close time", "czas zamknięcia", "czas zamkniecia", "closetime", "close date")
   );
+  const { open, close } = applyMt4BrokerTimes(openRaw, closeRaw, brokerId);
 
   const lots = parseNum(
     getField(r, "lots", "lot", "size", "wolumen", "volume", "wielkość", "wielkosc", "ilość", "ilosc")

@@ -41,6 +41,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { usePnlDisplay } from "@/hooks/use-pnl-display";
 import { directionBadgeClass, directionLabel, getActiveAccountIds, getTradeRealizedPL, isClosedTrade, isTradingAccountActive, normalizeTradeStatus, tradeBelongsToActiveAccount, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
+import SafeImage from "@/components/common/SafeImage";
 import { formatTradeDate, formatTradeClock, formatTradeClockDate, getDateFormat } from "@/lib/userSettings";
 import QuoteLine from "@/components/QuoteLine";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -1167,7 +1168,7 @@ export default function JournalSimple({ mode = "all" }) {
                                 onClick={() => openQuickImage(imageUrl)}
                                 title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
                               >
-                                <img src={imageUrl} alt={`${t('screenshot') || 'Screenshot'} ${index + 1}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                                <SafeImage src={imageUrl} alt={`${t('screenshot') || 'Screenshot'} ${index + 1}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                               </button>
                             ))
                           ) : (
@@ -1324,7 +1325,7 @@ export default function JournalSimple({ mode = "all" }) {
                                     onClick={() => openQuickImage(imageUrl)}
                                     title={`${t('screenshot') || 'Screenshot'} ${index + 1}`}
                                   >
-                                    <img src={imageUrl} alt={`${t('screenshot') || 'Screenshot'} ${index + 1}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                                    <SafeImage src={imageUrl} alt={`${t('screenshot') || 'Screenshot'} ${index + 1}`} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                                   </button>
                                 ))
                               ) : (

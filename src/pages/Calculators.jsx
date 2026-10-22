@@ -107,6 +107,9 @@ import {
 } from "@/lib/calculatorStore";
 import { createTrade, imageFileToDataUrl } from "@/lib/localStorage";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/LanguageProvider";
+import { IMAGE_ACCEPT, imageUploadMessage, prepareImageFile } from "@/lib/imageUpload";
+import SafeImage from "@/components/common/SafeImage";
 
 const ICONS = {
   ListChecks,
@@ -141,6 +144,7 @@ function todayIso() {
 
 export default function Calculators() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [hub, setHub] = useState(() => loadHub());
   const [search, setSearch] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -401,7 +405,8 @@ export default function Calculators() {
 
   const addImage = async (file) => {
     try {
-      const url = await imageFileToDataUrl(file);
+      const ready = await prepareImageFile(file);
+      const url = await imageFileToDataUrl(ready);
       if (custom) {
         persist({
           ...hub,
@@ -413,7 +418,7 @@ export default function Calculators() {
         updateExtra({ images: [...(extra.images || []), url] });
       }
     } catch (err) {
-      toast.error(err?.message || "Nie udało się dodać obrazu");
+      toast.error(imageUploadMessage(err, t) || err?.message || "Nie udało się dodać obrazu");
     }
   };
 
@@ -625,7 +630,7 @@ export default function Calculators() {
                   <TabsContent value="images">
                     <input
                       type="file"
-                      accept="image/*"
+                      accept={IMAGE_ACCEPT}
                       className="text-sm"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
@@ -635,7 +640,7 @@ export default function Calculators() {
                     />
                     <div className="grid grid-cols-2 gap-2 mt-3">
                       {images.map((src, idx) => (
-                        <img key={idx} src={src} alt="" className="rounded-lg border border-border object-cover max-h-40 w-full" />
+                        <SafeImage key={idx} src={src} alt="" className="rounded-lg border border-border object-cover max-h-40 w-full" />
                       ))}
                     </div>
                   </TabsContent>

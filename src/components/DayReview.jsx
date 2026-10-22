@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Sparkline from "@/components/Sparkline";
 import ImageViewer from "@/components/common/ImageViewer";
+import SafeImage from "@/components/common/SafeImage";
 import { DISCIPLINE_FORMULA, computeDisciplineScore, computeSessionDiscipline } from "@/lib/disciplineInsights";
 import { tradeMistakes } from "@/lib/calendarAggregates";
 import { getTradeScreenshots } from "@/lib/tradePreviewStats";
@@ -362,10 +363,37 @@ export function DayStatsSection({ title, action, metrics, dayKey = "", children 
   );
 }
 
-export function NestPanel({ title, children }) {
+function isBubbleActionTarget(target, root) {
+  const el = target instanceof Element ? target : target?.parentElement;
+  if (!el) return false;
+  const hit = el.closest("a, button, input, textarea, select, [data-no-bubble]");
+  return Boolean(hit && hit !== root);
+}
+
+export function NestPanel({ title, children, hint, onActivate, panelRef }) {
+  const interactive = Boolean(onActivate);
   return (
-    <div className="ds-spot flex min-h-[150px] flex-col rounded-[16px] px-5 py-4" style={PANEL_STYLE}>
-      <p className={MICRO_LABEL} style={{ color: FAINT }}>{title}</p>
+    <div
+      ref={panelRef}
+      className={`ds-spot flex min-h-[150px] flex-col rounded-[16px] px-5 py-4 ${interactive ? "cursor-pointer transition-colors duration-150 hover:bg-ds-s3" : ""}`}
+      style={PANEL_STYLE}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onClick={interactive ? (event) => {
+        if (isBubbleActionTarget(event.target, event.currentTarget)) return;
+        onActivate();
+      } : undefined}
+      onKeyDown={interactive ? (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        if (event.target !== event.currentTarget) return;
+        event.preventDefault();
+        onActivate();
+      } : undefined}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p className={MICRO_LABEL} style={{ color: FAINT }}>{title}</p>
+        {hint ? <span className="shrink-0 text-[11px] font-medium" style={{ color: MUTED }}>{hint}</span> : null}
+      </div>
       <div className="mt-3 flex-1">{children}</div>
     </div>
   );
@@ -388,20 +416,54 @@ function MicroValue({ label, value }) {
   );
 }
 
-export function DaySummary({ notes, scoreLabel, scoreValue, tags, emptyText }) {
+export function DaySummary({ notes, scoreLabel, scoreValue, tags, emptyText, onReadMore, readMoreLabel }) {
+  const shown = notes.slice(0, 3);
+  const hidden = notes.length > 3;
+  const lineRefs = useRef([]);
+  const [clamped, setClamped] = useState(false);
+
+  useLayoutEffect(() => {
+    const check = () => {
+      const overflow = lineRefs.current.some((el) => el && el.scrollHeight > el.clientHeight + 1);
+      setClamped(hidden || overflow);
+    };
+    check();
+    const observers = lineRefs.current.filter(Boolean).map((el) => {
+      const ro = new ResizeObserver(check);
+      ro.observe(el);
+      return ro;
+    });
+    return () => observers.forEach((ro) => ro.disconnect());
+  }, [notes, hidden]);
+
   return (
     <>
       <QuoteText>
         {notes.length ? (
           <div className="space-y-2">
-            {notes.slice(0, 3).map((row) => (
-              <p key={row.id} className="line-clamp-4">
+            {shown.map((row, index) => (
+              <p
+                key={row.id}
+                ref={(node) => { lineRefs.current[index] = node; }}
+                className="line-clamp-4"
+              >
                 <span style={{ color: INK }}>{row.symbol || "—"}. </span>{stripNoteMarkdown(row.notes)}
               </p>
             ))}
           </div>
         ) : <p>{emptyText}</p>}
       </QuoteText>
+      {onReadMore && clamped && readMoreLabel ? (
+        <button
+          type="button"
+          data-no-bubble
+          onClick={(event) => { event.stopPropagation(); onReadMore(); }}
+          className="mt-2 inline-flex rounded-full border px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150 hover:bg-ds-s3"
+          style={{ borderColor: "var(--ds-pill-line)", color: MUTED }}
+        >
+          {readMoreLabel}
+        </button>
+      ) : null}
       {scoreValue ? <div className="mt-4"><MicroValue label={scoreLabel} value={scoreValue} /></div> : null}
       {tags.length ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -424,15 +486,57 @@ function ShotThumbs({ urls, label, onOpen, large = false }) {
           className={`${large ? "aspect-[8/5] w-[160px] max-w-full" : "h-12 w-[72px]"} ds-press shrink-0 overflow-hidden rounded-[8px] border transition-[border-color,transform] duration-150 hover:-translate-y-px hover:border-ds-frame`}
           style={{ borderColor: LINE, background: NEST_BG }}
         >
-          <img src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+          <SafeImage src={url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
         </button>
       ))}
     </div>
   );
 }
 
+function JournalPreviewRow({ trade, info, shots, shotLabel, shotCount, onOpenTrade, onReadNote, readMoreLabel, onOpenShot }) {
+  const noteRef = useRef(null);
+  const [clamped, setClamped] = useState(false);
+  const noteLine = firstNoteLine(trade.notes);
+  const extra = Boolean(noteLine && stripNoteMarkdown(trade.notes).trim() !== noteLine);
+
+  useLayoutEffect(() => {
+    const el = noteRef.current;
+    if (!el) return undefined;
+    const check = () => setClamped(el.scrollWidth > el.clientWidth + 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [noteLine]);
+
+  return (
+    <div>
+      <button type="button" onClick={() => onOpenTrade(trade)} className="-mx-2 block w-[calc(100%+16px)] rounded-[10px] px-2 py-1 text-left transition-colors duration-150 hover:bg-ds-s3">
+        <span className="flex items-center justify-between gap-2 text-[13px]">
+          <span className="font-medium" style={{ color: INK }}>{info.title}</span>
+          <span className="tabular-nums" style={{ color: info.resultColor }}>{info.result}</span>
+        </span>
+        <span className="mt-0.5 block truncate text-[11px]" style={{ color: FAINT }}>{info.meta || "—"}</span>
+        {noteLine ? <span ref={noteRef} className="mt-1 block truncate text-[12px]" style={{ color: MUTED }}>{noteLine}</span> : null}
+      </button>
+      {onReadNote && noteLine && (clamped || extra) && readMoreLabel ? (
+        <button
+          type="button"
+          data-no-bubble
+          className="mt-1 inline-flex rounded-full border px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150 hover:bg-ds-s3"
+          style={{ borderColor: "var(--ds-pill-line)", color: MUTED }}
+          onClick={() => onReadNote(trade)}
+        >
+          {readMoreLabel}
+        </button>
+      ) : null}
+      {shots.length ? <ShotThumbs urls={shots} label={shotLabel} onOpen={onOpenShot} large={shotCount <= 2} /> : null}
+    </div>
+  );
+}
+
 // describe(trade) → { title, meta, result, resultColor }; screenshots are read-only.
-export function JournalPreview({ rows, describe, onOpenTrade, emptyText, noShotsText, shotLabel }) {
+export function JournalPreview({ rows, describe, onOpenTrade, emptyText, noShotsText, shotLabel, onReadNote, readMoreLabel }) {
   const [viewer, setViewer] = useState("");
   const preview = (rows || []).slice(0, 3);
   if (!preview.length) return <p className="text-[12px]" style={{ color: MUTED }}>{emptyText}</p>;
@@ -441,23 +545,20 @@ export function JournalPreview({ rows, describe, onOpenTrade, emptyText, noShots
   const anyShots = shotCount > 0;
   return (
     <div className="space-y-3">
-      {preview.map((trade) => {
-        const info = describe(trade);
-        const noteLine = firstNoteLine(trade.notes);
-        return (
-          <div key={trade.id}>
-            <button type="button" onClick={() => onOpenTrade(trade)} className="-mx-2 block w-[calc(100%+16px)] rounded-[10px] px-2 py-1 text-left transition-colors duration-150 hover:bg-ds-s3">
-              <span className="flex items-center justify-between gap-2 text-[13px]">
-                <span className="font-medium" style={{ color: INK }}>{info.title}</span>
-                <span className="tabular-nums" style={{ color: info.resultColor }}>{info.result}</span>
-              </span>
-              <span className="mt-0.5 block truncate text-[11px]" style={{ color: FAINT }}>{info.meta || "—"}</span>
-              {noteLine ? <span className="mt-1 block truncate text-[12px]" style={{ color: MUTED }}>{noteLine}</span> : null}
-            </button>
-            {shots.get(trade.id).length ? <ShotThumbs urls={shots.get(trade.id)} label={shotLabel} onOpen={setViewer} large={shotCount <= 2} /> : null}
-          </div>
-        );
-      })}
+      {preview.map((trade) => (
+        <JournalPreviewRow
+          key={trade.id}
+          trade={trade}
+          info={describe(trade)}
+          shots={shots.get(trade.id)}
+          shotLabel={shotLabel}
+          shotCount={shotCount}
+          onOpenTrade={onOpenTrade}
+          onReadNote={onReadNote}
+          readMoreLabel={readMoreLabel}
+          onOpenShot={setViewer}
+        />
+      ))}
       {anyShots ? null : <p className="text-[11px]" style={{ color: FAINT }}>{noShotsText}</p>}
       <ImageViewer open={Boolean(viewer)} onOpenChange={(open) => { if (!open) setViewer(""); }} imageUrl={viewer} />
     </div>
@@ -671,7 +772,39 @@ function FindingGroup({ group, index }) {
 }
 
 // findings: [{ id, title, kind, count, result, resultColor }] from existing tags; items: [{ id, title, badge, badgeKind, rows, note, onOpen, openLabel }]
-export function DayFindings({ summaryTitle, summary, findingsTitle, items, emptyText, tagsTitle, findings = [] }) {
+function FindingNote({ text, onReadMore, label }) {
+  const ref = useRef(null);
+  const [clamped, setClamped] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const check = () => setClamped(el.scrollHeight > el.clientHeight + 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [text]);
+
+  return (
+    <>
+      <p ref={ref} className="mt-1.5 line-clamp-3 text-[12px] leading-[18px]" style={{ color: MUTED }}>{text}</p>
+      {onReadMore && clamped && label ? (
+        <button
+          type="button"
+          data-no-bubble
+          onClick={onReadMore}
+          className="mt-1 inline-flex rounded-full border px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors duration-150 hover:bg-ds-s3"
+          style={{ borderColor: "var(--ds-pill-line)", color: MUTED }}
+        >
+          {label}
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+export function DayFindings({ summaryTitle, summary, findingsTitle, items, emptyText, tagsTitle, findings = [], onReadNote, readMoreLabel }) {
   const groups = groupFindings(findings);
   return (
     <div className="space-y-6">
@@ -694,7 +827,13 @@ export function DayFindings({ summaryTitle, summary, findingsTitle, items, empty
             {items.map((item, index) => (
               <div key={item.id}>
                 <FindingTitle index={index + 1} title={item.title} badge={item.badge ? <TagPill tag={item.badge} kind={item.badgeKind} /> : null} />
-                {item.note ? <p className="mt-1.5 line-clamp-3 text-[12px] leading-[18px]" style={{ color: MUTED }}>{stripNoteMarkdown(item.note)}</p> : null}
+                {item.note ? (
+                  <FindingNote
+                    text={stripNoteMarkdown(item.note)}
+                    onReadMore={onReadNote ? () => onReadNote(item) : undefined}
+                    label={readMoreLabel}
+                  />
+                ) : null}
                 <div className="mt-2"><KeyValueTable rows={item.rows} /></div>
                 <button
                   type="button"

@@ -9,7 +9,14 @@ import { createTrade, updateTrade, getTradingAccounts, getStrategies, persistTra
 import { useLanguage } from "@/components/LanguageProvider";
 import { X, Plus, ListChecks, AlertTriangle, Brain, Star } from "lucide-react";
 import ImageViewer from "@/components/common/ImageViewer";
-import ScreenshotField, { isImageFile } from "@/components/common/ScreenshotField";
+import ScreenshotField from "@/components/common/ScreenshotField";
+import {
+  filesFromClipboard,
+  imageUploadMessage,
+  isImageFile,
+  isTypingTarget,
+  prepareImageForPreview,
+} from "@/lib/imageUpload";
 import { isTradingAccountActive, normalizeDirection } from "@/lib/utils";
 import {
   EmotionsInlinePanel,
@@ -126,7 +133,12 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
   const [viewerImage, setViewerImage] = useState("");
   const [screenshotErrors, setScreenshotErrors] = useState({});
   const [pendingScreenshotKeys, setPendingScreenshotKeys] = useState(() => new Set());
+  const [processingScreenshotKeys, setProcessingScreenshotKeys] = useState(() => new Set());
+  const [shotDrag, setShotDrag] = useState(false);
   const formUid = useId().replace(/:/g, "");
+  const shotGenRef = useRef({});
+  const formDataRef = useRef(formData);
+  formDataRef.current = formData;
   const tradeInitRef = useRef(null);
   const blobUrlsRef = useRef([]);
   const pendingScreenshotsRef = useRef({});
@@ -430,40 +442,92 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
     }));
   };
 
+  const assignScreenshotFile = async (fieldName, file) => {
+    if (!user?.id) {
+      setScreenshotErrors((prev) => ({ ...prev, [fieldName]: t("mustBeLoggedIn") }));
+      return;
+    }
+    if (!isImageFile(file)) {
+      setScreenshotErrors((prev) => ({ ...prev, [fieldName]: t("imageUnsupported") }));
+      return;
+    }
+
+    const gen = (shotGenRef.current[fieldName] || 0) + 1;
+    shotGenRef.current[fieldName] = gen;
+    setError(null);
+    setScreenshotErrors((prev) => ({ ...prev, [fieldName]: null }));
+    setProcessingScreenshotKeys((prev) => new Set(prev).add(fieldName));
+
+    try {
+      const { file: ready, previewUrl } = await prepareImageForPreview(file);
+      if (shotGenRef.current[fieldName] !== gen) {
+        URL.revokeObjectURL(previewUrl);
+        return;
+      }
+      setFormData((prev) => {
+        revokeBlobUrl(prev[fieldName]);
+        return { ...prev, [fieldName]: previewUrl };
+      });
+      trackBlobUrl(previewUrl);
+      pendingScreenshotsRef.current[fieldName] = ready;
+      setPendingScreenshotKeys((prev) => new Set(prev).add(fieldName));
+    } catch (err) {
+      if (shotGenRef.current[fieldName] !== gen) return;
+      setScreenshotErrors((prev) => ({ ...prev, [fieldName]: imageUploadMessage(err, t) }));
+    } finally {
+      if (shotGenRef.current[fieldName] === gen) {
+        setProcessingScreenshotKeys((prev) => {
+          const next = new Set(prev);
+          next.delete(fieldName);
+          return next;
+        });
+      }
+    }
+  };
+
+  const assignScreenshotFiles = async (fileList) => {
+    const files = [...(fileList || [])].filter(isImageFile);
+    if (!files.length) {
+      setError(t("imageUnsupported"));
+      return;
+    }
+    const data = formDataRef.current;
+    const used = new Set(
+      SCREENSHOT_KEYS.filter(
+        (k) => data[k] || pendingScreenshotsRef.current[k] || processingScreenshotKeys.has(k)
+      )
+    );
+    for (const file of files) {
+      const key = SCREENSHOT_KEYS.find((k) => !used.has(k));
+      if (!key) {
+        setError(t("imageSlotsFull"));
+        break;
+      }
+      used.add(key);
+      await assignScreenshotFile(key, file);
+    }
+  };
+
   const handleScreenshotPick = (fieldName) => (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
-
-    if (!file) return;
-
-    if (!user?.id) {
-      setScreenshotErrors((prev) => ({ ...prev, [fieldName]: "Musisz być zalogowany." }));
-      return;
-    }
-
-    if (!isImageFile(file)) {
-      setScreenshotErrors((prev) => ({ ...prev, [fieldName]: "Wybierz plik graficzny (JPG, PNG, WebP)." }));
-      return;
-    }
-
-    setScreenshotErrors((prev) => ({ ...prev, [fieldName]: null }));
-    setError(null);
-
-    setFormData((prev) => {
-      revokeBlobUrl(prev[fieldName]);
-      return prev;
-    });
-
-    const previewUrl = URL.createObjectURL(file);
-    trackBlobUrl(previewUrl);
-    pendingScreenshotsRef.current[fieldName] = file;
-    setPendingScreenshotKeys((prev) => new Set(prev).add(fieldName));
-
-    setFormData((prev) => ({
-      ...prev,
-      [fieldName]: previewUrl,
-    }));
+    if (file) void assignScreenshotFile(fieldName, file);
   };
+
+  const assignFilesRef = useRef(assignScreenshotFiles);
+  assignFilesRef.current = assignScreenshotFiles;
+
+  useEffect(() => {
+    const onPaste = (e) => {
+      if (isTypingTarget(e.target)) return;
+      const files = filesFromClipboard(e.clipboardData).filter(isImageFile);
+      if (!files.length) return;
+      e.preventDefault();
+      void assignFilesRef.current(files);
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, []);
 
   const resolveScreenshotsForSubmit = async () => {
     const resolved = {};
@@ -490,8 +554,14 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
   };
 
   const clearScreenshot = (fieldName) => {
+    shotGenRef.current[fieldName] = (shotGenRef.current[fieldName] || 0) + 1;
     pendingScreenshotsRef.current[fieldName] = null;
     setPendingScreenshotKeys((prev) => {
+      const next = new Set(prev);
+      next.delete(fieldName);
+      return next;
+    });
+    setProcessingScreenshotKeys((prev) => {
       const next = new Set(prev);
       next.delete(fieldName);
       return next;
@@ -1209,10 +1279,32 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
               </div>
 
               {/* Screenshots */}
-              <div className={cn(sectionClass, "bg-ds-s2")}>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Screeny — podgląd od razu, wysyłka po „Zapisz”
-                </p>
+              <div
+                className={cn(
+                  sectionClass,
+                  "bg-ds-s2",
+                  shotDrag && "border-primary/60 bg-primary/[0.06]"
+                )}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setShotDrag(true);
+                }}
+                onDragLeave={() => setShotDrag(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setShotDrag(false);
+                  void assignScreenshotFiles(e.dataTransfer.files);
+                }}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t("screenshots")}
+                  </p>
+                  <span className="text-[10px] tabular-nums text-muted-foreground">
+                    {SCREENSHOT_KEYS.filter((k) => formData[k] || processingScreenshotKeys.has(k)).length}/3
+                  </span>
+                </div>
+                <p className="text-[10px] text-muted-foreground">{t("imageDropHint")}</p>
                 <div className="grid grid-cols-3 gap-2">
                   {SCREENSHOT_KEYS.map((key, idx) => (
                     <ScreenshotField
@@ -1221,6 +1313,7 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                       label={`${t("screenshot")} ${idx + 1}`}
                       value={formData[key]}
                       pending={pendingScreenshotKeys.has(key)}
+                      processing={processingScreenshotKeys.has(key)}
                       uploadError={screenshotErrors[key]}
                       onPickFile={handleScreenshotPick(key)}
                       onRemove={() => clearScreenshot(key)}
@@ -1229,6 +1322,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
                       changeLabel={t("change")}
                       removeLabel={t("remove")}
                       viewLabel={t("view")}
+                      pendingLabel={t("imagePendingSave")}
+                      processingLabel={t("imageProcessing")}
                     />
                   ))}
                 </div>

@@ -1,18 +1,17 @@
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { IMAGE_ACCEPT, isImageFile } from "@/lib/imageUpload";
+import SafeImage from "@/components/common/SafeImage";
 
-export function isImageFile(file) {
-  if (!file) return false;
-  if (file.type?.startsWith("image/")) return true;
-  return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(file.name || "");
-}
+export { isImageFile };
 
 export default function ScreenshotField({
   slotId,
   label,
   value,
   pending,
+  processing,
   onPickFile,
   onRemove,
   onView,
@@ -21,69 +20,84 @@ export default function ScreenshotField({
   removeLabel,
   viewLabel,
   uploadError,
+  pendingLabel,
+  processingLabel,
 }) {
   return (
     <div className="w-full min-w-0">
       {label ? (
-        <Label className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1">
+        <Label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
           {label}
         </Label>
       ) : null}
       <input
         id={slotId}
         type="file"
-        accept="image/*,.heic,.heif"
+        accept={IMAGE_ACCEPT}
         className="sr-only"
+        disabled={processing}
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
         onChange={onPickFile}
       />
-      <label
-        htmlFor={slotId}
-        className="relative mx-auto flex items-center justify-center size-32 aspect-square border border-dashed border-border/70 rounded-lg bg-muted/20 hover:border-primary/50 hover:bg-primary/5 transition cursor-pointer overflow-hidden"
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        {value ? (
+      <div className="relative mx-auto h-16 w-full overflow-hidden rounded-lg border border-border/70 bg-muted/20">
+        {processing ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+            <span className="px-1 text-center text-[10px] font-medium text-primary-foreground">
+              {processingLabel || "…"}
+            </span>
+          </div>
+        ) : value ? (
           <>
-            <img
-              src={value}
-              alt={label || ""}
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            />
-            <div className="absolute inset-0 bg-black/20 pointer-events-none" />
-            {pending && (
-              <div className="absolute bottom-1 left-1 right-1 text-center text-[10px] font-medium text-primary-foreground bg-primary/90 rounded px-1 py-0.5 pointer-events-none">
-                Zapisze po „Zapisz”
+            <button
+              type="button"
+              className="absolute inset-0"
+              onClick={onView}
+              aria-label={viewLabel}
+            >
+              <SafeImage
+                src={value}
+                alt={label || ""}
+                className="h-full w-full object-cover"
+              />
+            </button>
+            <button
+              type="button"
+              className="absolute right-1 top-1 z-10 flex size-5 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white hover:bg-black/90"
+              onClick={onRemove}
+              aria-label={removeLabel}
+            >
+              <X className="h-3 w-3" />
+            </button>
+            {pending ? (
+              <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-primary/90 px-1 py-0.5 text-center text-[9px] font-medium text-primary-foreground">
+                {pendingLabel || ""}
               </div>
-            )}
+            ) : null}
           </>
         ) : (
-          <div className="flex flex-col items-center">
-            <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center mb-1">
-              <Plus className="w-4 h-4" />
+          <label
+            htmlFor={slotId}
+            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center hover:bg-primary/5"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <div className="mb-0.5 flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <Plus className="h-3.5 w-3.5" />
             </div>
-            <span className="text-[11px] font-medium text-muted-foreground">{addLabel}</span>
-          </div>
+            <span className="text-[10px] font-medium text-muted-foreground">{addLabel}</span>
+          </label>
         )}
-      </label>
-      {uploadError && (
-        <p className="mt-1 text-xs text-loss dark:text-loss">{uploadError}</p>
-      )}
-      {value && (
-        <div className="mt-1.5 flex flex-nowrap items-center gap-1">
-          <Button type="button" variant="outline" size="sm" className="h-7 min-w-0 flex-1 px-1.5 text-[11px] whitespace-nowrap" onClick={onRemove}>
-            {removeLabel}
-          </Button>
-          <Button type="button" variant="outline" size="sm" className="h-7 min-w-0 flex-1 px-1.5 text-[11px] whitespace-nowrap" onClick={onView}>
-            {viewLabel}
-          </Button>
-          <Button type="button" variant="outline" size="sm" className="h-7 min-w-0 flex-1 px-1.5 text-[11px] whitespace-nowrap" asChild>
+      </div>
+      {uploadError ? <p className="mt-1 text-xs text-loss dark:text-loss">{uploadError}</p> : null}
+      {value && !processing ? (
+        <div className="mt-1 flex items-center gap-1">
+          <Button type="button" variant="outline" size="sm" className="h-6 min-w-0 flex-1 px-1.5 text-[10px]" asChild>
             <label htmlFor={slotId} className="cursor-pointer" onPointerDown={(e) => e.stopPropagation()}>
               {changeLabel}
             </label>
           </Button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
