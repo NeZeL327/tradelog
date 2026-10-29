@@ -18,6 +18,9 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 import ThoughtOfDay from "@/components/ThoughtOfDay";
+import LanguageToggle from "@/components/LanguageToggle";
+import ThemeToggle from "@/components/ThemeToggle";
+import PnlViewToggle from "@/components/PnlViewToggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ALL_NAV_ITEMS } from "@/lib/navDock";
 import { cn } from "@/lib/utils";
@@ -190,7 +193,22 @@ export default function AppDock({ user, onLogout }) {
             </button>
           </DockTip>
           {settingsOpen ? (
-            <div className="absolute bottom-0 left-[calc(100%+8px)] z-[80] w-44 rounded-xl border border-ds-frame bg-ds-s1 p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-md">
+            <div className="absolute bottom-0 left-[calc(100%+8px)] z-[80] w-60 rounded-xl border border-ds-frame bg-ds-s1 p-1.5 shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-md">
+              {/* Preferencje przeniesione z górnego paska; komponenty same zapisują wybór. */}
+              <div className="space-y-1.5 border-b border-ds-line px-2 pb-2 pt-1 mb-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[12px] text-ds-text2">{t("language")}</span>
+                  <LanguageToggle className="ds-pill-group" />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[12px] text-ds-text2">{t("theme")}</span>
+                  <ThemeToggle className="ds-pill-group" />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[12px] text-ds-text2">P&amp;L</span>
+                  <PnlViewToggle className="ds-pill-group" />
+                </div>
+              </div>
               <Link
                 to={settingsUrl}
                 onClick={() => setSettingsOpen(false)}

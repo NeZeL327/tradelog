@@ -8,9 +8,6 @@ import { useLanguage } from "@/components/LanguageProvider";
 import CommandSearch, { CommandSearchHost } from "@/components/CommandSearch";
 import HeaderAccountSync from "@/components/HeaderAccountSync";
 import SessionClocks from "@/components/SessionClocks";
-import LanguageToggle from "@/components/LanguageToggle";
-import ThemeToggle from "@/components/ThemeToggle";
-import PnlViewToggle from "@/components/PnlViewToggle";
 import AppDock from "@/components/AppDock";
 import { applyTheme } from "@/lib/userSettings";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -99,11 +96,6 @@ export default function Layout({ children }) {
           </div>
           </div>
           <div className="flex min-w-0 items-center gap-2">
-            <div className="hidden items-center gap-1.5 md:flex">
-              <LanguageToggle className="ds-pill-group" />
-              <ThemeToggle className="ds-pill-group" />
-              <PnlViewToggle className="ds-pill-group" />
-            </div>
             <div className="topbar-account min-w-0">
               <HeaderAccountSync />
             </div>
