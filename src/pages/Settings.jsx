@@ -3,6 +3,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { getTradingAccounts, updateUser, getDeletedTrades, restoreTrade, permanentlyDeleteTrade } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useLanguage } from "@/components/LanguageProvider";
+import { getStoredMotionMode, setMotionMode } from "@/lib/motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -255,6 +257,8 @@ export default function Settings() {
   };
 
   const t = translations[settings?.language || 'pl'] || translations.pl;
+  const { t: tr } = useLanguage();
+  const [motionMode, setMotionModeState] = useState(getStoredMotionMode);
 
   const sectionItems = [
     { id: 'profile', label: t.profile, icon: User },
@@ -534,6 +538,25 @@ export default function Settings() {
                         <SelectItem value="auto">{t.auto}</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label>{tr('motionLabel')}</Label>
+                    {/* Tylko localStorage + html[data-motion]; działa od razu, bez zapisu w profilu. */}
+                    <Select
+                      value={motionMode}
+                      onValueChange={(value) => {
+                        setMotionMode(value);
+                        setMotionModeState(value);
+                      }}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full">{tr('motionFull')}</SelectItem>
+                        <SelectItem value="subtle">{tr('motionSubtle')}</SelectItem>
+                        <SelectItem value="off">{tr('motionOff')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-1 text-xs text-muted-foreground">{tr('motionHint')}</p>
                   </div>
                 </CardContent>
               </Card>

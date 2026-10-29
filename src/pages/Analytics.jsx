@@ -16,9 +16,10 @@ import { usePnlDisplay } from "@/hooks/use-pnl-display";
 import { normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
 import { getTradeEntryMinutes } from "@/lib/userSettings";
 import { aggregateTagPerformance } from "@/lib/tradeTags";
-import { CHART, chartTooltipStyle, chartGridProps, chartBarRadius } from "@/lib/chartTheme";
+import { CHART, chartTooltipStyle, chartGridProps, chartBarRadius, chartSeriesProps } from "@/lib/chartTheme";
 import { SkeletonKpiRow, SkeletonBlock } from "@/components/ui/skeleton-block";
 import QuoteLine from "@/components/QuoteLine";
+import CountUpText from "@/components/CountUpText";
 import MultiSelectFilter, { FILTER_LABEL_CLASS, FILTER_PANEL_CLASS, FILTER_TRIGGER_CLASS, filterItemClass } from "@/components/MultiSelectFilter";
 import DateRangeCalendar from "@/components/DateRangeCalendar";
 import { balanceForTrades } from "@/lib/pnlDisplay";
@@ -912,7 +913,7 @@ export default function Analytics() {
             >
               <p className="type-section mb-2 break-words">{tile.label}</p>
               <p className={`type-metric-sm font-semibold break-words ${tile.tone === 'profit' ? 'text-ds-pos' : tile.tone === 'loss' ? 'text-ds-neg' : 'text-ds-text'}`}>
-                {tile.value}
+                <CountUpText text={tile.value} />
               </p>
               <p className="type-secondary mt-1.5 line-clamp-2">{tile.hint}</p>
             </div>
@@ -920,7 +921,7 @@ export default function Analytics() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="flex w-full overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsList indicator className="flex w-full overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <TabsTrigger value="overview" className="shrink-0">{t('overview')}</TabsTrigger>
             <TabsTrigger value="symbols" className="shrink-0">{t('symbols')}</TabsTrigger>
             <TabsTrigger value="strategies" className="shrink-0">{t('strategiesAnalytics')}</TabsTrigger>
@@ -987,7 +988,7 @@ export default function Analytics() {
                         }}
                         formatter={(value) => [fmtMoney(value), equityView === "drawdown" ? t('drawdown') : t('anEquity')]}
                       />
-                      <Area
+                      <Area {...chartSeriesProps}
                         type="monotone"
                         dataKey={equityView === "drawdown" ? "drawdown" : "equity"}
                         stroke={equityView === "drawdown" ? CHART.loss : CHART.line}
@@ -1018,7 +1019,7 @@ export default function Analytics() {
                         }}
                         formatter={(value) => [fmtMoney(value), t('netPL')]}
                       />
-                      <Bar dataKey="pl" radius={chartBarRadius} maxBarSize={40}>
+                      <Bar {...chartSeriesProps} dataKey="pl" radius={chartBarRadius} maxBarSize={40}>
                         {weekdayData.map((entry) => (
                           <Cell key={entry.day} fill={entry.pl >= 0 ? CHART.profit : CHART.loss} />
                         ))}
@@ -1088,7 +1089,7 @@ export default function Analytics() {
                       }}
                       formatter={(value) => [fmtMoney(value), t('netPL')]}
                     />
-                    <Bar dataKey="pl" name={t('netPL')} radius={chartBarRadius}>
+                    <Bar {...chartSeriesProps} dataKey="pl" name={t('netPL')} radius={chartBarRadius}>
                       {periodData.map((entry) => (
                         <Cell key={entry.period} fill={entry.pl >= 0 ? CHART.profit : CHART.loss} />
                       ))}
@@ -1127,7 +1128,7 @@ export default function Analytics() {
                       <XAxis type="number" stroke={CHART.axis} domain={paddedDomain} />
                       <YAxis type="category" dataKey="direction" stroke={CHART.axis} width={60} />
                       <Tooltip {...tooltipProps} formatter={(value) => [fmtMoney(value), t('netPL')]} />
-                      <Bar dataKey="netPL" radius={[0, 6, 6, 0]} maxBarSize={48}>
+                      <Bar {...chartSeriesProps} dataKey="netPL" radius={[0, 6, 6, 0]} maxBarSize={48}>
                         {directionEdgeData.map((entry) => (
                           <Cell key={entry.direction} fill={entry.netPL >= 0 ? directionChartColor(entry.direction) : CHART.loss} />
                         ))}
@@ -1160,7 +1161,7 @@ export default function Analytics() {
                         }}
                         formatter={(value) => [`${value}%`, t('winRate')]}
                       />
-                      <Bar dataKey="winRate" fill={CHART.line} radius={chartBarRadius} maxBarSize={48} />
+                      <Bar {...chartSeriesProps} dataKey="winRate" fill={CHART.line} radius={chartBarRadius} maxBarSize={48} />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -1189,7 +1190,7 @@ export default function Analytics() {
                           }}
                           formatter={(value) => [`${value}%`, t('winRate')]}
                         />
-                        <Bar dataKey="winRate" fill={CHART.line} radius={chartBarRadius} maxBarSize={48} />
+                        <Bar {...chartSeriesProps} dataKey="winRate" fill={CHART.line} radius={chartBarRadius} maxBarSize={48} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1208,7 +1209,7 @@ export default function Analytics() {
                           }}
                           formatter={(value) => [fmtMoney(value), t('avgPLLabel')]}
                         />
-                        <Bar dataKey="avgPL" radius={chartBarRadius} maxBarSize={48}>
+                        <Bar {...chartSeriesProps} dataKey="avgPL" radius={chartBarRadius} maxBarSize={48}>
                           {sessionData.map((entry) => (
                             <Cell key={entry.session} fill={entry.avgPL >= 0 ? CHART.profit : CHART.loss} />
                           ))}
@@ -1241,8 +1242,8 @@ export default function Analytics() {
                           labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
-                        <Bar dataKey="totalPL" xAxisId="bottom" fill={CHART.profit} name={t('totalPLLabel')} radius={[0, 6, 6, 0]} />
-                        <Bar dataKey="winRate" xAxisId="top" fill={CHART.line} name={`${t('winRate')} (%)`} radius={[0, 6, 6, 0]} />
+                        <Bar {...chartSeriesProps} dataKey="totalPL" xAxisId="bottom" fill={CHART.profit} name={t('totalPLLabel')} radius={[0, 6, 6, 0]} />
+                        <Bar {...chartSeriesProps} dataKey="winRate" xAxisId="top" fill={CHART.line} name={`${t('winRate')} (%)`} radius={[0, 6, 6, 0]} />
                       </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1475,12 +1476,12 @@ export default function Analytics() {
                                       labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={chartBarRadius}>
+                                    <Bar {...chartSeriesProps} dataKey="winRate" name={`${t('winRate')} (%)`} radius={chartBarRadius}>
                                       {directionBreakdownData.map((entry) => (
                                         <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
                                       ))}
                                     </Bar>
-                                    <Bar dataKey="trades" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
+                                    <Bar {...chartSeriesProps} dataKey="trades" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1505,8 +1506,8 @@ export default function Analytics() {
                                       labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
-                                    <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={chartBarRadius} />
+                                    <Bar {...chartSeriesProps} dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                                    <Bar {...chartSeriesProps} dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={chartBarRadius} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1606,9 +1607,9 @@ export default function Analytics() {
                         labelStyle={{ color: 'hsl(var(--foreground))' }}
                       />
                       <Legend />
-                      <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
-                      <Bar dataKey="avgPL" yAxisId="right" fill={CHART.profit} name={t('avgPLLabel')} radius={chartBarRadius} />
-                      <Bar dataKey="trades" yAxisId="left" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
+                      <Bar {...chartSeriesProps} dataKey="winRate" yAxisId="left" fill={CHART.line} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                      <Bar {...chartSeriesProps} dataKey="avgPL" yAxisId="right" fill={CHART.profit} name={t('avgPLLabel')} radius={chartBarRadius} />
+                      <Bar {...chartSeriesProps} dataKey="trades" yAxisId="left" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1844,12 +1845,12 @@ export default function Analytics() {
                                       labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={chartBarRadius}>
+                                    <Bar {...chartSeriesProps} dataKey="winRate" name={`${t('winRate')} (%)`} radius={chartBarRadius}>
                                       {directionBreakdownData.map((entry) => (
                                         <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
                                       ))}
                                     </Bar>
-                                    <Bar dataKey="trades" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
+                                    <Bar {...chartSeriesProps} dataKey="trades" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1874,8 +1875,8 @@ export default function Analytics() {
                                       labelStyle={{ color: 'hsl(var(--foreground))' }}
                                     />
                                     <Legend />
-                                    <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
-                                    <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={chartBarRadius} />
+                                    <Bar {...chartSeriesProps} dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                                    <Bar {...chartSeriesProps} dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={chartBarRadius} />
                                   </BarChart>
                                 </ResponsiveContainer>
                               </div>
@@ -1967,7 +1968,7 @@ export default function Analytics() {
                   <div className="w-full overflow-hidden">
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-                        <Pie
+                        <Pie {...chartSeriesProps}
                           data={[
                             { name: 'Live', value: accounts.filter(a => a.account_type === 'Live').length, fill: CHART.profit },
                             { name: 'Demo', value: accounts.filter(a => a.account_type === 'Demo').length, fill: CHART.muted },
@@ -2022,7 +2023,7 @@ export default function Analytics() {
                           itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                           labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
-                        <Bar dataKey="count" fill={CHART.line} radius={chartBarRadius} />
+                        <Bar {...chartSeriesProps} dataKey="count" fill={CHART.line} radius={chartBarRadius} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -2048,9 +2049,9 @@ export default function Analytics() {
                         labelStyle={{ color: 'hsl(var(--foreground))' }}
                       />
                       <Legend />
-                      <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name="Win Rate (%)" radius={chartBarRadius} />
-                      <Bar dataKey="roi" yAxisId="right" fill={CHART.profit} name={t('roi')} radius={chartBarRadius} />
-                      <Bar dataKey="trades" yAxisId="left" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
+                      <Bar {...chartSeriesProps} dataKey="winRate" yAxisId="left" fill={CHART.line} name="Win Rate (%)" radius={chartBarRadius} />
+                      <Bar {...chartSeriesProps} dataKey="roi" yAxisId="right" fill={CHART.profit} name={t('roi')} radius={chartBarRadius} />
+                      <Bar {...chartSeriesProps} dataKey="trades" yAxisId="left" fill={CHART.muted} name={t('noOfTrades')} radius={chartBarRadius} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -2188,8 +2189,8 @@ export default function Analytics() {
                             labelStyle={{ color: 'hsl(var(--foreground))' }}
                           />
                           <Legend />
-                          <Area yAxisId="right" type="monotone" dataKey="avgPL" name={t('avgPLLabel')} stroke={CHART.profit} strokeWidth={2.5} fill="url(#hourPLGradient)" dot={{ r: 3, fill: CHART.profit }} activeDot={{ r: 5 }} />
-                          <Line yAxisId="left" type="monotone" dataKey="winRate" name={`${t('winRate')} (%)`} stroke={CHART.line} strokeWidth={2.5} dot={{ r: 2, fill: CHART.line }} activeDot={{ r: 4 }} />
+                          <Area {...chartSeriesProps} yAxisId="right" type="monotone" dataKey="avgPL" name={t('avgPLLabel')} stroke={CHART.profit} strokeWidth={2.5} fill="url(#hourPLGradient)" dot={{ r: 3, fill: CHART.profit }} activeDot={{ r: 5 }} />
+                          <Line {...chartSeriesProps} yAxisId="left" type="monotone" dataKey="winRate" name={`${t('winRate')} (%)`} stroke={CHART.line} strokeWidth={2.5} dot={{ r: 2, fill: CHART.line }} activeDot={{ r: 4 }} />
                         </ComposedChart>
                       </ResponsiveContainer>
                     </div>
@@ -2215,12 +2216,12 @@ export default function Analytics() {
                             labelStyle={{ color: 'hsl(var(--foreground))' }}
                           />
                           <Legend />
-                          <Bar dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
+                          <Bar {...chartSeriesProps} dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
                             {timeSlotData.map((d, i) => (
                               <Cell key={i} fill={d.avgPL >= 0 ? CHART.profit : CHART.loss} />
                             ))}
                           </Bar>
-                          <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill={CHART.line} radius={[0, 6, 6, 0]} />
+                          <Bar {...chartSeriesProps} dataKey="winRate" name={`${t('winRate')} (%)`} fill={CHART.line} radius={[0, 6, 6, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -2386,12 +2387,12 @@ export default function Analytics() {
                               labelStyle={{ color: 'hsl(var(--foreground))' }}
                             />
                             <Legend />
-                            <Bar dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
+                            <Bar {...chartSeriesProps} dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
                               {emotionPerf.map((e, i) => (
                                 <Cell key={i} fill={e.avgPL >= 0 ? CHART.profit : CHART.loss} />
                               ))}
                             </Bar>
-                            <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill={CHART.muted} radius={[0, 6, 6, 0]} />
+                            <Bar {...chartSeriesProps} dataKey="winRate" name={`${t('winRate')} (%)`} fill={CHART.muted} radius={[0, 6, 6, 0]} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -2417,9 +2418,9 @@ export default function Analytics() {
                               labelStyle={{ color: 'hsl(var(--foreground))' }}
                             />
                             <Legend />
-                            <Bar dataKey="win" name={t('ratingWin')} fill={CHART.profit} radius={chartBarRadius} />
-                            <Bar dataKey="breakeven" name={t('ratingBreakeven')} fill={CHART.warning} radius={chartBarRadius} />
-                            <Bar dataKey="loss" name={t('ratingLoss')} fill={CHART.loss} radius={chartBarRadius} />
+                            <Bar {...chartSeriesProps} dataKey="win" name={t('ratingWin')} fill={CHART.profit} radius={chartBarRadius} />
+                            <Bar {...chartSeriesProps} dataKey="breakeven" name={t('ratingBreakeven')} fill={CHART.warning} radius={chartBarRadius} />
+                            <Bar {...chartSeriesProps} dataKey="loss" name={t('ratingLoss')} fill={CHART.loss} radius={chartBarRadius} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -2452,7 +2453,7 @@ export default function Analytics() {
                               itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                               labelStyle={{ color: 'hsl(var(--foreground))' }}
                             />
-                            <Area type="monotone" dataKey="rating" name={t('emotionRatingShort')} stroke={CHART.muted} strokeWidth={2} fill="url(#tiltGradient)" />
+                            <Area {...chartSeriesProps} type="monotone" dataKey="rating" name={t('emotionRatingShort')} stroke={CHART.muted} strokeWidth={2} fill="url(#tiltGradient)" />
                           </AreaChart>
                         </ResponsiveContainer>
                       </div>
@@ -2517,8 +2518,8 @@ export default function Analytics() {
                             labelStyle={{ color: 'hsl(var(--foreground))' }}
                           />
                           <Legend />
-                          <Bar dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
-                          <Bar dataKey="avgPL" yAxisId="right" name={t('avgPLLabel')} radius={chartBarRadius}>
+                          <Bar {...chartSeriesProps} dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                          <Bar {...chartSeriesProps} dataKey="avgPL" yAxisId="right" name={t('avgPLLabel')} radius={chartBarRadius}>
                             {confidenceData.map((d, i) => (
                               <Cell key={i} fill={d.avgPL >= 0 ? CHART.profit : CHART.loss} />
                             ))}
@@ -2580,8 +2581,8 @@ export default function Analytics() {
                           labelStyle={{ color: 'hsl(var(--foreground))' }}
                         />
                         <Legend />
-                        <Bar dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
-                        <Bar dataKey="avgPL" yAxisId="right" fill={CHART.profit} name={t('avgPLLabel')} radius={chartBarRadius} />
+                        <Bar {...chartSeriesProps} dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
+                        <Bar {...chartSeriesProps} dataKey="avgPL" yAxisId="right" fill={CHART.profit} name={t('avgPLLabel')} radius={chartBarRadius} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -2674,12 +2675,12 @@ export default function Analytics() {
                           labelStyle={{ color: "hsl(var(--foreground))" }}
                         />
                         <Legend />
-                        <Bar dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
+                        <Bar {...chartSeriesProps} dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
                           {confluencePerf.map((e, i) => (
                             <Cell key={i} fill={e.avgPL >= 0 ? CHART.profit : CHART.loss} />
                           ))}
                         </Bar>
-                        <Bar dataKey="winRate" name={`${t("winRate")} (%)`} fill={CHART.profit} radius={[0, 6, 6, 0]} />
+                        <Bar {...chartSeriesProps} dataKey="winRate" name={`${t("winRate")} (%)`} fill={CHART.profit} radius={[0, 6, 6, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -2805,12 +2806,12 @@ export default function Analytics() {
                           labelStyle={{ color: "hsl(var(--foreground))" }}
                         />
                         <Legend />
-                        <Bar dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
+                        <Bar {...chartSeriesProps} dataKey="avgPL" name={t("avgPLLabel")} radius={[0, 6, 6, 0]}>
                           {mistakePerf.map((e, i) => (
                             <Cell key={i} fill={e.avgPL >= 0 ? CHART.profit : CHART.loss} />
                           ))}
                         </Bar>
-                        <Bar dataKey="winRate" name={`${t("winRate")} (%)`} fill={CHART.loss} radius={[0, 6, 6, 0]} />
+                        <Bar {...chartSeriesProps} dataKey="winRate" name={`${t("winRate")} (%)`} fill={CHART.loss} radius={[0, 6, 6, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>

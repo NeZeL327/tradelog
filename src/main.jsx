@@ -4,6 +4,10 @@ import App from '@/App.jsx'
 import '@/index.css'
 import '@/ref-skin.css'
 import '@/scr-skin.css'
+import { applyMotionMode } from '@/lib/motion'
+
+// Tryb animacji z localStorage, zanim cokolwiek się wyrenderuje (bez mignięcia).
+applyMotionMode()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   // <React.StrictMode>

@@ -2,18 +2,37 @@ import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/lib/utils"
+import { useActiveIndicator } from "@/hooks/use-active-indicator"
 
 const Tabs = TabsPrimitive.Root
 
-const TabsList = React.forwardRef(({ className, ...props }, ref) => (
-  <TabsPrimitive.List
-    ref={ref}
-    className={cn(
-      "inline-flex h-9 items-center justify-start gap-4 border-b border-ds-line bg-transparent p-0 text-ds-text3",
-      className
-    )}
-    {...props} />
-))
+const NO_REF = { current: null }
+
+// indicator: płynnie przesuwane podkreślenie aktywnej zakładki (tylko dla stylu z podkreśleniem).
+const TabsList = React.forwardRef(({ className, indicator = false, children, ...props }, ref) => {
+  const listRef = React.useRef(null)
+  const indicatorRef = React.useRef(null)
+  const setRefs = React.useCallback((node) => {
+    listRef.current = node
+    if (typeof ref === "function") ref(node)
+    else if (ref) ref.current = node
+  }, [ref])
+  useActiveIndicator(indicator ? listRef : NO_REF, indicatorRef, '[role="tab"][data-state="active"]', "x")
+
+  return (
+    <TabsPrimitive.List
+      ref={setRefs}
+      className={cn(
+        "inline-flex h-9 items-center justify-start gap-4 border-b border-ds-line bg-transparent p-0 text-ds-text3",
+        indicator && "tabs-has-indicator relative",
+        className
+      )}
+      {...props}>
+      {children}
+      {indicator ? <span ref={indicatorRef} aria-hidden="true" className="motion-indicator tabs-indicator" /> : null}
+    </TabsPrimitive.List>
+  )
+})
 TabsList.displayName = TabsPrimitive.List.displayName
 
 const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => (

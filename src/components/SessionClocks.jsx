@@ -110,7 +110,7 @@ export default function SessionClocks() {
             >
               <span
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                  open ? "bg-ds-pos opacity-80 shadow-[0_0_6px_var(--ds-pos)]" : "bg-ds-text3 opacity-40"
+                  open ? "motion-pulse bg-ds-pos shadow-[0_0_6px_var(--ds-pos)]" : "bg-ds-text3 opacity-40"
                 }`}
                 aria-hidden
               />

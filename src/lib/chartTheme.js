@@ -1,3 +1,5 @@
+import { motionEnabled, motionScale } from "@/lib/motion";
+
 // Hex values (not CSS vars) because recharts passes these as SVG attributes.
 export const CHART = {
   profit: "#7DDC6B",
@@ -34,14 +36,14 @@ export const chartGridProps = {
   vertical: false,
 };
 
-const prefersReducedMotion =
-  typeof window !== "undefined" && typeof window.matchMedia === "function"
-    ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    : true;
-
+// Gettery: tryb animacji (Ustawienia / "ogranicz ruch") czytany przy każdym renderze wykresu.
 export const chartSeriesProps = {
-  isAnimationActive: !prefersReducedMotion,
-  animationDuration: 400,
+  get isAnimationActive() {
+    return motionEnabled();
+  },
+  get animationDuration() {
+    return Math.round(400 * Math.max(motionScale(), 1));
+  },
   animationEasing: "ease-out",
 };
 

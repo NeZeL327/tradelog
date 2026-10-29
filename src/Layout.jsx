@@ -12,6 +12,7 @@ import AppDock from "@/components/AppDock";
 import { applyTheme } from "@/lib/userSettings";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useSpotlight } from "@/hooks/use-spotlight";
+import { useRevealOnView } from "@/hooks/use-reveal-on-view";
 
 const FloatingCalculator = lazy(() => import("@/components/calculators/FloatingCalculator"));
 
@@ -35,6 +36,23 @@ export default function Layout({ children }) {
   const tradePage = isTradeDetailsPath(location.pathname);
   const isPro = subscription?.status && subscription.status !== "free";
   useSpotlight();
+  const mainRef = React.useRef(null);
+  const topbarRef = React.useRef(null);
+  useRevealOnView(mainRef);
+
+  // Szkło pod górnym paskiem po przewinięciu treści > 8px; tylko atrybut, bez re-renderu.
+  React.useEffect(() => {
+    const main = mainRef.current;
+    const bar = topbarRef.current;
+    if (!main || !bar) return undefined;
+    const onScroll = () => {
+      const scrolled = main.scrollTop > 8 ? "true" : "false";
+      if (bar.dataset.scrolled !== scrolled) bar.dataset.scrolled = scrolled;
+    };
+    onScroll();
+    main.addEventListener("scroll", onScroll, { passive: true });
+    return () => main.removeEventListener("scroll", onScroll);
+  }, []);
 
   React.useEffect(() => {
     const warm = () => {
@@ -66,7 +84,7 @@ export default function Layout({ children }) {
         <div className="app-window flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-[24px] border border-ds-frame bg-ds-s1">
         <AppDock user={user} onLogout={logout} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="app-topbar sticky top-0 z-20 flex h-12 items-center justify-between gap-3 border-b border-ds-line bg-transparent px-3">
+        <header ref={topbarRef} className="app-topbar sticky top-0 z-20 flex h-12 items-center justify-between gap-3 border-b border-ds-line bg-transparent px-3">
           <div className="flex shrink-0 items-center gap-2 xl:min-w-0 xl:shrink">
           <Link to={createPageUrl("Dashboard")} className="flex shrink-0 items-center gap-1.5">
             <img
@@ -104,6 +122,7 @@ export default function Layout({ children }) {
         </header>
 
           <main
+            ref={mainRef}
             className={`min-h-0 min-w-0 flex-1 cyber-dashboard dash-scr dashboard-surface bg-transparent ${
               tradePage ? "flex flex-col overflow-hidden" : "overflow-x-hidden overflow-y-auto"
             }`}

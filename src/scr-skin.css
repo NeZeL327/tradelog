@@ -22,6 +22,9 @@ html.dark .app-atmosphere.app-atmosphere::before {
   pointer-events: none;
   background: radial-gradient(ellipse 50% 50% at 50% 50%, #2a4a8a 0%, rgba(16, 26, 51, 0.92) 40%, transparent 72%);
   opacity: 0.9;
+}
+/* Dryf poświaty tylko w trybie "Pełne" — w pozostałych jedyną stałą animacją jest kropka sesji. */
+html.dark[data-motion="full"] .app-atmosphere.app-atmosphere::before {
   animation: ds-glow-drift 26s ease-in-out infinite alternate;
   will-change: transform, opacity;
 }
@@ -139,7 +142,7 @@ html:not(.dark) [data-radix-popper-content-wrapper] > div {
   to { opacity: 1; transform: none; }
 }
 .ds-float-in {
-  animation: ds-float-in 150ms ease-out both;
+  animation: ds-float-in calc(160ms * var(--motion-scale, 1)) var(--ds-ease) both;
 }
 
 .journal-filter-trigger {
@@ -547,7 +550,7 @@ html.dark [role="dialog"] table tbody td {
   color: var(--ds-text);
   border-top: 1px solid transparent !important;
   border-bottom: 1px solid transparent !important;
-  transition: background-color 180ms ease, border-color 180ms ease;
+  transition: background-color calc(120ms * var(--motion-scale, 1)) var(--motion-ease, ease), border-color calc(120ms * var(--motion-scale, 1)) var(--motion-ease, ease);
 }
 
 html.dark .app-atmosphere main table tbody td:first-child,
@@ -698,23 +701,24 @@ html:not(.dark) .app-atmosphere [role="dialog"] {
 }
 
 /* ---------- Motion ---------- */
+/* Przejście strony: tylko fade nowej treści (stara nie gaśnie, więc nic nie miga). */
 .app-content-pad > :first-child {
-  animation: ds-page-enter var(--ds-dur) var(--ds-ease) both;
+  animation: ds-page-enter calc(150ms * var(--motion-scale, 1)) var(--ds-ease) both;
 }
 @keyframes ds-page-enter {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .ds-rise,
 .ds-stagger > * {
-  animation: ds-rise 200ms var(--ds-ease) both;
-  animation-delay: calc(var(--i, 0) * 40ms);
+  animation: ds-rise var(--motion-base, 200ms) var(--ds-ease) both;
+  animation-delay: calc(var(--i, 0) * 40ms * var(--motion-scale, 1));
 }
 .ds-stagger > :nth-child(1) { --i: 3; }
 .ds-stagger > :nth-child(2) { --i: 4; }
 .ds-stagger > :nth-child(n + 3) { --i: 5; }
 @keyframes ds-rise {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(var(--motion-reveal-y, 8px)); }
   to { opacity: 1; transform: none; }
 }
 .ds-fade {
@@ -1011,6 +1015,8 @@ html.dark .app-side-nav .dock-plus {
 }
 html.dark .app-side-nav .dock-plus:hover {
   box-shadow: 0 0 0 1px rgba(107, 124, 255, 0.5), 0 0 32px rgba(107, 124, 255, 0.7);
+}
+html.dark[data-motion="full"] .app-side-nav .dock-plus:hover {
   animation: ds-plus-pulse 1.6s ease-in-out infinite;
 }
 @keyframes ds-plus-pulse {

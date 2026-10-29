@@ -24,6 +24,7 @@ import PnlViewToggle from "@/components/PnlViewToggle";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ALL_NAV_ITEMS } from "@/lib/navDock";
 import { cn } from "@/lib/utils";
+import { useActiveIndicator } from "@/hooks/use-active-indicator";
 import { createPageUrl } from "@/utils";
 
 const ICONS = {
@@ -100,13 +101,17 @@ export default function AppDock({ user, onLogout }) {
     return () => document.removeEventListener("mousedown", onPointer);
   }, [settingsOpen]);
 
+  const dockScrollRef = useRef(null);
+  const dockIndicatorRef = useRef(null);
+  useActiveIndicator(dockScrollRef, dockIndicatorRef, '.dock-item[data-active="true"]', "y");
+
   const addLabel = t("addTrade") || "Dodaj transakcję";
   const notificationsLabel = t("notifications") || "Powiadomienia";
   const settingsLabel = t("settings") || "Ustawienia";
   const profileLabel = t("profile") || "Profil";
 
   return (
-    <TooltipProvider delayDuration={150} skipDelayDuration={100}>
+    <TooltipProvider delayDuration={300} skipDelayDuration={100}>
     <nav
       className="app-side-nav relative z-40 flex h-full w-[60px] shrink-0 flex-col items-center border-r border-ds-line bg-transparent py-3"
       aria-label={t("mainNav") || "Nawigacja główna"}
@@ -126,7 +131,8 @@ export default function AppDock({ user, onLogout }) {
         />
       </Link>
 
-      <div className="dock-scroll flex min-h-0 w-full flex-1 flex-col items-center gap-2 overflow-y-auto py-1">
+      <div ref={dockScrollRef} className="dock-scroll dock-has-indicator relative flex min-h-0 w-full flex-1 flex-col items-center gap-2 overflow-y-auto py-1">
+        <span ref={dockIndicatorRef} aria-hidden="true" className="motion-indicator dock-indicator" />
         {navItems.map((item) => {
           const Icon = ICONS[item.iconName] || LayoutDashboard;
           const active = isActivePath(location.pathname, item.url);

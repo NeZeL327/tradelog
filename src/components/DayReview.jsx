@@ -3,6 +3,7 @@ import { ArrowUpRight, ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Sparkline from "@/components/Sparkline";
+import CountUpText from "@/components/CountUpText";
 import ImageViewer from "@/components/common/ImageViewer";
 import SafeImage from "@/components/common/SafeImage";
 import { DISCIPLINE_FORMULA, computeDisciplineScore, computeSessionDiscipline } from "@/lib/disciplineInsights";
@@ -203,63 +204,6 @@ export function DayStripRow({ title, onPrev, onNext, prevLabel, nextLabel, extra
   );
 }
 
-function prefersReducedMotion() {
-  return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-}
-
-// "1,274.22" → { value: 1274.22, decimals: 2, decimalSep: ".", groupSep: "," }
-function parseNumericToken(token) {
-  const separators = [...token.matchAll(/[^\d]/g)];
-  const last = separators[separators.length - 1];
-  const tail = last ? token.length - last.index - 1 : 0;
-  const decimals = last && tail !== 3 ? tail : 0;
-  const decimalSep = decimals ? last[0] : "";
-  const groupSep = separators.find((match) => match.index !== last?.index || !decimals)?.[0] || "";
-  const digits = token.replace(/\D/g, "");
-  return { value: Number(digits) / 10 ** decimals, decimals, decimalSep, groupSep };
-}
-
-function formatLike(value, { decimals, decimalSep, groupSep }) {
-  const [whole, fraction] = value.toFixed(decimals).split(".");
-  const grouped = groupSep ? whole.replace(/\B(?=(\d{3})+(?!\d))/g, groupSep) : whole;
-  return fraction ? `${grouped}${decimalSep}${fraction}` : grouped;
-}
-
-// Animates the first number inside text once on mount; the last frame is always the original text.
-function CountUpText({ text }) {
-  const [shown, setShown] = useState(text);
-  const textRef = useRef(text);
-  textRef.current = text;
-
-  useEffect(() => {
-    const match = /\d[\d.,\u00a0\u202f ]*\d|\d/.exec(textRef.current);
-    if (!match || prefersReducedMotion()) return undefined;
-    const original = textRef.current;
-    const parsed = parseNumericToken(match[0].trim());
-    if (!parsed.value) return undefined;
-    const before = original.slice(0, match.index);
-    const after = original.slice(match.index + match[0].trim().length);
-    const start = performance.now();
-    const duration = 520;
-    let frame = requestAnimationFrame(function step(now) {
-      const progress = Math.min(1, (now - start) / duration);
-      if (progress >= 1 || textRef.current !== original) {
-        setShown(textRef.current);
-        return;
-      }
-      const eased = 1 - (1 - progress) ** 3;
-      setShown(`${before}${formatLike(parsed.value * eased, parsed)}${after}`);
-      frame = requestAnimationFrame(step);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
-  useEffect(() => {
-    setShown((prev) => (prev === text ? prev : text));
-  }, [text]);
-
-  return shown;
-}
 
 function scoreGaugeColor(score) {
   if (score >= 80) return PROFIT;

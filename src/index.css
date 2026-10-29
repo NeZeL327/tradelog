@@ -3272,3 +3272,258 @@ html.dark .dashboard-surface .text-muted-foreground {
 .day-notes-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ======================================================================
+   MOTION — jedno miejsce na parametry ruchu.
+   Tryb: html[data-motion="full" | "subtle" | "off"] (localStorage "motion-mode",
+   domyślnie "subtle"). Intensywność zmieniasz mnożnikiem --motion-scale,
+   wyłączasz wszystko trybem "off" albo systemowym "ogranicz ruch".
+   ====================================================================== */
+:root {
+  --motion-scale: 1;
+  --motion-fast: calc(140ms * var(--motion-scale));
+  --motion-base: calc(200ms * var(--motion-scale));
+  --motion-slow: calc(320ms * var(--motion-scale));
+  --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-lift: 1px;
+  --motion-reveal-y: 8px;
+  /* Starsze tokeny skina idą za tym samym zegarem. */
+  --ds-dur: var(--motion-base);
+  --ds-ease: var(--motion-ease);
+}
+html[data-motion="full"] { --motion-scale: 1.3; }
+html[data-motion="subtle"] { --motion-scale: 1; }
+html[data-motion="off"] {
+  --motion-scale: 0;
+  --motion-lift: 0px;
+  --motion-reveal-y: 0px;
+}
+
+/* Tryb "off" i systemowe "ogranicz ruch": bez ruchu, zmiany natychmiastowe. */
+html[data-motion="off"] *,
+html[data-motion="off"] *::before,
+html[data-motion="off"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0ms !important;
+  transition-delay: 0ms !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-scale: 0 !important;
+    --motion-lift: 0px !important;
+    --motion-reveal-y: 0px !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Scroll: płynny, cienkie półprzezroczyste paski w kolorach aplikacji. */
+html,
+main.dash-scr {
+  scroll-behavior: smooth;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ds-text3) 28%, transparent) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ds-text3) 28%, transparent);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--ds-text3) 45%, transparent);
+  background-clip: padding-box;
+}
+
+/* Przyciski (ui/button.jsx): uniesienie 1px, wciśnięcie 0.98, blask dla głównych. */
+.btn-motion {
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease),
+    filter var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
+    translate var(--motion-fast) var(--motion-ease),
+    scale var(--motion-fast) var(--motion-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-motion:not(:disabled):hover {
+    translate: 0 calc(-1 * var(--motion-lift));
+  }
+  .btn-motion.btn-glow:not(:disabled):hover {
+    box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--ds-accent) 75%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--ds-accent) 35%, transparent);
+  }
+}
+.btn-motion:not(:disabled):active {
+  translate: 0 0;
+  scale: 0.98;
+}
+
+/* Karty klikalne: obrys line → frame (bez uniesienia). Nadpisujemy zmienną, bo skin trzyma border z !important. */
+.bg-card {
+  transition: border-color var(--motion-fast) var(--motion-ease);
+}
+.bg-card.cursor-pointer:hover,
+.bg-card[role="button"]:hover,
+a:hover > .bg-card {
+  --ds-line: var(--ds-frame);
+}
+
+/* Tabele: płynne podświetlenie i zaznaczenie wiersza (bez zmian układu). */
+main table tbody tr,
+main table tbody td {
+  transition:
+    background-color calc(120ms * var(--motion-scale)) var(--motion-ease),
+    border-color calc(120ms * var(--motion-scale)) var(--motion-ease);
+}
+
+/* Wskaźnik aktywnej zakładki / ikony docka (pozycja z useActiveIndicator, tylko transform). */
+.motion-indicator {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform var(--motion-base) var(--motion-ease),
+    width var(--motion-base) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease);
+}
+.motion-indicator[data-ready="true"] {
+  opacity: 1;
+}
+.tabs-indicator {
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ds-text);
+}
+html.dark main.cyber-dashboard.dash-scr .tabs-has-indicator [role="tab"][data-state="active"],
+.tabs-has-indicator [role="tab"][data-state="active"] {
+  border-bottom-color: transparent !important;
+}
+.dock-indicator {
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 18px;
+  border-radius: 2px 0 0 2px;
+  background: var(--ds-text);
+  box-shadow: 0 0 8px rgba(232, 236, 245, 0.35);
+}
+.app-side-nav .dock-has-indicator .dock-item[data-active="true"]::after {
+  display: none;
+}
+
+/* Tooltipy: fade, lekkie przesunięcie. Okna, popovery, listy: fade + scale 0.98 + 4px; zamknięcie krótsze. */
+[data-radix-popper-content-wrapper] > [class*="animate-in"][data-state],
+[role="dialog"][class*="animate-in"][data-state="open"],
+[role="alertdialog"][class*="animate-in"][data-state="open"] {
+  --tw-enter-scale: 0.98;
+  --tw-exit-scale: 0.98;
+  animation-duration: calc(160ms * var(--motion-scale));
+  animation-timing-function: var(--motion-ease);
+}
+[data-radix-popper-content-wrapper] > [class*="animate-out"][data-state="closed"],
+[role="dialog"][class*="animate-out"][data-state="closed"],
+[role="alertdialog"][class*="animate-out"][data-state="closed"] {
+  animation-duration: calc(100ms * var(--motion-scale));
+}
+[data-side="bottom"][class*="animate-in"][data-state] { --tw-enter-translate-y: -4px; }
+[data-side="top"][class*="animate-in"][data-state] { --tw-enter-translate-y: 4px; }
+[data-side="left"][class*="animate-in"][data-state] { --tw-enter-translate-x: 4px; }
+[data-side="right"][class*="animate-in"][data-state] { --tw-enter-translate-x: -4px; }
+
+/* Toasty (sonner): krótszy, spokojniejszy ruch. */
+[data-sonner-toaster] [data-sonner-toast] {
+  --motion-toast: calc(200ms * var(--motion-scale));
+  transition-duration: var(--motion-toast) !important;
+  transition-timing-function: var(--motion-ease) !important;
+}
+
+/* Tooltip wykresów: fade 100 ms przy pojawieniu. */
+.recharts-default-tooltip {
+  transition: opacity calc(100ms * var(--motion-scale)) var(--motion-ease);
+}
+.recharts-tooltip-wrapper[style*="visibility: hidden"] .recharts-default-tooltip {
+  opacity: 0;
+}
+
+/* Górny pasek po przewinięciu treści > 8px: szkło i cień przez opacity warstwy (bez zmiany wysokości). */
+/* .app-topbar jest już sticky z z-20 (własny kontekst), więc warstwa z-index:-1 leży pod jego treścią. */
+.app-topbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  background: var(--ds-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px -16px rgba(0, 0, 0, 0.5);
+  transition: opacity var(--motion-base) var(--motion-ease);
+}
+.app-topbar[data-scrolled="true"]::before {
+  opacity: 1;
+}
+
+/* Pojawianie się kart przy pierwszym wejściu w widok (useRevealOnView), nigdy ponownie. */
+[data-reveal="pending"] {
+  opacity: 0;
+  transform: translateY(var(--motion-reveal-y));
+}
+[data-reveal="in"] {
+  animation: motion-reveal var(--motion-base) var(--motion-ease) both;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+@keyframes motion-reveal {
+  from { opacity: 0; transform: translateY(var(--motion-reveal-y)); }
+  to { opacity: 1; transform: none; }
+}
+html[data-motion="off"] [data-reveal="pending"] {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal="pending"] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Liczby w kafelkach: przy zmianie filtra tylko szybkie przejście opacity. */
+.motion-value-swap {
+  animation: motion-value-swap var(--motion-fast) var(--motion-ease) both;
+}
+@keyframes motion-value-swap {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
+}
+
+/* Jedyna nieskończona animacja: kropka aktywnej sesji (≥ 2,4 s). */
+.motion-pulse {
+  animation: motion-pulse calc(2.4s * max(1, var(--motion-scale))) ease-in-out infinite;
+}
+@keyframes motion-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+html[data-motion="off"] .motion-pulse {
+  animation: none;
+}
