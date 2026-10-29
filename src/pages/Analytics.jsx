@@ -117,6 +117,8 @@ export default function Analytics() {
   const [selectedStrategy, setSelectedStrategy] = useState(null);
   const [timePeriod, setTimePeriod] = useState("weekly");
   const [activeTab, setActiveTab] = useState("overview");
+  // Po pierwszej zmianie zakładki karty nie mają już efektu "pojawiania się" — wystarcza fade zakładki.
+  const [tabSwitched, setTabSwitched] = useState(false);
 
   const { data: trades = [], isLoading } = useQuery({
     queryKey: ['trades', user?.id],
@@ -920,7 +922,7 @@ export default function Analytics() {
           ))}
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={(value) => { setActiveTab(value); setTabSwitched(true); }} className="space-y-6">
           <TabsList indicator className="flex w-full overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <TabsTrigger value="overview" className="shrink-0">{t('overview')}</TabsTrigger>
             <TabsTrigger value="symbols" className="shrink-0">{t('symbols')}</TabsTrigger>
@@ -933,7 +935,7 @@ export default function Analytics() {
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="motion-tab-in space-y-6" data-reveal-skip={tabSwitched ? "true" : undefined}>
             {/* Equity / Drawdown + weekday */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
               <Card className="overflow-hidden xl:col-span-2">
@@ -1223,7 +1225,7 @@ export default function Analytics() {
           </TabsContent>
 
           {/* Symbols Tab */}
-          <TabsContent value="symbols" className="space-y-6">
+          <TabsContent value="symbols" className="motion-tab-in space-y-6" data-reveal-skip={tabSwitched ? "true" : undefined}>
             <Card>
               <CardHeader>
                 <CardTitle>{t('top10Symbols')}</CardTitle>
@@ -1588,7 +1590,7 @@ export default function Analytics() {
           </TabsContent>
 
           {/* Strategies Tab */}
-          <TabsContent value="strategies" className="space-y-6">
+          <TabsContent value="strategies" className="motion-tab-in space-y-6" data-reveal-skip={tabSwitched ? "true" : undefined}>
             <Card>
               <CardHeader>
                 <CardTitle>{t('strategiesComparison')}</CardTitle>
@@ -1957,7 +1959,7 @@ export default function Analytics() {
           </TabsContent>
 
           {/* Accounts Tab */}
-          <TabsContent value="accounts" className="space-y-6">
+          <TabsContent value="accounts" className="motion-tab-in space-y-6" data-reveal-skip={tabSwitched ? "true" : undefined}>
             {/* Account Type Distribution */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
@@ -2099,7 +2101,7 @@ export default function Analytics() {
           </TabsContent>
 
           {/* Psychology Tab */}
-          <TabsContent value="time" className="space-y-6">
+          <TabsContent value="time" className="motion-tab-in space-y-6" data-reveal-skip={tabSwitched ? "true" : undefined}>
             {tradesWithTime === 0 ? (
               <Card>
                 <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
@@ -2298,7 +2300,7 @@ export default function Analytics() {
             )}
           </TabsContent>
 
-          <TabsContent value="psychology" className="space-y-6">
+          <TabsContent value="psychology" className="motion-tab-in space-y-6" data-reveal-skip={tabSwitched ? "true" : undefined}>
             {/* Tiltometr — kluczowe wskaźniki psychologiczne */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
@@ -2591,7 +2593,7 @@ export default function Analytics() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="confluences" className="space-y-6">
+          <TabsContent value="confluences" className="motion-tab-in space-y-6" data-reveal-skip={tabSwitched ? "true" : undefined}>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4">
@@ -2720,7 +2722,7 @@ export default function Analytics() {
             )}
           </TabsContent>
 
-          <TabsContent value="mistakes" className="space-y-6">
+          <TabsContent value="mistakes" className="motion-tab-in space-y-6" data-reveal-skip={tabSwitched ? "true" : undefined}>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4">

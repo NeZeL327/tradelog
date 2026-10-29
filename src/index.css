@@ -3635,3 +3635,9 @@ html[data-motion="off"] tr[data-fresh="true"] > td::before {
 @media (prefers-reduced-motion: reduce) {
   tr[data-fresh="true"] > td::before { display: none; }
 }
+
+/* ===== ETAP G4 — Analityka. Wyłączenie: tryb "off" / ogranicz ruch. ===== */
+/* Zakładka: nowa treść wchodzi fade 150 ms (nieaktywne zakładki nie są renderowane, więc bez kosztu). */
+.motion-tab-in[data-state="active"] {
+  animation: motion-fade calc(150ms * var(--motion-scale)) var(--motion-ease) backwards;
+}
