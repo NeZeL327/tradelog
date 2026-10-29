@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { SkeletonBlock } from "@/components/ui/skeleton-block";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, deleteTrade, deleteTradesBatch, getTradingAccounts, getStrategies } from '@/lib/localStorage';
@@ -56,8 +57,8 @@ import { toast } from "sonner";
 const TradeFormNew = lazy(() => import("../components/TradeFormNew"));
 
 const FormFallback = () => (
-  <div className="flex justify-center py-10">
-    <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin" />
+  <div role="status" aria-label="Loading">
+    <SkeletonBlock rows={5} />
   </div>
 );
 

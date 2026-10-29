@@ -1,4 +1,5 @@
 ﻿import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { SkeletonBlock } from "@/components/ui/skeleton-block";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -758,8 +759,8 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      <div role="status" aria-label="Loading">
+        <SkeletonBlock rows={6} />
       </div>
     );
   }

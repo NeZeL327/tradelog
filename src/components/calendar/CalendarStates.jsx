@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { useFloatingIcon } from "@/hooks/use-floating-icon";
 import { CalendarDays } from "lucide-react";
 import { TagPill, tagEntries, tradeCountLabel } from "@/components/DayReview";
 import { GLASS, MICRO, glowOf, toneOf } from "@/components/calendar/calendarUi";
@@ -58,9 +59,10 @@ export function CalendarSkeleton({ plText }) {
 }
 
 export function CalendarEmpty({ plText, filtered, latestKey, locale, onJump, onClearFilters }) {
+  const iconRef = useFloatingIcon();
   return (
     <div className={`${GLASS} flex flex-col items-center gap-3 px-6 py-10 text-center`}>
-      <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ds-line bg-ds-s3 text-ds-text2">
+      <span ref={iconRef} className="motion-float inline-flex h-11 w-11 items-center justify-center rounded-full border border-ds-line bg-ds-s3 text-ds-text2">
         <CalendarDays className="h-5 w-5" aria-hidden />
       </span>
       <p className="text-[15px] font-medium text-ds-text">

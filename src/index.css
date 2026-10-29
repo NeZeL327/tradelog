@@ -3671,3 +3671,27 @@ html.theme-fading *::after {
   transition-duration: calc(300ms * var(--motion-scale)) !important;
   transition-timing-function: var(--motion-ease) !important;
 }
+
+/* ===== ETAP G6 — drobiazgi. Wyłączenie: tryb "off" / ogranicz ruch. ===== */
+/* Pusty stan: ikona unosi się o 6px w 4 s, tylko gdy widoczna; puls sesji wtedy czeka (jedna pętla na ekranie). */
+.motion-float[data-floating="true"] {
+  animation: motion-float calc(4s * max(1, var(--motion-scale))) ease-in-out infinite;
+}
+@keyframes motion-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+html[data-loop-owner="empty-state"] .motion-pulse {
+  animation-play-state: paused;
+}
+html[data-motion="off"] .motion-float[data-floating="true"] {
+  animation: none;
+}
+/* Paleta poleceń: płynne podświetlenie wybranej pozycji (okno ma fade + scale z etapu F). */
+[cmdk-item] {
+  transition: background-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease);
+}
+/* Toasty: zamknięcie krótsze niż wejście. */
+[data-sonner-toaster] [data-sonner-toast][data-removed="true"] {
+  transition-duration: calc(140ms * var(--motion-scale)) !important;
+}

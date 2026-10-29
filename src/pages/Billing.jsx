@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { SkeletonBlock } from "@/components/ui/skeleton-block";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -499,8 +500,8 @@ export default function Billing() {
           {showHistory && (
             <CardContent>
               {isLoadingHistory ? (
-                <div className="flex items-center justify-center py-6">
-                  <RefreshCw className="h-4 w-4 animate-spin text-muted-foreground" />
+                <div role="status" aria-label="Loading">
+                  <SkeletonBlock rows={3} className="px-0" />
                 </div>
               ) : importHistory.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-4 text-center">Brak historii importów</p>

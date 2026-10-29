@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { SkeletonBlock } from "@/components/ui/skeleton-block";
 import { useAuth } from '@/lib/AuthContext';
 import { getTradingAccounts, updateUser, getDeletedTrades, restoreTrade, permanentlyDeleteTrade } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -355,8 +356,8 @@ export default function Settings() {
 
   if (!settings) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-border border-t-primary rounded-full animate-spin"></div>
+      <div role="status" aria-label="Loading" className="space-y-3">
+        <SkeletonBlock rows={6} className="rounded-[16px] border border-ds-line" />
       </div>
     );
   }
