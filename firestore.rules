@@ -1,9 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Subskrypcje: tylko wlasny dokument uzytkownika
+    // Subskrypcje: klient tylko czyta wlasny dokument.
+    // Zapis wylacznie z Cloud Functions (stripeWebhook, Admin SDK omija reguly).
     match /subscriptions/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
     }
 
     // Users: only own profile doc

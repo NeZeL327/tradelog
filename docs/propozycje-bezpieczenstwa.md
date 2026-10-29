@@ -1,8 +1,10 @@
 # Propozycje zmian bezpieczeństwa (do decyzji Pawła)
 
-Ten dokument **niczego nie zmienia**. Pliki `firestore.rules`, `storage.rules` i `functions/` są takie jak wcześniej. Każdą zmianę trzeba wdrożyć ręcznie (patrz README → Wdrożenie).
+Punkt 1 jest już wprowadzony w `firestore.rules`. Pozostałe punkty to propozycje: `storage.rules` i `functions/` są bez zmian. Każdą zmianę trzeba wdrożyć ręcznie (patrz README → Wdrożenie).
 
 ## 1. Firestore: klient nie może sam nadać sobie planu
+
+> **Wprowadzone w `firestore.rules` (29.10.2026), jeszcze niewdrożone.** Reguły Firestore nie wdrażają się przez CI, trzeba to zrobić ręcznie komendą poniżej.
 
 **Stan obecny.** `match /subscriptions/{userId}` pozwala zalogowanemu użytkownikowi na `read, write` własnego dokumentu. Aplikacja tylko go **czyta** (`src/hooks/use-subscription.js`, `onSnapshot`). Zapisuje go wyłącznie Cloud Function `stripeWebhook` (`functions/index.js`) przez Admin SDK, który omija reguły.
 
