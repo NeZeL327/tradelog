@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { motionScale } from "@/lib/motion";
 import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TagPill, tagEntries, tradeCountLabel } from "@/components/DayReview";
@@ -37,7 +39,7 @@ export function DayTooltipBody({ cell, fmt, plText, locale }) {
   );
 }
 
-function DayCell({ cell, index, fmt, maxAbs, isToday, isSelected, isFocusTarget, density, plText, locale, onSelect, onFocusKey }) {
+function DayCell({ cell, index, wave, fmt, maxAbs, isToday, isSelected, isFocusTarget, density, plText, locale, onSelect, onFocusKey }) {
   const bucket = cell.bucket;
   const has = Boolean(bucket?.trades.length);
   const value = fmt.value(bucket);
@@ -52,11 +54,20 @@ function DayCell({ cell, index, fmt, maxAbs, isToday, isSelected, isFocusTarget,
       aria-label={dayAriaLabel(cell, fmt, plText, locale)}
       onClick={() => onSelect(cell.key)}
       onFocus={() => onFocusKey(cell.key)}
-      className={`cal-cell group relative flex min-w-0 cursor-pointer flex-col rounded-[12px] border outline-none transition-[background-color,border-color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[color:var(--ds-focus)] ${
+      className={`cal-cell group relative isolate flex min-w-0 cursor-pointer flex-col rounded-[12px] border outline-none transition-[background-color,border-color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[color:var(--ds-focus)] ${
         compact ? "min-h-[64px] gap-1 p-2" : "min-h-[104px] gap-1.5 p-2.5"
       } ${isSelected ? "border-ds-frame bg-ds-sel" : "border-transparent hover:border-ds-line hover:bg-ds-s3"} ${cell.inMonth ? "" : "opacity-35"}`}
-      style={{ "--i": index, background: !isSelected && has ? heatBackground(value, maxAbs) : undefined }}
+      style={{ "--i": index, "--d": wave }}
     >
+      {/* Kolor zysku/straty jako osobna warstwa: wchodzi po komórce i płynnie gaśnie przy zaznaczeniu. */}
+      {has ? (
+        <span
+          aria-hidden="true"
+          className="cal-heat pointer-events-none absolute inset-0 -z-10 rounded-[inherit]"
+          data-hidden={isSelected ? "true" : undefined}
+          style={{ background: heatBackground(value, maxAbs) }}
+        />
+      ) : null}
       <div className="flex items-center justify-between gap-1">
         <span
           className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-[12px] tabular-nums ${
@@ -146,6 +157,14 @@ export default function CalendarMonthGrid({
     ? "repeat(5, minmax(0, 1fr))"
     : month.weekendTrades ? "repeat(7, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr)) repeat(2, minmax(0, 0.6fr))";
   const template = { gridTemplateColumns: `${dayCols} minmax(104px, 0.95fr)` };
+  // Kierunek slajdu: "next" z prawej, "prev" z lewej; czasy z trybu animacji (0 = bez ruchu).
+  const dir = slideDir === "prev" ? -1 : slideDir === "next" ? 1 : 0;
+  const scale = motionScale();
+  const slide = {
+    enter: (d) => ({ x: d * 24, opacity: 0 }),
+    center: { x: 0, opacity: 1, transition: { duration: 0.24 * scale, ease: [0.2, 0.8, 0.2, 1] } },
+    exit: (d) => ({ x: d * -24, opacity: 0, transition: { duration: 0.16 * scale, ease: [0.2, 0.8, 0.2, 1] } }),
+  };
 
   // Move DOM focus only while the user is navigating inside the grid; the month body remounts
   // on a month change, so the keyboard flag carries focus across that remount.
@@ -178,7 +197,17 @@ export default function CalendarMonthGrid({
           ))}
           <div role="columnheader" className={`px-1 text-center ${MICRO}`}>{plText ? "Tydzień" : "Week"}</div>
         </div>
-        <div key={month.key} className="cal-slide space-y-1.5" data-dir={slideDir}>
+        <div className="relative">
+        <AnimatePresence mode="popLayout" initial={false} custom={dir}>
+        <motion.div
+          key={month.key}
+          className="cal-wave space-y-1.5"
+          custom={dir}
+          variants={slide}
+          initial="enter"
+          animate="center"
+          exit="exit"
+        >
           {month.weeks.map((week, row) => (
             <div key={week.key} role="row" className="grid gap-1.5" style={template}>
               {weekdayIdx.map((index) => {
@@ -188,6 +217,7 @@ export default function CalendarMonthGrid({
                     key={cell.key}
                     cell={cell}
                     index={row * 7 + index}
+                    wave={row + index}
                     fmt={fmt}
                     maxAbs={maxAbs}
                     isToday={cell.key === todayKey}
@@ -204,6 +234,8 @@ export default function CalendarMonthGrid({
               <WeekCell week={week} fmt={fmt} maxAbsWeek={maxAbsWeek} plText={plText} density={density} />
             </div>
           ))}
+        </motion.div>
+        </AnimatePresence>
         </div>
       </div>
     </TooltipProvider>

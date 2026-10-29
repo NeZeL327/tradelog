@@ -3576,3 +3576,37 @@ html[data-motion="off"] .motion-pulse {
   animation: motion-fade calc(700ms * var(--motion-scale)) var(--motion-ease) both;
   animation-delay: calc(200ms * var(--motion-scale));
 }
+
+/* ===== ETAP G2 — Kalendarz. Wyłączenie: tryb "off" / ogranicz ruch. ===== */
+/* Fala po przekątnej: --d = wiersz + kolumna (maks. 11) × 20 ms + 180 ms ≈ 400 ms łącznie. */
+.cal-wave .cal-cell {
+  animation: cal-cell-in calc(180ms * var(--motion-scale)) var(--motion-ease) backwards;
+  animation-delay: calc(var(--d, 0) * 20ms * var(--motion-scale));
+}
+@keyframes cal-cell-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+/* Kolor dnia zyskownego/stratnego dochodzi tuż po komórce i płynnie gaśnie przy zaznaczeniu. */
+.cal-heat {
+  transition: opacity var(--motion-base) var(--motion-ease);
+}
+.cal-wave .cal-heat {
+  animation: motion-fade var(--motion-slow) var(--motion-ease) backwards;
+  animation-delay: calc((var(--d, 0) * 20ms + 120ms) * var(--motion-scale));
+}
+.cal-heat[data-hidden="true"] {
+  opacity: 0;
+}
+/* Najechanie: lekkie powiększenie (scale nie przesuwa sąsiednich komórek). */
+.cal-cell {
+  transition-property: background-color, border-color, box-shadow, scale;
+  transition-duration: var(--motion-fast);
+  transition-timing-function: var(--motion-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cal-cell:hover {
+    scale: 1.02;
+    z-index: 1;
+  }
+}
