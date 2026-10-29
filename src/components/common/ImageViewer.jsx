@@ -4,6 +4,40 @@ import { Button } from "@/components/ui/button";
 import { Download, ZoomIn, ZoomOut } from "lucide-react";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import SafeImage from "@/components/common/SafeImage";
+import { motionScale } from "@/lib/motion";
+
+// Ostatnio kliknięta miniatura: z niej obraz "wylatuje" do pełnego widoku (FLIP: translate + scale).
+let lastThumb = null;
+if (typeof document !== "undefined") {
+  document.addEventListener("pointerdown", (event) => {
+    const img = event.target instanceof Element ? event.target.closest("img") : null;
+    if (img) lastThumb = { rect: img.getBoundingClientRect(), at: performance.now() };
+  }, true);
+}
+
+function flyFromThumb(target) {
+  const thumb = lastThumb;
+  lastThumb = null;
+  const scale = motionScale();
+  if (!thumb || !target || scale <= 0 || performance.now() - thumb.at > 1500) return;
+  const run = () => {
+    const end = target.getBoundingClientRect();
+    if (!end.width || !end.height) return;
+    const dx = thumb.rect.left + thumb.rect.width / 2 - (end.left + end.width / 2);
+    const dy = thumb.rect.top + thumb.rect.height / 2 - (end.top + end.height / 2);
+    const s = Math.max(0.05, thumb.rect.width / end.width);
+    target.animate(
+      [
+        { transform: `translate(${dx}px, ${dy}px) scale(${s})`, opacity: 0.5 },
+        { transform: "none", opacity: 1 },
+      ],
+      { duration: 320 * scale, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }
+    );
+  };
+  const img = target.querySelector("img");
+  if (img && !img.complete) img.addEventListener("load", run, { once: true });
+  else requestAnimationFrame(run);
+}
 
 export default function ImageViewer({ open, onOpenChange, imageUrl }) {
   const [zoom, setZoom] = React.useState(1);
@@ -11,6 +45,9 @@ export default function ImageViewer({ open, onOpenChange, imageUrl }) {
   const [dragging, setDragging] = React.useState(false);
   const dragStart = React.useRef({ x: 0, y: 0 });
   const panStart = React.useRef({ x: 0, y: 0 });
+  const flyRef = React.useCallback((node) => {
+    if (node) flyFromThumb(node);
+  }, []);
 
   React.useEffect(() => {
     if (!open) return;
@@ -81,6 +118,7 @@ export default function ImageViewer({ open, onOpenChange, imageUrl }) {
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
           >
+            <div ref={flyRef} className="flex max-h-full max-w-full items-center justify-center">
             <SafeImage
               src={imageUrl}
               alt="Receipt"
@@ -90,6 +128,7 @@ export default function ImageViewer({ open, onOpenChange, imageUrl }) {
               }}
               className="max-w-full object-contain pointer-events-none"
             />
+            </div>
           </div>
         </div>
       </DialogContent>

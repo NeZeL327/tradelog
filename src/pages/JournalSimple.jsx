@@ -24,6 +24,9 @@ import {
 } from "lucide-react";
 import { parseISO, isSameDay, isSameWeek, isSameMonth } from "date-fns";
 import DateRangeCalendar from "@/components/DateRangeCalendar";
+import { AnimatePresence, motion } from "framer-motion";
+import { useFreshIds } from "@/hooks/use-fresh-ids";
+import { motionScale } from "@/lib/motion";
 import { Dialog, DialogContent, DialogTitle, preventDialogDismissProps } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -214,6 +217,9 @@ export default function JournalSimple({ mode = "all" }) {
     enabled: !!user?.id,
     placeholderData: [],
   });
+
+  // Świeżo dodane / zaimportowane wiersze dostają jednorazowe podświetlenie (tylko wygląd).
+  const freshIds = useFreshIds(isFetching ? null : trades);
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts', user?.id],
@@ -611,8 +617,16 @@ export default function JournalSimple({ mode = "all" }) {
           </button>
         )}
         {/* Bulk Actions Bar */}
+        <AnimatePresence>
         {selectedTrades.size > 0 && (
-          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-card rounded-md border border-border px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4 animate-in slide-in-from-top-5">
+          <motion.div
+            key="bulk-bar"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0, transition: { duration: 0.2 * motionScale(), ease: [0.2, 0.8, 0.2, 1] } }}
+            exit={{ opacity: 0, y: 16, transition: { duration: 0.12 * motionScale() } }}
+            style={{ x: "-50%" }}
+            className="fixed bottom-6 left-1/2 z-50 bg-card rounded-md border border-border px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-4"
+          >
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-md bg-primary/15 flex items-center justify-center">
                 <span className="text-xs md:text-sm font-bold text-primary">{selectedTrades.size}</span>
@@ -639,8 +653,9 @@ export default function JournalSimple({ mode = "all" }) {
               <Trash2 className="w-4 h-4 mr-2" />
               Delete Selected
             </Button>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
@@ -977,6 +992,7 @@ export default function JournalSimple({ mode = "all" }) {
                     <tr
                       key={trade.id}
                       className={`border-b border-border transition-colors cursor-pointer ${selectedTrades.has(trade.id) ? "bg-accent" : "hover:bg-muted"}`}
+                      data-fresh={freshIds.has(String(trade.id)) ? "true" : undefined}
                       onClick={(event) => handleRowPreview(trade, event)}
                     >
                       {visibleColumns.status && (
@@ -1203,6 +1219,7 @@ export default function JournalSimple({ mode = "all" }) {
                         <tr
                           key={trade.id}
                           className="border-b border-border hover:bg-muted transition-colors cursor-pointer"
+                          data-fresh={freshIds.has(String(trade.id)) ? "true" : undefined}
                           onClick={(event) => handleRowPreview(trade, event)}
                         >
                           {visibleColumns.date && (

@@ -3610,3 +3610,28 @@ html[data-motion="off"] .motion-pulse {
     z-index: 1;
   }
 }
+
+/* ===== ETAP G3 — Dziennik. Wyłączenie: tryb "off" / ogranicz ruch. ===== */
+/* Świeży wiersz: nakładka w kolorze zaznaczenia gaśnie raz w 1,2 s (tylko opacity, kolumny bez zmian). */
+tr[data-fresh="true"] > td {
+  position: relative;
+}
+tr[data-fresh="true"] > td::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--ds-sel);
+  box-shadow: inset 0 1px 0 var(--ds-sel-line), inset 0 -1px 0 var(--ds-sel-line);
+  animation: motion-fresh-row calc(1200ms * max(1, var(--motion-scale))) var(--motion-ease) forwards;
+}
+@keyframes motion-fresh-row {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+html[data-motion="off"] tr[data-fresh="true"] > td::before {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  tr[data-fresh="true"] > td::before { display: none; }
+}
