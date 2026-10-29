@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from '@/lib/AuthContext';
 import { getTradingAccounts, updateUser, getDeletedTrades, restoreTrade, permanentlyDeleteTrade } from '@/lib/localStorage';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { User, Globe, Shield, Bell, Trash2, RotateCcw, Lock, Check, Wrench } from "lucide-react";
+import { User, Trash2, RotateCcw, Check, Palette, Wallet, Upload, Archive } from "lucide-react";
+import { useActiveIndicator } from "@/hooks/use-active-indicator";
 import Mt5TimeFixTool from "@/components/Mt5TimeFixTool";
 import { toast } from "sonner";
 import {
@@ -25,6 +26,28 @@ import {
 import { requestNotificationPermission } from "@/lib/reminders";
 import { AVATAR_PRESETS, getAvatarPreset, getUserInitials } from "@/lib/avatars";
 
+// Stare linki ?section=... prowadzą do nowych sekcji.
+const SECTION_IDS = ["appearance", "accounts", "import", "data", "account"];
+const LEGACY_SECTIONS = {
+  preferences: "appearance",
+  privacy: "appearance",
+  trading: "accounts",
+  tools: "import",
+  trash: "data",
+  profile: "account",
+  notifications: "account",
+};
+
+// Krótkie "Zapisano" przy przełączniku (fade, bez zmiany układu: miejsce jest zawsze zarezerwowane).
+function SavedHint({ show, label }) {
+  return (
+    <span aria-live="polite" className={`settings-saved inline-flex items-center gap-1 text-[11px] text-ds-pos ${show ? "is-visible" : ""}`}>
+      <Check className="h-3 w-3" />
+      {label}
+    </span>
+  );
+}
+
 export default function Settings() {
   const { user: authUser, checkSession } = useAuth();
   const queryClient = useQueryClient();
@@ -32,8 +55,13 @@ export default function Settings() {
   const [user, setUser] = useState(null);
   const [activeSection, setActiveSection] = useState(() => {
     const section = new URLSearchParams(window.location.search).get("section");
-    return section || "profile";
+    return LEGACY_SECTIONS[section] || (SECTION_IDS.includes(section) ? section : "appearance");
   });
+  const sectionNavRef = useRef(null);
+  const sectionIndicatorRef = useRef(null);
+  useActiveIndicator(sectionNavRef, sectionIndicatorRef, 'button[data-active="true"]', "y");
+  const [savedField, setSavedField] = useState("");
+  const silentSaveRef = useRef(false);
   const [settings, setSettings] = useState(() => {
     const local = loadLocalUserSettings();
     const base = getEffectiveUserSettings({ localSettings: local });
@@ -123,12 +151,29 @@ export default function Settings() {
       if (checkSession) checkSession();
 
       const language = variables?.language || updatedUser?.language || settings.language;
+      if (silentSaveRef.current) {
+        silentSaveRef.current = false;
+        return;
+      }
       toast(language === 'pl' ? "Ustawienia zapisane" : "Settings saved");
     },
   });
 
   const handleSave = () => {
     updateSettingsMutation.mutate(settings);
+  };
+
+  // Przełączniki zapisują się od razu (ten sam zapis co przycisk) i zamiast toastu pokazują "Zapisano".
+  const saveToggle = (field, value) => {
+    const next = { ...settings, [field]: value };
+    setSettings(next);
+    silentSaveRef.current = true;
+    updateSettingsMutation.mutate(next, {
+      onSuccess: () => {
+        setSavedField(field);
+        window.setTimeout(() => setSavedField((current) => (current === field ? "" : current)), 1600);
+      },
+    });
   };
 
   const restoreTradeMutation = useMutation({
@@ -183,6 +228,20 @@ export default function Settings() {
       enableNotifications: "Włącz powiadomienia",
       showWeekends: "Pokazuj weekendy w kalendarzu",
       save: "Zapisz zmiany",
+      sections: "Sekcje",
+      sectionsDesc: "Wybierz, co chcesz edytować",
+      secAppearance: "Wygląd",
+      secAppearanceDesc: "Język, motyw, animacje, formaty i widok danych",
+      secAccounts: "Konta",
+      secAccountsDesc: "Ustawienia domyślne dla nowych transakcji",
+      secImport: "Import",
+      secImportDesc: "Strefy czasowe i godziny z brokera",
+      secToolsDesc: "Korekta godzin importu MT5",
+      secData: "Dane i kopie",
+      secDataDesc: "Usunięte transakcje możesz przywrócić do 30 dni. Po tym czasie znikają trwale.",
+      secAccount: "Konto",
+      secNotificationsDesc: "Kontroluj powiadomienia i alerty",
+      saved: "Zapisano",
       logout: "Wyloguj się",
       light: "Jasny",
       dark: "Ciemny",
@@ -234,6 +293,20 @@ export default function Settings() {
       enableNotifications: "Enable Notifications",
       showWeekends: "Show Weekends in Calendar",
       save: "Save Changes",
+      sections: "Sections",
+      sectionsDesc: "Choose what to edit",
+      secAppearance: "Appearance",
+      secAppearanceDesc: "Language, theme, animations, formats and data view",
+      secAccounts: "Accounts",
+      secAccountsDesc: "Defaults for new trades",
+      secImport: "Import",
+      secImportDesc: "Time zones and broker times",
+      secToolsDesc: "MT5 import time correction",
+      secData: "Data & backups",
+      secDataDesc: "Deleted trades can be restored for 30 days. After that they are removed permanently.",
+      secAccount: "Account",
+      secNotificationsDesc: "Control notifications and alerts",
+      saved: "Saved",
       logout: "Log Out",
       light: "Light",
       dark: "Dark",
@@ -261,13 +334,11 @@ export default function Settings() {
   const [motionMode, setMotionModeState] = useState(getStoredMotionMode);
 
   const sectionItems = [
-    { id: 'profile', label: t.profile, icon: User },
-    { id: 'preferences', label: t.preferences, icon: Globe },
-    { id: 'trading', label: t.trading, icon: Shield },
-    { id: 'notifications', label: t.notifications, icon: Bell },
-    { id: 'privacy', label: t.privacy, icon: Lock },
-    { id: 'tools', label: t.tools, icon: Wrench },
-    { id: 'trash', label: t.trash, icon: Trash2 },
+    { id: 'appearance', label: t.secAppearance, icon: Palette },
+    { id: 'accounts', label: t.secAccounts, icon: Wallet },
+    { id: 'import', label: t.secImport, icon: Upload },
+    { id: 'data', label: t.secData, icon: Archive },
+    { id: 'account', label: t.secAccount, icon: User },
   ];
 
   const getDaysLeft = (deletedExpiresAt) => {
@@ -315,15 +386,335 @@ export default function Settings() {
 
         <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)] gap-6">
           <div className="space-y-6 xl:order-2">
-            {activeSection === 'profile' && (
+            <div key={activeSection} className="settings-section-in space-y-6">
+            {activeSection === "appearance" && (
+              <>
+              <Card className="border-border">
+                <CardHeader>
+                  <CardTitle>{t.secAppearance}</CardTitle>
+                  <CardDescription>{t.secAppearanceDesc}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>{t.language}</Label>
+                    <Select value={settings.language || "pl"} onValueChange={(value) => setSettings({ ...settings, language: value })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pl">🇵🇱 Polski</SelectItem>
+                        <SelectItem value="en">🇬🇧 English</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>{t.theme}</Label>
+                    <Select value={settings.theme || "auto"} onValueChange={(value) => setSettings({ ...settings, theme: value })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="light">{t.light}</SelectItem>
+                        <SelectItem value="dark">{t.dark}</SelectItem>
+                        <SelectItem value="auto">{t.auto}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>{tr('motionLabel')}</Label>
+                    {/* Tylko localStorage + html[data-motion]; działa od razu, bez zapisu w profilu. */}
+                    <Select
+                      value={motionMode}
+                      onValueChange={(value) => {
+                        setMotionMode(value);
+                        setMotionModeState(value);
+                      }}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="full">{tr('motionFull')}</SelectItem>
+                        <SelectItem value="subtle">{tr('motionSubtle')}</SelectItem>
+                        <SelectItem value="off">{tr('motionOff')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-1 text-xs text-muted-foreground">{tr('motionHint')}</p>
+                  </div>
+                  <div>
+                    <Label>{t.dateFormat}</Label>
+                    <Select value={settings.date_format || "YYYY-MM-DD"} onValueChange={(value) => setSettings({ ...settings, date_format: value })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (2026-02-03)</SelectItem>
+                        <SelectItem value="DD/MM/YYYY">DD/MM/YYYY (03/02/2026)</SelectItem>
+                        <SelectItem value="MM/DD/YYYY">MM/DD/YYYY (02/03/2026)</SelectItem>
+                        <SelectItem value="DD.MM.YYYY">DD.MM.YYYY (03.02.2026)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>{t.timeFormat}</Label>
+                    <Select
+                      value={settings.time_format || "24h"}
+                      onValueChange={(value) => setSettings({ ...settings, time_format: value })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="24h">{t.timeFormat24}</SelectItem>
+                        <SelectItem value="12h">{t.timeFormat12}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
+                    <div className="space-y-0.5">
+                      <Label>{t.showSessionClocks}</Label>
+                      <p className="text-xs text-muted-foreground">{t.showSessionClocksDesc}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <SavedHint show={savedField === "show_session_clocks"} label={t.saved} />
+                      <Switch
+                      checked={settings.show_session_clocks !== false}
+                      onCheckedChange={(checked) => saveToggle("show_session_clocks", checked)}
+                    />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>{t.pnlView}</Label>
+                    <Select
+                      value={settings.pnl_view || "money"}
+                      onValueChange={(value) => setSettings({ ...settings, pnl_view: value })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="money">{t.pnlMoney}</SelectItem>
+                        <SelectItem value="percent">{t.pnlPercent}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.privacyMode}</Label>
+                      <p className="text-sm text-muted-foreground">{t.privacyModeDesc}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <SavedHint show={savedField === "privacy_mode"} label={t.saved} />
+                      <Switch
+                      checked={!!settings.privacy_mode}
+                      onCheckedChange={(checked) => saveToggle("privacy_mode", checked)}
+                    />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>{t.startPage}</Label>
+                    <Select
+                      value={settings.start_page || "/Dashboard"}
+                      onValueChange={(value) => setSettings({ ...settings, start_page: value })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="/Dashboard">Dashboard</SelectItem>
+                        <SelectItem value="/journal">
+                          {settings.language === 'pl' ? "Dziennik" : "Journal"}
+                        </SelectItem>
+                        <SelectItem value="/analytics">Analytics</SelectItem>
+                        <SelectItem value="/calendar">
+                          {settings.language === 'pl' ? "Kalendarz" : "Calendar"}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {settings.language === 'pl'
+                        ? "Strona otwierana po zalogowaniu"
+                        : "Page opened after login"}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t.showWeekends}</Label>
+                      <p className="text-sm text-muted-foreground">Wyświetlaj weekendy w widoku kalendarza</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <SavedHint show={savedField === "show_weekends"} label={t.saved} />
+                      <Switch
+                      checked={settings.show_weekends !== false}
+                      onCheckedChange={(checked) => saveToggle("show_weekends", checked)}
+                    />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              </>
+            )}
+            {activeSection === "accounts" && (
+              <>
+              <Card className="border-border">
+                <CardHeader>
+                  <CardTitle>{t.secAccounts}</CardTitle>
+                  <CardDescription>{t.secAccountsDesc}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>{t.defaultAccount}</Label>
+                    <Select
+                      value={settings.default_account_id || "none"}
+                      onValueChange={(value) => setSettings({ ...settings, default_account_id: value === "none" ? "" : value })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t.noAccount}</SelectItem>
+                        {accounts.map(acc => (
+                          <SelectItem key={acc.id} value={acc.id}>{acc.name} ({acc.account_type})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>{t.currency}</Label>
+                    <Select value={settings.default_currency || "USD"} onValueChange={(value) => setSettings({ ...settings, default_currency: value })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD - US Dollar</SelectItem>
+                        <SelectItem value="EUR">EUR - Euro</SelectItem>
+                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                        <SelectItem value="PLN">PLN - Polish Złoty</SelectItem>
+                        <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>{t.riskPerTrade}</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={settings.default_risk_per_trade || 1}
+                      onChange={(e) => setSettings({ ...settings, default_risk_per_trade: parseFloat(e.target.value) })}
+                      placeholder="1.0"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Sugerowane: 1-2%</p>
+                  </div>
+                  <div>
+                    <Label>{t.maxDailyLoss}</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={settings.default_max_daily_loss || 5}
+                      onChange={(e) => setSettings({ ...settings, default_max_daily_loss: parseFloat(e.target.value) })}
+                      placeholder="5.0"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Sugerowane: 3-5%</p>
+                  </div>
+                </CardContent>
+              </Card>
+              </>
+            )}
+            {activeSection === "import" && (
+              <>
+              <Card className="border-border">
+                <CardHeader>
+                  <CardTitle>{t.secImport}</CardTitle>
+                  <CardDescription>{t.secImportDesc}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>{t.timezone}</Label>
+                    <p className="text-xs text-muted-foreground mb-1.5">{t.timezoneDesc}</p>
+                    <Select value={settings.timezone || "Europe/Warsaw"} onValueChange={(value) => setSettings({ ...settings, timezone: value })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TIMEZONE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>{t.tradeTimeSource}</Label>
+                    <p className="text-xs text-muted-foreground mb-1.5">{t.tradeTimeSourceDesc}</p>
+                    <Select
+                      value={settings.trade_time_source || "Europe/Warsaw"}
+                      onValueChange={(value) => setSettings({ ...settings, trade_time_source: value })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TIMEZONE_OPTIONS.map((opt) => (
+                          <SelectItem key={`src-${opt.value}`} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-border">
+                <CardHeader>
+                  <CardTitle>{t.tools}</CardTitle>
+                  <CardDescription>{t.secToolsDesc}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Mt5TimeFixTool userId={authUser?.id} language={settings.language || "pl"} />
+                </CardContent>
+              </Card>
+              </>
+            )}
+            {activeSection === "data" && (
+              <>
+              <Card className="border-border">
+                <CardHeader>
+                  <CardTitle>{t.trash}</CardTitle>
+                  <CardDescription>{t.secDataDesc}</CardDescription>
+                </CardHeader>
+                <CardContent className="">
+                  {deletedTrades.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">{t.emptyTrash}</div>
+                  ) : (
+                    <div className="space-y-3">
+                      {deletedTrades.map((trade) => {
+                        const daysLeft = getDaysLeft(trade.deleted_expires_at);
+                        return (
+                          <div
+                            key={trade.id}
+                            className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-3 rounded-lg border border-border"
+                          >
+                            <div className="min-w-0">
+                              <div className="font-semibold text-foreground">
+                                {trade.symbol || '-'} • {trade.date || '-'}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Konto: {getAccountName(trade.account_id)}
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-xs px-2 py-1 rounded-full bg-warning/10 text-warning">
+                                {daysLeft} {t.daysLeft}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => restoreTradeMutation.mutate(trade.id)}
+                                disabled={restoreTradeMutation.isPending || permanentlyDeleteTradeMutation.isPending}
+                              >
+                                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                                {t.restore}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => permanentlyDeleteTradeMutation.mutate(trade.id)}
+                                disabled={restoreTradeMutation.isPending || permanentlyDeleteTradeMutation.isPending}
+                              >
+                                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                                {t.deleteNow}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              </>
+            )}
+            {activeSection === "account" && (
+              <>
               <Card className="border-border">
                 <CardHeader>
                   <CardTitle>{t.profile}</CardTitle>
-                  <CardDescription>
-                    {settings.language === 'pl'
-                      ? "Podstawowe informacje, nazwa wyświetlana i awatar"
-                      : "Basic info, display name and avatar"}
-                  </CardDescription>
+                  <CardDescription>{settings.language === 'pl' ? "Podstawowe informacje, nazwa wyświetlana i awatar" : "Basic info, display name and avatar"}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Preview */}
@@ -434,195 +825,20 @@ export default function Settings() {
                   </div>
                 </CardContent>
               </Card>
-            )}
-
-            {activeSection === 'preferences' && (
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle>{t.preferences}</CardTitle>
-                  <CardDescription>Personalizuj wygląd i język aplikacji</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>{t.language}</Label>
-                    <Select value={settings.language || "pl"} onValueChange={(value) => setSettings({ ...settings, language: value })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pl">🇵🇱 Polski</SelectItem>
-                        <SelectItem value="en">🇬🇧 English</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>{t.currency}</Label>
-                    <Select value={settings.default_currency || "USD"} onValueChange={(value) => setSettings({ ...settings, default_currency: value })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">USD - US Dollar</SelectItem>
-                        <SelectItem value="EUR">EUR - Euro</SelectItem>
-                        <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                        <SelectItem value="PLN">PLN - Polish Złoty</SelectItem>
-                        <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>{t.timezone}</Label>
-                    <p className="text-xs text-muted-foreground mb-1.5">{t.timezoneDesc}</p>
-                    <Select value={settings.timezone || "Europe/Warsaw"} onValueChange={(value) => setSettings({ ...settings, timezone: value })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {TIMEZONE_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>{t.tradeTimeSource}</Label>
-                    <p className="text-xs text-muted-foreground mb-1.5">{t.tradeTimeSourceDesc}</p>
-                    <Select
-                      value={settings.trade_time_source || "Europe/Warsaw"}
-                      onValueChange={(value) => setSettings({ ...settings, trade_time_source: value })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {TIMEZONE_OPTIONS.map((opt) => (
-                          <SelectItem key={`src-${opt.value}`} value={opt.value}>{opt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>{t.dateFormat}</Label>
-                    <Select value={settings.date_format || "YYYY-MM-DD"} onValueChange={(value) => setSettings({ ...settings, date_format: value })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (2026-02-03)</SelectItem>
-                        <SelectItem value="DD/MM/YYYY">DD/MM/YYYY (03/02/2026)</SelectItem>
-                        <SelectItem value="MM/DD/YYYY">MM/DD/YYYY (02/03/2026)</SelectItem>
-                        <SelectItem value="DD.MM.YYYY">DD.MM.YYYY (03.02.2026)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>{t.timeFormat}</Label>
-                    <Select
-                      value={settings.time_format || "24h"}
-                      onValueChange={(value) => setSettings({ ...settings, time_format: value })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="24h">{t.timeFormat24}</SelectItem>
-                        <SelectItem value="12h">{t.timeFormat12}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between gap-4 rounded-lg border border-border p-3">
-                    <div className="space-y-0.5">
-                      <Label>{t.showSessionClocks}</Label>
-                      <p className="text-xs text-muted-foreground">{t.showSessionClocksDesc}</p>
-                    </div>
-                    <Switch
-                      checked={settings.show_session_clocks !== false}
-                      onCheckedChange={(checked) => setSettings({ ...settings, show_session_clocks: checked })}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t.theme}</Label>
-                    <Select value={settings.theme || "auto"} onValueChange={(value) => setSettings({ ...settings, theme: value })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="light">{t.light}</SelectItem>
-                        <SelectItem value="dark">{t.dark}</SelectItem>
-                        <SelectItem value="auto">{t.auto}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>{tr('motionLabel')}</Label>
-                    {/* Tylko localStorage + html[data-motion]; działa od razu, bez zapisu w profilu. */}
-                    <Select
-                      value={motionMode}
-                      onValueChange={(value) => {
-                        setMotionMode(value);
-                        setMotionModeState(value);
-                      }}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="full">{tr('motionFull')}</SelectItem>
-                        <SelectItem value="subtle">{tr('motionSubtle')}</SelectItem>
-                        <SelectItem value="off">{tr('motionOff')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="mt-1 text-xs text-muted-foreground">{tr('motionHint')}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {activeSection === 'trading' && (
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle>{t.trading}</CardTitle>
-                  <CardDescription>Ustawienia domyślne dla nowych transakcji</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label>{t.defaultAccount}</Label>
-                    <Select
-                      value={settings.default_account_id || "none"}
-                      onValueChange={(value) => setSettings({ ...settings, default_account_id: value === "none" ? "" : value })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">{t.noAccount}</SelectItem>
-                        {accounts.map(acc => (
-                          <SelectItem key={acc.id} value={acc.id}>{acc.name} ({acc.account_type})</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>{t.riskPerTrade}</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={settings.default_risk_per_trade || 1}
-                      onChange={(e) => setSettings({ ...settings, default_risk_per_trade: parseFloat(e.target.value) })}
-                      placeholder="1.0"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Sugerowane: 1-2%</p>
-                  </div>
-                  <div>
-                    <Label>{t.maxDailyLoss}</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={settings.default_max_daily_loss || 5}
-                      onChange={(e) => setSettings({ ...settings, default_max_daily_loss: parseFloat(e.target.value) })}
-                      placeholder="5.0"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">Sugerowane: 3-5%</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {activeSection === 'notifications' && (
               <Card className="border-border">
                 <CardHeader>
                   <CardTitle>{t.notifications}</CardTitle>
-                  <CardDescription>Kontroluj powiadomienia i alerty</CardDescription>
+                  <CardDescription>{t.secNotificationsDesc}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>{t.enableNotifications}</Label>
                       <p className="text-sm text-muted-foreground">Otrzymuj powiadomienia o ważnych wydarzeniach</p>
                     </div>
-                    <Switch
+                    <div className="flex items-center gap-2">
+                      <SavedHint show={savedField === "notifications_enabled"} label={t.saved} />
+                      <Switch
                       checked={settings.notifications_enabled !== false}
                       onCheckedChange={async (checked) => {
                         if (checked) {
@@ -633,159 +849,18 @@ export default function Settings() {
                               : "The browser blocked notifications. Enable them in site settings.");
                           }
                         }
-                        setSettings({ ...settings, notifications_enabled: checked });
+                        saveToggle("notifications_enabled", checked);
                       }}
                     />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>{t.showWeekends}</Label>
-                      <p className="text-sm text-muted-foreground">Wyświetlaj weekendy w widoku kalendarza</p>
                     </div>
-                    <Switch
-                      checked={settings.show_weekends !== false}
-                      onCheckedChange={(checked) => setSettings({ ...settings, show_weekends: checked })}
-                    />
                   </div>
                 </CardContent>
               </Card>
+              </>
             )}
+            </div>
 
-            {activeSection === 'privacy' && (
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle>{t.privacy}</CardTitle>
-                  <CardDescription>
-                    {settings.language === 'pl'
-                      ? "Kontroluj widoczność danych finansowych"
-                      : "Control visibility of financial data"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>{t.privacyMode}</Label>
-                      <p className="text-sm text-muted-foreground">{t.privacyModeDesc}</p>
-                    </div>
-                    <Switch
-                      checked={!!settings.privacy_mode}
-                      onCheckedChange={(checked) => setSettings({ ...settings, privacy_mode: checked })}
-                    />
-                  </div>
-                  <div>
-                    <Label>{t.startPage}</Label>
-                    <Select
-                      value={settings.start_page || "/Dashboard"}
-                      onValueChange={(value) => setSettings({ ...settings, start_page: value })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="/Dashboard">Dashboard</SelectItem>
-                        <SelectItem value="/journal">
-                          {settings.language === 'pl' ? "Dziennik" : "Journal"}
-                        </SelectItem>
-                        <SelectItem value="/analytics">Analytics</SelectItem>
-                        <SelectItem value="/calendar">
-                          {settings.language === 'pl' ? "Kalendarz" : "Calendar"}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {settings.language === 'pl'
-                        ? "Strona otwierana po zalogowaniu"
-                        : "Page opened after login"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label>{t.pnlView}</Label>
-                    <Select
-                      value={settings.pnl_view || "money"}
-                      onValueChange={(value) => setSettings({ ...settings, pnl_view: value })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="money">{t.pnlMoney}</SelectItem>
-                        <SelectItem value="percent">{t.pnlPercent}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {activeSection === 'trash' && (
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle>{t.trash}</CardTitle>
-                  <CardDescription>
-                    Usunięte trade możesz przywrócić do 30 dni. Po tym czasie znikają trwale.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {deletedTrades.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">{t.emptyTrash}</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {deletedTrades.map((trade) => {
-                        const daysLeft = getDaysLeft(trade.deleted_expires_at);
-                        return (
-                          <div
-                            key={trade.id}
-                            className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-3 rounded-lg border border-border"
-                          >
-                            <div className="min-w-0">
-                              <div className="font-semibold text-foreground">
-                                {trade.symbol || '-'} • {trade.date || '-'}
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Konto: {getAccountName(trade.account_id)}
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-xs px-2 py-1 rounded-full bg-warning/10 text-warning">
-                                {daysLeft} {t.daysLeft}
-                              </span>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => restoreTradeMutation.mutate(trade.id)}
-                                disabled={restoreTradeMutation.isPending || permanentlyDeleteTradeMutation.isPending}
-                              >
-                                <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-                                {t.restore}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => permanentlyDeleteTradeMutation.mutate(trade.id)}
-                                disabled={restoreTradeMutation.isPending || permanentlyDeleteTradeMutation.isPending}
-                              >
-                                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                                {t.deleteNow}
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {activeSection === "tools" && (
-              <Card className="border-border">
-                <CardHeader>
-                  <CardTitle>{t.tools}</CardTitle>
-                  <CardDescription>Korekta godzin importu MT5</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Mt5TimeFixTool userId={authUser?.id} language={settings.language || "pl"} />
-                </CardContent>
-              </Card>
-            )}
-
-            {activeSection !== 'trash' && activeSection !== 'tools' && (
+            {activeSection !== "data" && (
               <div className="flex justify-end">
                 <Button
                   onClick={handleSave}
@@ -800,25 +875,30 @@ export default function Settings() {
 
           <Card className="h-fit border-border xl:sticky xl:top-6 xl:order-1">
             <CardHeader>
-              <CardTitle className="text-base">Sekcje</CardTitle>
-              <CardDescription>Wybierz, co chcesz edytować</CardDescription>
+              <CardTitle className="text-base">{t.sections}</CardTitle>
+              <CardDescription>{t.sectionsDesc}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {sectionItems.map((section) => {
-                const Icon = section.icon;
-                const isActive = activeSection === section.id;
-                return (
-                  <Button
-                    key={section.id}
-                    variant="outline"
-                    className={isActive ? "w-full justify-start bg-muted text-foreground border-border" : "w-full justify-start"}
-                    onClick={() => setActiveSection(section.id)}
-                  >
-                    <Icon className="w-4 h-4 mr-2" />
-                    {section.label}
-                  </Button>
-                );
-              })}
+            <CardContent>
+              <nav ref={sectionNavRef} className="relative space-y-1" aria-label={t.sections}>
+                <span ref={sectionIndicatorRef} aria-hidden="true" className="motion-indicator settings-nav-indicator" />
+                {sectionItems.map((section) => {
+                  const Icon = section.icon;
+                  const isActive = activeSection === section.id;
+                  return (
+                    <button
+                      key={section.id}
+                      type="button"
+                      data-active={isActive ? "true" : "false"}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`relative z-[1] flex h-9 w-full items-center gap-2 rounded-[10px] px-3 text-[13px] font-medium transition-colors duration-150 ${isActive ? "text-ds-text" : "text-ds-text2 hover:text-ds-text"}`}
+                      onClick={() => setActiveSection(section.id)}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {section.label}
+                    </button>
+                  );
+                })}
+              </nav>
             </CardContent>
           </Card>
         </div>

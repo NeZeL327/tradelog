@@ -1,3 +1,5 @@
+import { motionEnabled } from "./motion.js";
+
 const LOCAL_KEY = "appUserSettings_v1";
 
 export const DEFAULT_USER_SETTINGS = Object.freeze({
@@ -111,6 +113,8 @@ export function getMissingCloudSettings({ cloudSettings, localSettings } = {}) {
   return missing;
 }
 
+let themeFadeTimer = 0;
+
 export function applyTheme(theme) {
   const root = document.documentElement;
   const nextTheme = theme === "dark" || theme === "light" || theme === "auto" ? theme : "auto";
@@ -118,6 +122,12 @@ export function applyTheme(theme) {
     nextTheme === "dark" ||
     (nextTheme === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
+  // Przy faktycznej zmianie jasny/ciemny kolory przenikają 300 ms (tylko kolory; tryb animacji z --motion-*).
+  if (root.classList.contains("dark") !== shouldBeDark && motionEnabled()) {
+    root.classList.add("theme-fading");
+    window.clearTimeout(themeFadeTimer);
+    themeFadeTimer = window.setTimeout(() => root.classList.remove("theme-fading"), 420);
+  }
   root.classList.toggle("dark", shouldBeDark);
   root.removeAttribute("data-skin");
 

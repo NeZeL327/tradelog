@@ -3641,3 +3641,33 @@ html[data-motion="off"] tr[data-fresh="true"] > td::before {
 .motion-tab-in[data-state="active"] {
   animation: motion-fade calc(150ms * var(--motion-scale)) var(--motion-ease) backwards;
 }
+
+/* ===== ETAP G5 — Ustawienia. Wyłączenie: tryb "off" / ogranicz ruch. ===== */
+.settings-nav-indicator {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--ds-s3);
+  box-shadow: inset 0 0 0 1px var(--ds-line);
+}
+.settings-section-in {
+  animation: motion-fade var(--motion-base) var(--motion-ease) backwards;
+}
+.settings-saved {
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--motion-ease);
+}
+.settings-saved.is-visible {
+  opacity: 1;
+}
+/* Zmiana motywu: przez 300 ms przenikają tylko kolory (klasa ustawiana w applyTheme). */
+html.theme-fading,
+html.theme-fading *,
+html.theme-fading *::before,
+html.theme-fading *::after {
+  transition-property: background-color, color, border-color, fill, stroke, outline-color, text-decoration-color !important;
+  transition-duration: calc(300ms * var(--motion-scale)) !important;
+  transition-timing-function: var(--motion-ease) !important;
+}
