@@ -106,7 +106,7 @@ export default function SessionClocks() {
 
   return (
     <div
-      className="hidden h-[32px] shrink-0 items-center rounded-full border border-ds-line bg-ds-s2 px-1 lg:flex"
+      className="topbar-control hidden h-[32px] shrink-0 items-center rounded-full border border-ds-line bg-ds-s2 px-1.5 lg:flex"
       aria-label="Godziny sesji tradingowych"
     >
       {CLOCKS.map((clock, index) => {

@@ -95,7 +95,7 @@ export default function CommandSearch({ variant = "sidebar" }) {
       className={
         isSidebar
           ? "flex w-full h-[30px] items-center gap-2 rounded-[10px] border border-ds-line bg-ds-s2 px-2.5 text-[13px] font-normal text-ds-text3 hover:bg-ds-s3 hover:text-ds-text transition-colors group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-          : "hidden md:flex h-8 items-center gap-2 rounded-lg border border-border/70 bg-background/40 px-3 text-[12px] text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors min-w-[11.5rem] max-w-[16rem]"
+          : "topbar-control hidden md:flex h-8 items-center gap-2 rounded-lg border border-border/70 bg-background/40 px-3.5 text-[12px] text-ds-text3 hover:text-ds-text transition-colors min-w-[11.5rem] max-w-[16rem]"
       }
       aria-label={t("search")}
     >

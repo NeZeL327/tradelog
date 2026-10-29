@@ -47,7 +47,10 @@ export default function Layout({ children }) {
     if (!main || !bar) return undefined;
     const onScroll = () => {
       const scrolled = main.scrollTop > 8 ? "true" : "false";
-      if (bar.dataset.scrolled !== scrolled) bar.dataset.scrolled = scrolled;
+      if (bar.dataset.scrolled !== scrolled) {
+        bar.dataset.scrolled = scrolled;
+        main.dataset.scrolled = scrolled;
+      }
     };
     onScroll();
     main.addEventListener("scroll", onScroll, { passive: true });
@@ -86,7 +89,7 @@ export default function Layout({ children }) {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header ref={topbarRef} className="app-topbar sticky top-0 z-20 flex h-12 items-center justify-between gap-3 border-b border-ds-line bg-transparent px-3">
           <div className="flex shrink-0 items-center gap-2 xl:min-w-0 xl:shrink">
-          <Link to={createPageUrl("Dashboard")} className="flex shrink-0 items-center gap-1.5">
+          <Link to={createPageUrl("Dashboard")} className="topbar-brand flex shrink-0 items-center gap-1.5">
             <img
               src="/aikeeptrade-icon-192.png"
               alt="AiKeepTrade"
@@ -103,7 +106,7 @@ export default function Layout({ children }) {
           </Link>
           <button
             type="button"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ds-text3 transition-colors hover:bg-ds-s3 hover:text-ds-text xl:hidden"
+            className="topbar-control topbar-icon-btn flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ds-text3 transition-colors hover:bg-ds-s3 hover:text-ds-text xl:hidden"
             aria-label={t("search")}
             onClick={() => window.dispatchEvent(new Event("open-command-search"))}
           >

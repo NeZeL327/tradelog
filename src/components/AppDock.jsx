@@ -113,7 +113,7 @@ export default function AppDock({ user, onLogout }) {
   return (
     <TooltipProvider delayDuration={300} skipDelayDuration={100}>
     <nav
-      className="app-side-nav relative z-40 flex h-full w-[60px] shrink-0 flex-col items-center border-r border-ds-line bg-transparent py-3"
+      className="app-side-nav dock-rail relative z-40 flex h-full w-[60px] shrink-0 flex-col items-center bg-transparent py-3"
       aria-label={t("mainNav") || "Nawigacja główna"}
     >
       <Link
