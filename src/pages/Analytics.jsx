@@ -19,7 +19,7 @@ import { aggregateTagPerformance } from "@/lib/tradeTags";
 import { CHART, chartTooltipStyle, chartGridProps, chartBarRadius } from "@/lib/chartTheme";
 import { SkeletonKpiRow, SkeletonBlock } from "@/components/ui/skeleton-block";
 import QuoteLine from "@/components/QuoteLine";
-import MultiSelectFilter from "@/components/MultiSelectFilter";
+import MultiSelectFilter, { FILTER_LABEL_CLASS, FILTER_PANEL_CLASS, FILTER_TRIGGER_CLASS, filterItemClass } from "@/components/MultiSelectFilter";
 import DateRangeCalendar from "@/components/DateRangeCalendar";
 import { balanceForTrades } from "@/lib/pnlDisplay";
 import {
@@ -57,13 +57,13 @@ const fmtShortDay = (key) => fmtDay(key).slice(0, 5);
 
 function SegToggle({ value, onChange, options }) {
   return (
-    <div className="inline-flex rounded-lg border border-border bg-muted p-0.5">
+    <div className="inline-flex rounded-[10px] border border-ds-line bg-ds-s2 p-0.5">
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
-          className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${value === option.value ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${value === option.value ? 'bg-ds-s3 text-ds-text' : 'text-ds-text3 hover:text-ds-text'}`}
         >
           {option.label}
         </button>
@@ -654,7 +654,7 @@ export default function Analytics() {
     return (
       <div className="w-full mx-auto space-y-3 dashboard-surface py-2">
         <SkeletonKpiRow count={4} />
-        <SkeletonBlock rows={8} className="rounded-lg border border-border" />
+        <SkeletonBlock rows={8} className="rounded-lg border border-ds-line" />
       </div>
     );
   }
@@ -779,18 +779,21 @@ export default function Analytics() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3 items-end">
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('anPeriod')}</span>
+            <span className={FILTER_LABEL_CLASS}>{t('anPeriod')}</span>
             <div className="relative" ref={datePickerRef}>
               <button
+                type="button"
+                aria-expanded={datePickerOpen}
+                data-open={datePickerOpen ? "true" : undefined}
                 onClick={() => setDatePickerOpen(!datePickerOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
+                className={FILTER_TRIGGER_CLASS}
               >
                 <CalendarRange className="absolute left-3 w-4 h-4 opacity-50" />
                 <span className="truncate text-center w-full px-5">{dateRangeLabel}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
               {datePickerOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-[300px] max-w-[calc(100vw-32px)] rounded-md border border-border bg-card p-2 shadow-none">
+                <div className={`${FILTER_PANEL_CLASS} w-[300px] max-w-[calc(100vw-32px)] p-2`}>
                   <div className="grid grid-cols-2 gap-1">
                     {DATE_PRESETS.map((preset) => (
                       <button
@@ -799,14 +802,14 @@ export default function Analytics() {
                           setDatePreset(preset);
                           if (preset !== "custom") setDatePickerOpen(false);
                         }}
-                        className={`px-3 py-2 text-sm rounded text-left hover:bg-accent ${datePreset === preset ? 'bg-accent' : ''}`}
+                        className={filterItemClass(datePreset === preset)}
                       >
                         {t(DATE_PRESET_LABEL_KEYS[preset])}
                       </button>
                     ))}
                   </div>
                   {datePreset === "custom" && (
-                    <div className="mt-2 border-t border-border pt-3 px-1">
+                    <div className="mt-2 border-t border-ds-line pt-3 px-1">
                       <DateRangeCalendar
                         from={customRange.from}
                         to={customRange.to}
@@ -877,10 +880,10 @@ export default function Analytics() {
           />
 
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center opacity-0">{t('reset')}</span>
-            <Button
-              variant="outline"
-              className="h-10 w-full border-loss/30 text-loss hover:bg-loss/10 hover:border-loss/40"
+            <span className={`${FILTER_LABEL_CLASS} opacity-0`} aria-hidden="true">{t('reset')}</span>
+            <button
+              type="button"
+              className="flex h-9 w-full items-center justify-center rounded-[10px] border border-[color:var(--ds-neg-tint)] bg-ds-neg-tint text-[13px] font-medium text-ds-neg transition-colors duration-200 hover:border-[color:var(--ds-neg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ds-focus)]"
               onClick={() => {
                 setFilterSymbols(["all"]);
                 setFilterStrategies(["all"]);
@@ -895,32 +898,37 @@ export default function Analytics() {
               }}
             >
               {t('reset')}
-            </Button>
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-9 gap-px rounded-[16px] border border-border bg-border overflow-hidden">
+        {/* Osobne szklane kafelki jak we wzorcu docs/design-reference/wzorzec-3; 5+4 na laptopie, 9 w rzędzie na szerokim ekranie. */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 min-[1700px]:grid-cols-9">
           {kpiTiles.map((tile) => (
-            <div key={tile.key} className="min-w-0 bg-card px-4 py-3" title={tile.title}>
-              <p className="type-section mb-2 truncate">{tile.label}</p>
-              <p className={`type-metric-sm font-semibold truncate ${tile.tone === 'profit' ? 'text-profit' : tile.tone === 'loss' ? 'text-loss' : 'text-foreground'}`}>
+            <div
+              key={tile.key}
+              className="min-w-0 rounded-[16px] border border-ds-line bg-ds-s2 px-4 py-3.5"
+              title={tile.title || `${tile.label}: ${tile.value} — ${tile.hint}`}
+            >
+              <p className="type-section mb-2 break-words">{tile.label}</p>
+              <p className={`type-metric-sm font-semibold break-words ${tile.tone === 'profit' ? 'text-ds-pos' : tile.tone === 'loss' ? 'text-ds-neg' : 'text-ds-text'}`}>
                 {tile.value}
               </p>
-              <p className="type-secondary mt-1.5 truncate">{tile.hint}</p>
+              <p className="type-secondary mt-1.5 line-clamp-2">{tile.hint}</p>
             </div>
           ))}
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="flex w-full h-auto flex-wrap gap-1 p-1 bg-muted md:flex-nowrap md:overflow-x-auto">
-            <TabsTrigger value="overview" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('overview')}</TabsTrigger>
-            <TabsTrigger value="symbols" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('symbols')}</TabsTrigger>
-            <TabsTrigger value="strategies" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('strategiesAnalytics')}</TabsTrigger>
-            <TabsTrigger value="accounts" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('accountsAnalytics')}</TabsTrigger>
-            <TabsTrigger value="time" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('timeTab')}</TabsTrigger>
-            <TabsTrigger value="psychology" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('psychology')}</TabsTrigger>
-            <TabsTrigger value="confluences" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('entryConditionsTab')}</TabsTrigger>
-            <TabsTrigger value="mistakes" className="flex-1 min-w-[5.5rem] text-[11px] sm:text-sm">{t('mistakesTab')}</TabsTrigger>
+          <TabsList className="flex w-full overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <TabsTrigger value="overview" className="shrink-0">{t('overview')}</TabsTrigger>
+            <TabsTrigger value="symbols" className="shrink-0">{t('symbols')}</TabsTrigger>
+            <TabsTrigger value="strategies" className="shrink-0">{t('strategiesAnalytics')}</TabsTrigger>
+            <TabsTrigger value="accounts" className="shrink-0">{t('accountsAnalytics')}</TabsTrigger>
+            <TabsTrigger value="time" className="shrink-0">{t('timeTab')}</TabsTrigger>
+            <TabsTrigger value="psychology" className="shrink-0">{t('psychology')}</TabsTrigger>
+            <TabsTrigger value="confluences" className="shrink-0">{t('entryConditionsTab')}</TabsTrigger>
+            <TabsTrigger value="mistakes" className="shrink-0">{t('mistakesTab')}</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -1043,16 +1051,16 @@ export default function Analytics() {
               </CardHeader>
               <CardContent className="overflow-hidden p-4 pt-0">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                  <div className="rounded-lg border border-border bg-muted p-3">
+                  <div className="rounded-lg border border-ds-line bg-ds-s2 p-3">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('bestPeriod')}</p>
                     <p className="text-sm font-semibold text-foreground">
                       {bestPeriod ? bestPeriod.period : '--'}
                     </p>
-                    <p className={`text-xs ${bestPeriod && Number(bestPeriod.pl) >= 0 ? 'text-profit' : 'text-loss'}`}>
+                    <p className={`text-xs ${bestPeriod && Number(bestPeriod.pl) >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
                       {bestPeriod ? `${bestPeriod.pl >= 0 ? '+' : ''}${bestPeriod.pl.toFixed(2)}` : '--'}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-border bg-muted p-3">
+                  <div className="rounded-lg border border-ds-line bg-ds-s2 p-3">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('maxWinRate')}</p>
                     <p className="text-sm font-semibold text-foreground">
                       {bestWinRatePeriod ? `${bestWinRatePeriod.winRate}%` : '--'}
@@ -1061,7 +1069,7 @@ export default function Analytics() {
                       {bestWinRatePeriod ? bestWinRatePeriod.period : '--'}
                     </p>
                   </div>
-                  <div className="rounded-lg border border-border bg-muted p-3">
+                  <div className="rounded-lg border border-ds-line bg-ds-s2 p-3">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('totalPeriods')}</p>
                     <p className="text-sm font-semibold text-foreground">{periodData.length}</p>
                     <p className="text-xs text-muted-foreground">{t('results')}</p>
@@ -1099,9 +1107,9 @@ export default function Analytics() {
                 <CardContent className="space-y-4 p-4 pt-0">
                   <div className="grid grid-cols-2 gap-3">
                     {directionData.map((entry) => (
-                      <div key={entry.direction} className="rounded-lg border border-border bg-muted p-3">
+                      <div key={entry.direction} className="rounded-lg border border-ds-line bg-ds-s2 p-3">
                         <p className="text-xs uppercase tracking-wide text-muted-foreground">{entry.direction}</p>
-                        <p className={`text-xl font-semibold ${entry.totalPL > 0 ? 'text-profit' : entry.totalPL < 0 ? 'text-loss' : 'text-foreground'}`}>
+                        <p className={`text-xl font-semibold ${entry.totalPL > 0 ? 'text-ds-pos' : entry.totalPL < 0 ? 'text-ds-neg' : 'text-foreground'}`}>
                           {fmtMoney(entry.totalPL)}
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -1126,7 +1134,7 @@ export default function Analytics() {
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
-                  <div className="rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+                  <div className="rounded-lg border border-ds-line bg-ds-s2 px-3 py-2 text-xs text-muted-foreground">
                     {directionTop && directionTop.trades > 0
                       ? `${t('insightDirectionBest')} ${directionTop.direction} · ${directionTop.winRate}% ${t('winRate')}`
                       : t('insightDirectionEmpty')}
@@ -1246,7 +1254,7 @@ export default function Analytics() {
                 <Card 
                   key={symbol.symbol} 
                   className={`border cursor-pointer transition-colors ${
-                    selectedSymbol === symbol.symbol ? 'border-primary/40 bg-muted' : 'border-border'
+                    selectedSymbol === symbol.symbol ? 'border-primary/40 bg-ds-s2' : 'border-ds-line'
                   }`}
                   onClick={() => setSelectedSymbol(symbol.symbol)}
                 >
@@ -1260,13 +1268,13 @@ export default function Analytics() {
                       </div>
                       <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">{t('avgPLLabel')}:</span>
-                      <span className={`font-bold ${symbol.avgPL >= 0 ? 'text-profit' : 'text-loss'}`}>
+                      <span className={`font-bold ${symbol.avgPL >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
                         {symbol.avgPL > 0 ? '+' : ''}{symbol.avgPL.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">{t('totalPLLabel')}:</span>
-                      <span className={`font-bold ${symbol.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
+                      <span className={`font-bold ${symbol.totalPL >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
                         {symbol.totalPL > 0 ? '+' : ''}{symbol.totalPL.toFixed(2)}
                       </span>
                     </div>
@@ -1402,14 +1410,14 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2">
                                 {accountBreakdownData.map(item => (
-                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted rounded-lg">
+                                  <div key={item.name} className="flex justify-between items-center p-2 bg-ds-s2 rounded-lg">
                                     <div>
                                       <p className="font-semibold text-sm text-foreground">{item.name}</p>
                                       <p className="text-xs text-muted-foreground">{item.trades} transakcji</p>
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
@@ -1430,14 +1438,14 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2">
                                 {strategyBreakdownData.map(item => (
-                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted rounded-lg">
+                                  <div key={item.name} className="flex justify-between items-center p-2 bg-ds-s2 rounded-lg">
                                     <div>
                                       <p className="font-semibold text-sm text-foreground">{item.name}</p>
                                       <p className="text-xs text-muted-foreground">{item.trades} transakcji</p>
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
@@ -1511,7 +1519,7 @@ export default function Analytics() {
                           {bestTrade && (
                             <Card>
                               <CardHeader>
-                                <CardTitle className="text-base text-profit flex items-center gap-2">
+                                <CardTitle className="text-base text-ds-pos flex items-center gap-2">
                                   <TrendingUp className="w-4 h-4" />
                                   {t('bestTradeSingle')}
                                 </CardTitle>
@@ -1527,7 +1535,7 @@ export default function Analytics() {
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
-                                  <span className="text-lg font-bold text-profit dark:text-profit">
+                                  <span className="text-lg font-bold text-ds-pos">
                                     {pnl.formatTrade(bestTrade)}
                                   </span>
                                 </div>
@@ -1542,7 +1550,7 @@ export default function Analytics() {
                           {worstTrade && (getTradeRealizedPL(worstTrade) ?? 0) < 0 && (
                             <Card>
                               <CardHeader>
-                                <CardTitle className="text-base text-loss flex items-center gap-2">
+                                <CardTitle className="text-base text-ds-neg flex items-center gap-2">
                                   <AlertCircle className="w-4 h-4" />
                                   {t('worstTradeSingle')}
                                 </CardTitle>
@@ -1558,7 +1566,7 @@ export default function Analytics() {
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
-                                  <span className="text-lg font-bold text-loss dark:text-loss">
+                                  <span className="text-lg font-bold text-ds-neg">
                                     {pnl.formatTrade(worstTrade)}
                                   </span>
                                 </div>
@@ -1612,7 +1620,7 @@ export default function Analytics() {
                 <Card 
                   key={strategy.name} 
                   className={`border cursor-pointer transition-colors ${
-                    selectedStrategy === strategy.name ? 'border-primary/40 bg-muted' : 'border-border'
+                    selectedStrategy === strategy.name ? 'border-primary/40 bg-ds-s2' : 'border-ds-line'
                   }`}
                   onClick={() => setSelectedStrategy(strategy.name)}
                 >
@@ -1621,24 +1629,24 @@ export default function Analytics() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 bg-muted rounded-md text-center">
+                      <div className="p-3 bg-ds-s2 rounded-md text-center">
                         <p className="text-2xl font-bold text-foreground">{strategy.winRate}%</p>
                         <p className="text-xs text-muted-foreground">{t('winRate')}</p>
                       </div>
-                      <div className="p-3 bg-profit/10 dark:bg-profit/10 rounded-lg text-center">
-                        <p className={`text-2xl font-bold ${strategy.avgPL >= 0 ? 'text-profit dark:text-profit' : 'text-loss dark:text-loss'}`}>
+                      <div className="p-3 bg-ds-pos-tint dark:bg-ds-pos-tint rounded-lg text-center">
+                        <p className={`text-2xl font-bold ${strategy.avgPL >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
                           {strategy.avgPL > 0 ? '+' : ''}{strategy.avgPL.toFixed(2)}
                         </p>
                         <p className="text-xs text-muted-foreground">{t('avgPLLabel')}</p>
                         </div>
                         </div>
-                        <div className="flex justify-between p-3 bg-muted rounded-lg">
+                        <div className="flex justify-between p-3 bg-ds-s2 rounded-lg">
                         <span className="text-sm text-muted-foreground">{t('totalPLLabel')}:</span>
-                      <span className={`font-bold ${strategy.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
+                      <span className={`font-bold ${strategy.totalPL >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
                         {strategy.totalPL > 0 ? '+' : ''}{strategy.totalPL.toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex justify-between p-3 bg-muted rounded-lg">
+                    <div className="flex justify-between p-3 bg-ds-s2 rounded-lg">
                       <span className="text-sm text-muted-foreground">{t('trades')}:</span>
                       <span className="font-bold text-foreground">{strategy.trades}</span>
                     </div>
@@ -1771,14 +1779,14 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2">
                                 {accountBreakdownData.map(item => (
-                                  <div key={item.name} className="flex justify-between items-center p-2 bg-muted rounded-lg">
+                                  <div key={item.name} className="flex justify-between items-center p-2 bg-ds-s2 rounded-lg">
                                     <div>
                                       <p className="font-semibold text-sm text-foreground">{item.name}</p>
                                       <p className="text-xs text-muted-foreground">{item.trades} transakcji</p>
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
@@ -1799,14 +1807,14 @@ export default function Analytics() {
                             <CardContent>
                               <div className="space-y-2 max-h-64 overflow-y-auto">
                               {symbolBreakdownData.map(item => (
-                               <div key={item.symbol} className="flex justify-between items-center p-2 bg-muted rounded-lg">
+                               <div key={item.symbol} className="flex justify-between items-center p-2 bg-ds-s2 rounded-lg">
                                  <div>
                                    <p className="font-semibold text-sm text-foreground">{item.symbol}</p>
                                    <p className="text-xs text-muted-foreground">{item.trades} {t('trades')}</p>
                                     </div>
                                     <div className="text-right">
                                       <p className="font-semibold text-sm text-foreground">{item.winRate}%</p>
-                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                      <p className={`text-xs font-semibold ${item.pl >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
                                         {item.pl > 0 ? '+' : ''}{item.pl.toFixed(2)}
                                       </p>
                                     </div>
@@ -1880,7 +1888,7 @@ export default function Analytics() {
                           {bestTrade && (
                             <Card>
                               <CardHeader>
-                                <CardTitle className="text-base text-profit dark:text-profit flex items-center gap-2">
+                                <CardTitle className="text-base text-ds-pos flex items-center gap-2">
                                   <TrendingUp className="w-4 h-4" />
                                   {t('bestTradeSingle')}
                                 </CardTitle>
@@ -1900,7 +1908,7 @@ export default function Analytics() {
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
-                                  <span className="text-lg font-bold text-profit dark:text-profit">
+                                  <span className="text-lg font-bold text-ds-pos">
                                     {pnl.formatTrade(bestTrade)}
                                   </span>
                                 </div>
@@ -1911,7 +1919,7 @@ export default function Analytics() {
                           {worstTrade && (getTradeRealizedPL(worstTrade) ?? 0) < 0 && (
                             <Card>
                               <CardHeader>
-                                <CardTitle className="text-base text-loss flex items-center gap-2">
+                                <CardTitle className="text-base text-ds-neg flex items-center gap-2">
                                   <AlertCircle className="w-4 h-4" />
                                   {t('worstTradeSingle')}
                                 </CardTitle>
@@ -1931,7 +1939,7 @@ export default function Analytics() {
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm text-muted-foreground">{t('profitLoss')}:</span>
-                                  <span className="text-lg font-bold text-loss dark:text-loss">
+                                  <span className="text-lg font-bold text-ds-neg">
                                     {pnl.formatTrade(worstTrade)}
                                   </span>
                                 </div>
@@ -2060,21 +2068,21 @@ export default function Analytics() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-muted rounded-md text-center">
+                      <div className="p-3 bg-ds-s2 rounded-md text-center">
                         <p className="text-xl font-bold text-foreground">{account.winRate}%</p>
                         <p className="text-xs text-muted-foreground">{t('winRate')}</p>
                       </div>
-                      <div className="p-3 bg-profit/10 dark:bg-profit/10 rounded-lg text-center">
-                        <p className={`text-xl font-bold ${account.roi >= 0 ? 'text-profit dark:text-profit' : 'text-loss'}`}>
+                      <div className="p-3 bg-ds-pos-tint dark:bg-ds-pos-tint rounded-lg text-center">
+                        <p className={`text-xl font-bold ${account.roi >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
                           {account.roi > 0 ? '+' : ''}{account.roi.toFixed(2)}%
                         </p>
                         <p className="text-xs text-muted-foreground">{t('roi')}</p>
                       </div>
                     </div>
-                    <div className="p-3 bg-muted rounded-lg">
+                    <div className="p-3 bg-ds-s2 rounded-lg">
                       <div className="flex justify-between mb-1">
                         <span className="text-sm text-muted-foreground">{t('totalPLLabel')}:</span>
-                        <span className={`font-bold ${account.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>
+                        <span className={`font-bold ${account.totalPL >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
                           {account.totalPL > 0 ? '+' : ''}{account.totalPL.toFixed(2)}
                         </span>
                       </div>
@@ -2117,11 +2125,11 @@ export default function Analytics() {
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-profit dark:text-profit">{t('bestSlot')}</span>
-                        <TrendingUp className="w-4 h-4 text-profit" />
+                        <span className="text-xs font-medium text-ds-pos">{t('bestSlot')}</span>
+                        <TrendingUp className="w-4 h-4 text-ds-pos" />
                       </div>
-                      <p className="mt-2 text-lg font-bold text-profit dark:text-profit">{bestSlot ? bestSlot.slot : '—'}</p>
-                      <p className="text-[11px] text-profit/80 dark:text-profit/80">
+                      <p className="mt-2 text-lg font-bold text-ds-pos">{bestSlot ? bestSlot.slot : '—'}</p>
+                      <p className="text-[11px] text-ds-pos dark:text-ds-pos">
                         {bestSlot ? `${bestSlot.avgPL >= 0 ? '+' : ''}${bestSlot.avgPL} ${t('avg')} · ${bestSlot.winRate}%` : t('noData')}
                       </p>
                     </CardContent>
@@ -2130,11 +2138,11 @@ export default function Analytics() {
                   <Card>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-loss dark:text-loss">{t('worstSlot')}</span>
-                        <AlertCircle className="w-4 h-4 text-loss" />
+                        <span className="text-xs font-medium text-ds-neg">{t('worstSlot')}</span>
+                        <AlertCircle className="w-4 h-4 text-ds-neg" />
                       </div>
-                      <p className="mt-2 text-lg font-bold text-loss dark:text-loss">{worstSlot ? worstSlot.slot : '—'}</p>
-                      <p className="text-[11px] text-loss/80 dark:text-loss/80">
+                      <p className="mt-2 text-lg font-bold text-ds-neg">{worstSlot ? worstSlot.slot : '—'}</p>
+                      <p className="text-[11px] text-ds-neg dark:text-ds-neg">
                         {worstSlot ? `${worstSlot.avgPL} ${t('avg')} · ${worstSlot.winRate}%` : t('noData')}
                       </p>
                     </CardContent>
@@ -2209,7 +2217,7 @@ export default function Analytics() {
                           <Legend />
                           <Bar dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
                             {timeSlotData.map((d, i) => (
-                              <Cell key={i} fill={d.avgPL >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))'} />
+                              <Cell key={i} fill={d.avgPL >= 0 ? CHART.profit : CHART.loss} />
                             ))}
                           </Bar>
                           <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill={CHART.line} radius={[0, 6, 6, 0]} />
@@ -2220,7 +2228,7 @@ export default function Analytics() {
                     <div className="mt-4 overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-border text-muted-foreground">
+                          <tr className="border-b border-ds-line text-muted-foreground">
                             <th className="text-left py-2 px-2">{t('timeSlot')}</th>
                             <th className="text-right py-2 px-2">{t('trades')}</th>
                             <th className="text-right py-2 px-2">{t('winRate')}</th>
@@ -2230,12 +2238,12 @@ export default function Analytics() {
                         </thead>
                         <tbody>
                           {timeSlotData.map((s) => (
-                            <tr key={s.slotStart} className="border-b border-border">
+                            <tr key={s.slotStart} className="border-b border-ds-line">
                               <td className="py-1.5 px-2 font-medium text-foreground">{s.slot}</td>
                               <td className="py-1.5 px-2 text-right text-muted-foreground">{s.trades}</td>
-                              <td className={`py-1.5 px-2 text-right font-semibold ${s.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>{s.winRate}%</td>
-                              <td className={`py-1.5 px-2 text-right ${s.avgPL >= 0 ? 'text-profit' : 'text-loss'}`}>{s.avgPL >= 0 ? '+' : ''}{s.avgPL}</td>
-                              <td className={`py-1.5 px-2 text-right font-semibold ${s.totalPL >= 0 ? 'text-profit' : 'text-loss'}`}>{s.totalPL >= 0 ? '+' : ''}{s.totalPL}</td>
+                              <td className={`py-1.5 px-2 text-right font-semibold ${s.winRate >= 50 ? 'text-ds-pos' : 'text-ds-neg'}`}>{s.winRate}%</td>
+                              <td className={`py-1.5 px-2 text-right ${s.avgPL >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>{s.avgPL >= 0 ? '+' : ''}{s.avgPL}</td>
+                              <td className={`py-1.5 px-2 text-right font-semibold ${s.totalPL >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>{s.totalPL >= 0 ? '+' : ''}{s.totalPL}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -2269,7 +2277,7 @@ export default function Analytics() {
                               return (
                                 <div
                                   key={hour}
-                                  className="h-8 rounded-md border border-border/50 flex items-center justify-center text-[10px] font-medium text-foreground"
+                                  className="h-8 rounded-md border border-ds-line flex items-center justify-center text-[10px] font-medium text-foreground"
                                   style={color ? { backgroundColor: `color-mix(in srgb, ${color} ${Math.round(strength * 100)}%, transparent)` } : undefined}
                                   title={cell
                                     ? `${dayLabel} ${String(hour).padStart(2, '0')}:00 · ${fmtMoney(cell.pl)} · ${cell.trades} ${t('trades')}`
@@ -2321,13 +2329,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-loss dark:text-loss">{t('costliestEmotion')}</span>
-                    <AlertCircle className="w-4 h-4 text-loss" />
+                    <span className="text-xs font-medium text-ds-neg">{t('costliestEmotion')}</span>
+                    <AlertCircle className="w-4 h-4 text-ds-neg" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-loss dark:text-loss truncate" title={worstEmotion?.tag}>
+                  <p className="mt-2 text-lg font-bold text-ds-neg truncate" title={worstEmotion?.tag}>
                     {worstEmotion && worstEmotion.avgPL < 0 ? worstEmotion.tag : '—'}
                   </p>
-                  <p className="text-[11px] text-loss/80 dark:text-loss/80">
+                  <p className="text-[11px] text-ds-neg dark:text-ds-neg">
                     {worstEmotion && worstEmotion.avgPL < 0 ? `${worstEmotion.avgPL} ${t('perTrade')}` : t('noData')}
                   </p>
                 </CardContent>
@@ -2336,13 +2344,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-profit dark:text-profit">{t('bestEmotionLabel')}</span>
-                    <TrendingUp className="w-4 h-4 text-profit" />
+                    <span className="text-xs font-medium text-ds-pos">{t('bestEmotionLabel')}</span>
+                    <TrendingUp className="w-4 h-4 text-ds-pos" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-profit dark:text-profit truncate" title={bestEmotion?.tag}>
+                  <p className="mt-2 text-lg font-bold text-ds-pos truncate" title={bestEmotion?.tag}>
                     {bestEmotion && bestEmotion.avgPL > 0 ? bestEmotion.tag : '—'}
                   </p>
-                  <p className="text-[11px] text-profit/80 dark:text-profit/80">
+                  <p className="text-[11px] text-ds-pos dark:text-ds-pos">
                     {bestEmotion && bestEmotion.avgPL > 0 ? `+${bestEmotion.avgPL} ${t('perTrade')}` : t('noData')}
                   </p>
                 </CardContent>
@@ -2380,7 +2388,7 @@ export default function Analytics() {
                             <Legend />
                             <Bar dataKey="avgPL" name={t('avgPLLabel')} radius={[0, 6, 6, 0]}>
                               {emotionPerf.map((e, i) => (
-                                <Cell key={i} fill={e.avgPL >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))'} />
+                                <Cell key={i} fill={e.avgPL >= 0 ? CHART.profit : CHART.loss} />
                               ))}
                             </Bar>
                             <Bar dataKey="winRate" name={`${t('winRate')} (%)`} fill={CHART.muted} radius={[0, 6, 6, 0]} />
@@ -2465,11 +2473,11 @@ export default function Analytics() {
                           ) : (
                             <div className="space-y-1.5">
                               {stage.items.map((it) => (
-                                <div key={it.tag} className="flex justify-between items-center px-3 py-1.5 bg-muted rounded-lg">
+                                <div key={it.tag} className="flex justify-between items-center px-3 py-1.5 bg-ds-s2 rounded-lg">
                                   <span className="text-sm text-foreground truncate">{it.tag}</span>
                                   <span className="flex items-center gap-3 shrink-0">
                                     <span className="text-xs text-muted-foreground">×{it.total}</span>
-                                    <span className={`text-xs font-semibold ${it.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>{it.winRate}%</span>
+                                    <span className={`text-xs font-semibold ${it.winRate >= 50 ? 'text-ds-pos' : 'text-ds-neg'}`}>{it.winRate}%</span>
                                   </span>
                                 </div>
                               ))}
@@ -2492,7 +2500,7 @@ export default function Analytics() {
                 </CardHeader>
                 <CardContent className="overflow-hidden p-4">
                   {!hasConfidenceData ? (
-                    <div className="h-[320px] flex items-center justify-center text-center rounded-lg border border-dashed border-border text-muted-foreground px-6">
+                    <div className="h-[320px] flex items-center justify-center text-center rounded-lg border border-dashed border-ds-line text-muted-foreground px-6">
                       {t('noConfidenceData')}
                     </div>
                   ) : (
@@ -2512,7 +2520,7 @@ export default function Analytics() {
                           <Bar dataKey="winRate" yAxisId="left" fill={CHART.warning} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
                           <Bar dataKey="avgPL" yAxisId="right" name={t('avgPLLabel')} radius={chartBarRadius}>
                             {confidenceData.map((d, i) => (
-                              <Cell key={i} fill={d.avgPL >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))'} />
+                              <Cell key={i} fill={d.avgPL >= 0 ? CHART.profit : CHART.loss} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -2524,22 +2532,22 @@ export default function Analytics() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-warning flex items-center justify-between">
+                  <CardTitle className="text-ds-warn flex items-center justify-between">
                     <span>{t('avgConfidence')}</span>
                     <span className="text-2xl">{hasConfidenceData ? `${avgConfidence}⭐` : '—'}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {!hasConfidenceData ? (
-                    <p className="text-xs text-warning">{t('noConfidenceData')}</p>
+                    <p className="text-xs text-ds-warn">{t('noConfidenceData')}</p>
                   ) : (
                     confidenceData.filter((d) => d.trades > 0).map((d) => (
-                      <div key={d.level} className="flex justify-between items-center px-3 py-2 bg-muted rounded-lg">
+                      <div key={d.level} className="flex justify-between items-center px-3 py-2 bg-ds-s2 rounded-lg">
                         <span className="text-sm font-semibold text-foreground">{d.level}</span>
                         <span className="flex items-center gap-3 shrink-0">
                           <span className="text-xs text-muted-foreground">×{d.trades}</span>
-                          <span className={`text-xs font-semibold ${d.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>{d.winRate}%</span>
-                          <span className={`text-xs font-semibold ${d.avgPL >= 0 ? 'text-profit' : 'text-loss'}`}>{d.avgPL >= 0 ? '+' : ''}{d.avgPL}</span>
+                          <span className={`text-xs font-semibold ${d.winRate >= 50 ? 'text-ds-pos' : 'text-ds-neg'}`}>{d.winRate}%</span>
+                          <span className={`text-xs font-semibold ${d.avgPL >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>{d.avgPL >= 0 ? '+' : ''}{d.avgPL}</span>
                         </span>
                       </div>
                     ))
@@ -2555,7 +2563,7 @@ export default function Analytics() {
               </CardHeader>
               <CardContent className="overflow-hidden p-4">
                 {setupData.length === 0 ? (
-                  <div className="h-[300px] flex items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground">
+                  <div className="h-[300px] flex items-center justify-center rounded-lg border border-dashed border-ds-line text-muted-foreground">
                     {t('noData')}
                   </div>
                 ) : (
@@ -2587,13 +2595,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-profit dark:text-profit">{t('tagCoverage')}</span>
-                    <ListChecks className="w-4 h-4 text-profit" />
+                    <span className="text-xs font-medium text-ds-pos">{t('tagCoverage')}</span>
+                    <ListChecks className="w-4 h-4 text-ds-pos" />
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-profit dark:text-profit">
-                    {confluenceAgg.taggedTrades}<span className="text-base text-profit">/{filteredTrades.length}</span>
+                  <p className="mt-2 text-2xl font-bold text-ds-pos">
+                    {confluenceAgg.taggedTrades}<span className="text-base text-ds-pos">/{filteredTrades.length}</span>
                   </p>
-                  <p className="text-[11px] text-profit/80 dark:text-profit/80">{confluenceCoverage}% {t('entryConditionsCoverageDesc')}</p>
+                  <p className="text-[11px] text-ds-pos dark:text-ds-pos">{confluenceCoverage}% {t('entryConditionsCoverageDesc')}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -2613,13 +2621,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-loss dark:text-loss">{t('weakestCondition')}</span>
-                    <AlertCircle className="w-4 h-4 text-loss" />
+                    <span className="text-xs font-medium text-ds-neg">{t('weakestCondition')}</span>
+                    <AlertCircle className="w-4 h-4 text-ds-neg" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-loss dark:text-loss truncate" title={worstConfluence?.tag}>
+                  <p className="mt-2 text-lg font-bold text-ds-neg truncate" title={worstConfluence?.tag}>
                     {worstConfluence && worstConfluence.avgPL < 0 ? worstConfluence.tag : "—"}
                   </p>
-                  <p className="text-[11px] text-loss/80 dark:text-loss/80">
+                  <p className="text-[11px] text-ds-neg dark:text-ds-neg">
                     {worstConfluence && worstConfluence.avgPL < 0 ? `${worstConfluence.avgPL} ${t('perTrade')}` : t('noData')}
                   </p>
                 </CardContent>
@@ -2627,13 +2635,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-profit dark:text-profit">{t('strongestCondition')}</span>
-                    <TrendingUp className="w-4 h-4 text-profit" />
+                    <span className="text-xs font-medium text-ds-pos">{t('strongestCondition')}</span>
+                    <TrendingUp className="w-4 h-4 text-ds-pos" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-profit dark:text-profit truncate" title={bestConfluence?.tag}>
+                  <p className="mt-2 text-lg font-bold text-ds-pos truncate" title={bestConfluence?.tag}>
                     {bestConfluence && bestConfluence.avgPL > 0 ? bestConfluence.tag : "—"}
                   </p>
-                  <p className="text-[11px] text-profit/80 dark:text-profit/80">
+                  <p className="text-[11px] text-ds-pos dark:text-ds-pos">
                     {bestConfluence && bestConfluence.avgPL > 0 ? `+${bestConfluence.avgPL} ${t('perTrade')}` : t('noData')}
                   </p>
                 </CardContent>
@@ -2643,7 +2651,7 @@ export default function Analytics() {
             {confluencePerf.length === 0 ? (
               <Card>
                 <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
-                  <ListChecks className="w-10 h-10 text-profit" />
+                  <ListChecks className="w-10 h-10 text-ds-pos" />
                   <p className="max-w-md text-sm text-muted-foreground">{t('noEntryConditionData')}</p>
                 </CardContent>
               </Card>
@@ -2685,7 +2693,7 @@ export default function Analytics() {
                   <CardContent className="p-0 overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border bg-muted text-xs text-muted-foreground">
+                        <tr className="border-b border-ds-line bg-ds-s2 text-xs text-muted-foreground">
                           <th className="text-left py-2 px-3 font-medium">{t('entryConditionsTab')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('trades')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('winRate')}</th>
@@ -2695,12 +2703,12 @@ export default function Analytics() {
                       </thead>
                       <tbody>
                         {confluenceByFreq.map((row) => (
-                          <tr key={row.tag} className="border-b border-border">
+                          <tr key={row.tag} className="border-b border-ds-line">
                             <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
                             <td className="py-2 px-3 text-right tabular-nums text-muted-foreground">{row.trades}</td>
-                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-profit" : "text-loss"}`}>{row.winRate}%</td>
-                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-profit" : "text-loss"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
-                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-profit" : "text-loss"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-ds-pos" : "text-ds-neg"}`}>{row.winRate}%</td>
+                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -2716,25 +2724,25 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-loss dark:text-loss">{t('tagCoverage')}</span>
-                    <AlertTriangle className="w-4 h-4 text-loss" />
+                    <span className="text-xs font-medium text-ds-neg">{t('tagCoverage')}</span>
+                    <AlertTriangle className="w-4 h-4 text-ds-neg" />
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-loss dark:text-loss">
-                    {mistakeAgg.taggedTrades}<span className="text-base text-loss">/{filteredTrades.length}</span>
+                  <p className="mt-2 text-2xl font-bold text-ds-neg">
+                    {mistakeAgg.taggedTrades}<span className="text-base text-ds-neg">/{filteredTrades.length}</span>
                   </p>
-                  <p className="text-[11px] text-loss/80 dark:text-loss/80">{mistakeCoverage}% {t('mistakesCoverageDesc')}</p>
+                  <p className="text-[11px] text-ds-neg dark:text-ds-neg">{mistakeCoverage}% {t('mistakesCoverageDesc')}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-warning">{t('mostFrequentMistake')}</span>
-                    <Activity className="w-4 h-4 text-warning" />
+                    <span className="text-xs font-medium text-ds-warn">{t('mostFrequentMistake')}</span>
+                    <Activity className="w-4 h-4 text-ds-warn" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-warning truncate" title={mistakeByFreq[0]?.tag}>
+                  <p className="mt-2 text-lg font-bold text-ds-warn truncate" title={mistakeByFreq[0]?.tag}>
                     {mistakeByFreq[0]?.tag || "—"}
                   </p>
-                  <p className="text-[11px] text-warning/80">
+                  <p className="text-[11px] text-ds-warn">
                     {mistakeByFreq[0] ? `${mistakeByFreq[0].trades}×` : t('noData')}
                   </p>
                 </CardContent>
@@ -2742,13 +2750,13 @@ export default function Analytics() {
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-loss dark:text-loss">{t('costliestMistake')}</span>
-                    <AlertCircle className="w-4 h-4 text-loss" />
+                    <span className="text-xs font-medium text-ds-neg">{t('costliestMistake')}</span>
+                    <AlertCircle className="w-4 h-4 text-ds-neg" />
                   </div>
-                  <p className="mt-2 text-lg font-bold text-loss dark:text-loss truncate" title={costliestMistake?.tag}>
+                  <p className="mt-2 text-lg font-bold text-ds-neg truncate" title={costliestMistake?.tag}>
                     {costliestMistake && costliestMistake.avgPL < 0 ? costliestMistake.tag : "—"}
                   </p>
-                  <p className="text-[11px] text-loss/80 dark:text-loss/80">
+                  <p className="text-[11px] text-ds-neg dark:text-ds-neg">
                     {costliestMistake && costliestMistake.avgPL < 0
                       ? `${costliestMistake.avgPL} ${t('perTrade')} · Σ ${costliestMistake.totalPL}`
                       : t('noData')}
@@ -2774,7 +2782,7 @@ export default function Analytics() {
             {mistakePerf.length === 0 ? (
               <Card>
                 <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
-                  <AlertTriangle className="w-10 h-10 text-loss" />
+                  <AlertTriangle className="w-10 h-10 text-ds-neg" />
                   <p className="max-w-md text-sm text-muted-foreground">{t('noMistakeData')}</p>
                 </CardContent>
               </Card>
@@ -2816,7 +2824,7 @@ export default function Analytics() {
                   <CardContent className="p-0 overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border bg-muted text-xs text-muted-foreground">
+                        <tr className="border-b border-ds-line bg-ds-s2 text-xs text-muted-foreground">
                           <th className="text-left py-2 px-3 font-medium">{t('mistakesTab')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('trades')}</th>
                           <th className="text-right py-2 px-3 font-medium">{t('winRate')}</th>
@@ -2826,12 +2834,12 @@ export default function Analytics() {
                       </thead>
                       <tbody>
                         {mistakeByFreq.map((row) => (
-                          <tr key={row.tag} className="border-b border-border">
+                          <tr key={row.tag} className="border-b border-ds-line">
                             <td className="py-2 px-3 font-medium truncate max-w-[160px]" title={row.tag}>{row.tag}</td>
                             <td className="py-2 px-3 text-right tabular-nums text-muted-foreground">{row.trades}</td>
-                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-profit" : "text-loss"}`}>{row.winRate}%</td>
-                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-profit" : "text-loss"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
-                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-profit" : "text-loss"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.winRate >= 50 ? "text-ds-pos" : "text-ds-neg"}`}>{row.winRate}%</td>
+                            <td className={`py-2 px-3 text-right tabular-nums ${row.avgPL >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>{row.avgPL >= 0 ? "+" : ""}{row.avgPL}</td>
+                            <td className={`py-2 px-3 text-right font-semibold tabular-nums ${row.totalPL >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>{row.totalPL >= 0 ? "+" : ""}{row.totalPL}</td>
                           </tr>
                         ))}
                       </tbody>
