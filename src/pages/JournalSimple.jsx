@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import JournalMobileList from "../components/JournalMobileList";
 import { useLanguage } from "@/components/LanguageProvider";
+import { stripNoteMarkdown } from "@/lib/noteMarkdown";
 import { usePnlDisplay } from "@/hooks/use-pnl-display";
 import { directionBadgeClass, directionLabel, getActiveAccountIds, getTradeRealizedPL, isClosedTrade, isTradingAccountActive, normalizeTradeStatus, tradeBelongsToActiveAccount, tradeStatusBadgeClass, tradeOutcomeBadgeClass, tradeStatusMatchesFilter, tradeStatusDisplay, tradeOutcomeDisplay } from "@/lib/utils";
 import ImageViewer from "@/components/common/ImageViewer";
@@ -1312,7 +1313,7 @@ export default function JournalSimple({ mode = "all" }) {
                           <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap">{trade.stop_loss_pips ?? '-'}</td>
                           <td className="px-1 py-1 text-sm text-foreground whitespace-nowrap">{trade.take_profit_pips ?? '-'}</td>
                           {visibleColumns.notes && (
-                            <td className="px-1 py-1 text-sm text-foreground line-clamp-2">{trade.notes}</td>
+                            <td className="px-1 py-1 text-sm text-foreground line-clamp-2">{stripNoteMarkdown(trade.notes)}</td>
                           )}
                           <td className="px-1 py-1">
                             <div className="flex items-center gap-1 w-[72px]">

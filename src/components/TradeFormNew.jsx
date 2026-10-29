@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { getTradeTimeSource, TIMEZONE_OPTIONS } from "@/lib/userSettings";
 import { loadTradeTagLists, saveTradeTagLists } from "@/lib/tradeTags";
 import EditableTagChips from "@/components/EditableTagChips";
+import RichNoteEditor from "@/components/RichNoteEditor";
 
 const SCREENSHOT_KEYS = ["screenshot_1", "screenshot_2", "screenshot_3"];
 const SELECT_NONE = "__none__";
@@ -1250,13 +1251,11 @@ export default function TradeFormNew({ trade = null, onSuccess, onClose, default
 
               <div>
                 <Label className={labelClass}>{t("notes")}</Label>
-                <Textarea
-                  name="notes"
-                  placeholder={t("notesPlaceholder") || "dowolne notkiâ€¦"}
+                <RichNoteEditor
                   value={formData.notes}
-                  onChange={handleChange}
-                  rows={3}
-                  className="min-h-[64px] text-[12px] rounded-lg border-border/70 bg-muted/25 dark:bg-white/[0.03]"
+                  onChange={(next) => setFormData((prev) => ({ ...prev, notes: next }))}
+                  placeholder={t("notesPlaceholder") || "Dowolne notatki…"}
+                  minHeight={96}
                 />
               </div>
 

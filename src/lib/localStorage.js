@@ -256,10 +256,11 @@ const stripUndefinedDeep = (value) => {
 export const createTrade = async (userId, tradeData) => {
   return runSafe('createTrade', async () => {
     if (!userId) throw new Error('Użytkownik nie jest zalogowany');
+    const withUploads = await uploadInlineScreenshots(userId, tradeData);
     const cleaned = stripUndefinedDeep({
-      ...tradeData,
-      account_id: tradeData?.account_id != null ? String(tradeData.account_id) : tradeData?.account_id,
-      status: tradeData?.status || 'Closed',
+      ...withUploads,
+      account_id: withUploads?.account_id != null ? String(withUploads.account_id) : withUploads?.account_id,
+      status: withUploads?.status || 'Closed',
     });
     const payload = {
       ...cleaned,
@@ -287,7 +288,8 @@ export const createTradesBatch = async (userId, trades = []) => {
       const batch = writeBatch(db);
       const chunkRefs = [];
 
-      for (const tradeData of chunk) {
+      for (const rawTrade of chunk) {
+        const tradeData = await uploadInlineScreenshots(userId, rawTrade);
         const cleaned = stripUndefinedDeep({
           ...tradeData,
           account_id: tradeData?.account_id != null ? String(tradeData.account_id) : tradeData?.account_id,
@@ -315,7 +317,8 @@ export const updateTrade = async (userId, tradeId, tradeData) => {
   return runSafe('updateTrade', async () => {
     if (!userId) throw new Error('Użytkownik nie jest zalogowany');
     const refDoc = doc(db, 'users', String(userId), 'trades', String(tradeId));
-    await updateDoc(refDoc, { ...tradeData, updatedAt: serverTimestamp() });
+    const withUploads = await uploadInlineScreenshots(userId, tradeData);
+    await updateDoc(refDoc, { ...withUploads, updatedAt: serverTimestamp() });
     const snapshot = await getDoc(refDoc);
     return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
   });
@@ -606,14 +609,48 @@ export const uploadTradeScreenshot = async (userId, file) => {
   });
 };
 
-/** Upload do Storage; jeśli Storage niedostępny — zapis inline (data URL) w Firestore. */
+/**
+ * Upload zdjęcia transakcji do Storage (1 ponowna próba).
+ * Nie zapisujemy zdjęć jako data URL w Firestore — to rozdmuchuje dokumenty
+ * i spowalnia ładowanie wszystkich transakcji.
+ */
 export const persistTradeScreenshot = async (userId, file) => {
   try {
     return await uploadTradeScreenshot(userId, file);
-  } catch (storageError) {
-    console.warn('persistTradeScreenshot: storage failed, using data URL fallback', storageError);
-    return imageFileToDataUrl(file);
+  } catch (firstError) {
+    console.warn('persistTradeScreenshot: pierwsza próba nieudana, ponawiam', firstError);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    try {
+      return await uploadTradeScreenshot(userId, file);
+    } catch (secondError) {
+      throw new Error(`Nie udało się wysłać zdjęcia. Sprawdź internet i spróbuj ponownie. (${secondError?.message || 'błąd Storage'})`);
+    }
   }
+};
+
+const SCREENSHOT_FIELDS = ['screenshot_1', 'screenshot_2', 'screenshot_3'];
+
+const dataUrlToFile = (dataUrl, name) => {
+  const [head, b64] = String(dataUrl).split(',');
+  const mime = (head.match(/data:([^;]+)/) || [])[1] || 'image/png';
+  const bin = atob(b64 || '');
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  const ext = (mime.split('/')[1] || 'png').replace('jpeg', 'jpg');
+  return new File([bytes], `${name}.${ext}`, { type: mime });
+};
+
+/** Zabezpieczenie: każde zdjęcie przekazane jako data URL trafia do Storage, a do bazy idzie link. */
+const uploadInlineScreenshots = async (userId, data) => {
+  if (!data || typeof data !== 'object') return data;
+  const next = { ...data };
+  for (const key of SCREENSHOT_FIELDS) {
+    const value = next[key];
+    if (typeof value === 'string' && value.startsWith('data:image/')) {
+      next[key] = await persistTradeScreenshot(userId, dataUrlToFile(value, `${key}_${Date.now()}`));
+    }
+  }
+  return next;
 };
 
 // --- Backtesting: strategies only for this module (not global "Strategies" page) ---

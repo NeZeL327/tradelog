@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmotionsPanelContent, normalizeEmotions } from "@/components/EmotionsPanel";
-import NoteMarkdownEditor from "@/components/NoteMarkdownEditor";
+import RichNoteEditor from "@/components/RichNoteEditor";
 import EditableTagChips from "@/components/EditableTagChips";
 import Sparkline from "@/components/Sparkline";
 import {
@@ -437,10 +437,10 @@ export function EmotionTab({ trade, emotionDraft, onDraftChange, onSave, saving 
 export function NotesTab({ notesDraft, onDraftChange, onSave, saving, compact = false }) {
   return (
     <div className="flex flex-col space-y-3">
-      <NoteMarkdownEditor
+      <RichNoteEditor
         value={notesDraft}
         onChange={onDraftChange}
-        compact={compact}
+        minHeight={compact ? 96 : 200}
       />
       <Button type="button" onClick={onSave} disabled={saving} className="self-start">
         Zapisz notatki
