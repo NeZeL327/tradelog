@@ -212,10 +212,11 @@ function scoreGaugeColor(score) {
 }
 
 // 36px ring, 3px stroke; purely visual, drawn from an already computed 0–100 score.
-function ScoreGauge({ score }) {
+function ScoreGauge({ score, intro = false }) {
   const radius = 16.5;
   const circumference = 2 * Math.PI * radius;
   const color = scoreGaugeColor(score);
+  const arc = (Math.min(100, Math.max(0, score)) / 100) * circumference;
   return (
     <svg width="36" height="36" viewBox="0 0 36 36" className="pointer-events-none absolute right-3 top-3" aria-hidden="true">
       <circle cx="18" cy="18" r={radius} fill="none" stroke="var(--ds-line)" strokeWidth="3" />
@@ -227,9 +228,10 @@ function ScoreGauge({ score }) {
         stroke={color}
         strokeWidth="3"
         strokeLinecap="round"
-        strokeDasharray={`${(Math.min(100, Math.max(0, score)) / 100) * circumference} ${circumference}`}
+        strokeDasharray={`${arc} ${circumference}`}
         transform="rotate(-90 18 18)"
-        style={{ filter: `drop-shadow(0 0 4px color-mix(in srgb, ${color} 45%, transparent))` }}
+        className={intro ? "motion-arc" : undefined}
+        style={{ filter: `drop-shadow(0 0 4px color-mix(in srgb, ${color} 45%, transparent))`, "--arc-len": arc }}
       />
     </svg>
   );
@@ -245,20 +247,20 @@ function MeterTrack({ children }) {
 }
 
 // wl: { wins, losses, total } — shares of the day's trades; breakeven trades stay as empty track.
-function WinLossBar({ wl }) {
+function WinLossBar({ wl, intro = false }) {
   const share = (value) => `${(value / wl.total) * 100}%`;
   return (
     <MeterTrack>
-      <span style={{ width: share(wl.wins), background: PROFIT }} />
-      <span className="ml-auto" style={{ width: share(wl.losses), background: LOSS }} />
+      <span className={intro ? "motion-bar-grow" : undefined} style={{ width: share(wl.wins), background: PROFIT }} />
+      <span className={`ml-auto ${intro ? "motion-bar-grow origin-right" : ""}`} style={{ width: share(wl.losses), background: LOSS }} />
     </MeterTrack>
   );
 }
 
-function ProgressBar({ value }) {
+function ProgressBar({ value, intro = false }) {
   return (
     <MeterTrack>
-      <span className="rounded-full" style={{ width: `${Math.min(100, Math.max(0, value))}%`, background: "var(--ds-text2)" }} />
+      <span className={`rounded-full ${intro ? "motion-bar-grow" : ""}`} style={{ width: `${Math.min(100, Math.max(0, value))}%`, background: "var(--ds-text2)" }} />
     </MeterTrack>
   );
 }
@@ -267,6 +269,16 @@ function ProgressBar({ value }) {
 // dayKey remounts the grid so a new day cross-fades and counts up once.
 export function DayStatsSection({ title, action, metrics, dayKey = "", children }) {
   const columns = metrics.length > 5 ? "2xl:grid-cols-6" : "xl:grid-cols-5";
+  // Efekty wejścia (kaskada, liczenie, łuki, paski, blask) tylko przy pierwszym wyświetleniu sekcji;
+  // zmiana dnia to już sam cross-fade siatki.
+  const [introKey] = useState(dayKey);
+  const [introDone, setIntroDone] = useState(false);
+  useEffect(() => {
+    // Klasy zdejmujemy dopiero po zakończeniu wszystkich animacji wejścia (bez przeskoku).
+    const id = setTimeout(() => setIntroDone(true), 1400);
+    return () => clearTimeout(id);
+  }, []);
+  const intro = !introDone && dayKey === introKey;
   return (
     <section className="px-5 py-6" style={{ borderBottom: `1px solid ${LINE}` }}>
       <div className="flex items-center justify-between gap-3">
@@ -275,28 +287,36 @@ export function DayStatsSection({ title, action, metrics, dayKey = "", children 
       </div>
       <div className="ds-rise" style={{ "--i": 1 }}>
         <div key={dayKey} className={`ds-fade mt-4 grid grid-cols-1 overflow-hidden rounded-[16px] min-[400px]:grid-cols-2 md:grid-cols-3 ${columns}`} style={PANEL_STYLE}>
-          {metrics.map((metric) => {
+          {metrics.map((metric, index) => {
             const corner = metric.spark || metric.gauge != null;
+            const glow = index === 0 && (metric.color === PROFIT || metric.color === LOSS);
             return (
               <div
                 key={metric.label}
-                className="ds-spot relative min-w-0 px-3 py-4 transition-colors duration-150 hover:bg-ds-s2 sm:px-4"
-                style={{ boxShadow: `-1px 0 0 ${LINE}, 0 -1px 0 ${LINE}` }}
+                className={`ds-spot relative min-w-0 px-3 py-4 transition-colors duration-150 hover:bg-ds-s2 sm:px-4 ${intro ? "motion-tile-in" : ""}`}
+                style={{ boxShadow: `-1px 0 0 ${LINE}, 0 -1px 0 ${LINE}`, "--tile-i": index }}
               >
-                {metric.spark ? (
-                  <Sparkline values={metric.spark} width={56} height={28} glow={false} className="pointer-events-none absolute right-3 top-3 opacity-70" />
+                {glow ? (
+                  <span
+                    aria-hidden="true"
+                    className={`pointer-events-none absolute inset-0 ${intro ? "motion-glow-in" : ""}`}
+                    style={{ background: `radial-gradient(120% 90% at 0% 100%, color-mix(in srgb, ${metric.color} 12%, transparent), transparent 70%)` }}
+                  />
                 ) : null}
-                {metric.gauge != null ? <ScoreGauge score={metric.gauge} /> : null}
+                {metric.spark ? (
+                  <Sparkline values={metric.spark} width={56} height={28} glow={false} draw={intro} className="pointer-events-none absolute right-3 top-3 opacity-70" />
+                ) : null}
+                {metric.gauge != null ? <ScoreGauge score={metric.gauge} intro={intro} /> : null}
                 <p className={`line-clamp-2 break-words sm:truncate ${corner ? "pr-12" : ""} ${MICRO_LABEL}`} style={{ color: FAINT }}>{metric.label}</p>
                 <p
                   className={`mt-2.5 truncate whitespace-nowrap text-[26px] font-semibold leading-none tracking-[-0.01em] tabular-nums xl:text-[28px] ${corner ? "pr-10" : ""}`}
                   style={{ color: metric.color || INK, textShadow: textGlow(metric.color) }}
                 >
-                  {typeof metric.value === "string" ? <CountUpText text={metric.value} /> : metric.value}
+                  {typeof metric.value === "string" ? <CountUpText text={metric.value} countUp={intro} /> : metric.value}
                 </p>
                 <p className="mt-2 line-clamp-2 min-h-[15px] text-[11px] leading-[15px] sm:truncate" style={{ color: FAINT }} title={metric.hintTitle || undefined}>{metric.hint}</p>
-                {metric.wl?.total ? <WinLossBar wl={metric.wl} /> : null}
-                {metric.progress != null ? <ProgressBar value={metric.progress} /> : null}
+                {metric.wl?.total ? <WinLossBar wl={metric.wl} intro={intro} /> : null}
+                {metric.progress != null ? <ProgressBar value={metric.progress} intro={intro} /> : null}
               </div>
             );
           })}

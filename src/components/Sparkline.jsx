@@ -1,6 +1,7 @@
 import { useId } from "react";
 
-export default function Sparkline({ values = [], className = "", width, height, fill, glow = true, endLabel }) {
+// draw: linia rysuje się od lewej, wypełnienie wchodzi fade (raz, przy pierwszym wyświetleniu).
+export default function Sparkline({ values = [], className = "", width, height, fill, glow = true, endLabel, draw = false }) {
   const rawId = useId().replace(/:/g, "");
   if (!values.length) return null;
 
@@ -44,7 +45,7 @@ export default function Sparkline({ values = [], className = "", width, height, 
           </feMerge>
         </filter>
       </defs>
-      <polygon points={area} fill={`url(#${fillId})`} />
+      <polygon points={area} fill={`url(#${fillId})`} className={draw ? "motion-fade-in" : undefined} />
       <polyline
         fill="none"
         stroke={color}
@@ -53,6 +54,8 @@ export default function Sparkline({ values = [], className = "", width, height, 
         strokeLinecap="round"
         points={line}
         filter={glow ? `url(#${glowId})` : undefined}
+        pathLength={draw ? 1 : undefined}
+        className={draw ? "motion-draw" : undefined}
       />
       {endLabel && lastPt && (
         <text

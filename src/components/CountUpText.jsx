@@ -24,7 +24,7 @@ function formatLike(value, { decimals, decimalSep, groupSep }) {
  * Ostatnia klatka to zawsze oryginalny tekst. Późniejsze zmiany (np. filtr) bez odliczania,
  * tylko szybkie przejście opacity. Tylko wyświetlanie — nie używać w tabelach.
  */
-export default function CountUpText({ text }) {
+export default function CountUpText({ text, countUp = true }) {
   const [shown, setShown] = useState(text);
   const textRef = useRef(text);
   const mountedRef = useRef(false);
@@ -34,7 +34,7 @@ export default function CountUpText({ text }) {
   useEffect(() => {
     const scale = motionScale();
     const match = /\d[\d.,   ]*\d|\d/.exec(textRef.current);
-    if (!match || scale <= 0) return undefined;
+    if (!countUp || !match || scale <= 0) return undefined;
     const original = textRef.current;
     const parsed = parseNumericToken(match[0].trim());
     if (!parsed.value) return undefined;

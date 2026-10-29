@@ -3527,3 +3527,52 @@ html[data-motion="off"] [data-reveal="pending"] {
 html[data-motion="off"] .motion-pulse {
   animation: none;
 }
+
+/* ===== ETAP G1 — Dashboard: efekty wejścia (raz). Wyłączenie: tryb "off" / ogranicz ruch. ===== */
+.motion-tile-in {
+  animation: motion-reveal var(--motion-base) var(--motion-ease) both;
+  animation-delay: calc(min(var(--tile-i, 0), 7) * 40ms * var(--motion-scale));
+}
+.motion-fade-in {
+  animation: motion-fade var(--motion-slow) var(--motion-ease) both;
+}
+@keyframes motion-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* Linia rysowana od lewej: pathLength=1, więc dasharray/dashoffset w jednostkach 0–1. */
+.motion-draw {
+  stroke-dasharray: 1;
+  animation: motion-draw calc(600ms * var(--motion-scale)) var(--motion-ease) both;
+}
+@keyframes motion-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+/* Łuk wskaźnika wypełnia się od zera (długość łuku w --arc-len). */
+.motion-arc {
+  animation: motion-arc calc(600ms * var(--motion-scale)) var(--motion-ease) both;
+  animation-delay: calc(120ms * var(--motion-scale));
+}
+@keyframes motion-arc {
+  from { stroke-dashoffset: var(--arc-len); }
+  to { stroke-dashoffset: 0; }
+}
+/* Paski wygrane/straty i postępu rosną od zera (scaleX, bez zmiany układu). */
+.motion-bar-grow {
+  transform-origin: left center;
+  animation: motion-bar-grow var(--motion-slow) var(--motion-ease) both;
+  animation-delay: calc(160ms * var(--motion-scale));
+}
+.motion-bar-grow.origin-right {
+  transform-origin: right center;
+}
+@keyframes motion-bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+/* Blask wyniku dnia: jednorazowe wejście opacity, bez pętli. */
+.motion-glow-in {
+  animation: motion-fade calc(700ms * var(--motion-scale)) var(--motion-ease) both;
+  animation-delay: calc(200ms * var(--motion-scale));
+}

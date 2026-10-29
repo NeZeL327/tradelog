@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { loadLocalUserSettings } from "@/lib/userSettings";
 
 // Trading day opens Asia, then London, then New York.
@@ -60,6 +60,16 @@ function isSessionOpen(now, zone) {
   return hour >= 0 && hour < 9;
 }
 
+// Nowa minuta przenika (krótki fade); pierwsze wyświetlenie bez animacji.
+function TickText({ value }) {
+  const firstRef = useRef(value);
+  return (
+    <span key={value} className={firstRef.current === value ? undefined : "motion-value-swap"}>
+      {value}
+    </span>
+  );
+}
+
 export default function SessionClocks() {
   const [now, setNow] = useState(() => new Date());
   const [prefs, setPrefs] = useState(() => {
@@ -109,7 +119,7 @@ export default function SessionClocks() {
               className="flex items-center gap-1.5 px-2 py-0.5"
             >
               <span
-                className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                className={`h-1.5 w-1.5 shrink-0 rounded-full transition-[background-color,box-shadow] duration-[var(--motion-slow)] ${
                   open ? "motion-pulse bg-ds-pos shadow-[0_0_6px_var(--ds-pos)]" : "bg-ds-text3 opacity-40"
                 }`}
                 aria-hidden
@@ -118,7 +128,7 @@ export default function SessionClocks() {
                 {clock.label}
               </span>
               <span className={`data-mono text-[11px] tabular-nums ${open ? "font-medium text-ds-text" : "text-ds-text3"}`}>
-                {formatTime(now, clock.zone, prefs.use12h)}
+                <TickText value={formatTime(now, clock.zone, prefs.use12h)} />
               </span>
             </div>
           </div>
