@@ -2,11 +2,11 @@
 import { useAuth } from '@/lib/AuthContext';
 import { getTrades, getTradingAccounts, getStrategies } from '@/lib/localStorage';
 import { directionChartColor, getActiveAccountIds, getTradeRealizedPL, isClosedTrade, isTradingAccountActive, tradeBelongsToActiveAccount, tradeOutcomeDisplay } from '@/lib/utils';
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, TrendingUp, AlertCircle, Wallet, Activity, X, ChevronDown, Clock, ListChecks, AlertTriangle } from "lucide-react";
+import { Brain, TrendingUp, AlertCircle, Wallet, Activity, X, ChevronDown, Clock, ListChecks, AlertTriangle, CalendarRange } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart, ComposedChart } from "recharts";
 import { ExportButton } from "../components/ExportButton";
@@ -19,24 +19,68 @@ import { aggregateTagPerformance } from "@/lib/tradeTags";
 import { CHART, chartTooltipStyle, chartGridProps, chartBarRadius } from "@/lib/chartTheme";
 import { SkeletonKpiRow, SkeletonBlock } from "@/components/ui/skeleton-block";
 import QuoteLine from "@/components/QuoteLine";
+import MultiSelectFilter from "@/components/MultiSelectFilter";
+import DateRangeCalendar from "@/components/DateRangeCalendar";
+import { balanceForTrades } from "@/lib/pnlDisplay";
+import {
+  DATE_PRESETS,
+  buildEquitySeries,
+  computeAnalyticsKpis,
+  dateRangeForPreset,
+  hourWeekdayHeatmap,
+  sortTradesChronoAsc,
+  tradeInDateRange,
+  weekdayStats,
+} from "@/lib/analyticsStats";
 
 const decidedWinRate = (wins, losses) => {
   const decided = wins + losses;
   return decided > 0 ? Number(((wins / decided) * 100).toFixed(1)) : 0;
 };
 
-const tradeChronoKey = (trade) => {
-  const date = String(trade?.date || "").slice(0, 10);
-  const raw = String(trade?.entry_time || trade?.open_time || trade?.time || "00:00:00");
-  const m = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-  const hh = m ? String(Number(m[1])).padStart(2, "0") : "00";
-  const mm = m ? m[2] : "00";
-  const ss = m?.[3] || "00";
-  return `${date}T${hh}:${mm}:${ss}`;
+const CHART_MARGIN = { top: 8, right: 16, left: 0, bottom: 8 };
+
+// Oś Y z marginesem 10% nad i pod danymi (bezpieczna dla pustych serii).
+const paddedDomain = [
+  (dataMin) => (Number.isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10),
+  (dataMax) => (Number.isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10),
+];
+
+const tooltipProps = {
+  contentStyle: chartTooltipStyle,
+  itemStyle: { color: "hsl(var(--popover-foreground))" },
+  labelStyle: { color: "hsl(var(--foreground))" },
 };
 
-const sortTradesChronoAsc = (list) =>
-  [...list].sort((a, b) => tradeChronoKey(a).localeCompare(tradeChronoKey(b)));
+const fmtDay = (key) => String(key || "").slice(0, 10).split("-").reverse().join(".");
+const fmtShortDay = (key) => fmtDay(key).slice(0, 5);
+
+function SegToggle({ value, onChange, options }) {
+  return (
+    <div className="inline-flex rounded-lg border border-border bg-muted p-0.5">
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${value === option.value ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const DATE_PRESET_LABEL_KEYS = {
+  all: 'anRangeAll',
+  '7d': 'anRange7d',
+  '30d': 'anRange30d',
+  month: 'anRangeMonth',
+  quarter: 'anRangeQuarter',
+  year: 'anRangeYear',
+  custom: 'anRangeCustom',
+};
 
 const weekStartKeyLocal = (dateStr) => {
   const s = String(dateStr || "").slice(0, 10);
@@ -61,19 +105,13 @@ export default function Analytics() {
   const [filterOutcomes, setFilterOutcomes] = useState(["all"]);
   const [filterTimeframes, setFilterTimeframes] = useState(["all"]);
   
-  const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
-  const [symbolDropdownOpen, setSymbolDropdownOpen] = useState(false);
-  const [strategyDropdownOpen, setStrategyDropdownOpen] = useState(false);
-  const [directionDropdownOpen, setDirectionDropdownOpen] = useState(false);
-  const [outcomeDropdownOpen, setOutcomeDropdownOpen] = useState(false);
-  const [timeframeDropdownOpen, setTimeframeDropdownOpen] = useState(false);
-  
-  const accountDropdownRef = useRef(null);
-  const symbolDropdownRef = useRef(null);
-  const strategyDropdownRef = useRef(null);
-  const directionDropdownRef = useRef(null);
-  const outcomeDropdownRef = useRef(null);
-  const timeframeDropdownRef = useRef(null);
+  const [datePreset, setDatePreset] = useState("all");
+  const [customRange, setCustomRange] = useState({ from: "", to: "" });
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const datePickerRef = useRef(null);
+  const [equityView, setEquityView] = useState("equity");
+  const [equityAxis, setEquityAxis] = useState("trades");
+  const queryClient = useQueryClient();
   const [selectedSymbol, setSelectedSymbol] = useState(null);
   const [selectedStrategy, setSelectedStrategy] = useState(null);
   const [timePeriod, setTimePeriod] = useState("weekly");
@@ -103,15 +141,10 @@ export default function Analytics() {
     enabled: !!user?.id,
   });
 
-  // Close dropdowns on outside click
+  // Close date picker on outside click (multi-select filters close themselves)
   useEffect(() => {
     const handleOutsideClick = (event) => {
-      if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target)) setAccountDropdownOpen(false);
-      if (symbolDropdownRef.current && !symbolDropdownRef.current.contains(event.target)) setSymbolDropdownOpen(false);
-      if (strategyDropdownRef.current && !strategyDropdownRef.current.contains(event.target)) setStrategyDropdownOpen(false);
-      if (directionDropdownRef.current && !directionDropdownRef.current.contains(event.target)) setDirectionDropdownOpen(false);
-      if (outcomeDropdownRef.current && !outcomeDropdownRef.current.contains(event.target)) setOutcomeDropdownOpen(false);
-      if (timeframeDropdownRef.current && !timeframeDropdownRef.current.contains(event.target)) setTimeframeDropdownOpen(false);
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) setDatePickerOpen(false);
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
@@ -142,19 +175,6 @@ export default function Analytics() {
   ])];
   const uniqueTimeframes = [...new Set(tradesFromActiveAccounts.map(t => t.timeframe).filter(Boolean))];
 
-  const toggleMultiFilter = (setter, value) => {
-    setter((prev) => {
-      if (value === "all") return ["all"];
-      const normalizedValue = String(value);
-      const withoutAll = prev.filter((item) => item !== "all");
-      const exists = withoutAll.includes(normalizedValue);
-      const next = exists
-        ? withoutAll.filter((item) => item !== normalizedValue)
-        : [...withoutAll, normalizedValue];
-      return next.length ? next : ["all"];
-    });
-  };
-
   const getMultiFilterLabel = (values, allLabel, resolver) => {
     if (values.includes("all")) return allLabel;
     return values
@@ -178,9 +198,12 @@ export default function Analytics() {
   const selectedOutcomesLabel = getMultiFilterLabel(filterOutcomes, t('all'), (value) => tradeOutcomeDisplay(value));
   const selectedTimeframesLabel = getMultiFilterLabel(filterTimeframes, t('all'), (value) => value);
 
+  const dateRange = datePreset === "custom" ? customRange : dateRangeForPreset(datePreset);
+
   // Filter trades by selected filters
   const filteredTrades = tradesFromActiveAccounts.filter(t => (
     isClosedTrade(t) &&
+    tradeInDateRange(t, dateRange) &&
     (selectedAccounts.includes("all") || selectedAccounts.includes(String(t.account_id))) &&
     (filterSymbols.includes("all") || filterSymbols.includes(String(t.symbol))) &&
     (filterStrategies.includes("all") || filterStrategies.includes(String(t.strategy_id))) &&
@@ -549,19 +572,23 @@ export default function Analytics() {
   const rankedHours = hourData.filter((h) => h.trades >= 2);
   const bestHour = rankedHours.length ? rankedHours.reduce((a, b) => (b.winRate > a.winRate ? b : a)) : null;
 
-  // Equity curve — chronological by date + entry time
-  let cumulative = 0;
-  const equityCurve = [
-    { trade: 0, equity: 0, date: '' },
-    ...sortTradesChronoAsc(filteredTrades).map((trade, index) => {
-      cumulative += (getTradeRealizedPL(trade) ?? 0);
-      return {
-        trade: index + 1,
-        equity: Math.round(cumulative * 100) / 100,
-        date: trade.date
-      };
-    })
-  ];
+  // KPI, krzywa kapitału i obsunięcie — chronologicznie po dacie i godzinie wejścia
+  const statsBalance = balanceForTrades(filteredTrades, accounts);
+  const kpis = computeAnalyticsKpis(filteredTrades, { startBalance: statsBalance });
+  const equitySeries = buildEquitySeries(sortTradesChronoAsc(filteredTrades), statsBalance);
+  // Oś „Daty”: ostatni stan kapitału z każdego dnia, żeby etykiety osi się nie powtarzały.
+  const equityByDate = Object.values(
+    equitySeries.points.slice(1).reduce((acc, point) => {
+      acc[point.date] = point;
+      return acc;
+    }, {})
+  );
+  const equityCurve = equityAxis === "dates" ? equityByDate : equitySeries.points;
+  const weekdayData = weekdayStats(filteredTrades).map((row) => ({
+    ...row,
+    label: t('anWeekdays').split(',')[row.day] || String(row.day + 1),
+  }));
+  const heatmap = hourWeekdayHeatmap(filteredTrades, parseEntryMinutes);
 
   // Period performance (daily, weekly, monthly, yearly)
   const periodStats = {};
@@ -640,28 +667,62 @@ export default function Analytics() {
     breakeven: filteredTrades.filter(t => t.outcome === 'Breakeven').length
   };
   const outcomeDecided = outcomeCounts.wins + outcomeCounts.losses;
-  const outcomeTotal = outcomeCounts.wins + outcomeCounts.losses + outcomeCounts.breakeven;
   const outcomeWinRate = outcomeDecided > 0 ? (outcomeCounts.wins / outcomeDecided) * 100 : 0;
-  const outcomeChartData = [
+  const fmtMoney = (value) => pnl.formatAmount(value, statsBalance);
+  const kpiTiles = [
     {
-      name: t('wins'),
-      count: outcomeCounts.wins,
-      rate: outcomeTotal ? (outcomeCounts.wins / outcomeTotal) * 100 : 0,
-      fill: CHART.profit
+      key: 'net',
+      label: t('anNetResult'),
+      value: fmtMoney(kpis.netPL),
+      hint: `${kpis.trades} ${t('trades')}`,
+      tone: kpis.netPL > 0 ? 'profit' : kpis.netPL < 0 ? 'loss' : 'default',
     },
     {
-      name: t('breakeven'),
-      count: outcomeCounts.breakeven,
-      rate: outcomeTotal ? (outcomeCounts.breakeven / outcomeTotal) * 100 : 0,
-      fill: CHART.warning
+      key: 'winRate',
+      label: t('winRate'),
+      value: `${kpis.winRate}%`,
+      hint: `${t('wins')} ${kpis.wins} · BE ${kpis.breakeven} · ${t('losses')} ${kpis.losses}`,
+      title: t('anWinRateTitle'),
     },
     {
-      name: t('losses'),
-      count: outcomeCounts.losses,
-      rate: outcomeTotal ? (outcomeCounts.losses / outcomeTotal) * 100 : 0,
-      fill: CHART.loss
-    }
+      key: 'pf',
+      label: t('profitFactor'),
+      value: kpis.profitFactor == null ? '∞' : kpis.profitFactor.toFixed(2),
+      hint: `${fmtMoney(kpis.grossProfit)} / ${fmtMoney(-kpis.grossLoss)}`,
+      tone: kpis.profitFactor == null || kpis.profitFactor >= 1 ? (kpis.trades ? 'profit' : 'default') : 'loss',
+    },
+    { key: 'avgWin', label: t('avgWin'), value: fmtMoney(kpis.avgWin), hint: t('anPerWinningTrade'), tone: kpis.avgWin > 0 ? 'profit' : 'default' },
+    { key: 'avgLoss', label: t('avgLoss'), value: fmtMoney(kpis.avgLoss), hint: t('anPerLosingTrade'), tone: kpis.avgLoss < 0 ? 'loss' : 'default' },
+    { key: 'payoff', label: t('anPayoff'), value: kpis.payoff == null ? '—' : kpis.payoff.toFixed(2), hint: t('anPayoffHint') },
+    {
+      key: 'expectancy',
+      label: t('expectancy'),
+      value: fmtMoney(kpis.expectancy),
+      hint: t('anPerTrade'),
+      tone: kpis.expectancy > 0 ? 'profit' : kpis.expectancy < 0 ? 'loss' : 'default',
+    },
+    {
+      key: 'dd',
+      label: t('maxDrawdown'),
+      value: fmtMoney(kpis.maxDrawdown),
+      hint: kpis.maxDrawdownPct == null ? t('anFromPeak') : `${kpis.maxDrawdownPct.toFixed(2)}% ${t('anFromPeak')}`,
+      tone: kpis.maxDrawdown < 0 ? 'loss' : 'default',
+    },
+    {
+      key: 'streaks',
+      label: t('streaks'),
+      value: `${kpis.maxWinStreak} / ${kpis.maxLossStreak}`,
+      hint: t('anStreakHint'),
+    },
   ];
+
+  const dateRangeLabel = datePreset === "custom"
+    ? customRange.from
+      ? customRange.to && customRange.to !== customRange.from
+        ? `${fmtDay(customRange.from)} – ${fmtDay(customRange.to)}`
+        : fmtDay(customRange.from)
+      : t('anRangeCustom')
+    : t(DATE_PRESET_LABEL_KEYS[datePreset]);
 
   const directionEdgeData = directionData.map((entry) => ({
     direction: entry.direction,
@@ -670,9 +731,6 @@ export default function Analytics() {
     trades: entry.trades
   }));
 
-  const outcomeTop = outcomeTotal
-    ? outcomeChartData.reduce((best, current) => (current.count > best.count ? current : best), outcomeChartData[0])
-    : null;
   const directionTop = directionEdgeData.length
     ? directionEdgeData.reduce((best, current) => (current.netPL > best.netPL ? current : best), directionEdgeData[0])
     : null;
@@ -689,7 +747,7 @@ export default function Analytics() {
           <div className="flex gap-3 items-center">
             <QuoteLine className="hidden lg:flex shrink-0" />
             <ImportButton 
-              onImportSuccess={() => window.location.reload()} 
+              onImportSuccess={() => queryClient.invalidateQueries({ queryKey: ['trades'] })}
               accounts={accounts} 
               strategies={strategies} 
             />
@@ -719,332 +777,104 @@ export default function Analytics() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 items-end">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3 items-end">
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('account')}</span>
-            <div className="relative" ref={accountDropdownRef}>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('anPeriod')}</span>
+            <div className="relative" ref={datePickerRef}>
               <button
-                onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
+                onClick={() => setDatePickerOpen(!datePickerOpen)}
                 className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
               >
-                <span className="truncate text-center w-full pr-5">{selectedAccountsLabel || t('allAccounts')}</span>
+                <CalendarRange className="absolute left-3 w-4 h-4 opacity-50" />
+                <span className="truncate text-center w-full px-5">{dateRangeLabel}</span>
                 <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
               </button>
-              {accountDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
-                  {(() => {
-                    const isSelected = selectedAccounts.includes('all');
-                    return (
-                  <button
-                    onClick={() => toggleMultiFilter(setSelectedAccounts, 'all')}
-                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
-                  >
-                    <span className="truncate">{t('allAccounts')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                      {isSelected && (
-                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </span>
-                  </button>
-                    );
-                  })()}
-                  {activeAccounts.map(acc => (
-                    (() => {
-                      const isSelected = selectedAccounts.includes(String(acc.id));
-                      return (
-                    <button
-                      key={acc.id}
-                      onClick={() => toggleMultiFilter(setSelectedAccounts, acc.id)}
-                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
-                    >
-                      <span className="truncate">{acc.name}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                        {isSelected && (
-                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </span>
-                    </button>
-                      );
-                    })()
-                  ))}
+              {datePickerOpen && (
+                <div className="absolute left-0 top-full mt-1 z-50 w-[300px] max-w-[calc(100vw-32px)] rounded-md border border-border bg-card p-2 shadow-none">
+                  <div className="grid grid-cols-2 gap-1">
+                    {DATE_PRESETS.map((preset) => (
+                      <button
+                        key={preset}
+                        onClick={() => {
+                          setDatePreset(preset);
+                          if (preset !== "custom") setDatePickerOpen(false);
+                        }}
+                        className={`px-3 py-2 text-sm rounded text-left hover:bg-accent ${datePreset === preset ? 'bg-accent' : ''}`}
+                      >
+                        {t(DATE_PRESET_LABEL_KEYS[preset])}
+                      </button>
+                    ))}
+                  </div>
+                  {datePreset === "custom" && (
+                    <div className="mt-2 border-t border-border pt-3 px-1">
+                      <DateRangeCalendar
+                        from={customRange.from}
+                        to={customRange.to}
+                        onSelect={(from, to) => setCustomRange({ from, to })}
+                      />
+                      <div className="mt-3 flex justify-end gap-2">
+                        <button type="button" onClick={() => setCustomRange({ from: "", to: "" })} className="journal-cal-action">
+                          {t('anClear')}
+                        </button>
+                        <button type="button" onClick={() => setDatePickerOpen(false)} className="journal-cal-action journal-cal-action-primary">
+                          {t('anClose')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('symbol')}</span>
-            <div className="relative" ref={symbolDropdownRef}>
-              <button
-                onClick={() => setSymbolDropdownOpen(!symbolDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
-              >
-                <span className="truncate text-center w-full pr-5">{selectedSymbolsLabel || t('all')}</span>
-                <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
-              </button>
-              {symbolDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
-                  {(() => {
-                    const isSelected = filterSymbols.includes('all');
-                    return (
-                  <button
-                    onClick={() => toggleMultiFilter(setFilterSymbols, 'all')}
-                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
-                  >
-                    <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                      {isSelected && (
-                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </span>
-                  </button>
-                    );
-                  })()}
-                  {uniqueSymbols.map(sym => (
-                    (() => {
-                      const isSelected = filterSymbols.includes(String(sym));
-                      return (
-                    <button
-                      key={sym}
-                      onClick={() => toggleMultiFilter(setFilterSymbols, sym)}
-                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
-                    >
-                      <span className="truncate">{sym}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                        {isSelected && (
-                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </span>
-                    </button>
-                      );
-                    })()
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('strategy')}</span>
-            <div className="relative" ref={strategyDropdownRef}>
-              <button
-                onClick={() => setStrategyDropdownOpen(!strategyDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
-              >
-                <span className="truncate text-center w-full pr-5">{selectedStrategiesLabel || t('all')}</span>
-                <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
-              </button>
-              {strategyDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
-                  <button
-                    onClick={() => toggleMultiFilter(setFilterStrategies, 'all')}
-                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes('all') ? 'bg-accent' : ''}`}
-                  >
-                    <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${filterStrategies.includes('all') ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                      {filterStrategies.includes('all') && (
-                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </span>
-                  </button>
-                  {strategies.map(strategy => (
-                    <button
-                      key={strategy.id}
-                      onClick={() => toggleMultiFilter(setFilterStrategies, strategy.id)}
-                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${filterStrategies.includes(String(strategy.id)) ? 'bg-accent' : ''}`}
-                    >
-                      <span className="truncate">{strategy.name}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${filterStrategies.includes(String(strategy.id)) ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                        {filterStrategies.includes(String(strategy.id)) && (
-                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('direction')}</span>
-            <div className="relative" ref={directionDropdownRef}>
-              <button
-                onClick={() => setDirectionDropdownOpen(!directionDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
-              >
-                <span className="truncate text-center w-full pr-5">{selectedDirectionsLabel || t('all')}</span>
-                <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
-              </button>
-              {directionDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
-                  {(() => {
-                    const isSelected = filterDirections.includes('all');
-                    return (
-                  <button
-                    onClick={() => toggleMultiFilter(setFilterDirections, 'all')}
-                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
-                  >
-                    <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                      {isSelected && (
-                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </span>
-                  </button>
-                    );
-                  })()}
-                  {uniqueDirections.map(dir => (
-                    (() => {
-                      const isSelected = filterDirections.includes(String(dir));
-                      return (
-                    <button
-                      key={dir}
-                      onClick={() => toggleMultiFilter(setFilterDirections, dir)}
-                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
-                    >
-                      <span className="truncate">{dir}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                        {isSelected && (
-                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </span>
-                    </button>
-                      );
-                    })()
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('outcome')}</span>
-            <div className="relative" ref={outcomeDropdownRef}>
-              <button
-                onClick={() => setOutcomeDropdownOpen(!outcomeDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
-              >
-                <span className="truncate text-center w-full pr-5">{selectedOutcomesLabel || t('all')}</span>
-                <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
-              </button>
-              {outcomeDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
-                  {(() => {
-                    const isSelected = filterOutcomes.includes('all');
-                    return (
-                  <button
-                    onClick={() => toggleMultiFilter(setFilterOutcomes, 'all')}
-                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
-                  >
-                    <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                      {isSelected && (
-                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </span>
-                  </button>
-                    );
-                  })()}
-                  {uniqueOutcomes.map(out => (
-                    (() => {
-                      const isSelected = filterOutcomes.includes(String(out));
-                      return (
-                    <button
-                      key={out}
-                      onClick={() => toggleMultiFilter(setFilterOutcomes, out)}
-                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
-                    >
-                      <span className="truncate">{tradeOutcomeDisplay(out)}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                        {isSelected && (
-                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </span>
-                    </button>
-                      );
-                    })()
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center">{t('timeframe')}</span>
-            <div className="relative" ref={timeframeDropdownRef}>
-              <button
-                onClick={() => setTimeframeDropdownOpen(!timeframeDropdownOpen)}
-                className="relative h-10 w-full px-3 rounded-lg border border-border bg-card text-sm flex items-center justify-center hover:bg-muted"
-              >
-                <span className="truncate text-center w-full pr-5">{selectedTimeframesLabel || t('all')}</span>
-                <ChevronDown className="absolute right-3 w-4 h-4 opacity-50" />
-              </button>
-              {timeframeDropdownOpen && (
-                <div className="absolute left-0 top-full mt-1 z-50 w-full rounded-md border border-border bg-card p-1 shadow-none max-h-64 overflow-y-auto">
-                  {(() => {
-                    const isSelected = filterTimeframes.includes('all');
-                    return (
-                  <button
-                    onClick={() => toggleMultiFilter(setFilterTimeframes, 'all')}
-                    className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
-                  >
-                    <span className="truncate">{t('all')}</span>
-                    <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                      {isSelected && (
-                        <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </span>
-                  </button>
-                    );
-                  })()}
-                  {uniqueTimeframes.map(tf => (
-                    (() => {
-                      const isSelected = filterTimeframes.includes(String(tf));
-                      return (
-                    <button
-                      key={tf}
-                      onClick={() => toggleMultiFilter(setFilterTimeframes, tf)}
-                      className={`w-full px-3 py-2 text-sm rounded hover:bg-accent flex items-center justify-between ${isSelected ? 'bg-accent' : ''}`}
-                    >
-                      <span className="truncate">{tf}</span>
-                      <span className={`ml-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${isSelected ? 'border-primary/40 bg-muted' : 'border-border bg-muted'}`}>
-                        {isSelected && (
-                          <svg className="h-3.5 w-3.5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </span>
-                    </button>
-                      );
-                    })()
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <MultiSelectFilter
+            label={t('account')}
+            allLabel={t('allAccounts')}
+            valueLabel={selectedAccountsLabel}
+            options={activeAccounts.map((acc) => ({ value: String(acc.id), label: acc.name }))}
+            values={selectedAccounts}
+            onChange={setSelectedAccounts}
+          />
+          <MultiSelectFilter
+            label={t('symbol')}
+            allLabel={t('all')}
+            valueLabel={selectedSymbolsLabel}
+            options={uniqueSymbols.map((sym) => ({ value: sym, label: sym }))}
+            values={filterSymbols}
+            onChange={setFilterSymbols}
+          />
+          <MultiSelectFilter
+            label={t('strategy')}
+            allLabel={t('all')}
+            valueLabel={selectedStrategiesLabel}
+            options={strategies.map((strategy) => ({ value: String(strategy.id), label: strategy.name }))}
+            values={filterStrategies}
+            onChange={setFilterStrategies}
+          />
+          <MultiSelectFilter
+            label={t('direction')}
+            allLabel={t('all')}
+            valueLabel={selectedDirectionsLabel}
+            options={uniqueDirections.map((dir) => ({ value: dir, label: dir }))}
+            values={filterDirections}
+            onChange={setFilterDirections}
+          />
+          <MultiSelectFilter
+            label={t('outcome')}
+            allLabel={t('all')}
+            valueLabel={selectedOutcomesLabel}
+            options={uniqueOutcomes.map((out) => ({ value: out, label: tradeOutcomeDisplay(out) }))}
+            values={filterOutcomes}
+            onChange={setFilterOutcomes}
+          />
+          <MultiSelectFilter
+            label={t('timeframe')}
+            allLabel={t('all')}
+            valueLabel={selectedTimeframesLabel}
+            options={uniqueTimeframes.map((tf) => ({ value: tf, label: tf }))}
+            values={filterTimeframes}
+            onChange={setFilterTimeframes}
+          />
 
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground text-center opacity-0">{t('reset')}</span>
@@ -1058,6 +888,8 @@ export default function Analytics() {
                 setFilterOutcomes(["all"]);
                 setFilterTimeframes(["all"]);
                 setSelectedAccounts(["all"]);
+                setDatePreset("all");
+                setCustomRange({ from: "", to: "" });
                 setSelectedSymbol(null);
                 setSelectedStrategy(null);
               }}
@@ -1067,34 +899,16 @@ export default function Analytics() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-profit dark:text-profit">{t('wins')}</p>
-              <p className="text-[22px] font-semibold text-profit dark:text-profit mt-1">{outcomeCounts.wins}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {outcomeTotal ? `${((outcomeCounts.wins / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-9 gap-px rounded-[16px] border border-border bg-border overflow-hidden">
+          {kpiTiles.map((tile) => (
+            <div key={tile.key} className="min-w-0 bg-card px-4 py-3" title={tile.title}>
+              <p className="type-section mb-2 truncate">{tile.label}</p>
+              <p className={`type-metric-sm font-semibold truncate ${tile.tone === 'profit' ? 'text-profit' : tile.tone === 'loss' ? 'text-loss' : 'text-foreground'}`}>
+                {tile.value}
               </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-warning">BE</p>
-              <p className="text-[22px] font-semibold text-warning mt-1">{outcomeCounts.breakeven}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {outcomeTotal ? `${((outcomeCounts.breakeven / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-loss dark:text-loss">{t('losses')}</p>
-              <p className="text-[22px] font-semibold text-loss dark:text-loss mt-1">{outcomeCounts.losses}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {outcomeTotal ? `${((outcomeCounts.losses / outcomeTotal) * 100).toFixed(0)}%` : '0%'}
-              </p>
-            </CardContent>
-          </Card>
+              <p className="type-secondary mt-1.5 truncate">{tile.hint}</p>
+            </div>
+          ))}
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -1111,144 +925,101 @@ export default function Analytics() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            {/* Outcome + Direction Analysis */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('outcomeDistribution')}</CardTitle>
+            {/* Equity / Drawdown + weekday */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              <Card className="overflow-hidden xl:col-span-2">
+                <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5" />
+                    {equityView === "drawdown" ? t('drawdown') : t('equityCurve')}
+                  </CardTitle>
+                  <div className="flex flex-wrap gap-2">
+                    <SegToggle
+                      value={equityView}
+                      onChange={setEquityView}
+                      options={[{ value: "equity", label: t('anEquity') }, { value: "drawdown", label: t('drawdown') }]}
+                    />
+                    <SegToggle
+                      value={equityAxis}
+                      onChange={setEquityAxis}
+                      options={[{ value: "trades", label: t('anAxisTrades') }, { value: "dates", label: t('anAxisDates') }]}
+                    />
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4 overflow-hidden p-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    {outcomeChartData.map((entry) => (
-                      <div
-                        key={entry.name}
-                        className="rounded-lg border border-border bg-muted p-3"
-                      >
-                        <p className="text-xs uppercase tracking-wide text-muted-foreground">{entry.name}</p>
-                        <p className="text-2xl font-semibold text-foreground">{entry.count}</p>
-                        <p className="text-xs text-muted-foreground">{entry.rate.toFixed(0)}%</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="w-full overflow-hidden px-4 py-2">
-                    <ResponsiveContainer width="100%" height={320}>
-                      <ComposedChart data={outcomeChartData} margin={{ top: 16, right: 8, left: 0, bottom: 8 }}>
-                        <CartesianGrid {...chartGridProps} />
-                        <XAxis dataKey="name" stroke={CHART.axis} interval={0} />
-                        <YAxis yAxisId="left" stroke={CHART.axis} allowDecimals={false} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                        <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} tickFormatter={(value) => `${value}%`} width={70} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                        <Tooltip
-                          contentStyle={chartTooltipStyle}
-                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: 'hsl(var(--foreground))' }}
-                          formatter={(value, name) => [
-                            name === 'rate' ? `${Number(value).toFixed(1)}%` : value,
-                            name === 'rate' ? t('winRate') : t('trades')
-                          ]}
-                        />
-                        <Bar dataKey="count" yAxisId="left" radius={chartBarRadius} maxBarSize={64}>
-                          {outcomeChartData.map((entry) => (
-                            <Cell key={entry.name} fill={entry.fill} />
-                          ))}
-                        </Bar>
-                        <Line type="monotone" dataKey="rate" yAxisId="right" stroke={CHART.line} strokeWidth={2} dot={{ r: 4, fill: CHART.line }} />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
-                    {outcomeTop
-                      ? `${t('insightOutcomeMost')} ${outcomeTop.name}`
-                      : t('insightOutcomeEmpty')}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t('directionDistribution')}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 overflow-hidden p-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    {directionEdgeData.map((entry) => (
-                      <div
-                        key={entry.direction}
-                        className="rounded-lg border border-border bg-muted p-3"
-                      >
-                        <p className="text-xs uppercase tracking-wide text-muted-foreground">{entry.direction}</p>
-                        <p className="text-2xl font-semibold text-foreground">
-                          {entry.netPL >= 0 ? '+' : ''}{entry.netPL.toFixed(2)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {t('winRate')}: {entry.winRate}%
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="w-full overflow-hidden px-4 py-2">
-                    <ResponsiveContainer width="100%" height={320}>
-                      <BarChart data={directionEdgeData} layout="vertical" margin={{ top: 16, right: 24, left: 24, bottom: 8 }}>
-                        <CartesianGrid {...chartGridProps} />
-                        <XAxis type="number" stroke={CHART.axis} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
-                        <YAxis type="category" dataKey="direction" stroke={CHART.axis} width={80} />
-                        <Tooltip
-                          contentStyle={chartTooltipStyle}
-                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: 'hsl(var(--foreground))' }}
-                          formatter={(value) => [Number(value).toFixed(2), t('netPL')]}
-                        />
-                        <Bar dataKey="netPL" radius={[0, 6, 6, 0]}>
-                          {directionEdgeData.map((entry) => (
-                            <Cell key={entry.direction} fill={entry.netPL >= 0 ? 'hsl(var(--profit))' : 'hsl(var(--loss))'} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
-                    {directionTop
-                      ? `${t('insightDirectionBest')} ${directionTop.direction} · ${directionTop.winRate}% ${t('winRate')}`
-                      : t('insightDirectionEmpty')}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Equity Curve */}
-            <Card className="overflow-hidden">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  {t('equityCurve')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="overflow-hidden p-4">
-                <div className="w-full overflow-hidden px-4 py-2">
-                  <ResponsiveContainer width="100%" height={450}>
-                    <AreaChart data={equityCurve} margin={{ top: 16, right: 16, left: 0, bottom: 8 }}>
+                <CardContent className="p-4 pt-0">
+                  <ResponsiveContainer width="100%" height={320}>
+                    <AreaChart data={equityCurve} margin={CHART_MARGIN}>
                       <defs>
                         <linearGradient id="colorEquity" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={CHART.line} stopOpacity={0.3}/>
                           <stop offset="95%" stopColor={CHART.line} stopOpacity={0}/>
                         </linearGradient>
+                        <linearGradient id="colorDrawdown" x1="0" y1="1" x2="0" y2="0">
+                          <stop offset="5%" stopColor={CHART.loss} stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor={CHART.loss} stopOpacity={0}/>
+                        </linearGradient>
                       </defs>
                       <CartesianGrid {...chartGridProps} />
-                      <XAxis dataKey="trade" stroke={CHART.axis} tickMargin={10} height={65} />
-                      <YAxis stroke={CHART.axis} width={75} domain={[(dataMin) => Math.floor(dataMin - Math.abs(dataMin * 0.1)), (dataMax) => Math.ceil(dataMax + Math.abs(dataMax * 0.1))]} />
-                      <Tooltip
-                        contentStyle={chartTooltipStyle}
-                        itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                        labelStyle={{ color: 'hsl(var(--foreground))' }}
+                      <XAxis
+                        dataKey={equityAxis === "dates" ? "date" : "trade"}
+                        stroke={CHART.axis}
+                        tickFormatter={equityAxis === "dates" ? fmtShortDay : undefined}
+                        minTickGap={24}
                       />
-                      <Area type="monotone" dataKey="equity" stroke={CHART.line} strokeWidth={2} fillOpacity={1} fill="url(#colorEquity)" />
+                      <YAxis stroke={CHART.axis} width={70} domain={paddedDomain} />
+                      <Tooltip
+                        {...tooltipProps}
+                        labelFormatter={(label, payload) => {
+                          const point = payload?.[0]?.payload;
+                          if (!point) return label;
+                          if (!point.date) return t('anStart');
+                          return equityAxis === "dates"
+                            ? fmtDay(point.date)
+                            : `${t('anTradeNo')} ${point.trade} · ${fmtDay(point.date)}`;
+                        }}
+                        formatter={(value) => [fmtMoney(value), equityView === "drawdown" ? t('drawdown') : t('anEquity')]}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey={equityView === "drawdown" ? "drawdown" : "equity"}
+                        stroke={equityView === "drawdown" ? CHART.loss : CHART.line}
+                        strokeWidth={2}
+                        fillOpacity={1}
+                        fill={equityView === "drawdown" ? "url(#colorDrawdown)" : "url(#colorEquity)"}
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              <Card className="overflow-hidden">
+                <CardHeader>
+                  <CardTitle>{t('anByWeekday')}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <ResponsiveContainer width="100%" height={320}>
+                    <BarChart data={weekdayData} margin={CHART_MARGIN}>
+                      <CartesianGrid {...chartGridProps} />
+                      <XAxis dataKey="label" stroke={CHART.axis} interval={0} />
+                      <YAxis stroke={CHART.axis} width={60} domain={paddedDomain} />
+                      <Tooltip
+                        {...tooltipProps}
+                        labelFormatter={(label, payload) => {
+                          const row = payload?.[0]?.payload;
+                          return row ? `${label} · ${row.trades} ${t('trades')} · ${t('winRate')} ${row.winRate}%` : label;
+                        }}
+                        formatter={(value) => [fmtMoney(value), t('netPL')]}
+                      />
+                      <Bar dataKey="pl" radius={chartBarRadius} maxBarSize={40}>
+                        {weekdayData.map((entry) => (
+                          <Cell key={entry.day} fill={entry.pl >= 0 ? CHART.profit : CHART.loss} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Period Performance */}
             <Card className="overflow-hidden">
@@ -1270,8 +1041,8 @@ export default function Analytics() {
                   </Select>
                 </div>
               </CardHeader>
-              <CardContent className="overflow-hidden">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+              <CardContent className="overflow-hidden p-4 pt-0">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                   <div className="rounded-lg border border-border bg-muted p-3">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('bestPeriod')}</p>
                     <p className="text-sm font-semibold text-foreground">
@@ -1296,103 +1067,144 @@ export default function Analytics() {
                     <p className="text-xs text-muted-foreground">{t('results')}</p>
                   </div>
                 </div>
-                <div className="w-full overflow-hidden px-6 py-2 pb-4">
-                  <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={periodData} margin={{ top: 16, right: 16, left: 0, bottom: timePeriod === "weekly" ? 72 : 24 }}>
-                      <CartesianGrid {...chartGridProps} />
-                      <XAxis dataKey="period" stroke={CHART.axis} angle={timePeriod === "weekly" ? -45 : 0} textAnchor={timePeriod === "weekly" ? "end" : "middle"} height={timePeriod === "weekly" ? 105 : 55} tickMargin={10} />
-                      <YAxis stroke={CHART.axis} width={75} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.1)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.1)) : 10]} />
-                      <Tooltip
-                        contentStyle={chartTooltipStyle}
-                        itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                        labelStyle={{ color: 'hsl(var(--foreground))' }}
-                      />
-                      <Bar dataKey="pl" fill={CHART.line} name="P&L" radius={chartBarRadius} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={periodData} margin={{ ...CHART_MARGIN, bottom: timePeriod === "weekly" ? 24 : 8 }}>
+                    <CartesianGrid {...chartGridProps} />
+                    <XAxis dataKey="period" stroke={CHART.axis} angle={timePeriod === "weekly" ? -45 : 0} textAnchor={timePeriod === "weekly" ? "end" : "middle"} height={timePeriod === "weekly" ? 70 : 30} minTickGap={8} />
+                    <YAxis stroke={CHART.axis} width={70} domain={paddedDomain} />
+                    <Tooltip
+                      {...tooltipProps}
+                      labelFormatter={(label, payload) => {
+                        const row = payload?.[0]?.payload;
+                        return row ? `${label} · ${row.trades} ${t('trades')} · ${t('winRate')} ${row.winRate}%` : label;
+                      }}
+                      formatter={(value) => [fmtMoney(value), t('netPL')]}
+                    />
+                    <Bar dataKey="pl" name={t('netPL')} radius={chartBarRadius}>
+                      {periodData.map((entry) => (
+                        <Cell key={entry.period} fill={entry.pl >= 0 ? CHART.profit : CHART.loss} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            {/* Direction & Timeframe */}
+            {/* Long vs Short + Timeframe */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
+              <Card className="overflow-hidden">
                 <CardHeader>
                   <CardTitle>{t('longVsShort')}</CardTitle>
                 </CardHeader>
-                <CardContent className="overflow-hidden p-4">
-                  <div className="w-full overflow-hidden px-4 py-2">
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={directionData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid {...chartGridProps} />
-                        <XAxis dataKey="direction" stroke={CHART.axis} />
-                        <YAxis stroke={CHART.axis} width={60} />
-                        <Tooltip
-                          contentStyle={chartTooltipStyle}
-                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: 'hsl(var(--foreground))' }}
-                        />
-                        <Legend />
-                        <Bar dataKey="winRate" name={`${t('winRate')} (%)`} radius={chartBarRadius}>
-                          {directionData.map((entry) => (
-                            <Cell key={entry.direction} fill={directionChartColor(entry.direction)} />
-                          ))}
-                        </Bar>
-                        <Bar dataKey="avgPL" fill={CHART.warning} name={t('avgPLLabel')} radius={chartBarRadius} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                <CardContent className="space-y-4 p-4 pt-0">
+                  <div className="grid grid-cols-2 gap-3">
+                    {directionData.map((entry) => (
+                      <div key={entry.direction} className="rounded-lg border border-border bg-muted p-3">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">{entry.direction}</p>
+                        <p className={`text-xl font-semibold ${entry.totalPL > 0 ? 'text-profit' : entry.totalPL < 0 ? 'text-loss' : 'text-foreground'}`}>
+                          {fmtMoney(entry.totalPL)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t('winRate')}: {entry.winRate}% · {entry.trades} {t('trades')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t('avgPLLabel')}: {fmtMoney(entry.avgPL)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={directionEdgeData} layout="vertical" margin={CHART_MARGIN}>
+                      <CartesianGrid {...chartGridProps} />
+                      <XAxis type="number" stroke={CHART.axis} domain={paddedDomain} />
+                      <YAxis type="category" dataKey="direction" stroke={CHART.axis} width={60} />
+                      <Tooltip {...tooltipProps} formatter={(value) => [fmtMoney(value), t('netPL')]} />
+                      <Bar dataKey="netPL" radius={[0, 6, 6, 0]} maxBarSize={48}>
+                        {directionEdgeData.map((entry) => (
+                          <Cell key={entry.direction} fill={entry.netPL >= 0 ? directionChartColor(entry.direction) : CHART.loss} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="rounded-lg border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
+                    {directionTop && directionTop.trades > 0
+                      ? `${t('insightDirectionBest')} ${directionTop.direction} · ${directionTop.winRate}% ${t('winRate')}`
+                      : t('insightDirectionEmpty')}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="overflow-hidden">
                 <CardHeader>
                   <CardTitle>{t('timeframeAnalysis')}</CardTitle>
                 </CardHeader>
-                <CardContent className="overflow-hidden p-4">
-                  <div className="w-full overflow-hidden px-4 py-2">
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={timeframeData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
-                        <CartesianGrid {...chartGridProps} />
-                        <XAxis dataKey="timeframe" stroke={CHART.axis} />
-                        <YAxis stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                        <Tooltip
-                          contentStyle={chartTooltipStyle}
-                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: 'hsl(var(--foreground))' }}
-                        />
-                        <Legend />
-                        <Bar dataKey="winRate" fill={CHART.muted} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
-                        <Bar dataKey="trades" fill={CHART.warning} name={t('noOfTrades')} radius={chartBarRadius} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                <CardContent className="p-4 pt-0">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={timeframeData} margin={CHART_MARGIN}>
+                      <CartesianGrid {...chartGridProps} />
+                      <XAxis dataKey="timeframe" stroke={CHART.axis} />
+                      <YAxis stroke={CHART.axis} width={50} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                      <Tooltip
+                        {...tooltipProps}
+                        labelFormatter={(label, payload) => {
+                          const row = payload?.[0]?.payload;
+                          return row ? `${label} · ${row.trades} ${t('trades')} · ${t('avgPLLabel')} ${fmtMoney(row.avgPL)}` : label;
+                        }}
+                        formatter={(value) => [`${value}%`, t('winRate')]}
+                      />
+                      <Bar dataKey="winRate" fill={CHART.line} radius={chartBarRadius} maxBarSize={48} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Session Analysis */}
+            {/* Session Analysis: win rate i średni P&L na osobnych wykresach */}
             {sessionData.length > 0 && (
-              <Card>
+              <Card className="overflow-hidden">
                 <CardHeader>
                   <CardTitle>{t('sessionsAnalysis')}</CardTitle>
                 </CardHeader>
-                <CardContent className="overflow-hidden p-4">
-                  <div className="w-full overflow-hidden px-4 py-2">
-                    <ResponsiveContainer width="100%" height={350}>
-                      <BarChart data={sessionData} margin={{ top: 30, right: 35, left: 20, bottom: 30 }}>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 pt-0">
+                  <div>
+                    <p className="type-section mb-2">{t('winRate')} (%)</p>
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart data={sessionData} margin={CHART_MARGIN}>
                         <CartesianGrid {...chartGridProps} />
-                        <XAxis dataKey="session" stroke={CHART.axis} />
-                        <YAxis yAxisId="left" stroke={CHART.axis} width={60} domain={[0, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax * 1.1) : 100]} />
-                        <YAxis yAxisId="right" orientation="right" stroke={CHART.axis} width={60} domain={[(dataMin) => !isNaN(dataMin) && isFinite(dataMin) ? Math.floor(dataMin - Math.abs(dataMin * 0.2)) : -10, (dataMax) => !isNaN(dataMax) && isFinite(dataMax) ? Math.ceil(dataMax + Math.abs(dataMax * 0.2)) : 10]} />
+                        <XAxis dataKey="session" stroke={CHART.axis} interval={0} />
+                        <YAxis stroke={CHART.axis} width={50} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
                         <Tooltip
-                          contentStyle={chartTooltipStyle}
-                          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                          labelStyle={{ color: 'hsl(var(--foreground))' }}
+                          {...tooltipProps}
+                          labelFormatter={(label, payload) => {
+                            const row = payload?.[0]?.payload;
+                            return row ? `${label} · ${row.trades} ${t('trades')}` : label;
+                          }}
+                          formatter={(value) => [`${value}%`, t('winRate')]}
                         />
-                        <Legend />
-                        <Bar dataKey="winRate" yAxisId="left" fill={CHART.line} name={`${t('winRate')} (%)`} radius={chartBarRadius} />
-                        <Bar dataKey="avgPL" yAxisId="right" fill={CHART.muted} name={t('avgPLLabel')} radius={chartBarRadius} />
+                        <Bar dataKey="winRate" fill={CHART.line} radius={chartBarRadius} maxBarSize={48} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div>
+                    <p className="type-section mb-2">{t('avgPLLabel')}</p>
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart data={sessionData} margin={CHART_MARGIN}>
+                        <CartesianGrid {...chartGridProps} />
+                        <XAxis dataKey="session" stroke={CHART.axis} interval={0} />
+                        <YAxis stroke={CHART.axis} width={60} domain={paddedDomain} />
+                        <Tooltip
+                          {...tooltipProps}
+                          labelFormatter={(label, payload) => {
+                            const row = payload?.[0]?.payload;
+                            return row ? `${label} · ${row.trades} ${t('trades')}` : label;
+                          }}
+                          formatter={(value) => [fmtMoney(value), t('avgPLLabel')]}
+                        />
+                        <Bar dataKey="avgPL" radius={chartBarRadius} maxBarSize={48}>
+                          {sessionData.map((entry) => (
+                            <Cell key={entry.session} fill={entry.avgPL >= 0 ? CHART.profit : CHART.loss} />
+                          ))}
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -2428,6 +2240,48 @@ export default function Analytics() {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="overflow-hidden">
+                  <CardHeader>
+                    <CardTitle>{t('anHeatmapTitle')}</CardTitle>
+                    <p className="text-sm text-muted-foreground">{t('anHeatmapDesc')}</p>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="overflow-x-auto">
+                      <div
+                        className="grid gap-1 min-w-max"
+                        style={{ gridTemplateColumns: `2.5rem repeat(${heatmap.hours.length}, minmax(2.25rem, 1fr))` }}
+                      >
+                        <div />
+                        {heatmap.hours.map((hour) => (
+                          <div key={hour} className="text-center text-[11px] text-muted-foreground">{String(hour).padStart(2, '0')}</div>
+                        ))}
+                        {t('anWeekdays').split(',').map((dayLabel, day) => (
+                          <div key={dayLabel} className="contents">
+                            <div className="flex items-center text-[11px] font-medium text-muted-foreground">{dayLabel}</div>
+                            {heatmap.hours.map((hour) => {
+                              const cell = heatmap.cells.find((c) => c.day === day && c.hour === hour);
+                              const strength = cell && heatmap.maxAbs > 0 ? 0.15 + 0.75 * (Math.abs(cell.pl) / heatmap.maxAbs) : 0;
+                              const color = cell ? (cell.pl >= 0 ? CHART.profit : CHART.loss) : null;
+                              return (
+                                <div
+                                  key={hour}
+                                  className="h-8 rounded-md border border-border/50 flex items-center justify-center text-[10px] font-medium text-foreground"
+                                  style={color ? { backgroundColor: `color-mix(in srgb, ${color} ${Math.round(strength * 100)}%, transparent)` } : undefined}
+                                  title={cell
+                                    ? `${dayLabel} ${String(hour).padStart(2, '0')}:00 · ${fmtMoney(cell.pl)} · ${cell.trades} ${t('trades')}`
+                                    : `${dayLabel} ${String(hour).padStart(2, '0')}:00 · —`}
+                                >
+                                  {cell ? cell.trades : ''}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
