@@ -16,7 +16,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import jsPDF from "jspdf";
 import { directionLabel } from "@/lib/utils";
 
 export function ExportButton({ trades, accounts, strategies, analytics, type = "journal" }) {
@@ -95,12 +94,14 @@ export function ExportButton({ trades, accounts, strategies, analytics, type = "
     link.click();
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     if (!trades || trades.length === 0) {
       setNoDataDialogOpen(true);
       return;
     }
 
+    // jspdf (~350 KB) ładowany dopiero przy eksporcie, nie razem ze stroną.
+    const { default: jsPDF } = await import("jspdf");
     const doc = new jsPDF();
     
     // Title
