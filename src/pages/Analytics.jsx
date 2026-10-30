@@ -14,7 +14,9 @@ import { ImportButton } from "../components/ImportButton";
 import { useLanguage } from "@/components/LanguageProvider";
 import { usePnlDisplay } from "@/hooks/use-pnl-display";
 import { normalizeEmotions, countFilledEmotionStages } from "@/components/EmotionsPanel";
-import { getTradeEntryMinutes } from "@/lib/userSettings";
+import { getTradeEntryMinutes, getTradeTimeSource, zonedWallTimeToDate } from "@/lib/userSettings";
+import HeatCell from "@/components/common/HeatCell";
+import SectionCard from "@/components/common/SectionCard";
 import { aggregateTagPerformance } from "@/lib/tradeTags";
 import { CHART, chartTooltipStyle, chartGridProps, chartBarRadius, chartSeriesProps } from "@/lib/chartTheme";
 import { SkeletonKpiRow, SkeletonBlock } from "@/components/ui/skeleton-block";
@@ -29,7 +31,11 @@ import {
   buildEquitySeries,
   computeAnalyticsKpis,
   dateRangeForPreset,
+  disciplineSplit,
   hourWeekdayHeatmap,
+  rMultipleStats,
+  sessionStats as sessionStatsByEntryTime,
+  simulateDrawdowns,
   sortTradesChronoAsc,
   tradeInDateRange,
   weekdayStats,
@@ -593,6 +599,20 @@ export default function Analytics() {
     label: t('anWeekdays').split(',')[row.day] || String(row.day + 1),
   }));
   const heatmap = hourWeekdayHeatmap(filteredTrades, parseEntryMinutes);
+  // Etap H2: R tylko z transakcji z SL; sesje z chwili wejścia (ta sama strefa źródłowa co reszta aplikacji);
+  // dyscyplina z computeDisciplineScore; symulacja serii z własnego win rate i średnich.
+  const rStats = rMultipleStats(filteredTrades);
+  const tradeTimeSource = getTradeTimeSource();
+  const sessionResult = sessionStatsByEntryTime(filteredTrades, (trade) =>
+    zonedWallTimeToDate(trade?.date, trade?.entry_time || trade?.open_time || trade?.time, tradeTimeSource)
+  );
+  const sessionBars = sessionResult.rows.map((row) => ({ ...row, label: t(`anSession_${row.id}`) }));
+  const discipline = disciplineSplit(filteredTrades);
+  const HEAT_MIN_TRADES = 2;
+  // Skala koloru mapy: największa |średnia| spośród komórek z wystarczającą liczbą transakcji.
+  const heatAvgMax = heatmap.cells
+    .filter((cell) => cell.trades >= HEAT_MIN_TRADES)
+    .reduce((max, cell) => Math.max(max, Math.abs(cell.pl / cell.trades)), 0);
 
   // Period performance (daily, weekly, monthly, yearly)
   const periodStats = {};
@@ -702,7 +722,10 @@ export default function Analytics() {
       key: 'expectancy',
       label: t('expectancy'),
       value: fmtMoney(kpis.expectancy),
-      hint: t('anPerTrade'),
+      hint: rStats.expectancyR != null
+        ? `${t('anPerTrade')} · ${rStats.expectancyR > 0 ? '+' : ''}${rStats.expectancyR}R (${rStats.count} ${t('anWithSl')}${rStats.noStop ? ` · ${rStats.noStop} ${t('anNoSl')}` : ''})`
+        : `${t('anPerTrade')}${rStats.noStop ? ` · ${rStats.noStop} ${t('anNoSl')}` : ''}`,
+      title: t('anExpectancyTitle'),
       tone: kpis.expectancy > 0 ? 'profit' : kpis.expectancy < 0 ? 'loss' : 'default',
     },
     {
@@ -719,6 +742,8 @@ export default function Analytics() {
       hint: t('anStreakHint'),
     },
   ];
+
+  const simulation = simulateDrawdowns({ winRate: kpis.winRate, avgWin: kpis.avgWin, avgLoss: kpis.avgLoss });
 
   const dateRangeLabel = datePreset === "custom"
     ? customRange.from
@@ -918,6 +943,7 @@ export default function Analytics() {
             <TabsTrigger value="psychology" className="shrink-0">{t('psychology')}</TabsTrigger>
             <TabsTrigger value="confluences" className="shrink-0">{t('entryConditionsTab')}</TabsTrigger>
             <TabsTrigger value="mistakes" className="shrink-0">{t('mistakesTab')}</TabsTrigger>
+            <TabsTrigger value="discipline" className="shrink-0">{t('anDisciplineTab')}</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -2241,47 +2267,94 @@ export default function Analytics() {
                   </CardContent>
                 </Card>
 
-                <Card className="overflow-hidden">
-                  <CardHeader>
-                    <CardTitle>{t('anHeatmapTitle')}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{t('anHeatmapDesc')}</p>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <div className="overflow-x-auto">
-                      <div
-                        className="grid gap-1 min-w-max"
-                        style={{ gridTemplateColumns: `2.5rem repeat(${heatmap.hours.length}, minmax(2.25rem, 1fr))` }}
-                      >
-                        <div />
-                        {heatmap.hours.map((hour) => (
-                          <div key={hour} className="text-center text-[11px] text-muted-foreground">{String(hour).padStart(2, '0')}</div>
-                        ))}
-                        {t('anWeekdays').split(',').map((dayLabel, day) => (
-                          <div key={dayLabel} className="contents">
-                            <div className="flex items-center text-[11px] font-medium text-muted-foreground">{dayLabel}</div>
-                            {heatmap.hours.map((hour) => {
-                              const cell = heatmap.cells.find((c) => c.day === day && c.hour === hour);
-                              const strength = cell && heatmap.maxAbs > 0 ? 0.15 + 0.75 * (Math.abs(cell.pl) / heatmap.maxAbs) : 0;
-                              const color = cell ? (cell.pl >= 0 ? CHART.profit : CHART.loss) : null;
-                              return (
-                                <div
-                                  key={hour}
-                                  className="h-8 rounded-md border border-ds-line flex items-center justify-center text-[10px] font-medium text-foreground"
-                                  style={color ? { backgroundColor: `color-mix(in srgb, ${color} ${Math.round(strength * 100)}%, transparent)` } : undefined}
-                                  title={cell
-                                    ? `${dayLabel} ${String(hour).padStart(2, '0')}:00 · ${fmtMoney(cell.pl)} · ${cell.trades} ${t('trades')}`
-                                    : `${dayLabel} ${String(hour).padStart(2, '0')}:00 · —`}
-                                >
-                                  {cell ? cell.trades : ''}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ))}
-                      </div>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <SectionCard title={t('anBySession')} description={sessionResult.unknown ? `${t('anSessionUnknown')}: ${sessionResult.unknown}` : t('anBySessionDesc')}>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <BarChart data={sessionBars} margin={CHART_MARGIN}>
+                        <CartesianGrid {...chartGridProps} />
+                        <XAxis dataKey="label" stroke={CHART.axis} interval={0} />
+                        <YAxis stroke={CHART.axis} width={60} domain={paddedDomain} />
+                        <Tooltip
+                          {...tooltipProps}
+                          labelFormatter={(label, payload) => {
+                            const row = payload?.[0]?.payload;
+                            return row ? `${label} · ${row.trades} ${t('trades')}${row.winRate != null ? ` · ${t('winRate')} ${row.winRate}%` : ''}` : label;
+                          }}
+                          formatter={(value) => [fmtMoney(value), t('netPL')]}
+                        />
+                        <Bar {...chartSeriesProps} dataKey="pl" radius={chartBarRadius} maxBarSize={56}>
+                          {sessionBars.map((entry) => (
+                            <Cell key={entry.id} fill={entry.pl >= 0 ? CHART.profit : CHART.loss} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </SectionCard>
+                  <SectionCard title={t('anByWeekday')}>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <BarChart data={weekdayData} margin={CHART_MARGIN}>
+                        <CartesianGrid {...chartGridProps} />
+                        <XAxis dataKey="label" stroke={CHART.axis} interval={0} />
+                        <YAxis stroke={CHART.axis} width={60} domain={paddedDomain} />
+                        <Tooltip
+                          {...tooltipProps}
+                          labelFormatter={(label, payload) => {
+                            const row = payload?.[0]?.payload;
+                            return row ? `${label} · ${row.trades} ${t('trades')} · ${t('winRate')} ${row.winRate}%` : label;
+                          }}
+                          formatter={(value) => [fmtMoney(value), t('netPL')]}
+                        />
+                        <Bar {...chartSeriesProps} dataKey="pl" radius={chartBarRadius} maxBarSize={40}>
+                          {weekdayData.map((entry) => (
+                            <Cell key={entry.day} fill={entry.pl >= 0 ? CHART.profit : CHART.loss} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </SectionCard>
+                </div>
+
+                <SectionCard
+                  title={t('anHeatmapTitle')}
+                  description={t('anHeatmapAvgDesc').replace('{n}', String(HEAT_MIN_TRADES))}
+                >
+                  <div className="overflow-x-auto">
+                    <div
+                      className="grid min-w-max gap-1"
+                      style={{ gridTemplateColumns: `2.5rem repeat(${heatmap.hours.length}, minmax(2.75rem, 1fr))` }}
+                      role="table"
+                      aria-label={t('anHeatmapTitle')}
+                    >
+                      <div />
+                      {heatmap.hours.map((hour) => (
+                        <div key={hour} className="text-center text-[11px] text-ds-text3" role="columnheader">{String(hour).padStart(2, '0')}</div>
+                      ))}
+                      {t('anWeekdays').split(',').map((dayLabel, day) => (
+                        <div key={dayLabel} className="contents" role="row">
+                          <div className="flex items-center text-[11px] font-medium text-ds-text3" role="rowheader">{dayLabel}</div>
+                          {heatmap.hours.map((hour) => {
+                            const cell = heatmap.cells.find((c) => c.day === day && c.hour === hour);
+                            const avg = cell ? cell.pl / cell.trades : null;
+                            const slot = `${dayLabel} ${String(hour).padStart(2, '0')}:00`;
+                            return (
+                              <HeatCell
+                                key={hour}
+                                value={avg}
+                                count={cell?.trades || 0}
+                                maxAbs={heatAvgMax}
+                                minCount={HEAT_MIN_TRADES}
+                                label={cell ? cell.trades : ''}
+                                title={cell
+                                  ? `${slot} · ${t('avgPLLabel')} ${fmtMoney(avg)} · ${cell.trades} ${t('trades')}${cell.trades < HEAT_MIN_TRADES ? ` · ${t('anTooFewTrades')}` : ''}`
+                                  : `${slot} · —`}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </SectionCard>
               </>
             )}
           </TabsContent>
@@ -2837,6 +2910,99 @@ export default function Analytics() {
                 </Card>
               </div>
             )}
+          </TabsContent>
+          <TabsContent value="discipline" className="motion-tab-in space-y-6" data-reveal-skip={tabSwitched ? "true" : undefined}>
+            <KpiStrip
+              columns="grid-cols-2 lg:grid-cols-4"
+              items={[
+                {
+                  key: 'compliance',
+                  label: t('anCompliance'),
+                  value: discipline.compliance == null ? null : `${Math.round(discipline.compliance * 100)}%`,
+                  hint: `${discipline.scored} ${t('anScored')}${discipline.unscored ? ` · ${discipline.unscored} ${t('anUnscored')}` : ''}`,
+                  title: t('anComplianceTitle'),
+                },
+                { key: 'score', label: t('anAvgDiscipline'), value: discipline.avgScore == null ? null : `${discipline.avgScore} / 100` },
+                {
+                  key: 'clean',
+                  label: t('anCleanResult'),
+                  value: discipline.clean.trades ? fmtMoney(discipline.clean.pl) : null,
+                  tone: discipline.clean.pl > 0 ? 'profit' : discipline.clean.pl < 0 ? 'loss' : undefined,
+                  hint: `${discipline.clean.trades} ${t('trades')}`,
+                },
+                {
+                  key: 'violated',
+                  label: t('anViolatedResult'),
+                  value: discipline.violated.trades ? fmtMoney(discipline.violated.pl) : null,
+                  tone: discipline.violated.pl > 0 ? 'profit' : discipline.violated.pl < 0 ? 'loss' : undefined,
+                  hint: `${discipline.violated.trades} ${t('trades')}`,
+                },
+              ]}
+            />
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <SectionCard title={t('anCleanVsViolated')} description={t('anCleanVsViolatedDesc')} bodyClassName="p-4 overflow-x-auto">
+                <table className="w-full min-w-[420px] text-[13px]">
+                  <thead>
+                    <tr className="border-b border-ds-line text-ds-text3">
+                      <th className="py-2 text-left font-medium">{t('anGroup')}</th>
+                      <th className="py-2 text-right font-medium">{t('trades')}</th>
+                      <th className="py-2 text-right font-medium">{t('winRate')}</th>
+                      <th className="py-2 text-right font-medium">{t('avgPLLabel')}</th>
+                      <th className="py-2 text-right font-medium">{t('netPL')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { key: 'clean', label: t('anGroupClean'), row: discipline.clean },
+                      { key: 'violated', label: t('anGroupViolated'), row: discipline.violated },
+                      { key: 'overtrading', label: t('anFlag_overtrading'), row: discipline.byFlag.overtrading },
+                      { key: 'risk', label: t('anFlag_risk'), row: discipline.byFlag.risk },
+                      { key: 'mistakes', label: t('anFlag_mistakes'), row: discipline.byFlag.mistakes },
+                    ].map(({ key, label, row }) => (
+                      <tr key={key} className="border-b border-ds-line last:border-0">
+                        <td className="py-2 text-ds-text">{label}</td>
+                        <td className="py-2 text-right tabular-nums text-ds-text2">{row.trades}</td>
+                        <td className="py-2 text-right tabular-nums text-ds-text2">{row.winRate == null ? '—' : `${row.winRate}%`}</td>
+                        <td className={`py-2 text-right tabular-nums ${row.avg > 0 ? 'text-ds-pos' : row.avg < 0 ? 'text-ds-neg' : 'text-ds-text2'}`}>{row.avg == null ? '—' : fmtMoney(row.avg)}</td>
+                        <td className={`py-2 text-right tabular-nums ${row.pl > 0 ? 'text-ds-pos' : row.pl < 0 ? 'text-ds-neg' : 'text-ds-text2'}`}>{row.trades ? fmtMoney(row.pl) : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </SectionCard>
+              <SectionCard title={t('anSimTitle')} description={t('anSimDesc')} bodyClassName="p-4 overflow-x-auto">
+                {simulation ? (
+                  <div className="space-y-3">
+                    <table className="w-full text-[13px]">
+                      <thead>
+                        <tr className="border-b border-ds-line text-ds-text3">
+                          <th className="py-2 text-left font-medium">{t('anSimPercentile')}</th>
+                          <th className="py-2 text-right font-medium">{t('anSimDrawdown')}</th>
+                          <th className="py-2 text-right font-medium">{t('anSimStreak')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {['p50', 'p90', 'p99'].map((q) => (
+                          <tr key={q} className="border-b border-ds-line last:border-0">
+                            <td className="py-2 text-ds-text">{t(`anSim_${q}`)}</td>
+                            <td className="py-2 text-right tabular-nums text-ds-neg">{fmtMoney(-simulation.drawdown[q])}</td>
+                            <td className="py-2 text-right tabular-nums text-ds-text2">{simulation.lossStreak[q]}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p className="text-[11.5px] text-ds-text3">
+                      {t('anSimNote')
+                        .replace('{n}', String(simulation.trades))
+                        .replace('{runs}', String(simulation.runs))
+                        .replace('{wr}', String(kpis.winRate))}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-[13px] text-ds-text3">{t('anSimEmpty')}</p>
+                )}
+              </SectionCard>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

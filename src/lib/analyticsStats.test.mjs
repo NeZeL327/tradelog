@@ -131,3 +131,68 @@ test("dzień tygodnia i mapa godzina × dzień", () => {
   assert.deepEqual(fri9, { day: 4, hour: 9, pl: -50, trades: 1 });
   assert.equal(map.maxAbs, 200);
 });
+
+// ===== Etap H2 =====
+test("R-multiple: tylko transakcje z SL, brak SL liczony osobno", () => {
+  const list = [
+    { profit_loss: 200, stop_loss_amount: 100, stop_loss: 1.08, outcome: "Win" }, // 2R
+    { profit_loss: -100, stop_loss_amount: 100, stop_loss: 1.09, outcome: "Loss" }, // -1R
+    { profit_loss: 50, outcome: "Win" }, // brak SL
+  ];
+  const r = s.rMultipleStats(list);
+  assert.equal(r.count, 2);
+  assert.equal(r.noStop, 1);
+  assert.equal(r.expectancyR, 0.5);
+  assert.equal(r.totalR, 1);
+  assert.equal(r.avgWinR, 2);
+  assert.equal(r.avgLossR, -1);
+  const none = s.rMultipleStats([]);
+  assert.equal(none.count, 0);
+  assert.equal(none.expectancyR, null);
+});
+
+test("sesje: NY ma pierwszeństwo w nakładce, brak godziny osobno", () => {
+  // 14:00 UTC zimą = 9:00 NY i 14:00 Londyn → NY
+  assert.equal(s.sessionOfInstant(new Date("2026-01-15T14:00:00Z")), "ny");
+  assert.equal(s.sessionOfInstant(new Date("2026-01-15T10:00:00Z")), "london");
+  assert.equal(s.sessionOfInstant(new Date("2026-01-14T23:00:00Z")), "asia"); // 08:00 Tokio
+  assert.equal(s.sessionOfInstant(null), null);
+  const list = [
+    { at: "2026-01-15T14:00:00Z", profit_loss: 100, outcome: "Win" },
+    { at: "2026-01-15T10:00:00Z", profit_loss: -50, outcome: "Loss" },
+    { at: null, profit_loss: 10, outcome: "Win" },
+  ];
+  const res = s.sessionStats(list, (t) => (t.at ? new Date(t.at) : null));
+  assert.equal(res.unknown, 1);
+  assert.deepEqual(res.rows.find((r) => r.id === "ny"), { id: "ny", trades: 1, pl: 100, avg: 100, winRate: 100 });
+  assert.deepEqual(res.rows.find((r) => r.id === "asia"), { id: "asia", trades: 0, pl: 0, avg: null, winRate: null });
+});
+
+test("dyscyplina: zgodne vs z naruszeniami, bez godziny nieocenione", () => {
+  const list = [
+    { id: 1, date: "2026-10-01", entry_time: "09:00", profit_loss: 100, outcome: "Win" },
+    { id: 2, date: "2026-10-01", entry_time: "10:00", profit_loss: -50, outcome: "Loss", mistakes: ["FOMO"] },
+    { id: 3, date: "2026-10-01", profit_loss: 20, outcome: "Win" },
+  ];
+  const d = s.disciplineSplit(list);
+  assert.equal(d.scored, 2);
+  assert.equal(d.unscored, 1);
+  assert.equal(d.compliance, 0.5);
+  assert.equal(d.clean.pl, 100);
+  assert.equal(d.violated.pl, -50);
+  assert.equal(d.byFlag.mistakes.trades, 1);
+  const empty = s.disciplineSplit([]);
+  assert.equal(empty.compliance, null);
+  assert.equal(empty.avgScore, null);
+});
+
+test("symulacja: powtarzalna, brak danych = null", () => {
+  const a = s.simulateDrawdowns({ winRate: 50, avgWin: 100, avgLoss: -80, runs: 200 });
+  const b = s.simulateDrawdowns({ winRate: 50, avgWin: 100, avgLoss: -80, runs: 200 });
+  assert.deepEqual(a, b);
+  assert.ok(a.drawdown.p50 > 0 && a.drawdown.p50 <= a.drawdown.p90 && a.drawdown.p90 <= a.drawdown.p99);
+  assert.ok(a.lossStreak.p50 >= 1);
+  assert.equal(s.simulateDrawdowns({ winRate: 0, avgWin: 100, avgLoss: -80 }), null);
+  assert.equal(s.simulateDrawdowns({ winRate: 60, avgWin: 0, avgLoss: -80 }), null);
+  assert.equal(s.simulateDrawdowns({}), null);
+});
