@@ -13,6 +13,7 @@ export const ALL_NAV_ITEMS = [
   { key: "dashboard", titleKey: "dashboard", fallbackTitle: "Dashboard", url: createPageUrl("Dashboard"), iconName: "LayoutDashboard", group: "trading" },
   { key: "journal", titleKey: "journal", fallbackTitle: "Dziennik", url: createPageUrl("Journal"), iconName: "BookOpen", group: "trading" },
   { key: "calendar", titleKey: "calendar", fallbackTitle: "Kalendarz", url: createPageUrl("Calendar"), iconName: "Calendar", group: "trading" },
+  { key: "day", titleKey: "dayPage", fallbackTitle: "Dzień", url: createPageUrl("DayPlan"), iconName: "CalendarCheck", group: "trading" },
   { key: "trade", titleKey: "tradeDetails", fallbackTitle: "Trade details", url: "/trade", iconName: "CandlestickChart", group: "analysis" },
   { key: "analytics", titleKey: "analytics", fallbackTitle: "Analityka", url: createPageUrl("Analytics"), iconName: "BarChart3", group: "analysis" },
   { key: "backtesting", titleKey: "backtesting", fallbackTitle: "Backtesting", url: createPageUrl("Backtesting"), iconName: "FlaskConical", group: "analysis" },

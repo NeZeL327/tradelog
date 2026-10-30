@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  CalendarCheck2,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -13,7 +12,9 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/lib/AuthContext";
 import { useLanguage } from "@/components/LanguageProvider";
-import { getTradingAccounts } from "@/lib/localStorage";
+import { getTrades, getTradingAccounts } from "@/lib/localStorage";
+import DayResultSummary from "@/components/day/DayResultSummary";
+import { PageHeader } from "@/components/common/PageShell";
 import { isTradingAccountActive, cn } from "@/lib/utils";
 import { createPageUrl } from "@/utils";
 import {
@@ -81,7 +82,7 @@ function statusLabel(status, language) {
 
 function SectionCard({ title, children, className }) {
   return (
-    <Card className={cn("border-border bg-card", className)}>
+    <Card className={cn("border-ds-line bg-card", className)}>
       <CardHeader className="pb-2 pt-4 px-4">
         <CardTitle className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
@@ -127,6 +128,12 @@ export default function DayPlan() {
     enabled: !!user?.id,
   });
   const activeAccounts = useMemo(() => accounts.filter(isTradingAccountActive), [accounts]);
+  // Wynik dnia w podsumowaniu: tylko odczyt transakcji (ten sam klucz zapytania co reszta aplikacji).
+  const { data: trades = [] } = useQuery({
+    queryKey: ["trades", user?.id],
+    queryFn: () => getTrades(user.id),
+    enabled: !!user?.id,
+  });
 
   const { data: history = [], refetch: refetchHistory, isFetching: historyLoading } = useQuery({
     queryKey: ["dayPlansHistory", user?.id, historyFilters],
@@ -314,19 +321,12 @@ export default function DayPlan() {
 
   return (
     <div className="space-y-4 pb-2">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="cyber-page-title mb-0.5 flex items-center gap-2">
-            <CalendarCheck2 className="h-5 w-5 text-primary" />
-            {t("dayPlan") || "Plan dnia"}
-          </h1>
-          <p className="cyber-page-sub">
-            {t("dayPlanSubtitle") || "Przygotuj sesję, monitoruj plan i wyciągnij wnioski."}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={t("dayPage") || "Dzień"}
+        subtitle={t("dayPageSub") || t("dayPlanSubtitle")}
+      />
 
-      <div className="flex flex-wrap gap-1 border-b border-border pb-px">
+      <div className="flex flex-wrap gap-1 border-b border-ds-line pb-px">
         {[
           { id: "day", label: t("dayPlanTabDay") || "Dzień" },
           { id: "history", label: t("dayPlanTabHistory") || "Historia" },
@@ -338,7 +338,7 @@ export default function DayPlan() {
             className={cn(
               "px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
               tab === item.id
-                ? "border-primary text-foreground"
+                ? "border-ds-text text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
@@ -349,15 +349,15 @@ export default function DayPlan() {
 
       {tab === "day" && (
         <>
-          <div className="flex flex-col gap-3 rounded-lg border border-border bg-card/60 p-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 rounded-lg border border-ds-line bg-card/60 p-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs font-semibold uppercase tracking-wide">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-ds-line px-2 py-1 text-xs font-semibold uppercase tracking-wide">
                 <span
                   className={cn(
                     "h-2 w-2 rounded-full",
                     plan?.status === "ready" && "bg-primary",
-                    plan?.status === "active" && "bg-amber-400",
-                    plan?.status === "closed" && "bg-emerald-400",
+                    plan?.status === "active" && "bg-ds-warn",
+                    plan?.status === "closed" && "bg-ds-pos",
                     (!plan?.status || plan?.status === "draft") && "bg-yellow-400"
                   )}
                 />
@@ -443,7 +443,7 @@ export default function DayPlan() {
                 {saveStatusText()}
                 {selectedAccount ? ` · ${selectedAccount.name}` : ""}
               </span>
-              <div className="inline-flex items-center gap-1 rounded-md border border-border p-0.5">
+              <div className="inline-flex items-center gap-1 rounded-md border border-ds-line p-0.5">
                 <Button
                   type="button"
                   variant="ghost"
@@ -493,7 +493,7 @@ export default function DayPlan() {
           </div>
 
           {!activeAccounts.length ? (
-            <Card className="border-border">
+            <Card className="border-ds-line">
               <CardContent className="py-10 text-center text-sm text-muted-foreground">
                 {t("dayPlanNoAccounts") || "Dodaj aktywne konto tradingowe, aby tworzyć plan dnia."}
                 <div className="mt-3">
@@ -524,15 +524,22 @@ export default function DayPlan() {
                 initialHorizon={["htf", "mtf", "ltf"].includes(planHorizon) ? planHorizon : undefined}
               />
 
+              {/* Podsumowanie po sesji z transakcji — zawsze widoczne, poza zwiniętymi sekcjami planu. */}
+              <DayResultSummary
+                plan={plan}
+                trades={trades}
+                account={accounts.find((acc) => String(acc.id) === String(plan.account_id))}
+              />
+
               <Collapsible open={classicOpen} onOpenChange={setClassicOpen}>
-                <div className="rounded-xl border border-border bg-card/50">
+                <div className="rounded-xl border border-ds-line bg-card/50">
                   <CollapsibleTrigger asChild>
                     <button
                       type="button"
-                      className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-muted/20"
+                      className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-ds-s3"
                     >
                       <span>{t("dayPlanClassicSections") || "Dodatkowe sekcje planu"}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="min-w-0 text-xs text-muted-foreground">
                         {classicOpen
                           ? t("hide") || "Ukryj"
                           : t("show") || "Pokaż"}{" "}
@@ -540,7 +547,7 @@ export default function DayPlan() {
                       </span>
                     </button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-3 border-t border-border px-3 pb-3 pt-3">
+                  <CollapsibleContent className="space-y-3 border-t border-ds-line px-3 pb-3 pt-3">
               <div className="grid gap-3 xl:grid-cols-3">
                 <SectionCard title={t("dayPlanPreSession") || "Plan przed sesją"}>
                   {[
@@ -601,7 +608,7 @@ export default function DayPlan() {
                     };
                     return (
                       <div className="space-y-4">
-                        <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
+                        <div className="flex items-center justify-between gap-3 rounded-lg border border-ds-line bg-ds-s2 px-3 py-2">
                           <div>
                             <p className="text-[11px] text-muted-foreground">{t("dayPlanProgress") || "Postęp realizacji"}</p>
                             <p className="text-sm font-semibold tabular-nums">
@@ -622,7 +629,7 @@ export default function DayPlan() {
                               <p className="text-[11px] text-muted-foreground">{t("dayPlanStageEmpty") || "Brak punktów w tym etapie"}</p>
                             )}
                             {stage.items.map((item) => (
-                              <div key={item.id} className="flex items-start gap-2 rounded-md border border-border/70 px-2 py-1.5">
+                              <div key={item.id} className="flex items-start gap-2 rounded-md border border-ds-line px-2 py-1.5">
                                 <Checkbox
                                   checked={!!item.done}
                                   onCheckedChange={(checked) =>
@@ -691,7 +698,7 @@ export default function DayPlan() {
 
                         {progress.open.length > 0 && (
                           <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-amber-300/90">
+                            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-ds-warn/90">
                               {t("dayPlanToClose") || "Do domknięcia"}
                             </p>
                             <ul className="space-y-1">
@@ -855,7 +862,7 @@ export default function DayPlan() {
                       </p>
                     ) : (
                       (plan.session_notes || []).map((note) => (
-                        <div key={note.id} className="rounded-md border border-border/70 p-2 space-y-1">
+                        <div key={note.id} className="rounded-md border border-ds-line p-2 space-y-1">
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-[11px] tabular-nums text-muted-foreground">
                               {note.created_at
@@ -986,8 +993,8 @@ export default function DayPlan() {
                             className={cn(
                               "rounded-md border px-2 py-2 text-xs font-medium transition-colors",
                               active
-                                ? "border-primary bg-primary/10 text-foreground"
-                                : "border-border text-muted-foreground hover:text-foreground"
+                                ? "border-ds-text bg-primary/10 text-foreground"
+                                : "border-ds-line text-muted-foreground hover:text-foreground"
                             )}
                           >
                             {lang === "en" ? mood.en : mood.pl}
@@ -1017,8 +1024,8 @@ export default function DayPlan() {
                             className={cn(
                               "h-9 w-9 rounded-md border text-sm font-semibold",
                               active
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-border text-muted-foreground hover:text-foreground"
+                                ? "border-ds-text bg-primary text-primary-foreground"
+                                : "border-ds-line text-muted-foreground hover:text-foreground"
                             )}
                           >
                             {score}
@@ -1123,7 +1130,7 @@ export default function DayPlan() {
                         setTab("day");
                       })
                     }
-                    className="w-full rounded-lg border border-border bg-card px-3 py-3 text-left hover:border-primary/40 transition-colors"
+                    className="w-full rounded-lg border border-ds-line bg-card px-3 py-3 text-left hover:border-ds-text/40 transition-colors"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="font-medium text-sm">
@@ -1135,12 +1142,12 @@ export default function DayPlan() {
                     </div>
                     <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px]">
                       {focusScore != null ? (
-                        <span className="rounded border border-border/70 px-1.5 py-0.5 text-muted-foreground">
+                        <span className="rounded border border-ds-line px-1.5 py-0.5 text-muted-foreground">
                           Skupienie {focusScore}
                         </span>
                       ) : null}
                       {tradeMode ? (
-                        <span className="rounded border border-border/70 px-1.5 py-0.5 uppercase text-muted-foreground">
+                        <span className="rounded border border-ds-line px-1.5 py-0.5 uppercase text-muted-foreground">
                           {tradeMode}
                         </span>
                       ) : null}
@@ -1148,9 +1155,9 @@ export default function DayPlan() {
                         <span
                           className={cn(
                             "rounded border px-1.5 py-0.5",
-                            processBand.tone === "profit" && "border-profit/40 text-profit",
-                            processBand.tone === "loss" && "border-loss/40 text-loss",
-                            processBand.tone === "amber" && "border-amber-500/40 text-amber-400"
+                            processBand.tone === "profit" && "border-profit/40 text-ds-pos",
+                            processBand.tone === "loss" && "border-loss/40 text-ds-neg",
+                            processBand.tone === "amber" && "border-amber-500/40 text-ds-warn"
                           )}
                         >
                           Proces {processPct}% · {lang === "en" ? processBand.en : processBand.pl}

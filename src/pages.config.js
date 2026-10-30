@@ -57,6 +57,7 @@ const Calendar = lazy(() => import('./pages/Calendar'));
 const CalculatorPopup = lazy(() => import('./pages/CalculatorPopup'));
 const Calculators = lazy(() => import('./pages/Calculators'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const DayPlan = lazy(() => import('./pages/DayPlan'));
 const Journal = lazy(() => import('./pages/Journal'));
 const Reports = lazy(() => import('./pages/Reports'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -75,6 +76,7 @@ export const PAGES = {
     "CalculatorPopup": CalculatorPopup,
     "Calculators": Calculators,
     "Dashboard": Dashboard,
+    "DayPlan": DayPlan,
     "Journal": Journal,
     "Reports": Reports,
     "Settings": Settings,
