@@ -9,18 +9,26 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Brain, TrendingUp, Target, Award, X, Eye, Star, Trash2 } from "lucide-react";
+import { Plus, Edit, Brain, TrendingUp, Target, Award, X, Eye, Star, Trash2, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "@/components/LanguageProvider";
 import { cn, getActiveAccountIds, getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
-import { CHART, chartTooltipStyle, chartGridProps, chartSeriesProps, chartBarRadius } from "@/lib/chartTheme";
 import QuoteLine from "@/components/QuoteLine";
+import { PageHeader } from "@/components/common/PageShell";
+import KpiStrip from "@/components/common/KpiStrip";
+import SectionCard from "@/components/common/SectionCard";
+import EmptyState from "@/components/common/EmptyState";
+import { usePnlDisplay } from "@/hooks/use-pnl-display";
+import { balanceForTrades } from "@/lib/pnlDisplay";
+import { getTradeEntryMinutes } from "@/lib/userSettings";
+import { rulesFromText, sortRows, strategyComparison } from "@/lib/strategyStats";
 
 export default function Strategies() {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const pnl = usePnlDisplay();
+  const [sort, setSort] = useState({ key: "netPL", dir: "desc" });
   const [showForm, setShowForm] = useState(false);
   const [editingStrategy, setEditingStrategy] = useState(null);
   const queryClient = useQueryClient();
@@ -98,28 +106,63 @@ export default function Strategies() {
     };
   });
 
+  // Playbook: tabela porównania z tych samych transakcji co karty (zamknięte, aktywne konta).
+  const closedActiveTrades = trades.filter((t) => isClosedTrade(t) && activeAccountIds.has(String(t.account_id)));
+  const comparisonRows = sortRows(strategyComparison(strategies, closedActiveTrades, getTradeEntryMinutes), sort.key, sort.dir);
+  const tradesOf = (id) => closedActiveTrades.filter((trade) => String(trade.strategy_id) === String(id));
+  const money = (value, list) => (value == null ? "—" : pnl.formatAmount(value, balanceForTrades(list, accounts)));
+  const withTrades = comparisonRows.filter((row) => row.trades > 0);
+  const best = withTrades.reduce((top, row) => (top == null || row.netPL > top.netPL ? row : top), null);
+  const unassigned = closedActiveTrades.filter((trade) => !strategies.some((st) => String(st.id) === String(trade.strategy_id))).length;
+  const kpiItems = [
+    { key: "count", label: t('stKpiStrategies'), value: `${strategies.filter((st) => st.status === 'Aktywna').length} / ${strategies.length}`, hint: t('stKpiActiveTotal') },
+    { key: "trades", label: t('stKpiWithStrategy'), value: String(closedActiveTrades.length - unassigned) },
+    { key: "unassigned", label: t('stKpiUnassigned'), value: String(unassigned), tone: unassigned > 0 ? "warn" : undefined },
+    {
+      key: "best",
+      label: t('stKpiBest'),
+      value: best ? best.name : null,
+      hint: best ? money(best.netPL, tradesOf(best.id)) : undefined,
+    },
+  ];
+  const toggleSort = (key) => setSort((prev) => ({ key, dir: prev.key === key && prev.dir === "desc" ? "asc" : "desc" }));
+  const columns = [
+    { key: "name", label: t('stColStrategy'), align: "left" },
+    { key: "netPL", label: t('stColNet') },
+    { key: "winRate", label: t('winRate') },
+    { key: "expectancy", label: t('expectancy') },
+    { key: "profitFactor", label: t('profitFactor') },
+    { key: "trades", label: t('trades') },
+    { key: "bestHour", label: t('stColBestHour') },
+  ];
+  const openForm = () => {
+    setEditingStrategy(null);
+    setShowForm(true);
+  };
+
   return (
     <div className="w-full min-h-0 space-y-3 dashboard-surface">
       <div className="max-w-none mx-0 space-y-3">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-          <div className="min-w-0">
-            <h1 className="cyber-page-title">{t('tradingStrategies')}</h1>
-            <p className="cyber-page-sub">{t('manageAnalyzeStrategies')}</p>
-          </div>
-          <div className="flex gap-3 items-center">
-            <QuoteLine className="hidden lg:flex shrink-0" />
-            <Button
-              onClick={() => {
-                setEditingStrategy(null);
-                setShowForm(!showForm);
-              }}
-              className="cyber-primary-btn w-full sm:w-auto"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              {t('addStrategy')}
-            </Button>
-          </div>
-        </div>
+        <PageHeader
+          title={t('tradingStrategies')}
+          subtitle={t('manageAnalyzeStrategies')}
+          actions={(
+            <>
+              <QuoteLine className="hidden lg:flex shrink-0" />
+              <Button
+                onClick={() => {
+                  setEditingStrategy(null);
+                  setShowForm(!showForm);
+                }}
+                className="cyber-primary-btn w-full sm:w-auto"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                {t('addStrategy')}
+              </Button>
+            </>
+          )}
+        />
+        {strategies.length > 0 ? <KpiStrip items={kpiItems} columns="grid-cols-2 lg:grid-cols-4" /> : null}
 
         <AnimatePresence>
           {showForm && (
@@ -140,40 +183,70 @@ export default function Strategies() {
           )}
         </AnimatePresence>
 
-        {/* Strategy Comparison Chart */}
-        {strategyStats.length > 0 && strategyStats.some(s => s.trades > 0) && (() => {
-          const chartData = strategyStats.filter(s => s.trades > 0);
-          const allValues = chartData.flatMap(s => [s.winRate, s.avgPL, s.trades]);
-          const rawMin = Math.min(0, ...allValues);
-          const rawMax = Math.max(0, ...allValues);
-          const pad = (rawMax - rawMin) * 0.15 + 1;
-          const yMin = Math.floor(rawMin - pad);
-          const yMax = Math.ceil(rawMax + pad);
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-foreground">
-                  <TrendingUp className="w-5 h-5 text-muted-foreground" />
-                  {t('strategiesComparison')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid {...chartGridProps} />
-                    <XAxis dataKey="name" stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} />
-                    <YAxis domain={[yMin, yMax]} stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} />
-                    <Tooltip contentStyle={chartTooltipStyle} />
-                    <Legend iconType="circle" iconSize={8} />
-                    <Bar dataKey="winRate" fill={CHART.accent} name="Win Rate (%)" radius={chartBarRadius} maxBarSize={56} {...chartSeriesProps} />
-                    <Bar dataKey="avgPL" fill={CHART.profit} name="Średni P&L" radius={chartBarRadius} maxBarSize={56} {...chartSeriesProps} />
-                    <Bar dataKey="trades" fill={CHART.neutral} name="Liczba transakcji" radius={chartBarRadius} maxBarSize={56} {...chartSeriesProps} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          );
-        })()}
+        {/* Tabela porównania strategii (sortowanie po kolumnach) */}
+        {withTrades.length > 0 ? (
+          <SectionCard title={t('strategiesComparison')} description={t('stCompareDesc')} bodyClassName="p-4 overflow-x-auto">
+            <table className="w-full min-w-[680px] text-[13px]">
+              <thead>
+                <tr className="border-b border-ds-line text-ds-text3">
+                  {columns.map((col) => {
+                    const active = sort.key === col.key;
+                    const Icon = active ? (sort.dir === "asc" ? ArrowUp : ArrowDown) : ArrowUpDown;
+                    return (
+                      <th
+                        key={col.key}
+                        scope="col"
+                        aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
+                        className={cn("py-2 font-medium", col.align === "left" ? "text-left" : "text-right")}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleSort(col.key)}
+                          className={cn("inline-flex items-center gap-1 rounded-md px-1 hover:text-ds-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ds-focus)]", active && "text-ds-text")}
+                        >
+                          {col.label}
+                          <Icon className="h-3 w-3" aria-hidden="true" />
+                        </button>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row) => {
+                  const list = tradesOf(row.id);
+                  return (
+                    <tr key={row.id} className="border-b border-ds-line last:border-0">
+                      <td className="py-2.5 text-left">
+                        <a
+                          href={`${createPageUrl("StrategyDetails")}?id=${row.id}`}
+                          className="inline-flex items-center gap-2 font-medium text-ds-text hover:underline"
+                        >
+                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: row.color || "var(--ds-text3)" }} aria-hidden="true" />
+                          {row.name}
+                        </a>
+                      </td>
+                      <td className={cn("py-2.5 text-right tabular-nums", row.netPL > 0 ? "text-ds-pos" : row.netPL < 0 ? "text-ds-neg" : "text-ds-text2")}>
+                        {row.trades ? money(row.netPL, list) : "—"}
+                      </td>
+                      <td className="py-2.5 text-right tabular-nums text-ds-text2">{row.winRate == null ? "—" : `${row.winRate}%`}</td>
+                      <td className={cn("py-2.5 text-right tabular-nums", row.expectancy > 0 ? "text-ds-pos" : row.expectancy < 0 ? "text-ds-neg" : "text-ds-text2")}>
+                        {money(row.expectancy, list)}
+                      </td>
+                      <td className="py-2.5 text-right tabular-nums text-ds-text2">
+                        {row.profitFactor != null ? row.profitFactor.toFixed(2) : row.grossProfit > 0 ? "∞" : "—"}
+                      </td>
+                      <td className="py-2.5 text-right tabular-nums text-ds-text2">{row.trades}</td>
+                      <td className="py-2.5 text-right tabular-nums text-ds-text2">
+                        {row.bestHour ? `${String(row.bestHour.hour).padStart(2, "0")}:00` : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </SectionCard>
+        ) : null}
 
         {/* Strategy Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -201,12 +274,13 @@ export default function Strategies() {
         </div>
 
         {strategies.length === 0 && !showForm && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Brain className="w-16 h-16 mx-auto text-ds-text2 mb-4" />
-              <p className="text-ds-text2">{t('noStrategiesYet')}</p>
-            </CardContent>
-          </Card>
+          <EmptyState
+            icon={Brain}
+            title={t('noStrategiesYet')}
+            description={t('stEmptyDesc')}
+            actionLabel={t('stAddFirst')}
+            onAction={openForm}
+          />
         )}
       </div>
     </div>
@@ -670,6 +744,12 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
           </div>
         )}
 
+        {stats && stats.trades > 0 && Number(stats.winRate) >= 0 && (
+          <div aria-hidden="true" className="h-[4px] w-full overflow-hidden rounded-full bg-ds-s3">
+            <span className="block h-full rounded-full motion-bar-grow" style={{ width: `${Math.min(100, Number(stats.winRate))}%`, background: accent }} />
+          </div>
+        )}
+
         {stats && stats.trades > 0 && (
           <div
             className={cn(
@@ -700,8 +780,15 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
 
         {strategy.rules && (
           <div className="rounded-xl border border-ds-line bg-ds-s2 p-3">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ds-text2">Zasady</p>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{strategy.rules}</p>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-ds-text2">Zasady</p>
+            <ul className="space-y-1">
+              {rulesFromText(strategy.rules).map((rule, idx) => (
+                <li key={idx} className="flex items-start gap-2 text-sm leading-relaxed text-foreground/90">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ds-text3" aria-hidden="true" />
+                  <span>{rule}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 

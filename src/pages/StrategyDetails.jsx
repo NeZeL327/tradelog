@@ -1,22 +1,34 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from '@/lib/AuthContext';
 import { getStrategies, getTrades, getTradingAccounts } from '@/lib/localStorage';
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, TrendingUp, Target, Award, Star, AlertCircle } from "lucide-react";
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { ArrowLeft, AlertCircle, CheckCircle2 } from "lucide-react";
+import { AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { createPageUrl } from "@/utils";
 import { getActiveAccountIds, getTradeRealizedPL, isClosedTrade } from "@/lib/utils";
-import { CHART, chartTooltipStyle, chartGridProps } from "@/lib/chartTheme";
+import { CHART, chartTooltipStyle, chartGridProps, chartSeriesProps, chartBarRadius } from "@/lib/chartTheme";
+import { PageHeader } from "@/components/common/PageShell";
+import KpiStrip from "@/components/common/KpiStrip";
+import SectionCard from "@/components/common/SectionCard";
+import { useLanguage } from "@/components/LanguageProvider";
+import { usePnlDisplay } from "@/hooks/use-pnl-display";
+import { balanceForTrades } from "@/lib/pnlDisplay";
+import { getTradeTimeSource, zonedWallTimeToDate } from "@/lib/userSettings";
+import { sessionOfInstant } from "@/lib/analyticsStats";
+import { groupSummary, rulesFromText, strategyEquity, summarizeTrades } from "@/lib/strategyStats";
 import QuoteLine from "@/components/QuoteLine";
 
 export default function StrategyDetails() {
-  const { id } = useParams();
+  const params = useParams();
+  const [searchParams] = useSearchParams();
+  // Karty strategii otwierają szczegóły przez ?id=…; trasa nie ma parametru :id.
+  const id = params.id || searchParams.get("id") || "";
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [selectedMetric, setSelectedMetric] = useState("pl");
+  const { t } = useLanguage();
+  const pnl = usePnlDisplay();
 
   const { data: strategy } = useQuery({
     queryKey: ['strategy', id],
@@ -24,7 +36,7 @@ export default function StrategyDetails() {
     queryFn: async () => {
       if (!user?.id || !id) return null;
       const strategies = await getStrategies(user.id);
-      return strategies.find(s => s.id === id) || null;
+      return strategies.find(s => String(s.id) === String(id)) || null;
     }
   });
 
@@ -65,152 +77,175 @@ export default function StrategyDetails() {
     );
   }
 
-  // Pobierz transakcje dla tej strategii
+  // Transakcje tej strategii: zamknięte, z aktywnych kont (jak na liście strategii).
   const activeAccountIds = getActiveAccountIds(accounts);
-
   const strategyTrades = trades.filter(
-    (t) => t.strategy_id === id && isClosedTrade(t) && activeAccountIds.has(String(t.account_id))
+    (t) => String(t.strategy_id) === String(id) && isClosedTrade(t) && activeAccountIds.has(String(t.account_id))
   );
-  const wins = strategyTrades.filter(t => t.outcome === "Win").length;
-  const losses = strategyTrades.filter(t => t.outcome === "Loss").length;
-  const breakevens = strategyTrades.filter(t => t.outcome === "Breakeven").length;
+  const summary = summarizeTrades(strategyTrades);
+  const wins = strategyTrades.filter((t) => t.outcome === "Win").length;
+  const losses = strategyTrades.filter((t) => t.outcome === "Loss").length;
+  const balance = balanceForTrades(strategyTrades, accounts);
+  const money = (value) => (value == null ? "—" : pnl.formatAmount(value, balance));
+  const tone = (value) => (value > 0 ? "profit" : value < 0 ? "loss" : undefined);
 
-  // Kalkulacje
-  const decided = wins + losses;
-  const winRate = decided > 0 ? ((wins / decided) * 100).toFixed(1) : 0;
-  const totalPL = strategyTrades.reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
-  const avgPL = strategyTrades.length > 0 ? (totalPL / strategyTrades.length).toFixed(2) : 0;
-  const winPLSum = strategyTrades.filter(t => t.outcome === "Win").reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
-  const lossPLSum = strategyTrades.filter(t => t.outcome === "Loss").reduce((sum, t) => sum + (getTradeRealizedPL(t) ?? 0), 0);
-  const profitFactor = Math.abs(lossPLSum) > 0 ? (winPLSum / Math.abs(lossPLSum)).toFixed(2) : (winPLSum > 0 ? "∞" : "0");
+  const equity = strategyEquity(strategyTrades);
+  const rules = rulesFromText(strategy.rules);
+  const tradeTimeSource = getTradeTimeSource();
+  const bySymbol = groupSummary(strategyTrades, (t) => t.symbol || null);
+  const bySession = groupSummary(strategyTrades, (t) =>
+    sessionOfInstant(zonedWallTimeToDate(t.date, t.entry_time || t.open_time || t.time, tradeTimeSource))
+  ).map((row) => ({ ...row, label: t(`anSession_${row.key}`) }));
 
-  // Dane do wykresu - P&L po transakcjach
-  const cumulativePL = strategyTrades
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
-    .reduce((acc, trade, idx) => {
-      const pl = getTradeRealizedPL(trade) ?? 0;
-      const cumulative = (acc[idx - 1]?.cumulative || 0) + pl;
-      acc.push({
-        date: trade.date,
-        symbol: trade.symbol,
-        cumulative: parseFloat(cumulative.toFixed(2)),
-        trade_pl: parseFloat(pl.toFixed(2)),
-        outcome: trade.outcome
-      });
-      return acc;
-    }, []);
+  // Wynik po miesiącach (tylko P&L na osi; liczba transakcji w podpowiedzi).
+  const monthMap = new Map();
+  for (const trade of strategyTrades) {
+    const key = String(trade.date || "").slice(0, 7);
+    if (!key) continue;
+    const row = monthMap.get(key) || { month: key, pl: 0, trades: 0 };
+    row.pl += getTradeRealizedPL(trade) ?? 0;
+    row.trades += 1;
+    monthMap.set(key, row);
+  }
+  const monthlyData = [...monthMap.values()]
+    .sort((x, y) => x.month.localeCompare(y.month))
+    .map((row) => ({ ...row, pl: Math.round(row.pl * 100) / 100 }));
 
-  // Wydajność po miesiącach
-  const monthlyStats = strategyTrades.reduce((acc, trade) => {
-    const month = new Date(trade.date).toLocaleString('pl-PL', { year: 'numeric', month: 'short' });
-    if (!acc[month]) {
-      acc[month] = { month, trades: 0, wins: 0, losses: 0, pl: 0 };
-    }
-    acc[month].trades += 1;
-    if (trade.outcome === "Win") acc[month].wins += 1;
-    if (trade.outcome === "Loss") acc[month].losses += 1;
-    acc[month].pl += getTradeRealizedPL(trade) ?? 0;
-    return acc;
-  }, {});
+  const kpiItems = [
+    { key: "net", label: t('stColNet'), value: summary.trades ? money(summary.netPL) : null, tone: tone(summary.netPL) },
+    { key: "wr", label: t('winRate'), value: summary.winRate == null ? null : `${summary.winRate}%`, hint: `${wins}W · ${losses}L` },
+    { key: "exp", label: t('expectancy'), value: money(summary.expectancy), tone: tone(summary.expectancy), hint: t('anPerTrade') },
+    { key: "pf", label: t('profitFactor'), value: summary.profitFactor != null ? summary.profitFactor.toFixed(2) : summary.grossProfit > 0 ? "∞" : null },
+    { key: "trades", label: t('trades'), value: String(summary.trades) },
+    { key: "rating", label: t('stRating'), value: strategy.performance_rating ? `${strategy.performance_rating} / 5` : null },
+  ];
 
-  const monthlyData = Object.values(monthlyStats).map(m => ({
-    ...m,
-    pl: parseFloat(m.pl.toFixed(2)),
-    winRate: (m.wins + m.losses) > 0 ? ((m.wins / (m.wins + m.losses)) * 100).toFixed(1) : 0
-  }));
+  const GroupTable = ({ rows, labelKey = "key" }) => (
+    <table className="w-full min-w-[420px] text-[13px]">
+      <thead>
+        <tr className="border-b border-ds-line text-ds-text3">
+          <th className="py-2 text-left font-medium">{t('stColGroup')}</th>
+          <th className="py-2 text-right font-medium">{t('trades')}</th>
+          <th className="py-2 text-right font-medium">{t('winRate')}</th>
+          <th className="py-2 text-right font-medium">{t('expectancy')}</th>
+          <th className="py-2 text-right font-medium">{t('stColNet')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.key} className="border-b border-ds-line last:border-0">
+            <td className="py-2 text-ds-text">{row[labelKey]}</td>
+            <td className="py-2 text-right tabular-nums text-ds-text2">{row.trades}</td>
+            <td className="py-2 text-right tabular-nums text-ds-text2">{row.winRate == null ? "—" : `${row.winRate}%`}</td>
+            <td className={`py-2 text-right tabular-nums ${row.expectancy > 0 ? "text-ds-pos" : row.expectancy < 0 ? "text-ds-neg" : "text-ds-text2"}`}>{money(row.expectancy)}</td>
+            <td className={`py-2 text-right tabular-nums ${row.netPL > 0 ? "text-ds-pos" : row.netPL < 0 ? "text-ds-neg" : "text-ds-text2"}`}>{money(row.netPL)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 
   return (
     <div className="w-full min-h-0 space-y-3 dashboard-surface">
       <div className="max-w-none mx-0 space-y-3">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(createPageUrl('Strategies'))}
-            className="cyber-btn-outline"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="cyber-page-title">{strategy.name}</h1>
-            <p className="cyber-page-sub">{strategy.category}</p>
+        <PageHeader
+          title={strategy.name}
+          subtitle={strategy.category}
+          actions={(
+            <>
+              <QuoteLine className="hidden lg:flex shrink-0" />
+              <Button variant="outline" onClick={() => navigate(createPageUrl('Strategies'))} className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                {t('stBack')}
+              </Button>
+            </>
+          )}
+        />
+        <KpiStrip items={kpiItems} columns="grid-cols-2 sm:grid-cols-3 xl:grid-cols-6" />
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <SectionCard title={t('stEquity')} className="lg:col-span-2" bodyClassName="p-4 pt-2">
+            {equity.length > 1 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={equity} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                  <defs>
+                    <linearGradient id="colorCum" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CHART.line} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={CHART.line} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid {...chartGridProps} />
+                  <XAxis dataKey="n" stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} minTickGap={24} />
+                  <YAxis stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} width={60} />
+                  <Tooltip
+                    contentStyle={chartTooltipStyle}
+                    labelFormatter={(label, payload) => {
+                      const point = payload?.[0]?.payload;
+                      return point ? `${t('anTradeNo')} ${point.n} · ${point.date.split("-").reverse().join(".")}` : label;
+                    }}
+                    formatter={(value) => [money(value), t('anEquity')]}
+                  />
+                  <Area {...chartSeriesProps} type="monotone" dataKey="equity" stroke={CHART.line} strokeWidth={2} fillOpacity={1} fill="url(#colorCum)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="py-10 text-center text-[13px] text-ds-text3">{t('stNoTradesYet')}</p>
+            )}
+          </SectionCard>
+
+          <SectionCard title={t('stRules')} description={rules.length ? t('stRulesDesc') : undefined}>
+            {rules.length ? (
+              <ul className="space-y-2">
+                {rules.map((rule, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-[13px] leading-relaxed text-ds-text">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-ds-text3" aria-hidden="true" />
+                    <span>{rule}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[13px] text-ds-text3">{t('stNoRules')}</p>
+            )}
+          </SectionCard>
+        </div>
+
+        {strategyTrades.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <SectionCard title={t('stBySymbol')} bodyClassName="p-4 overflow-x-auto">
+              <GroupTable rows={bySymbol} />
+            </SectionCard>
+            <SectionCard title={t('anBySession')} description={t('anBySessionDesc')} bodyClassName="p-4 overflow-x-auto">
+              {bySession.length ? <GroupTable rows={bySession} labelKey="label" /> : <p className="text-[13px] text-ds-text3">{t('anSessionUnknown')}</p>}
+            </SectionCard>
           </div>
-          <QuoteLine className="hidden lg:flex shrink-0" />
-        </div>
+        ) : null}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Statystyki */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <TrendingUp className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-[22px] font-semibold text-foreground">{winRate}%</p>
-                <p className="text-sm text-muted-foreground">Win Rate</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Award className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-[22px] font-semibold text-foreground">{strategyTrades.length}</p>
-                <p className="text-sm text-muted-foreground">Transakcji</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Target className={`w-8 h-8 mx-auto mb-2 ${totalPL >= 0 ? "text-ds-pos" : "text-ds-neg"}`} />
-                <p className={`text-[22px] font-semibold ${totalPL >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
-                  {totalPL > 0 ? '+' : ''}{totalPL.toFixed(2)}
-                </p>
-                <p className="text-sm text-muted-foreground">Łączny P&L</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Star className="w-8 h-8 mx-auto text-ds-warn mb-2" />
-                <div className="flex justify-center gap-1 mb-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-4 h-4"
-                      fill={i < (strategy.performance_rating || 0) ? "var(--ds-warn)" : "none"}
-                      color={i < (strategy.performance_rating || 0) ? "var(--ds-warn)" : "var(--ds-line)"}
-                    />
+        {monthlyData.length > 0 ? (
+          <SectionCard title={t('stMonthly')} bodyClassName="p-4 pt-2">
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={monthlyData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <CartesianGrid {...chartGridProps} />
+                <XAxis dataKey="month" stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} />
+                <YAxis stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} width={60} />
+                <Tooltip
+                  contentStyle={chartTooltipStyle}
+                  labelFormatter={(label, payload) => {
+                    const row = payload?.[0]?.payload;
+                    return row ? `${label} · ${row.trades} ${t('trades')}` : label;
+                  }}
+                  formatter={(value) => [money(value), t('netPL')]}
+                />
+                <Bar {...chartSeriesProps} dataKey="pl" radius={chartBarRadius} maxBarSize={48}>
+                  {monthlyData.map((row) => (
+                    <Cell key={row.month} fill={row.pl >= 0 ? CHART.profit : CHART.loss} />
                   ))}
-                </div>
-                <p className="text-sm text-muted-foreground">Ocena</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </SectionCard>
+        ) : null}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card className="text-center p-6">
-            <div className="text-sm font-semibold text-muted-foreground mb-2">Wygrane</div>
-            <p className="text-2xl font-bold text-ds-pos">{wins}</p>
-          </Card>
-          <Card className="text-center p-6">
-            <div className="text-sm font-semibold text-muted-foreground mb-2">Przegrane</div>
-            <p className="text-2xl font-bold text-ds-neg">{losses}</p>
-          </Card>
-          <Card className="text-center p-6">
-            <div className="text-sm font-semibold text-muted-foreground mb-2">Średni P&L</div>
-            <p className={`text-2xl font-bold ${avgPL >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
-              {parseFloat(avgPL) > 0 ? '+' : ''}{avgPL}
-            </p>
-          </Card>
-        </div>
-
-        {/* Setup i wskaźniki */}
+        {/* Setup i wskaźniki (opisy z dokumentu strategii, bez zmian) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {strategy.setup_description && (
             <Card>
@@ -279,53 +314,6 @@ export default function StrategyDetails() {
             </Card>
           )}
         </div>
-
-        {/* Wykresy wydajności */}
-        {strategyTrades.length > 0 && (
-          <>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-foreground">Kumulacyjny P&L</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={cumulativePL}>
-                    <defs>
-                      <linearGradient id="colorCum" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={CHART.line} stopOpacity={0.35} />
-                        <stop offset="95%" stopColor={CHART.line} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid {...chartGridProps} />
-                    <XAxis dataKey="date" stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} />
-                    <YAxis stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} />
-                    <Tooltip contentStyle={chartTooltipStyle} formatter={(value) => value.toFixed(2)} />
-                    <Area type="monotone" dataKey="cumulative" stroke={CHART.line} fillOpacity={1} fill="url(#colorCum)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-foreground">Wydajność miesięczna</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={monthlyData}>
-                    <CartesianGrid {...chartGridProps} />
-                    <XAxis dataKey="month" stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} />
-                    <YAxis stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} />
-                    <Tooltip contentStyle={chartTooltipStyle} />
-                    <Legend />
-                    <Bar dataKey="pl" fill={CHART.profit} name="P&L" />
-                    <Bar dataKey="trades" fill={CHART.line} name="Transakcje" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </>
-        )}
 
         {/* Komentarz */}
         {strategy.comments && (
