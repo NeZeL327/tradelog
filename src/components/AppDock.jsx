@@ -15,6 +15,7 @@ import {
   Plus,
   Settings,
   Wallet,
+  FileText,
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageProvider";
 import ThoughtOfDay from "@/components/ThoughtOfDay";
@@ -39,6 +40,7 @@ const ICONS = {
   Wallet,
   CreditCard,
   Settings,
+  FileText,
 };
 
 function normalizePath(p) {

@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import {
   LayoutDashboard, BookOpen, Calendar,
   BarChart3, FlaskConical, Brain, Calculator, Wallet, Settings as SettingsIcon,
-  CandlestickChart,
+  CandlestickChart, FileText,
 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -26,6 +26,7 @@ function navItems(t) {
     { title: t("analytics"), url: createPageUrl("Analytics"), icon: BarChart3 },
     { title: t("backtesting"), url: createPageUrl("Backtesting"), icon: FlaskConical },
     { title: t("strategies"), url: createPageUrl("Strategies"), icon: Brain },
+    { title: t("reports"), url: createPageUrl("Reports"), icon: FileText },
     { title: t("calculators"), url: createPageUrl("Calculators"), icon: Calculator },
     { title: t("accounts"), url: createPageUrl("Accounts"), icon: Wallet },
     { title: t("settings"), url: createPageUrl("Settings"), icon: SettingsIcon },

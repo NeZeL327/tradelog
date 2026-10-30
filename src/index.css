@@ -3744,3 +3744,34 @@ main.dash-scr[data-scrolled="true"] {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
   mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
 }
+
+/* ===== Wydruk raportu (window.print): bez nawigacji i przycisków, treść na całą szerokość ===== */
+@media print {
+  .app-side-nav,
+  header.app-topbar,
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body,
+  .app-atmosphere,
+  .app-window,
+  main.dash-scr {
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+  main.dash-scr {
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    animation: none !important;
+  }
+  section {
+    break-inside: avoid;
+  }
+}

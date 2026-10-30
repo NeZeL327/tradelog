@@ -17,6 +17,7 @@ export const ALL_NAV_ITEMS = [
   { key: "analytics", titleKey: "analytics", fallbackTitle: "Analityka", url: createPageUrl("Analytics"), iconName: "BarChart3", group: "analysis" },
   { key: "backtesting", titleKey: "backtesting", fallbackTitle: "Backtesting", url: createPageUrl("Backtesting"), iconName: "FlaskConical", group: "analysis" },
   { key: "strategies", titleKey: "strategies", fallbackTitle: "Strategie", url: createPageUrl("Strategies"), iconName: "Brain", group: "analysis" },
+  { key: "reports", titleKey: "reports", fallbackTitle: "Raporty", url: createPageUrl("Reports"), iconName: "FileText", group: "analysis" },
   { key: "calculators", titleKey: "calculators", fallbackTitle: "Kalkulatory", url: createPageUrl("Calculators"), iconName: "Calculator", group: "tools" },
   { key: "accounts", titleKey: "accounts", fallbackTitle: "Konta", url: createPageUrl("Accounts"), iconName: "Wallet", group: "account" },
   { key: "billing", titleKey: "billing", fallbackTitle: "Subskrypcja", url: createPageUrl("Billing"), iconName: "CreditCard", group: "account" },

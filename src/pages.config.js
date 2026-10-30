@@ -58,6 +58,7 @@ const CalculatorPopup = lazy(() => import('./pages/CalculatorPopup'));
 const Calculators = lazy(() => import('./pages/Calculators'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Journal = lazy(() => import('./pages/Journal'));
+const Reports = lazy(() => import('./pages/Reports'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Strategies = lazy(() => import('./pages/Strategies'));
 const StrategyDetails = lazy(() => import('./pages/StrategyDetails'));
@@ -75,6 +76,7 @@ export const PAGES = {
     "Calculators": Calculators,
     "Dashboard": Dashboard,
     "Journal": Journal,
+    "Reports": Reports,
     "Settings": Settings,
     "Strategies": Strategies,
     "StrategyDetails": StrategyDetails,
