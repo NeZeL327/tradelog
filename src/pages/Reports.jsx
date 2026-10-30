@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useAuth } from "@/lib/AuthContext";
-import { getStrategies, getTrades, getTradingAccounts } from "@/lib/localStorage";
+import { createReport, getReports, getStrategies, getTrades, getTradingAccounts, updateReport } from "@/lib/localStorage";
 import { useLanguage } from "@/components/LanguageProvider";
 import { usePnlDisplay } from "@/hooks/use-pnl-display";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,75 @@ import { balanceForTrades } from "@/lib/pnlDisplay";
 import { getActiveAccountIds, tradeBelongsToActiveAccount } from "@/lib/utils";
 import { getTradeTimeSource, zonedWallTimeToDate } from "@/lib/userSettings";
 import { CHART, chartGridProps, chartSeriesProps, chartTooltipStyle } from "@/lib/chartTheme";
-import { PERIOD_KINDS, buildPeriodReport, periodIncludesFuture, periodLabel, periodRange, shiftPeriod } from "@/lib/periodReport";
+import { PERIOD_KINDS, buildPeriodReport, findPeriodReport, periodIncludesFuture, periodLabel, periodNotePayload, periodRange, shiftPeriod } from "@/lib/periodReport";
+import { toDateValue } from "@/lib/propRules";
+import { format } from "date-fns";
 
 const fmtDay = (key) => (key ? key.split("-").reverse().join(".") : "—");
+
+/**
+ * Notatka i wnioski okresu — zapis w istniejącym formacie dokumentu raportu (users/{uid}/reports):
+ * pola okresu + reflection (notatka) i key_lesson (wnioski). Istniejący dokument: zmieniane tylko te dwa pola.
+ */
+function PeriodNotes({ userId, range, t }) {
+  const queryClient = useQueryClient();
+  const { data: reports = [] } = useQuery({ queryKey: ["reports", userId], queryFn: () => getReports(userId), enabled: !!userId });
+  const existing = findPeriodReport(reports, range);
+  const [note, setNote] = useState("");
+  const [conclusions, setConclusions] = useState("");
+  const [savedAt, setSavedAt] = useState(null);
+
+  // Nowy okres albo świeżo wczytany dokument: pola z dokumentu (albo puste).
+  useEffect(() => {
+    setNote(existing?.reflection || "");
+    setConclusions(existing?.key_lesson || "");
+    setSavedAt(null);
+  }, [range.kind, range.start, existing?.id]);
+
+  const save = useMutation({
+    mutationFn: () => {
+      const payload = periodNotePayload(range, { note, conclusions });
+      return existing
+        ? updateReport(userId, existing.id, { reflection: payload.reflection, key_lesson: payload.key_lesson })
+        : createReport(userId, { ...payload, status: "draft" });
+    },
+    onSuccess: () => {
+      setSavedAt(new Date());
+      queryClient.invalidateQueries({ queryKey: ["reports", userId] });
+    },
+  });
+
+  const dirty = note !== (existing?.reflection || "") || conclusions !== (existing?.key_lesson || "");
+  const lastChange = savedAt || toDateValue(existing?.updatedAt);
+  const fieldClass = "w-full resize-y rounded-[10px] border border-ds-line bg-ds-s2 p-3 text-[13px] text-ds-text placeholder:text-ds-text3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ds-focus)]";
+
+  return (
+    <SectionCard title={t("rpNotes")} description={t("rpNotesDesc")}>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <label className="block">
+          <span className="type-section">{t("rpNote")}</span>
+          <textarea rows={5} value={note} onChange={(event) => setNote(event.target.value)} placeholder={t("rpNotePlaceholder")} className={`mt-1.5 ${fieldClass}`} />
+        </label>
+        <label className="block">
+          <span className="type-section">{t("rpConclusions")}</span>
+          <textarea rows={5} value={conclusions} onChange={(event) => setConclusions(event.target.value)} placeholder={t("rpConclusionsPlaceholder")} className={`mt-1.5 ${fieldClass}`} />
+        </label>
+      </div>
+      <div className="no-print mt-3 flex flex-wrap items-center justify-end gap-3">
+        <span className="text-[12px] text-ds-text3" aria-live="polite">
+          {save.isError
+            ? <span className="text-ds-neg">{t("rpSaveError")}</span>
+            : lastChange
+              ? `${savedAt ? t("rpSaved") : t("rpLastSaved")} ${format(lastChange, "dd.MM.yyyy HH:mm")}`
+              : ""}
+        </span>
+        <Button onClick={() => save.mutate()} disabled={!userId || !dirty || save.isPending}>
+          {save.isPending ? t("rpSaving") : t("rpSave")}
+        </Button>
+      </div>
+    </SectionCard>
+  );
+}
 
 /** Raport okresowy: tylko odczyt z istniejących transakcji (aktywne konta). Notatki bez zapisu do czasu zgody. */
 export default function Reports() {
@@ -184,15 +250,7 @@ export default function Reports() {
         </div>
       ) : null}
 
-      <SectionCard title={t("rpNotes")} description={t("rpNotesPending")} className="no-print">
-        <textarea
-          disabled
-          rows={4}
-          aria-label={t("rpNotes")}
-          placeholder={t("rpNotesPlaceholder")}
-          className="w-full cursor-not-allowed resize-none rounded-[10px] border border-ds-line bg-ds-s2 p-3 text-[13px] text-ds-text3 placeholder:text-ds-text3"
-        />
-      </SectionCard>
+      <PeriodNotes userId={user?.id} range={range} t={t} />
     </PageShell>
   );
 }

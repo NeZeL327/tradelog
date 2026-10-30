@@ -86,3 +86,21 @@ test("etykiety okresów", () => {
   assert.equal(r.periodIncludesFuture(r.periodRange("month", d), d), true);
   assert.equal(r.periodIncludesFuture(r.periodRange("month", new Date(2026, 8, 3)), d), false);
 });
+
+test("notatka okresu: pola zgodne ze starym modułem, wyszukiwanie dokumentu", () => {
+  const month = r.periodRange("month", new Date(2026, 9, 30));
+  assert.deepEqual(r.periodNotePayload(month, { note: "Dobry miesiąc", conclusions: "Mniej transakcji w piątki" }), {
+    report_type: "monthly", year: 2026, month: 10, period_start: "2026-10-01", period_end: "2026-10-31", sort_date: "2026-10-01",
+    reflection: "Dobry miesiąc", key_lesson: "Mniej transakcji w piątki",
+  });
+  const week = r.periodRange("week", new Date(2026, 9, 30));
+  assert.equal(r.reportPeriodFields(week).week_number, 44);
+  assert.equal(r.reportPeriodFields(week).report_type, "weekly");
+  const reports = [
+    { id: "x", report_type: "weekly", period_start: "2026-10-01" },
+    { id: "y", report_type: "monthly", period_start: "2026-10-01", reflection: "stara" },
+  ];
+  assert.equal(r.findPeriodReport(reports, month)?.id, "y");
+  assert.equal(r.findPeriodReport(reports, week), null);
+  assert.equal(r.findPeriodReport([], month), null);
+});

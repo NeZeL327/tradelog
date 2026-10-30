@@ -78,3 +78,33 @@ export function periodLabel(range, { months = [], weekWord = "Tydzień" } = {}) 
 
 /** Czy okres kończy się w przyszłości względem `today` (do blokady strzałki "dalej"). */
 export const periodIncludesFuture = (range, today = new Date()) => range.end > keyOf(today);
+
+// Notatka okresu zapisywana w istniejącym formacie dokumentów raportu (users/{uid}/reports),
+// tych samych pól co stary moduł Raporty — jeden dokument na okres.
+const REPORT_TYPES = { week: "weekly", month: "monthly", quarter: "quarterly", year: "yearly" };
+
+/** Pola identyfikujące okres w dokumencie raportu. */
+export function reportPeriodFields(range) {
+  const fields = {
+    report_type: REPORT_TYPES[range.kind],
+    year: range.year,
+    period_start: range.start,
+    period_end: range.end,
+    sort_date: range.start,
+  };
+  if (range.kind === "week") fields.week_number = range.index;
+  if (range.kind === "month") fields.month = range.index;
+  if (range.kind === "quarter") fields.quarter = range.index;
+  return fields;
+}
+
+/** Istniejący dokument raportu dla okresu (ten sam typ i data początku) albo null. */
+export function findPeriodReport(reports, range) {
+  const type = REPORT_TYPES[range.kind];
+  return (reports || []).find((report) => report?.report_type === type && report?.period_start === range.start) || null;
+}
+
+/** Dane do zapisu notatki: tylko pola okresu + reflection (notatka) i key_lesson (wnioski). */
+export function periodNotePayload(range, { note = "", conclusions = "" } = {}) {
+  return { ...reportPeriodFields(range), reflection: String(note), key_lesson: String(conclusions) };
+}
