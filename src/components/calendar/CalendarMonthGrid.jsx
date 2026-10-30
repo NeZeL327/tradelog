@@ -39,7 +39,7 @@ export function DayTooltipBody({ cell, fmt, plText, locale }) {
   );
 }
 
-function DayCell({ cell, index, wave, fmt, maxAbs, isToday, isSelected, isFocusTarget, density, plText, locale, onSelect, onFocusKey }) {
+function DayCell({ cell, index, wave, extreme, fmt, maxAbs, isToday, isSelected, isFocusTarget, density, plText, locale, onSelect, onFocusKey }) {
   const bucket = cell.bucket;
   const has = Boolean(bucket?.trades.length);
   const value = fmt.value(bucket);
@@ -58,6 +58,7 @@ function DayCell({ cell, index, wave, fmt, maxAbs, isToday, isSelected, isFocusT
         compact ? "min-h-[64px] gap-1 p-2" : "min-h-[104px] gap-1.5 p-2.5"
       } ${isSelected ? "border-ds-frame bg-ds-sel" : "border-transparent hover:border-ds-line hover:bg-ds-s3"} ${cell.inMonth ? "" : "opacity-35"}`}
       style={{ "--i": index, "--d": wave }}
+      data-extreme={extreme || undefined}
     >
       {/* Kolor zysku/straty jako osobna warstwa: wchodzi po komórce i płynnie gaśnie przy zaznaczeniu. */}
       {has ? (
@@ -149,6 +150,18 @@ export default function CalendarMonthGrid({
   const gridRef = useRef(null);
   const cells = month.weeks.flatMap((week) => week.cells);
   const maxAbs = fmt.maxAbs(cells.map((cell) => cell.bucket));
+  // Najlepszy i najgorszy dzień miesiąca (tylko dni z transakcjami w tym miesiącu) — delikatny obrys.
+  let bestKey = null;
+  let worstKey = null;
+  let bestValue = 0;
+  let worstValue = 0;
+  for (const cell of cells) {
+    if (!cell.inMonth || !cell.bucket?.trades.length) continue;
+    const value = fmt.value(cell.bucket);
+    if (value == null) continue;
+    if (value > bestValue) { bestValue = value; bestKey = cell.key; }
+    if (value < worstValue) { worstValue = value; worstKey = cell.key; }
+  }
   const maxAbsWeek = fmt.maxAbs(month.weeks.map((week) => week.bucket));
   const weekdayIdx = hideWeekends ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6];
   const labels = plText ? WEEKDAYS_PL : WEEKDAYS_EN;
@@ -218,6 +231,7 @@ export default function CalendarMonthGrid({
                     cell={cell}
                     index={row * 7 + index}
                     wave={row + index}
+                    extreme={cell.key === bestKey ? "best" : cell.key === worstKey ? "worst" : null}
                     fmt={fmt}
                     maxAbs={maxAbs}
                     isToday={cell.key === todayKey}
@@ -236,6 +250,18 @@ export default function CalendarMonthGrid({
           ))}
         </motion.div>
         </AnimatePresence>
+        </div>
+        {/* Legenda skali kolorów: od straty do zysku; obrys = najlepszy / najgorszy dzień. */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1 text-[11px] text-ds-text3">
+          <div className="flex items-center gap-2" aria-hidden="true">
+            <span>{plText ? "Strata" : "Loss"}</span>
+            <span className="h-2 w-28 rounded-full" style={{ background: "linear-gradient(90deg, color-mix(in srgb, var(--ds-neg) 24%, transparent), transparent 50%, color-mix(in srgb, var(--ds-pos) 24%, transparent))" }} />
+            <span>{plText ? "Zysk" : "Profit"}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-[4px]" style={{ boxShadow: "inset 0 0 0 1.5px var(--ds-pos)" }} aria-hidden="true" />{plText ? "Najlepszy dzień" : "Best day"}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-3 w-3 rounded-[4px]" style={{ boxShadow: "inset 0 0 0 1.5px var(--ds-neg)" }} aria-hidden="true" />{plText ? "Najgorszy dzień" : "Worst day"}</span>
+          </div>
         </div>
       </div>
     </TooltipProvider>

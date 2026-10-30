@@ -3775,3 +3775,11 @@ main.dash-scr[data-scrolled="true"] {
     break-inside: avoid;
   }
 }
+
+/* ===== H6 Kalendarz: obrys najlepszego / najgorszego dnia (bez zmiany tła) ===== */
+.cal-cell[data-extreme="best"] {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ds-pos) 70%, transparent);
+}
+.cal-cell[data-extreme="worst"] {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ds-neg) 70%, transparent);
+}
