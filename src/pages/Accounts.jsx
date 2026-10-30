@@ -1,4 +1,8 @@
 ﻿import { useState, useEffect } from "react";
+import PropPanel from "@/components/accounts/PropPanel";
+import KpiStrip from "@/components/common/KpiStrip";
+import { PageHeader } from "@/components/common/PageShell";
+import { computePropStatus } from "@/lib/propRules";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
 import { getTradingAccounts, createTradingAccount, deleteTradingAccount, updateTradingAccount, getTrades } from "@/lib/localStorage";
@@ -20,9 +24,12 @@ import MtAccountLink from "@/components/MtAccountLink";
 import QuoteLine from "@/components/QuoteLine";
 import { SkeletonCardGrid } from "@/components/ui/skeleton-block";
 import { usePnlDisplay } from "@/hooks/use-pnl-display";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export default function Accounts() {
   const { user } = useAuth();
+  const { t } = useLanguage();
+  const pnl = usePnlDisplay();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
@@ -137,6 +144,29 @@ export default function Accounts() {
   }
 
   const isAccountActive = (account) => account.is_active !== false && account.status !== 'Inactive';
+  // Pasek liczb strony: tylko odczyt z kont i zamkniętych transakcji (te same źródła co karty).
+  const currencies = [...new Set(accounts.map((account) => account.currency).filter(Boolean))];
+  const singleCurrency = currencies.length <= 1 ? (currencies[0] || "") : null;
+  const statuses = accounts.map((account) => ({ account, status: computePropStatus(account, trades) }));
+  const initialSum = statuses.reduce((sum, { status }) => sum + (status.initial || 0), 0);
+  const netSum = statuses.reduce((sum, { status }) => sum + status.netPL, 0);
+  const capitalSum = statuses.reduce((sum, { status }) => sum + (status.equity ?? 0), 0);
+  const closedCount = trades.filter((trade) => accounts.some((account) => String(account.id) === String(trade.account_id)) && isClosedTrade(trade)).length;
+  const alertCount = statuses.filter(({ status }) => [status.daily?.todayUsed, status.total?.used].some((used) => used != null && used > 0.7)).length;
+  const fmtMoney = (value, signed = false) => {
+    if (singleCurrency == null || !Number.isFinite(value)) return null;
+    if (pnl.mode === "percent") {
+      return initialSum > 0 ? `${signed && value > 0 ? "+" : ""}${((value / initialSum) * 100).toFixed(2)}%` : null;
+    }
+    return `${signed && value > 0 ? "+" : ""}${value.toFixed(2)}${singleCurrency ? ` ${singleCurrency}` : ""}`;
+  };
+  const kpiItems = [
+    { key: "active", label: t("accKpiActive"), value: `${accounts.filter(isAccountActive).length} / ${accounts.length}` },
+    { key: "capital", label: t("accKpiCapital"), value: pnl.mode === "percent" ? null : fmtMoney(capitalSum), hint: singleCurrency == null ? t("accKpiMixed") : undefined },
+    { key: "net", label: t("accKpiNet"), value: fmtMoney(netSum, true), tone: netSum > 0 ? "profit" : netSum < 0 ? "loss" : undefined, hint: singleCurrency == null ? t("accKpiMixed") : undefined },
+    { key: "trades", label: t("accKpiTrades"), value: String(closedCount) },
+    { key: "alerts", label: t("accKpiAlerts"), value: String(alertCount), tone: alertCount > 0 ? "warn" : undefined, hint: t("accKpiAlertsHint") },
+  ];
   const visibleAccounts = accounts.filter((account) => {
     if (accountVisibilityFilter === 'active') return isAccountActive(account);
     if (accountVisibilityFilter === 'inactive') return !isAccountActive(account);
@@ -146,12 +176,11 @@ export default function Accounts() {
   return (
     <div className="w-full min-h-0 dashboard-surface space-y-3">
       <div className="max-w-none mx-0 space-y-3">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex-1">
-            <h1 className="cyber-page-title">Konta tradingowe</h1>
-            <p className="cyber-page-sub">Zarządzaj swoimi kontami handlowymi</p>
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+        <PageHeader
+          title={t("accPageTitle")}
+          subtitle={t("accPageSub")}
+          actions={(
+            <>
             <QuoteLine className="hidden lg:flex shrink-0" />
             <Select value={accountVisibilityFilter} onValueChange={setAccountVisibilityFilter}>
               <SelectTrigger className="w-[190px] bg-card border-ds-line">
@@ -195,8 +224,10 @@ export default function Accounts() {
                 />
               </DialogContent>
             </Dialog>
-          </div>
-        </div>
+            </>
+          )}
+        />
+        {accounts.length > 0 ? <KpiStrip items={kpiItems} /> : null}
 
         {accounts.length === 0 ? (
           <div className="text-center py-12 px-4">
@@ -386,9 +417,9 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
               </span>
             </div>
           </div>
-          <div className="order-1 flex items-center justify-between gap-2">
+          <div className="order-1 flex flex-wrap items-center justify-between gap-2">
             {getAccountTypeBadge()}
-          <div className="flex gap-1 flex-shrink-0">
+          <div className="flex flex-wrap justify-end gap-1">
             <AccountImportButton
               account={account}
               existingTrades={trades}
@@ -469,30 +500,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
           </div>
         </div>
 
-        {(account.max_daily_loss_percent || account.max_account_loss || account.profit_target) && (
-          <div className={`pt-3 border-t ${getAccountDividerColor()}`}>
-            <div className="grid grid-cols-3 gap-3 text-[13px]">
-              {account.max_daily_loss_percent && (
-                <div className="min-w-0">
-                  <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Max strata</span>
-                  <div className="font-semibold mt-0.5">{account.max_daily_loss_percent}%</div>
-                </div>
-              )}
-              {account.max_account_loss && (
-                <div className="min-w-0">
-                  <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Limit konta</span>
-                  <div className="font-semibold mt-0.5">{account.max_account_loss}%</div>
-                </div>
-              )}
-              {account.profit_target && (
-                <div className="min-w-0">
-                  <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Cel zysku</span>
-                  <div className="font-semibold mt-0.5 text-ds-pos">{account.profit_target}</div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        <PropPanel account={account} trades={trades} />
 
         {account.notes && (
           <div className={`pt-3 border-t ${getAccountDividerColor()}`}>
