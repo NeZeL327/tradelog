@@ -460,7 +460,7 @@ export default function Calculators() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)_280px] gap-4 items-start">
-        <aside className="rounded-2xl border border-border/70 bg-card/60 p-3 space-y-4">
+        <aside className="rounded-2xl border border-ds-line bg-card/60 p-3 space-y-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Moje kalkulatory</p>
             <Button type="button" className="w-full gap-1 mb-2" size="sm" onClick={() => setWizardOpen(true)}>
@@ -479,7 +479,7 @@ export default function Calculators() {
                       <span className="truncate text-sm">{item.name}</span>
                     </button>
                     <button type="button" className="p-1" onClick={() => toggleFavorite(item.id)} aria-label="Ulubione">
-                      <Star className={cn("w-3.5 h-3.5", hub.favorites?.[item.id] ? "fill-warning text-warning" : "text-muted-foreground")} />
+                      <Star className={cn("w-3.5 h-3.5", hub.favorites?.[item.id] ? "fill-ds-warn text-ds-warn" : "text-muted-foreground")} />
                     </button>
                     <ItemMenu
                       onEdit={() => { selectId(item.id); setSettingsOpen(true); }}
@@ -521,7 +521,7 @@ export default function Calculators() {
                     <IconByName name={custom?.icon || (selectedId === "m1" ? "Crosshair" : "ListChecks")} className="w-5 h-5 text-primary" />
                     {title}
                     {custom || isBuiltinSetup(selectedId) ? (
-                      <span className="text-[10px] font-normal uppercase tracking-wide text-muted-foreground border border-border rounded px-1.5 py-0.5">Edytowalna</span>
+                      <span className="text-[10px] font-normal uppercase tracking-wide text-muted-foreground border border-ds-line rounded px-1.5 py-0.5">Edytowalna</span>
                     ) : null}
                   </CardTitle>
                   <CardDescription className="mt-1">{description}</CardDescription>
@@ -640,7 +640,7 @@ export default function Calculators() {
                     />
                     <div className="grid grid-cols-2 gap-2 mt-3">
                       {images.map((src, idx) => (
-                        <SafeImage key={idx} src={src} alt="" className="rounded-lg border border-border object-cover max-h-40 w-full" />
+                        <SafeImage key={idx} src={src} alt="" className="rounded-lg border border-ds-line object-cover max-h-40 w-full" />
                       ))}
                     </div>
                   </TabsContent>
@@ -666,7 +666,7 @@ export default function Calculators() {
                   </div>
                 </div>
                 <p className="text-center text-3xl font-bold text-primary">{setupScore.gradeLabel}</p>
-                <p className={cn("text-center text-sm font-medium", setupScore.requiredOk ? "text-profit" : "text-warning")}>
+                <p className={cn("text-center text-sm font-medium", setupScore.requiredOk ? "text-ds-pos" : "text-ds-warn")}>
                   {setupScore.requiredOk ? "Warunki spełnione" : "Warunki nie spełnione"}
                 </p>
                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -792,7 +792,7 @@ function ItemMenu({ onEdit, onRename, onDuplicate, onDefault, onDelete }) {
         {onDelete && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-loss" onClick={onDelete}><Trash2 className="w-3.5 h-3.5" /> Usuń</DropdownMenuItem>
+            <DropdownMenuItem className="text-ds-neg" onClick={onDelete}><Trash2 className="w-3.5 h-3.5" /> Usuń</DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>
@@ -802,7 +802,7 @@ function ItemMenu({ onEdit, onRename, onDuplicate, onDefault, onDelete }) {
 
 function MiniStat({ label, value }) {
   return (
-    <div className="rounded-md border border-border/60 px-2 py-1.5">
+    <div className="rounded-md border border-ds-line px-2 py-1.5">
       <p className="text-[10px] uppercase text-muted-foreground">{label}</p>
       <p className="font-semibold tabular-nums">{value}</p>
     </div>

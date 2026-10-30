@@ -146,7 +146,7 @@ function GradeStars({ value, size = "w-3.5 h-3.5" }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <Star
           key={i}
-          className={`${size} ${i <= n ? "fill-warning text-warning" : "fill-transparent text-muted-foreground"}`}
+          className={`${size} ${i <= n ? "fill-ds-warn text-ds-warn" : "fill-transparent text-muted-foreground"}`}
         />
       ))}
     </span>
@@ -908,7 +908,7 @@ export default function Backtesting() {
                 <div className="mt-1.5 text-[20px] font-semibold text-foreground tabular-nums">{stats.total}</div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{stats.wins}W / {stats.losses}L / {stats.be}BE</p>
               </div>
-              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--primary)) ${stats.total > 0 ? 100 : 0}%, hsl(var(--border)) 0)` }} />
+              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--primary)) ${stats.total > 0 ? 100 : 0}%, var(--ds-line) 0)` }} />
             </div>
           </CardContent>
         </Card>
@@ -923,7 +923,7 @@ export default function Backtesting() {
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{stats.wins} {t("wins")} / {stats.total}</p>
               </div>
-              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--profit)) ${winRateGauge}%, hsl(var(--border)) 0)` }} />
+              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(var(--ds-pos) ${winRateGauge}%, var(--ds-line) 0)` }} />
             </div>
           </CardContent>
         </Card>
@@ -933,12 +933,12 @@ export default function Backtesting() {
             <div className="flex items-center justify-between gap-2 md:gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground truncate">{t("backtestKpiAvgR")}</p>
-                <div className={`mt-1.5 text-[20px] font-semibold tabular-nums ${stats.avgR >= 0 ? "text-profit" : "text-loss"}`}>
+                <div className={`mt-1.5 text-[20px] font-semibold tabular-nums ${stats.avgR >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>
                   {stats.total ? stats.avgR.toFixed(2) : "—"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{t("backtestColR")}</p>
               </div>
-              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(hsl(var(--profit)) ${Math.max(0, Math.min(100, Math.round((stats.avgR / 2) * 100)))}%, var(--ds-s3) 0)` }} />
+              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(var(--ds-pos) ${Math.max(0, Math.min(100, Math.round((stats.avgR / 2) * 100)))}%, var(--ds-s3) 0)` }} />
             </div>
           </CardContent>
         </Card>
@@ -948,12 +948,12 @@ export default function Backtesting() {
             <div className="flex items-center justify-between gap-2 md:gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground truncate">{t("backtestKpiSumR")}</p>
-                <div className={`mt-1.5 text-[20px] font-semibold tabular-nums ${stats.sumR >= 0 ? "text-profit" : "text-loss"}`}>
+                <div className={`mt-1.5 text-[20px] font-semibold tabular-nums ${stats.sumR >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>
                   {stats.total ? `${stats.sumR >= 0 ? "+" : ""}${stats.sumR.toFixed(2)}` : "—"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{t("profitFactor")}: {stats.total ? stats.profitFactor : "—"}</p>
               </div>
-              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumR >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"} ${Math.min(100, Math.abs(stats.sumR) * 5)}%, var(--ds-s3) 0)` }} />
+              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumR >= 0 ? "var(--ds-pos)" : "var(--ds-neg)"} ${Math.min(100, Math.abs(stats.sumR) * 5)}%, var(--ds-s3) 0)` }} />
             </div>
           </CardContent>
         </Card>
@@ -963,14 +963,14 @@ export default function Backtesting() {
             <div className="flex items-center justify-between gap-2 md:gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-muted-foreground truncate">{t("backtestKpiSumAmount")}</p>
-                <div className={`mt-1.5 text-[20px] font-semibold tabular-nums ${stats.sumAmount >= 0 ? "text-profit" : "text-loss"}`}>
+                <div className={`mt-1.5 text-[20px] font-semibold tabular-nums ${stats.sumAmount >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>
                   {stats.amountCount
                     ? stats.sumAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })
                     : "—"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 truncate">{stats.amountCount} {t("backtestKpiTests")}</p>
               </div>
-              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumAmount >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"} ${Math.min(100, Math.abs(stats.sumAmount) / 10)}%, var(--ds-s3) 0)` }} />
+              <div className="ocean-ring flex-shrink-0" style={{ background: `conic-gradient(${stats.sumAmount >= 0 ? "var(--ds-pos)" : "var(--ds-neg)"} ${Math.min(100, Math.abs(stats.sumAmount) / 10)}%, var(--ds-s3) 0)` }} />
             </div>
           </CardContent>
         </Card>
@@ -979,31 +979,31 @@ export default function Backtesting() {
       {/* Wskazniki kolowe — jak prawa kolumna Dashboardu */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl">
         <div className="cyber-gauge">
-          <div className="cyber-gauge-ring" style={{ background: `conic-gradient(var(--cyber-accent) ${winRateGauge}%, hsl(var(--border)) 0)` }} />
+          <div className="cyber-gauge-ring" style={{ background: `conic-gradient(var(--cyber-accent) ${winRateGauge}%, var(--ds-line) 0)` }} />
           <div className="cyber-gauge-label">
             <span className="cyber-gauge-value">{stats.total ? `${stats.winRate.toFixed(0)}%` : "—"}</span>
             <span className="cyber-gauge-cap">{t("winRate")}</span>
           </div>
         </div>
         <div className="cyber-gauge">
-          <div className="cyber-gauge-ring" style={{ background: `conic-gradient(hsl(var(--primary)) ${pfGauge}%, hsl(var(--border)) 0)` }} />
+          <div className="cyber-gauge-ring" style={{ background: `conic-gradient(hsl(var(--primary)) ${pfGauge}%, var(--ds-line) 0)` }} />
           <div className="cyber-gauge-label">
             <span className="cyber-gauge-value">{stats.total ? stats.profitFactor : "—"}</span>
             <span className="cyber-gauge-cap">{t("profitFactor")}</span>
           </div>
         </div>
         <div className="cyber-gauge">
-          <div className="cyber-gauge-ring" style={{ background: `conic-gradient(${expectancy >= 0 ? "hsl(var(--profit))" : "hsl(var(--loss))"} ${Math.max(0, Math.min(100, Math.round((Math.abs(expectancy) / 1) * 100)))}%, hsl(var(--border)) 0)` }} />
+          <div className="cyber-gauge-ring" style={{ background: `conic-gradient(${expectancy >= 0 ? "var(--ds-pos)" : "var(--ds-neg)"} ${Math.max(0, Math.min(100, Math.round((Math.abs(expectancy) / 1) * 100)))}%, var(--ds-line) 0)` }} />
           <div className="cyber-gauge-label">
-            <span className={`cyber-gauge-value ${expectancy >= 0 ? "" : "text-loss"}`}>{stats.total ? `${expectancy >= 0 ? "+" : ""}${expectancy.toFixed(2)}R` : "—"}</span>
+            <span className={`cyber-gauge-value ${expectancy >= 0 ? "" : "text-ds-neg"}`}>{stats.total ? `${expectancy >= 0 ? "+" : ""}${expectancy.toFixed(2)}R` : "—"}</span>
             <span className="cyber-gauge-cap">Expectancy</span>
           </div>
         </div>
       </div>
 
       {/* Strategie tylko na tej stronie (osobne od menu Strategie) */}
-      <Card className="border-border overflow-hidden shadow-sm">
-        <CardHeader className="py-3 px-4 border-b border-border bg-muted/20">
+      <Card className="border-ds-line overflow-hidden shadow-sm">
+        <CardHeader className="py-3 px-4 border-b border-ds-line bg-ds-s2">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="flex gap-3 min-w-0">
               <div className="rounded-lg bg-primary/10 p-2 shrink-0">
@@ -1032,7 +1032,7 @@ export default function Backtesting() {
               {btStrategies.map((s) => (
                 <li
                   key={s.id}
-                  className="rounded-xl border border-border bg-card p-3 flex flex-col gap-2 shadow-sm hover:border-primary/30 transition-colors"
+                  className="rounded-xl border border-ds-line bg-card p-3 flex flex-col gap-2 shadow-sm hover:border-primary/30 transition-colors"
                 >
                   <div className="font-semibold text-sm text-foreground truncate" title={s.name}>
                     {s.name}
@@ -1074,11 +1074,11 @@ export default function Backtesting() {
       {/* Zakładki jak w przeglądarce — filtr + osobna „strona” notatek na strategię */}
       <div className="space-y-3">
         <Tabs value={strategyTab} onValueChange={setStrategyTab} className="w-full">
-          <div className="overflow-x-auto pb-0.5 rounded-t-xl border border-b-0 border-border bg-muted/30 dark:bg-muted/20">
+          <div className="overflow-x-auto pb-0.5 rounded-t-xl border border-b-0 border-ds-line bg-ds-s2">
             <TabsList className="inline-flex h-auto min-h-10 w-max max-w-full flex-nowrap justify-start gap-0 rounded-none border-0 bg-transparent p-1">
               <TabsTrigger
                 value="all"
-                className="shrink-0 rounded-lg border border-transparent px-3 py-2 text-xs sm:text-sm data-[state=active]:border-border data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                className="shrink-0 rounded-lg border border-transparent px-3 py-2 text-xs sm:text-sm data-[state=active]:border-ds-line data-[state=active]:bg-background data-[state=active]:shadow-sm"
               >
                 {t("backtestTabAll")}
               </TabsTrigger>
@@ -1086,7 +1086,7 @@ export default function Backtesting() {
                 <TabsTrigger
                   key={s.id}
                   value={String(s.id)}
-                  className="shrink-0 max-w-[200px] truncate rounded-lg border border-transparent px-3 py-2 text-xs sm:text-sm data-[state=active]:border-border data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                  className="shrink-0 max-w-[200px] truncate rounded-lg border border-transparent px-3 py-2 text-xs sm:text-sm data-[state=active]:border-ds-line data-[state=active]:bg-background data-[state=active]:shadow-sm"
                   title={s.name}
                 >
                   {s.name}
@@ -1097,8 +1097,8 @@ export default function Backtesting() {
         </Tabs>
 
         {strategyTab !== "all" && (
-          <Card className="border border-border rounded-b-xl rounded-t-none border-t-0 shadow-sm overflow-hidden">
-            <CardHeader className="py-3 px-4 bg-gradient-to-r from-primary/5 to-transparent border-b border-border">
+          <Card className="border border-ds-line rounded-b-xl rounded-t-none border-t-0 shadow-sm overflow-hidden">
+            <CardHeader className="py-3 px-4 bg-gradient-to-r from-primary/5 to-transparent border-b border-ds-line">
               <div className="flex items-start gap-3">
                 <FileText className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
@@ -1124,7 +1124,7 @@ export default function Backtesting() {
                 value={strategyPageDraft}
                 onChange={(e) => setStrategyPageDraft(e.target.value)}
                 rows={8}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm leading-relaxed resize-y min-h-[140px] focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full rounded-lg border border-ds-line bg-background px-3 py-2.5 text-sm leading-relaxed resize-y min-h-[140px] focus:outline-none focus:ring-2 focus:ring-primary/30"
                 placeholder={t("backtestStrategyWorkspacePlaceholder")}
               />
             </CardContent>
@@ -1133,8 +1133,8 @@ export default function Backtesting() {
       </div>
 
       {/* Tabela — na górze (jak w journalach / testerach) */}
-      <Card className="border-border overflow-hidden">
-        <CardHeader className="border-b border-border">
+      <Card className="border-ds-line overflow-hidden">
+        <CardHeader className="border-b border-ds-line">
           <CardTitle className="text-base">{t("backtestTableTitle")}</CardTitle>
           <CardDescription>{t("backtestTableHint")}</CardDescription>
         </CardHeader>
@@ -1148,7 +1148,7 @@ export default function Backtesting() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border bg-muted/30">
+                <tr className="border-b border-ds-line bg-ds-s2">
                   <th className="text-center p-3 font-semibold w-12" title={t("backtestColEntryShort")}>
                     {t("backtestColEntryShort")}
                   </th>
@@ -1179,11 +1179,11 @@ export default function Backtesting() {
                         setDetailRow(row);
                       }
                     }}
-                    className="border-b border-border/80 hover:bg-muted/20 transition-colors cursor-pointer"
+                    className="border-b border-ds-line hover:bg-ds-s3 transition-colors cursor-pointer"
                   >
                     <td className="p-3 text-center">
                       {row.entry_confirmation ? (
-                        <CheckCircle2 className="w-5 h-5 text-profit mx-auto" aria-label={t("backtestEntryYes")} />
+                        <CheckCircle2 className="w-5 h-5 text-ds-pos mx-auto" aria-label={t("backtestEntryYes")} />
                       ) : (
                         <Circle className="w-4 h-4 text-muted-foreground/50 mx-auto" aria-label={t("backtestEntryNo")} />
                       )}
@@ -1196,11 +1196,11 @@ export default function Backtesting() {
                     </td>
                     <td className="p-3">
                       {row.direction === "Short" ? (
-                        <span className="inline-flex items-center gap-1 text-loss dark:text-loss text-xs font-medium">
+                        <span className="inline-flex items-center gap-1 text-ds-neg text-xs font-medium">
                           <TrendingDown className="w-3.5 h-3.5" /> Short
                         </span>
                       ) : row.direction === "Long" ? (
-                        <span className="inline-flex items-center gap-1 text-profit dark:text-profit text-xs font-medium">
+                        <span className="inline-flex items-center gap-1 text-ds-pos text-xs font-medium">
                           <TrendingUp className="w-3.5 h-3.5" /> Long
                         </span>
                       ) : (
@@ -1214,10 +1214,10 @@ export default function Backtesting() {
                       <span
                         className={
                           row.outcome === "Win"
-                            ? "text-profit dark:text-profit font-medium"
+                            ? "text-ds-pos font-medium"
                             : row.outcome === "Loss"
-                              ? "text-loss dark:text-loss font-medium"
-                              : "text-warning font-medium"
+                              ? "text-ds-neg font-medium"
+                              : "text-ds-warn font-medium"
                         }
                       >
                         {row.outcome === "Win"
@@ -1235,9 +1235,9 @@ export default function Backtesting() {
                     <td
                       className={`p-3 text-right tabular-nums font-medium ${
                         toNumberSafe(row.amount) !== null && toNumberSafe(row.amount) < 0
-                          ? "text-loss dark:text-loss"
+                          ? "text-ds-neg"
                           : toNumberSafe(row.amount) !== null && toNumberSafe(row.amount) > 0
-                            ? "text-profit dark:text-profit"
+                            ? "text-ds-pos"
                             : "text-muted-foreground"
                       }`}
                     >
@@ -1251,13 +1251,13 @@ export default function Backtesting() {
                     <td className="p-3">
                       <TableTagCell
                         items={row.confluences}
-                        toneClass="bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit"
+                        toneClass="bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] text-ds-pos"
                       />
                     </td>
                     <td className="p-3">
                       <TableTagCell
                         items={row.mistakes}
-                        toneClass="bg-loss/10 text-loss dark:bg-loss/10 dark:text-loss"
+                        toneClass="bg-[color:color-mix(in_srgb,var(--ds-neg)_10%,transparent)] text-ds-neg"
                       />
                     </td>
                     <td className="p-3">
@@ -1274,7 +1274,7 @@ export default function Backtesting() {
                             <button
                               key={`${row.id}-shot-${index}`}
                               type="button"
-                              className="size-8 aspect-square rounded-md overflow-hidden border border-border bg-muted shrink-0"
+                              className="size-8 aspect-square rounded-md overflow-hidden border border-ds-line bg-ds-s2 shrink-0"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setViewerUrl(imageUrl);
@@ -1333,7 +1333,7 @@ export default function Backtesting() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Card className="border-border xl:col-span-1">
+        <Card className="border-ds-line xl:col-span-1">
           <CardHeader>
             <CardTitle className="text-base">{t("backtestChartOutcome")}</CardTitle>
             <CardDescription>{t("backtestChartOutcomeHint")}</CardDescription>
@@ -1356,7 +1356,7 @@ export default function Backtesting() {
                       key={i}
                       fill={
                         entry.key === "empty"
-                          ? "hsl(var(--muted))"
+                          ? "var(--ds-s3)"
                           : pieColors[entry.key] || "hsl(var(--chart-3))"
                       }
                     />
@@ -1369,7 +1369,7 @@ export default function Backtesting() {
           </CardContent>
         </Card>
 
-        <Card className="border-border xl:col-span-2">
+        <Card className="border-ds-line xl:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">{t("backtestChartCumulativeR")}</CardTitle>
             <CardDescription>{t("backtestChartCumulativeRHint")}</CardDescription>
@@ -1395,7 +1395,7 @@ export default function Backtesting() {
         </Card>
       </div>
 
-      <Card className="border-border">
+      <Card className="border-ds-line">
         <CardHeader>
           <CardTitle className="text-base">{t("backtestChartMonthly")}</CardTitle>
           <CardDescription>{t("backtestChartMonthlyHint")}</CardDescription>
@@ -1414,7 +1414,7 @@ export default function Backtesting() {
         </CardContent>
       </Card>
 
-      <Card className="border-border">
+      <Card className="border-ds-line">
         <CardHeader>
           <CardTitle className="text-base">{t("backtestChartCumulativeAmount")}</CardTitle>
           <CardDescription>{t("backtestChartCumulativeAmountHint")}</CardDescription>
@@ -1447,10 +1447,10 @@ export default function Backtesting() {
           type="button"
           onClick={() => setAnalizaOpen((v) => !v)}
           aria-expanded={analizaOpen}
-          className="w-full flex items-center justify-between gap-3 p-4 rounded-md border border-border bg-card hover:bg-accent/40 transition text-left"
+          className="w-full flex items-center justify-between gap-3 p-4 rounded-md border border-ds-line bg-card hover:bg-accent/40 transition text-left"
         >
           <span className="flex items-center gap-3">
-            <span className="flex items-center justify-center w-9 h-9 rounded-md border border-primary/35 bg-muted text-primary">
+            <span className="flex items-center justify-center w-9 h-9 rounded-md border border-primary/35 bg-ds-s2 text-primary">
               <BarChart3 className="w-5 h-5" />
             </span>
             <span>
@@ -1469,8 +1469,8 @@ export default function Backtesting() {
           <div className="overflow-hidden">
             <div className="space-y-4 pt-1">
               {/* Porownanie strategii */}
-              <Card className="border-border">
-                <CardHeader className="border-b border-border">
+              <Card className="border-ds-line">
+                <CardHeader className="border-b border-ds-line">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Layers className="w-4 h-4 text-primary" />
                     {t("strategiesComparison")}
@@ -1483,7 +1483,7 @@ export default function Backtesting() {
                   ) : (
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border bg-muted/30">
+                        <tr className="border-b border-ds-line bg-ds-s2">
                           <th className="text-left p-3 font-semibold">{t("strategy")}</th>
                           <th className="text-right p-3 font-semibold">{t("backtestKpiTests")}</th>
                           <th className="text-right p-3 font-semibold">{t("winRate")}</th>
@@ -1494,13 +1494,13 @@ export default function Backtesting() {
                       </thead>
                       <tbody>
                         {strategyComparison.map((row) => (
-                          <tr key={row.id} className="border-b border-border/80 hover:bg-muted/20 transition-colors">
+                          <tr key={row.id} className="border-b border-ds-line hover:bg-ds-s3 transition-colors">
                             <td className="p-3 max-w-[200px] truncate font-medium text-foreground" title={row.name}>{row.name}</td>
                             <td className="p-3 text-right tabular-nums">{row.tests}</td>
                             <td className="p-3 text-right tabular-nums">{row.winRate.toFixed(1)}%</td>
-                            <td className={`p-3 text-right tabular-nums ${row.avgR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>{row.avgR.toFixed(2)}</td>
-                            <td className={`p-3 text-right tabular-nums font-medium ${row.sumR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>{row.sumR >= 0 ? "+" : ""}{row.sumR.toFixed(2)}</td>
-                            <td className={`p-3 text-right tabular-nums ${row.sumAmount >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
+                            <td className={`p-3 text-right tabular-nums ${row.avgR >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>{row.avgR.toFixed(2)}</td>
+                            <td className={`p-3 text-right tabular-nums font-medium ${row.sumR >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>{row.sumR >= 0 ? "+" : ""}{row.sumR.toFixed(2)}</td>
+                            <td className={`p-3 text-right tabular-nums ${row.sumAmount >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>
                               {row.sumAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                             </td>
                           </tr>
@@ -1519,8 +1519,8 @@ export default function Backtesting() {
                   { title: "Wg pary (top 8)", icon: Target, rows: breakdowns.pair },
                   { title: "Wg dnia tygodnia", icon: Layers, rows: breakdowns.weekday },
                 ].map((grp) => (
-                  <Card key={grp.title} className="border-border overflow-hidden">
-                    <CardHeader className="py-3 px-4 border-b border-border bg-muted/20">
+                  <Card key={grp.title} className="border-ds-line overflow-hidden">
+                    <CardHeader className="py-3 px-4 border-b border-ds-line bg-ds-s2">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <grp.icon className="w-4 h-4 text-primary" />
                         {grp.title}
@@ -1532,7 +1532,7 @@ export default function Backtesting() {
                       ) : (
                         <table className="w-full text-sm">
                           <thead>
-                            <tr className="border-b border-border bg-muted/10 text-xs text-muted-foreground">
+                            <tr className="border-b border-ds-line bg-ds-s2 text-xs text-muted-foreground">
                               <th className="text-left p-2.5 font-medium">—</th>
                               <th className="text-right p-2.5 font-medium">Testy</th>
                               <th className="text-right p-2.5 font-medium">Win%</th>
@@ -1541,11 +1541,11 @@ export default function Backtesting() {
                           </thead>
                           <tbody>
                             {grp.rows.map((r) => (
-                              <tr key={r.key} className="border-b border-border/70 hover:bg-muted/20">
+                              <tr key={r.key} className="border-b border-ds-line hover:bg-ds-s3">
                                 <td className="p-2.5 font-medium text-foreground truncate max-w-[140px]" title={r.key}>{r.key}</td>
                                 <td className="p-2.5 text-right tabular-nums">{r.tests}</td>
                                 <td className="p-2.5 text-right tabular-nums">{r.winRate.toFixed(0)}%</td>
-                                <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
+                                <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>
                                   {r.sumR >= 0 ? "+" : ""}{r.sumR.toFixed(2)}
                                 </td>
                               </tr>
@@ -1560,10 +1560,10 @@ export default function Backtesting() {
 
               {/* Skutecznosc wg confluencji + czestotliwosc bledow */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <Card className="border-border overflow-hidden">
-                  <CardHeader className="py-3 px-4 border-b border-border bg-profit/50 dark:bg-profit/10">
+                <Card className="border-ds-line overflow-hidden">
+                  <CardHeader className="py-3 px-4 border-b border-ds-line bg-[color:color-mix(in_srgb,var(--ds-pos)_50%,transparent)]">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <ListChecks className="w-4 h-4 text-profit" />
+                      <ListChecks className="w-4 h-4 text-ds-pos" />
                       Skuteczność wg confluencji
                     </CardTitle>
                     <CardDescription className="text-xs">Które warunki wejścia działają najlepiej</CardDescription>
@@ -1574,7 +1574,7 @@ export default function Backtesting() {
                     ) : (
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-border bg-muted/10 text-xs text-muted-foreground">
+                          <tr className="border-b border-ds-line bg-ds-s2 text-xs text-muted-foreground">
                             <th className="text-left p-2.5 font-medium">Confluencja</th>
                             <th className="text-right p-2.5 font-medium">Testy</th>
                             <th className="text-right p-2.5 font-medium">Win%</th>
@@ -1583,11 +1583,11 @@ export default function Backtesting() {
                         </thead>
                         <tbody>
                           {tagStats.confluences.map((r) => (
-                            <tr key={r.key} className="border-b border-border/70 hover:bg-muted/20">
+                            <tr key={r.key} className="border-b border-ds-line hover:bg-ds-s3">
                               <td className="p-2.5 font-medium text-foreground truncate max-w-[160px]" title={r.key}>{r.key}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.tests}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.winRate.toFixed(0)}%</td>
-                              <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
+                              <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>
                                 {r.sumR >= 0 ? "+" : ""}{r.sumR.toFixed(2)}
                               </td>
                             </tr>
@@ -1598,10 +1598,10 @@ export default function Backtesting() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border overflow-hidden">
-                  <CardHeader className="py-3 px-4 border-b border-border bg-loss/50 dark:bg-loss/10">
+                <Card className="border-ds-line overflow-hidden">
+                  <CardHeader className="py-3 px-4 border-b border-ds-line bg-[color:color-mix(in_srgb,var(--ds-neg)_50%,transparent)]">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-loss" />
+                      <AlertTriangle className="w-4 h-4 text-ds-neg" />
                       Najczęstsze błędy
                     </CardTitle>
                     <CardDescription className="text-xs">Co najbardziej kosztuje Cię w R</CardDescription>
@@ -1612,7 +1612,7 @@ export default function Backtesting() {
                     ) : (
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="border-b border-border bg-muted/10 text-xs text-muted-foreground">
+                          <tr className="border-b border-ds-line bg-ds-s2 text-xs text-muted-foreground">
                             <th className="text-left p-2.5 font-medium">Błąd</th>
                             <th className="text-right p-2.5 font-medium">Ile razy</th>
                             <th className="text-right p-2.5 font-medium">Win%</th>
@@ -1621,11 +1621,11 @@ export default function Backtesting() {
                         </thead>
                         <tbody>
                           {tagStats.mistakes.map((r) => (
-                            <tr key={r.key} className="border-b border-border/70 hover:bg-muted/20">
+                            <tr key={r.key} className="border-b border-ds-line hover:bg-ds-s3">
                               <td className="p-2.5 font-medium text-foreground truncate max-w-[160px]" title={r.key}>{r.key}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.tests}</td>
                               <td className="p-2.5 text-right tabular-nums">{r.winRate.toFixed(0)}%</td>
-                              <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-profit dark:text-profit" : "text-loss dark:text-loss"}`}>
+                              <td className={`p-2.5 text-right tabular-nums font-medium ${r.sumR >= 0 ? "text-ds-pos" : "text-ds-neg"}`}>
                                 {r.sumR >= 0 ? "+" : ""}{r.sumR.toFixed(2)}
                               </td>
                             </tr>
@@ -1638,7 +1638,7 @@ export default function Backtesting() {
               </div>
 
               {/* Rozklad R-multiple */}
-              <Card className="border-border">
+              <Card className="border-ds-line">
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Target className="w-4 h-4 text-primary" />
@@ -1665,17 +1665,17 @@ export default function Backtesting() {
 
               {/* Najlepszy / najgorszy test wg R */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Card className="border-border">
+                <Card className="border-ds-line">
                   <CardHeader className="pb-2">
                     <CardTitle className="cyber-panel-title text-xs flex items-center gap-2">
-                      <Trophy className="w-4 h-4 text-profit" />
+                      <Trophy className="w-4 h-4 text-ds-pos" />
                       {t("bestTrade") || "Najlepszy test"}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {bestWorstByR.best ? (
                       <div className="space-y-1">
-                        <p className="text-2xl font-bold tabular-nums text-profit dark:text-profit">
+                        <p className="text-2xl font-bold tabular-nums text-ds-pos">
                           {Number(bestWorstByR.best.r_multiple).toFixed(2)}R
                         </p>
                         <p className="text-sm text-muted-foreground truncate">
@@ -1689,17 +1689,17 @@ export default function Backtesting() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-border">
+                <Card className="border-ds-line">
                   <CardHeader className="pb-2">
                     <CardTitle className="cyber-panel-title text-xs flex items-center gap-2">
-                      <TrendingDown className="w-4 h-4 text-loss" />
+                      <TrendingDown className="w-4 h-4 text-ds-neg" />
                       {t("worstTrade") || "Najgorszy test"}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     {bestWorstByR.worst ? (
                       <div className="space-y-1">
-                        <p className="text-2xl font-bold tabular-nums text-loss dark:text-loss">
+                        <p className="text-2xl font-bold tabular-nums text-ds-neg">
                           {Number(bestWorstByR.worst.r_multiple).toFixed(2)}R
                         </p>
                         <p className="text-sm text-muted-foreground truncate">
@@ -1719,7 +1719,7 @@ export default function Backtesting() {
       </div>
 
       <Dialog open={!!detailRow} onOpenChange={(o) => { if (!o) setDetailRow(null); }}>
-        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto bg-background dark:bg-card border-border gap-0 p-0">
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto bg-background border-ds-line gap-0 p-0">
           {detailRow && (
             <div className="flex flex-col lg:flex-row gap-0 items-start">
               {detailEmotionsOpen && countFilledEmotionStages(detailRow.emotions) > 0 && (
@@ -1732,7 +1732,7 @@ export default function Backtesting() {
                 />
               )}
               <div className="flex-1 min-w-0">
-              <DialogHeader className="px-6 py-4 border-b border-border bg-muted/30">
+              <DialogHeader className="px-6 py-4 border-b border-ds-line bg-ds-s2">
                 <DialogTitle className="text-lg flex items-center gap-2">
                   <FlaskConical className="w-5 h-5 text-primary" />
                   {t("backtestDetailTitle")}
@@ -1742,16 +1742,16 @@ export default function Backtesting() {
                 </p>
                 <div className="flex flex-wrap gap-1.5 pt-2">
                   {detailRow.symbol ? (
-                    <span className="px-2 py-0.5 rounded-md bg-muted text-xs font-semibold uppercase">{detailRow.symbol}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-ds-s2 text-xs font-semibold uppercase">{detailRow.symbol}</span>
                   ) : null}
                   {detailRow.direction ? (
-                    <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${detailRow.direction === "Short" ? "bg-loss/10 dark:bg-loss/10 text-loss dark:text-loss" : "bg-profit/10 dark:bg-profit/10 text-profit dark:text-profit"}`}>{detailRow.direction}</span>
+                    <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${detailRow.direction === "Short" ? "bg-[color:color-mix(in_srgb,var(--ds-neg)_10%,transparent)] text-ds-neg" : "bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] text-ds-pos"}`}>{detailRow.direction}</span>
                   ) : null}
                   {detailRow.session ? (
-                    <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium">{detailRow.session}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-ds-s2 text-muted-foreground text-xs font-medium">{detailRow.session}</span>
                   ) : null}
                   {detailRow.timeframe ? (
-                    <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-xs font-medium">{detailRow.timeframe}</span>
+                    <span className="px-2 py-0.5 rounded-md bg-ds-s2 text-muted-foreground text-xs font-medium">{detailRow.timeframe}</span>
                   ) : null}
                 </div>
               </DialogHeader>
@@ -1760,10 +1760,10 @@ export default function Backtesting() {
                   <button
                     type="button"
                     onClick={() => setDetailEmotionsOpen(true)}
-                    className="w-full flex items-center justify-between gap-3 p-3 rounded-md border border-border bg-card hover:border-primary/50 transition text-left"
+                    className="w-full flex items-center justify-between gap-3 p-3 rounded-md border border-ds-line bg-card hover:border-primary/50 transition text-left"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="flex items-center justify-center w-8 h-8 rounded-md border border-primary/35 bg-muted text-primary">
+                      <span className="flex items-center justify-center w-8 h-8 rounded-md border border-primary/35 bg-ds-s2 text-primary">
                         <Brain className="w-4 h-4" />
                       </span>
                       <span className="text-sm font-semibold text-foreground">
@@ -1777,7 +1777,7 @@ export default function Backtesting() {
                 )}
                 {(detailRow.strategy_description ||
                   strategyDescriptionLookup(detailRow.strategy_id)) ? (
-                  <div className="rounded-xl border border-border bg-muted/15 p-4">
+                  <div className="rounded-xl border border-ds-line bg-ds-s2 p-4">
                     <p className="text-xs font-medium text-muted-foreground mb-1.5">{t("description")}</p>
                     <p className="text-sm whitespace-pre-wrap leading-relaxed text-foreground/90">
                       {detailRow.strategy_description || strategyDescriptionLookup(detailRow.strategy_id)}
@@ -1785,7 +1785,7 @@ export default function Backtesting() {
                   </div>
                 ) : null}
                 {(detailRow.entry_price != null || detailRow.stop_loss != null || detailRow.take_profit != null || detailRow.exit_price != null || detailRow.risk_reward != null) ? (
-                  <div className="rounded-xl border border-border bg-muted/15 p-4">
+                  <div className="rounded-xl border border-ds-line bg-ds-s2 p-4">
                     <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Poziomy cen</p>
                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
                       {[
@@ -1795,7 +1795,7 @@ export default function Backtesting() {
                         { l: "Exit", v: detailRow.exit_price },
                         { l: "RR", v: detailRow.risk_reward != null ? `1:${Number(detailRow.risk_reward).toFixed(2)}` : null },
                       ].map((x) => (
-                        <div key={x.l} className="rounded-lg bg-card border border-border py-2">
+                        <div key={x.l} className="rounded-lg bg-card border border-ds-line py-2">
                           <p className="text-[10px] uppercase text-muted-foreground">{x.l}</p>
                           <p className="text-sm font-mono tabular-nums mt-0.5">{x.v != null && x.v !== "" ? x.v : "—"}</p>
                         </div>
@@ -1806,20 +1806,20 @@ export default function Backtesting() {
                 {detailRow.tags ? (
                   <div className="flex flex-wrap gap-1.5">
                     {String(detailRow.tags).split(",").map((tg) => tg.trim()).filter(Boolean).map((tg, i) => (
-                      <span key={i} className="px-2 py-0.5 rounded-md bg-muted text-xs text-muted-foreground">#{tg}</span>
+                      <span key={i} className="px-2 py-0.5 rounded-md bg-ds-s2 text-xs text-muted-foreground">#{tg}</span>
                     ))}
                   </div>
                 ) : null}
-                <div className="rounded-xl border border-border bg-muted/15 p-4 space-y-3">
+                <div className="rounded-xl border border-ds-line bg-ds-s2 p-4 space-y-3">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Proces zagrania</p>
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                      <ListChecks className="w-3.5 h-3.5 text-profit" /> Warunki wejścia
+                      <ListChecks className="w-3.5 h-3.5 text-ds-pos" /> Warunki wejścia
                     </p>
                     {asTagList(detailRow.confluences).length ? (
                       <div className="flex flex-wrap gap-1.5">
                         {asTagList(detailRow.confluences).map((c) => (
-                          <span key={c} className="px-2 py-0.5 rounded-md bg-profit/10 text-profit text-xs">{c}</span>
+                          <span key={c} className="px-2 py-0.5 rounded-md bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] text-ds-pos text-xs">{c}</span>
                         ))}
                       </div>
                     ) : (
@@ -1828,12 +1828,12 @@ export default function Backtesting() {
                   </div>
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-loss" /> Błędy w zagraniu
+                      <AlertTriangle className="w-3.5 h-3.5 text-ds-neg" /> Błędy w zagraniu
                     </p>
                     {asTagList(detailRow.mistakes).length ? (
                       <div className="flex flex-wrap gap-1.5">
                         {asTagList(detailRow.mistakes).map((m) => (
-                          <span key={m} className="px-2 py-0.5 rounded-md bg-loss/10 text-loss text-xs">{m}</span>
+                          <span key={m} className="px-2 py-0.5 rounded-md bg-[color:color-mix(in_srgb,var(--ds-neg)_10%,transparent)] text-ds-neg text-xs">{m}</span>
                         ))}
                       </div>
                     ) : (
@@ -1853,14 +1853,14 @@ export default function Backtesting() {
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                  <div className="rounded-xl border border-ds-line bg-card p-4 shadow-sm">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("backtestColOutcome")}</p>
                     <p className={`text-lg font-semibold mt-1 ${
                       detailRow.outcome === "Win"
-                        ? "text-profit dark:text-profit"
+                        ? "text-ds-pos"
                         : detailRow.outcome === "Loss"
-                          ? "text-loss dark:text-loss"
-                          : "text-warning"
+                          ? "text-ds-neg"
+                          : "text-ds-warn"
                     }`}>
                       {detailRow.outcome === "Win"
                         ? t("backtestOutcomeWin")
@@ -1869,12 +1869,12 @@ export default function Backtesting() {
                           : t("backtestOutcomeBe")}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                  <div className="rounded-xl border border-ds-line bg-card p-4 shadow-sm">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("backtestColEntryShort")}</p>
                     <p className="text-lg font-semibold mt-1 flex items-center gap-2">
                       {detailRow.entry_confirmation ? (
                         <>
-                          <CheckCircle2 className="w-6 h-6 text-profit" />
+                          <CheckCircle2 className="w-6 h-6 text-ds-pos" />
                           {t("backtestEntryYes")}
                         </>
                       ) : (
@@ -1885,13 +1885,13 @@ export default function Backtesting() {
                       )}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                  <div className="rounded-xl border border-ds-line bg-card p-4 shadow-sm">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("backtestColR")}</p>
                     <p className="text-xl font-mono tabular-nums mt-1">
                       {detailRow.r_multiple != null ? Number(detailRow.r_multiple).toFixed(2) : "—"}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                  <div className="rounded-xl border border-ds-line bg-card p-4 shadow-sm">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t("backtestColAmount")}</p>
                     <p className="text-xl font-mono tabular-nums mt-1">
                       {toNumberSafe(detailRow.amount) != null
@@ -1901,19 +1901,19 @@ export default function Backtesting() {
                   </div>
                 </div>
                 {detailRow.notes ? (
-                  <div className="rounded-xl border border-border bg-muted/20 p-4">
+                  <div className="rounded-xl border border-ds-line bg-ds-s2 p-4">
                     <p className="text-xs font-medium text-muted-foreground mb-1">{t("notes")}</p>
                     <p className="text-sm whitespace-pre-wrap leading-relaxed">{detailRow.notes}</p>
                   </div>
                 ) : null}
                 {getBacktestScreenshots(detailRow).length > 0 ? (
-                  <div className="rounded-xl border border-border overflow-hidden bg-muted/10 p-3 space-y-2">
+                  <div className="rounded-xl border border-ds-line overflow-hidden bg-ds-s2 p-3 space-y-2">
                     <div className="grid grid-cols-3 gap-2 max-w-[420px]">
                       {getBacktestScreenshots(detailRow).map((imageUrl, index) => (
                         <button
                           key={`${detailRow.id}-detail-shot-${index}`}
                           type="button"
-                          className="relative aspect-square w-full rounded-lg overflow-hidden border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-primary/40"
+                          className="relative aspect-square w-full rounded-lg overflow-hidden border border-ds-line bg-ds-s2 focus:outline-none focus:ring-2 focus:ring-primary/40"
                           onClick={() => {
                             setViewerUrl(imageUrl);
                             setViewerOpen(true);
@@ -1950,7 +1950,7 @@ export default function Backtesting() {
       </Dialog>
 
       <Dialog open={dialogOpen} onOpenChange={(o) => { if (!o) { resetForm(); setDialogOpen(false); } }}>
-        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto bg-background dark:bg-card border-border gap-0 p-0">
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto bg-background border-ds-line gap-0 p-0">
           <div className="flex flex-col lg:flex-row gap-0 items-start">
             {emotionsOpen && (
               <EmotionsInlinePanel
@@ -1962,7 +1962,7 @@ export default function Backtesting() {
               />
             )}
           <div className="flex-1 min-w-0 p-6 overflow-y-auto max-h-[92vh]">
-          <DialogHeader className="border-b border-border pb-3 -mt-2">
+          <DialogHeader className="border-b border-ds-line pb-3 -mt-2">
             <DialogTitle className="flex items-center gap-2">
               <FlaskConical className="w-5 h-5 text-primary" />
               {editingId ? t("backtestEditEntry") : t("backtestAddEntry")}
@@ -1977,7 +1977,7 @@ export default function Backtesting() {
                   type="date"
                   value={form.date}
                   onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-                  className="border-border bg-background"
+                  className="border-ds-line bg-background"
                 />
               </div>
               <div>
@@ -1987,7 +1987,7 @@ export default function Backtesting() {
                   placeholder="EURUSD"
                   value={form.symbol}
                   onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value.toUpperCase() }))}
-                  className="border-border bg-background uppercase"
+                  className="border-ds-line bg-background uppercase"
                 />
                 <datalist id="bt-pairs">
                   {COMMON_PAIRS.map((p) => <option key={p} value={p} />)}
@@ -1998,7 +1998,7 @@ export default function Backtesting() {
                 <select
                   value={form.direction}
                   onChange={(e) => setForm((f) => ({ ...f, direction: e.target.value }))}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-sm"
+                  className="w-full px-3 py-2 border border-ds-line rounded-md bg-background text-sm"
                 >
                   {DIRECTIONS.map((d) => (
                     <option key={d} value={d}>{d === "Long" ? "Long (kupno)" : "Short (sprzedaż)"}</option>
@@ -2010,7 +2010,7 @@ export default function Backtesting() {
                 <select
                   value={form.session}
                   onChange={(e) => setForm((f) => ({ ...f, session: e.target.value }))}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-sm"
+                  className="w-full px-3 py-2 border border-ds-line rounded-md bg-background text-sm"
                 >
                   <option value="">—</option>
                   {SESSIONS.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -2021,7 +2021,7 @@ export default function Backtesting() {
                 <select
                   value={form.timeframe}
                   onChange={(e) => setForm((f) => ({ ...f, timeframe: e.target.value }))}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-sm"
+                  className="w-full px-3 py-2 border border-ds-line rounded-md bg-background text-sm"
                 >
                   <option value="">—</option>
                   {TIMEFRAMES.map((tf) => <option key={tf} value={tf}>{tf}</option>)}
@@ -2032,7 +2032,7 @@ export default function Backtesting() {
                 <select
                   value={form.strategy_id}
                   onChange={(e) => setForm((f) => ({ ...f, strategy_id: e.target.value }))}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground text-sm"
+                  className="w-full px-3 py-2 border border-ds-line rounded-md bg-background text-foreground text-sm"
                 >
                   <option value="">{t("backtestSelectBtStrategyPlaceholder")}</option>
                   {btStrategies.map((s) => (
@@ -2043,32 +2043,32 @@ export default function Backtesting() {
             </div>
 
             {/* Sekcja: ceny */}
-            <div className="rounded-lg border border-border p-3 bg-muted/30">
+            <div className="rounded-lg border border-ds-line p-3 bg-ds-s2">
               <p className="text-xs font-semibold text-muted-foreground mb-2">Poziomy cen (opcjonalne)</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <Label className="text-xs">Entry</Label>
                   <Input type="text" inputMode="decimal" placeholder="1.0850" value={form.entry_price}
                     onChange={(e) => setForm((f) => ({ ...f, entry_price: e.target.value }))}
-                    className="border-border bg-background" />
+                    className="border-ds-line bg-background" />
                 </div>
                 <div>
                   <Label className="text-xs">Stop Loss</Label>
                   <Input type="text" inputMode="decimal" placeholder="1.0820" value={form.stop_loss}
                     onChange={(e) => setForm((f) => ({ ...f, stop_loss: e.target.value }))}
-                    className="border-border bg-background" />
+                    className="border-ds-line bg-background" />
                 </div>
                 <div>
                   <Label className="text-xs">Take Profit</Label>
                   <Input type="text" inputMode="decimal" placeholder="1.0910" value={form.take_profit}
                     onChange={(e) => setForm((f) => ({ ...f, take_profit: e.target.value }))}
-                    className="border-border bg-background" />
+                    className="border-ds-line bg-background" />
                 </div>
                 <div>
                   <Label className="text-xs">Exit</Label>
                   <Input type="text" inputMode="decimal" placeholder="1.0905" value={form.exit_price}
                     onChange={(e) => setForm((f) => ({ ...f, exit_price: e.target.value }))}
-                    className="border-border bg-background" />
+                    className="border-ds-line bg-background" />
                 </div>
               </div>
               {plannedRR !== null && (
@@ -2085,7 +2085,7 @@ export default function Backtesting() {
                 <select
                   value={form.outcome}
                   onChange={(e) => setForm((f) => ({ ...f, outcome: e.target.value }))}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background text-sm"
+                  className="w-full px-3 py-2 border border-ds-line rounded-md bg-background text-sm"
                 >
                   {OUTCOMES.map((o) => (
                     <option key={o} value={o}>
@@ -2098,19 +2098,19 @@ export default function Backtesting() {
                 <Label className="text-xs">{t("backtestColR")} (zrealizowane)</Label>
                 <Input type="text" inputMode="decimal" placeholder="0.5 / -1" value={form.r_multiple}
                   onChange={(e) => setForm((f) => ({ ...f, r_multiple: e.target.value }))}
-                  className="border-border bg-background" />
+                  className="border-ds-line bg-background" />
               </div>
               <div>
                 <Label className="text-xs">RR planowany</Label>
                 <Input type="text" inputMode="decimal" placeholder={plannedRR !== null ? plannedRR.toFixed(2) : "2"} value={form.risk_reward}
                   onChange={(e) => setForm((f) => ({ ...f, risk_reward: e.target.value }))}
-                  className="border-border bg-background" />
+                  className="border-ds-line bg-background" />
               </div>
               <div>
                 <Label className="text-xs">{t("backtestColAmount")}</Label>
                 <Input type="text" inputMode="decimal" placeholder="100 / -50" value={form.amount}
                   onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-                  className="border-border bg-background" />
+                  className="border-ds-line bg-background" />
               </div>
             </div>
 
@@ -2140,7 +2140,7 @@ export default function Backtesting() {
 
             {/* Ocena jakosci zagrania + emocje */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded-lg border border-border p-3 bg-muted/30">
+              <div className="rounded-lg border border-ds-line p-3 bg-ds-s2">
                 <Label className="text-xs">Ocena jakości zagrania</Label>
                 <div className="flex items-center gap-1 mt-1.5">
                   {[1, 2, 3, 4, 5].map((n) => (
@@ -2151,7 +2151,7 @@ export default function Backtesting() {
                       className="p-0.5 transition-transform hover:scale-110"
                       aria-label={`Ocena ${n}`}
                     >
-                      <Star className={`w-6 h-6 ${n <= form.grade ? "fill-warning text-warning" : "fill-transparent text-muted-foreground"}`} />
+                      <Star className={`w-6 h-6 ${n <= form.grade ? "fill-ds-warn text-ds-warn" : "fill-transparent text-muted-foreground"}`} />
                     </button>
                   ))}
                 </div>
@@ -2162,11 +2162,11 @@ export default function Backtesting() {
                 className={`rounded-md border p-3 transition flex items-center justify-between gap-2 text-left ${
                   emotionsOpen
                     ? "border-primary bg-primary/10"
-                    : "border-border hover:border-primary/50"
+                    : "border-ds-line hover:border-primary/50"
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  <span className="flex items-center justify-center w-8 h-8 rounded-md border border-primary/35 bg-muted text-primary">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-md border border-primary/35 bg-ds-s2 text-primary">
                     <Brain className="w-4 h-4" />
                   </span>
                   <span>
@@ -2186,11 +2186,11 @@ export default function Backtesting() {
                 placeholder="dowolne notki, oddzielaj przecinkami"
                 value={form.tags}
                 onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-                className="border-border bg-background"
+                className="border-ds-line bg-background"
               />
             </div>
 
-            <div className="flex items-start gap-3 rounded-lg border border-border p-3 bg-muted/30">
+            <div className="flex items-start gap-3 rounded-lg border border-ds-line p-3 bg-ds-s2">
               <Checkbox
                 id="entry_confirmation"
                 checked={form.entry_confirmation}
@@ -2211,13 +2211,13 @@ export default function Backtesting() {
                 rows={3}
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-md bg-background text-sm resize-y"
+                className="w-full px-3 py-2 border border-ds-line rounded-md bg-background text-sm resize-y"
                 placeholder={t("backtestNotesPlaceholder")}
               />
             </div>
             <div
-              className={`p-3 rounded-md bg-muted/40 border space-y-2 ${
-                shotDrag ? "border-primary/60 bg-primary/5" : "border-border"
+              className={`p-3 rounded-md bg-ds-s2 border space-y-2 ${
+                shotDrag ? "border-primary/60 bg-primary/5" : "border-ds-line"
               }`}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -2301,8 +2301,8 @@ export default function Backtesting() {
           }
         }}
       >
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-background dark:bg-card border-border">
-          <DialogHeader className="border-b border-border pb-3">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-background border-ds-line">
+          <DialogHeader className="border-b border-ds-line pb-3">
             <DialogTitle>
               {editingStrategyId ? t("backtestBtStrategyEdit") : t("backtestBtStrategyAdd")}
             </DialogTitle>
@@ -2313,7 +2313,7 @@ export default function Backtesting() {
               <Input
                 value={strategyForm.name}
                 onChange={(e) => setStrategyForm((f) => ({ ...f, name: e.target.value }))}
-                className="border-border bg-background"
+                className="border-ds-line bg-background"
                 placeholder={t("backtestBtStrategyNamePh")}
               />
             </div>
@@ -2323,7 +2323,7 @@ export default function Backtesting() {
                 rows={5}
                 value={strategyForm.description}
                 onChange={(e) => setStrategyForm((f) => ({ ...f, description: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-md bg-background text-sm resize-y min-h-[100px]"
+                className="w-full px-3 py-2 border border-ds-line rounded-md bg-background text-sm resize-y min-h-[100px]"
                 placeholder={t("backtestBtStrategyDescPh")}
               />
             </div>
@@ -2350,7 +2350,7 @@ export default function Backtesting() {
       </Dialog>
 
       <AlertDialog open={!!deleteStrategyId} onOpenChange={() => setDeleteStrategyId(null)}>
-        <AlertDialogContent className="dark:bg-card">
+        <AlertDialogContent className="">
           <AlertDialogHeader>
             <AlertDialogTitle>{t("backtestBtStrategyDeleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>{t("backtestBtStrategyDeleteDesc")}</AlertDialogDescription>
@@ -2368,7 +2368,7 @@ export default function Backtesting() {
       </AlertDialog>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent className="dark:bg-card">
+        <AlertDialogContent className="">
           <AlertDialogHeader>
             <AlertDialogTitle>{t("backtestDeleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>{t("backtestDeleteDesc")}</AlertDialogDescription>

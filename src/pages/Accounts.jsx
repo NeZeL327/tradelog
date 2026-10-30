@@ -154,7 +154,7 @@ export default function Accounts() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <QuoteLine className="hidden lg:flex shrink-0" />
             <Select value={accountVisibilityFilter} onValueChange={setAccountVisibilityFilter}>
-              <SelectTrigger className="w-[190px] bg-card border-border">
+              <SelectTrigger className="w-[190px] bg-card border-ds-line">
                 <SelectValue placeholder="Filtr kont" />
               </SelectTrigger>
               <SelectContent>
@@ -267,7 +267,7 @@ export default function Accounts() {
             <AlertDialogCancel>Anuluj</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingAccount && deleteMutation.mutate(deletingAccount.id)}
-              className="bg-loss text-white hover:bg-loss/90"
+              className="bg-ds-neg text-white hover:bg-[color:color-mix(in_srgb,var(--ds-neg)_90%,transparent)]"
             >
               Usuń
             </AlertDialogAction>
@@ -314,10 +314,10 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Active': return 'text-profit';
+      case 'Active': return 'text-ds-pos';
       case 'Inactive': return 'text-muted-foreground';
-      case 'Suspended': return 'text-warning';
-      case 'Closed': return 'text-loss';
+      case 'Suspended': return 'text-ds-warn';
+      case 'Closed': return 'text-ds-neg';
       default: return 'text-muted-foreground';
     }
   };
@@ -333,26 +333,26 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
   };
 
   const getAccountTypeColor = () => {
-    return "bg-card border border-border";
+    return "bg-card border border-ds-line";
   };
 
   const getAccountDividerColor = () => {
-    return 'border-border';
+    return 'border-ds-line';
   };
 
   const getAccountTypeBadge = () => {
     const baseClasses = "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium";
     switch (account.account_type) {
       case 'Live':
-        return <Badge className={`${baseClasses} bg-profit/10 text-profit dark:bg-profit/10`}>Live</Badge>;
+        return <Badge className={`${baseClasses} bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] text-ds-pos`}>Live</Badge>;
       case 'Demo':
-        return <Badge className={`${baseClasses} bg-muted text-foreground`}>Demo</Badge>;
+        return <Badge className={`${baseClasses} bg-ds-s2 text-foreground`}>Demo</Badge>;
       case 'Challenge':
-        return <Badge className={`${baseClasses} bg-warning/10 text-warning`}>Challenge</Badge>;
+        return <Badge className={`${baseClasses} bg-[color:color-mix(in_srgb,var(--ds-warn)_10%,transparent)] text-ds-warn`}>Challenge</Badge>;
       case 'Funded':
-        return <Badge className={`${baseClasses} bg-warning/10 text-warning`}>Funded</Badge>;
+        return <Badge className={`${baseClasses} bg-[color:color-mix(in_srgb,var(--ds-warn)_10%,transparent)] text-ds-warn`}>Funded</Badge>;
       default:
-        return <Badge className={`${baseClasses} bg-muted text-foreground`}>{account.account_type}</Badge>;
+        return <Badge className={`${baseClasses} bg-ds-s2 text-foreground`}>{account.account_type}</Badge>;
     }
   };
 
@@ -411,7 +411,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
               aria-pressed={isAccountActive}
               aria-label={isAccountActive ? `Wyłącz konto ${account.name}` : `Włącz konto ${account.name}`}
               title={isAccountActive ? "Wyłącz konto" : "Włącz konto"}
-              className={`h-8 w-8 p-0 ${isAccountActive ? "text-profit" : "text-muted-foreground"}`}
+              className={`h-8 w-8 p-0 ${isAccountActive ? "text-ds-pos" : "text-muted-foreground"}`}
             >
               <Power className="w-3.5 h-3.5" />
             </Button>
@@ -427,7 +427,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
           </div>
           <div className="space-y-1">
             <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">P&L</span>
-            <div className={`text-[20px] font-semibold tabular-nums ${profitLoss >= 0 ? 'text-profit' : 'text-loss'}`}>
+            <div className={`text-[20px] font-semibold tabular-nums ${profitLoss >= 0 ? 'text-ds-pos' : 'text-ds-neg'}`}>
               {pnl.mode === "percent"
                 ? `${Number(profitLossPercent) > 0 ? "+" : ""}${profitLossPercent}%`
                 : `${profitLoss >= 0 ? "+" : ""}${Number(profitLoss || 0).toFixed(2)} ${account.currency || ""}`}
@@ -444,7 +444,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             </div>
             <div className="min-w-0">
               <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Win Rate</span>
-              <div className="font-semibold mt-0.5 text-profit">{winRate}%</div>
+              <div className="font-semibold mt-0.5 text-ds-pos">{winRate}%</div>
             </div>
             <div className="min-w-0">
               <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">W/L Ratio</span>
@@ -452,7 +452,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             </div>
             <div className="min-w-0">
               <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Śr. zysk</span>
-              <div className="font-semibold mt-0.5 text-profit">
+              <div className="font-semibold mt-0.5 text-ds-pos">
                 {pnl.mode === "percent"
                   ? (initialBalance > 0 ? `${avgWin >= 0 ? "+" : ""}${((avgWin / initialBalance) * 100).toFixed(2)}%` : "—")
                   : `${avgWin >= 0 ? "+" : ""}${avgWin.toFixed(2)} ${account.currency || ""}`}
@@ -460,7 +460,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
             </div>
             <div className="min-w-0">
               <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Śr. strata</span>
-              <div className="font-semibold mt-0.5 text-loss">
+              <div className="font-semibold mt-0.5 text-ds-neg">
                 {pnl.mode === "percent"
                   ? (initialBalance > 0 ? `${((avgLoss / initialBalance) * 100).toFixed(2)}%` : "—")
                   : `${avgLoss.toFixed(2)} ${account.currency || ""}`}
@@ -487,7 +487,7 @@ function AccountCard({ account, trades, user, queryClient, onEdit, onDelete, onT
               {account.profit_target && (
                 <div className="min-w-0">
                   <span className="block truncate text-[10.5px] font-semibold uppercase tracking-[0.08em] text-ds-text3">Cel zysku</span>
-                  <div className="font-semibold mt-0.5 text-profit">{account.profit_target}</div>
+                  <div className="font-semibold mt-0.5 text-ds-pos">{account.profit_target}</div>
                 </div>
               )}
             </div>
@@ -509,7 +509,7 @@ function AccountForm({ account, onSubmit, onCancel, isLoading }) {
     Live: "#7DDC6B",
     Demo: "#9099B2",
     Challenge: "#E6B83A",
-    Funded: "hsl(var(--warning))"
+    Funded: "var(--ds-warn)"
   };
   const [formData, setFormData] = useState(account || {
     name: '',
@@ -607,7 +607,7 @@ function AccountForm({ account, onSubmit, onCancel, isLoading }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
     >
-      <Card className="bg-card border border-border">
+      <Card className="bg-card border border-ds-line">
         <CardHeader>
           <CardTitle>{account ? "Edytuj konto" : "Nowe konto"}</CardTitle>
         </CardHeader>

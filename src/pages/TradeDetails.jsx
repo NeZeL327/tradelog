@@ -115,7 +115,7 @@ function JournalTable({ trades, currentId, onSelect, t, dateFormat, showDate }) 
     <div className="overflow-auto h-full min-h-0">
       <table className="w-full text-[12px]">
         <thead>
-          <tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border">
+          <tr className="text-left text-[10px] uppercase tracking-wide text-muted-foreground border-b border-ds-line">
             {showDate && <th className="py-1.5 pr-2 font-medium">Data</th>}
             <th className="py-1.5 pr-2 font-medium">Symbol</th>
             <th className="py-1.5 pr-2 font-medium">Side</th>
@@ -133,8 +133,8 @@ function JournalTable({ trades, currentId, onSelect, t, dateFormat, showDate }) 
                 key={item.id}
                 onClick={() => { if (!active) onSelect(item); }}
                 className={cn(
-                  "border-b border-border transition-colors",
-                  active ? "bg-primary/10" : "cursor-pointer hover:bg-muted"
+                  "border-b border-ds-line transition-colors",
+                  active ? "bg-primary/10" : "cursor-pointer hover:bg-ds-s3"
                 )}
               >
                 {showDate && (
@@ -373,7 +373,7 @@ function ColResizeHandle({ onDrag }) {
       onPointerDown={onPointerDown}
       className="mx-1 hidden w-3 shrink-0 cursor-col-resize items-center justify-center self-stretch xl:flex"
     >
-      <div className="h-14 w-1.5 rounded-full bg-border hover:bg-primary/50" />
+      <div className="h-14 w-1.5 rounded-full bg-ds-line hover:bg-primary/50" />
     </div>
   );
 }
@@ -405,7 +405,7 @@ function RowResizeHandle({ onDrag }) {
       onPointerDown={onPointerDown}
       className="flex h-7 shrink-0 cursor-row-resize items-center justify-center"
     >
-      <div className="h-1.5 w-14 rounded-full bg-border hover:bg-primary/50" />
+      <div className="h-1.5 w-14 rounded-full bg-ds-line hover:bg-primary/50" />
     </div>
   );
 }
@@ -695,11 +695,11 @@ export default function TradeDetails() {
 
   return (
     <div className="flex flex-col gap-3">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-[12px] border border-border bg-card px-3 py-3 shadow-none">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-[12px] border border-ds-line bg-card px-3 py-3 shadow-none">
         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           <button
             type="button"
-            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-ds-s3"
             onClick={async () => {
               await flushDirty();
               navigate(createPageUrl("Journal"));
@@ -710,7 +710,7 @@ export default function TradeDetails() {
           </button>
           <button
             type="button"
-            className="h-8 w-8 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30"
+            className="h-8 w-8 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-ds-s3 disabled:opacity-30"
             disabled={!prevTrade}
             onClick={() => goToTrade(prevTrade)}
             aria-label="Poprzednia transakcja"
@@ -720,7 +720,7 @@ export default function TradeDetails() {
           <span className="text-[18px] font-semibold truncate">{trade.symbol || "—"}</span>
           <button
             type="button"
-            className="h-8 w-8 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-30"
+            className="h-8 w-8 shrink-0 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-ds-s3 disabled:opacity-30"
             disabled={!nextTrade}
             onClick={() => goToTrade(nextTrade)}
             aria-label="Następna transakcja"
@@ -758,7 +758,7 @@ export default function TradeDetails() {
 
       <div className="flex flex-col gap-3 xl:flex-row xl:items-start">
         <aside
-          className="flex h-[min(42vh,26rem)] min-h-[16rem] w-full flex-col overflow-hidden rounded-[12px] border border-border bg-card shadow-none xl:sticky xl:top-0 xl:h-[calc(100dvh-5.5rem)] xl:shrink-0"
+          className="flex h-[min(42vh,26rem)] min-h-[16rem] w-full flex-col overflow-hidden rounded-[12px] border border-ds-line bg-card shadow-none xl:sticky xl:top-0 xl:h-[calc(100dvh-5.5rem)] xl:shrink-0"
           style={wide ? { width: sideW } : undefined}
         >
           <TabStrip tabs={LEFT_TABS} value={leftTab} onChange={setLeftTab} variant="line" />
@@ -775,7 +775,7 @@ export default function TradeDetails() {
                   <button
                     type="button"
                     onClick={() => setFieldsOpen(true)}
-                    className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
+                    className="h-7 w-7 inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-ds-s3"
                     aria-label="Dostosuj widoczne pola"
                   >
                     <Settings2 className="h-3.5 w-3.5" />
@@ -788,7 +788,7 @@ export default function TradeDetails() {
                   t={t}
                   settingsInRow={false}
                 />
-                <div className="mt-5 pt-4 border-t border-border">
+                <div className="mt-5 pt-4 border-t border-ds-line">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-3">Tags</p>
                   <TagsTab
                     trade={trade}
@@ -827,7 +827,7 @@ export default function TradeDetails() {
           </div>
         </aside>
         <ColResizeHandle onDrag={dragX} />
-        <section className="flex min-w-0 flex-1 flex-col rounded-[12px] border border-border bg-card shadow-none">
+        <section className="flex min-w-0 flex-1 flex-col rounded-[12px] border border-ds-line bg-card shadow-none">
           <TabStrip tabs={RIGHT_TABS} value={rightTab} onChange={setRightTab} variant="line" />
 
           {rightTab === "notes" ? (
@@ -846,7 +846,7 @@ export default function TradeDetails() {
                 )}
               </div>
               <RowResizeHandle onDrag={dragBy} />
-              <div className="shrink-0 border-t border-border" style={{ minHeight: notesH }}>
+              <div className="shrink-0 border-t border-ds-line" style={{ minHeight: notesH }}>
                 <NotesDock {...notesDockProps} compact={false} />
               </div>
             </>

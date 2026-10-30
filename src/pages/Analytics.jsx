@@ -19,7 +19,8 @@ import { aggregateTagPerformance } from "@/lib/tradeTags";
 import { CHART, chartTooltipStyle, chartGridProps, chartBarRadius, chartSeriesProps } from "@/lib/chartTheme";
 import { SkeletonKpiRow, SkeletonBlock } from "@/components/ui/skeleton-block";
 import QuoteLine from "@/components/QuoteLine";
-import CountUpText from "@/components/CountUpText";
+import KpiStrip from "@/components/common/KpiStrip";
+import { PageHeader } from "@/components/common/PageShell";
 import MultiSelectFilter, { FILTER_LABEL_CLASS, FILTER_PANEL_CLASS, FILTER_TRIGGER_CLASS, filterItemClass } from "@/components/MultiSelectFilter";
 import DateRangeCalendar from "@/components/DateRangeCalendar";
 import { balanceForTrades } from "@/lib/pnlDisplay";
@@ -741,13 +742,11 @@ export default function Analytics() {
   return (
     <div className="analytics-page w-full min-h-0 space-y-3 dashboard-surface">
       <div className="max-w-none mx-0 space-y-3">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="cyber-page-title">{t('advancedAnalytics')}</h1>
-            <p className="cyber-page-sub">{t('detailedAnalysisOfAllAspects')}</p>
-          </div>
-          
-          <div className="flex gap-3 items-center">
+        <PageHeader
+          title={t('advancedAnalytics')}
+          subtitle={t('detailedAnalysisOfAllAspects')}
+          actions={(
+            <>
             <QuoteLine className="hidden lg:flex shrink-0" />
             <ImportButton 
               onImportSuccess={() => queryClient.invalidateQueries({ queryKey: ['trades'] })}
@@ -777,8 +776,9 @@ export default function Analytics() {
                 })()
               }}
             />
-          </div>
-        </div>
+            </>
+          )}
+        />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3 items-end">
           <div className="flex flex-col gap-1">
@@ -906,21 +906,7 @@ export default function Analytics() {
         </div>
 
         {/* Osobne szklane kafelki jak we wzorcu docs/design-reference/wzorzec-3; 5+4 na laptopie, 9 w rzędzie na szerokim ekranie. */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 min-[1700px]:grid-cols-9">
-          {kpiTiles.map((tile) => (
-            <div
-              key={tile.key}
-              className="min-w-0 rounded-[16px] border border-ds-line bg-ds-s2 px-4 py-3.5"
-              title={tile.title || `${tile.label}: ${tile.value} — ${tile.hint}`}
-            >
-              <p className="type-section mb-2 break-words">{tile.label}</p>
-              <p className={`type-metric-sm font-semibold break-words ${tile.tone === 'profit' ? 'text-ds-pos' : tile.tone === 'loss' ? 'text-ds-neg' : 'text-ds-text'}`}>
-                <CountUpText text={tile.value} />
-              </p>
-              <p className="type-secondary mt-1.5 line-clamp-2">{tile.hint}</p>
-            </div>
-          ))}
-        </div>
+        <KpiStrip items={kpiTiles} columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 min-[1700px]:grid-cols-9" />
 
         <Tabs value={activeTab} onValueChange={(value) => { setActiveTab(value); setTabSwitched(true); }} className="space-y-6">
           <TabsList indicator className="flex w-full overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

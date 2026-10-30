@@ -20,13 +20,13 @@ import { useDataExport } from "@/hooks/use-data-export";
 const priceId = import.meta.env.VITE_STRIPE_PRICE_ID;
 
 const STATUS_CONFIG = {
-  active:     { label: "Aktywna",      color: "bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit border-profit/30 dark:border-profit/30", dot: "bg-profit", icon: CheckCircle2 },
-  trialing:   { label: "Trial",        color: "bg-profit/10 text-profit dark:bg-profit/10 dark:text-profit border-profit/30 dark:border-profit/30", dot: "bg-profit", icon: CheckCircle2 },
-  past_due:   { label: "Zaległa",      color: "bg-warning/10 text-warning border-warning/30", dot: "bg-warning", icon: AlertTriangle },
-  canceled:   { label: "Anulowana",    color: "bg-loss/10 text-loss border-loss/30", dot: "bg-loss", icon: XCircle },
-  incomplete: { label: "Niekompletna", color: "bg-loss/10 text-loss border-loss/30", dot: "bg-loss", icon: XCircle },
-  unpaid:     { label: "Nieopłacona",  color: "bg-loss/10 text-loss border-loss/30", dot: "bg-loss", icon: XCircle },
-  free:       { label: "Nieaktywna",   color: "bg-loss/10 text-loss border-loss/30", dot: "bg-loss", icon: XCircle },
+  active:     { label: "Aktywna",      color: "bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] text-ds-pos border-[color:color-mix(in_srgb,var(--ds-pos)_30%,transparent)]", dot: "bg-ds-pos", icon: CheckCircle2 },
+  trialing:   { label: "Trial",        color: "bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] text-ds-pos border-[color:color-mix(in_srgb,var(--ds-pos)_30%,transparent)]", dot: "bg-ds-pos", icon: CheckCircle2 },
+  past_due:   { label: "Zaległa",      color: "bg-[color:color-mix(in_srgb,var(--ds-warn)_10%,transparent)] text-ds-warn border-[color:color-mix(in_srgb,var(--ds-warn)_30%,transparent)]", dot: "bg-ds-warn", icon: AlertTriangle },
+  canceled:   { label: "Anulowana",    color: "bg-[color:color-mix(in_srgb,var(--ds-neg)_10%,transparent)] text-ds-neg border-[color:color-mix(in_srgb,var(--ds-neg)_30%,transparent)]", dot: "bg-ds-neg", icon: XCircle },
+  incomplete: { label: "Niekompletna", color: "bg-[color:color-mix(in_srgb,var(--ds-neg)_10%,transparent)] text-ds-neg border-[color:color-mix(in_srgb,var(--ds-neg)_30%,transparent)]", dot: "bg-ds-neg", icon: XCircle },
+  unpaid:     { label: "Nieopłacona",  color: "bg-[color:color-mix(in_srgb,var(--ds-neg)_10%,transparent)] text-ds-neg border-[color:color-mix(in_srgb,var(--ds-neg)_30%,transparent)]", dot: "bg-ds-neg", icon: XCircle },
+  free:       { label: "Nieaktywna",   color: "bg-[color:color-mix(in_srgb,var(--ds-neg)_10%,transparent)] text-ds-neg border-[color:color-mix(in_srgb,var(--ds-neg)_30%,transparent)]", dot: "bg-ds-neg", icon: XCircle },
 };
 
 const FEATURES = [
@@ -58,8 +58,8 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-xl shadow-lg border border-border w-full max-w-3xl max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="bg-card rounded-xl shadow-lg border border-ds-line w-full max-w-3xl max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-ds-line">
           <div className="flex items-center gap-2">
             <Eye className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold text-foreground">Podgląd importu</span>
@@ -69,16 +69,16 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
         </div>
 
         <div className="p-4 space-y-3 overflow-auto flex-1">
-          <div className="flex items-center gap-2 p-3 rounded-md bg-muted/40 border border-border text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 p-3 rounded-md bg-ds-s2 border border-ds-line text-xs text-muted-foreground">
             <Info className="h-3.5 w-3.5 shrink-0" />
             Znaleziono <strong>{preview.rows.length}</strong> transakcji w pliku &nbsp;
             <span className="font-mono">{preview.file?.name}</span>.
             Poniżej pierwsze 5 wierszy.
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div className="overflow-x-auto rounded-lg border border-ds-line">
             <table className="w-full text-xs">
-              <thead className="bg-muted/30">
+              <thead className="bg-ds-s2">
                 <tr>
                   {cols.map((c) => (
                     <th key={c} className="px-2 py-1.5 text-left font-semibold text-muted-foreground uppercase tracking-wide">
@@ -89,7 +89,7 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
               </thead>
               <tbody>
                 {visibleRows.map((row, i) => (
-                  <tr key={i} className="border-t border-border">
+                  <tr key={i} className="border-t border-ds-line">
                     {cols.map((c) => (
                       <td key={c} className="px-2 py-1.5 text-muted-foreground">
                         {row[c] || <span className="text-muted-foreground">—</span>}
@@ -105,7 +105,7 @@ function ImportPreviewModal({ preview, onConfirm, onCancel, isImporting, FORMAT_
           )}
         </div>
 
-        <div className="flex gap-2 p-4 border-t border-border">
+        <div className="flex gap-2 p-4 border-t border-ds-line">
           <Button variant="outline" onClick={onCancel} className="flex-1" disabled={isImporting}>Anuluj</Button>
           <Button
             onClick={onConfirm}
@@ -219,13 +219,13 @@ export default function Billing() {
         <div className={cn(
           "flex items-center justify-between px-5 py-4 rounded-xl border",
           isPremium
-            ? "bg-profit/10 dark:bg-profit/10 border-profit/20 dark:border-profit/30"
+            ? "bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] border-[color:color-mix(in_srgb,var(--ds-pos)_20%,transparent)]"
             : "bg-ds-neg-tint border-ds-line"
         )}>
           <div className="flex items-center gap-3">
             {isPremium
-              ? <CheckCircle2 className="h-6 w-6 text-profit shrink-0" />
-              : <XCircle className="h-6 w-6 text-loss shrink-0" />
+              ? <CheckCircle2 className="h-6 w-6 text-ds-pos shrink-0" />
+              : <XCircle className="h-6 w-6 text-ds-neg shrink-0" />
             }
             <div>
               <p className="text-sm font-semibold text-foreground">
@@ -252,11 +252,11 @@ export default function Billing() {
         </div>
 
         {/* Plan card */}
-        <Card className={cn("border shadow-none", isPremium ? "border-primary/50" : "border-border")}>
+        <Card className={cn("border shadow-none", isPremium ? "border-primary/50" : "border-ds-line")}>
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-md border border-primary/35 bg-muted flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-md border border-primary/35 bg-ds-s2 flex items-center justify-center shrink-0">
                   <CreditCard className="h-6 w-6 text-primary" />
                 </div>
                 <div>
@@ -270,7 +270,7 @@ export default function Billing() {
                   <span className="text-sm text-muted-foreground">/ {t("billingPerMonth")}</span>
                 </div>
                 {trialEligible && !isPremium && (
-                  <Badge className="mt-1 border-primary/35 bg-muted text-primary text-xs">14 dni gratis</Badge>
+                  <Badge className="mt-1 border-primary/35 bg-ds-s2 text-primary text-xs">14 dni gratis</Badge>
                 )}
               </div>
             </div>
@@ -278,7 +278,7 @@ export default function Billing() {
           <CardContent className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {FEATURES.map(({ icon: Icon, label }) => (
-                <div key={label} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/30">
+                <div key={label} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-ds-s2">
                   <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                   <span className="text-xs text-muted-foreground leading-tight">{label}</span>
                 </div>
@@ -287,9 +287,9 @@ export default function Billing() {
             <div className="pt-2 space-y-2.5">
               {isPremium ? (
                 <>
-                  <div className="flex items-center justify-center gap-2 py-3 rounded-lg bg-profit/10 dark:bg-profit/10 border border-profit/20 dark:border-profit/30">
-                    <CheckCircle2 className="h-4 w-4 text-profit" />
-                    <span className="text-sm font-medium text-profit dark:text-profit">{t("billingActive")}</span>
+                  <div className="flex items-center justify-center gap-2 py-3 rounded-lg bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] border border-[color:color-mix(in_srgb,var(--ds-pos)_20%,transparent)]">
+                    <CheckCircle2 className="h-4 w-4 text-ds-pos" />
+                    <span className="text-sm font-medium text-ds-pos">{t("billingActive")}</span>
                   </div>
                   <Button variant="outline" onClick={handleManage} disabled={!user || isLoading} className="w-full gap-2">
                     <ExternalLink className="h-4 w-4" />
@@ -323,7 +323,7 @@ export default function Billing() {
         </Card>
 
         {/* Status details */}
-        <Card className="border-border">
+        <Card className="border-ds-line">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -332,14 +332,14 @@ export default function Billing() {
           </CardHeader>
           <CardContent className="space-y-2">
             {subscription.status === "trialing" && trialEndsAt && (
-              <div className="flex items-center gap-2 rounded-lg border border-profit/30 bg-profit/10 dark:bg-profit/10 px-3 py-2.5 text-xs text-profit dark:text-profit">
+              <div className="flex items-center gap-2 rounded-lg border border-[color:color-mix(in_srgb,var(--ds-pos)_30%,transparent)] bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] px-3 py-2.5 text-xs text-ds-pos">
                 <Clock className="h-3.5 w-3.5 shrink-0" />
                 {t("billingTrialEndsOn")} {trialEndsAt.toLocaleDateString("pl-PL")}
                 {trialDaysLeft !== null && ` (${trialDaysLeft} dni)`}
               </div>
             )}
             {["past_due", "incomplete", "unpaid"].includes(subscription.status) && (
-              <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs text-warning">
+              <div className="flex items-center gap-2 rounded-lg border border-[color:color-mix(in_srgb,var(--ds-warn)_30%,transparent)] bg-[color:color-mix(in_srgb,var(--ds-warn)_10%,transparent)] px-3 py-2.5 text-xs text-ds-warn">
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                 {t("billingTrialEnded")}
               </div>
@@ -354,12 +354,12 @@ export default function Billing() {
         </Card>
 
         {/* ─── Export Card ─────────────────────────────────────────────────── */}
-        <Card className="border-border">
+        <Card className="border-ds-line">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Download className="h-4 w-4 text-muted-foreground" />
               Eksport danych
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/30 animate-pulse">⚠ W budowie</span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-ds-warn bg-[color:color-mix(in_srgb,var(--ds-warn)_10%,transparent)] border border-[color:color-mix(in_srgb,var(--ds-warn)_30%,transparent)] animate-pulse">⚠ W budowie</span>
             </CardTitle>
             <CardDescription className="text-xs">
               Pobierz swoje transakcje lub pełną kopię zapasową wszystkich danych
@@ -371,9 +371,9 @@ export default function Billing() {
               <button
                 disabled={!user || isExportingCSV}
                 onClick={() => exportTradesCSV(user?.id)}
-                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-muted/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                className="flex items-start gap-3 p-3 rounded-lg border border-ds-line hover:border-primary/50 hover:bg-ds-s3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
               >
-                <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-md bg-ds-s2 flex items-center justify-center shrink-0">
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div>
@@ -388,10 +388,10 @@ export default function Billing() {
               <button
                 disabled={!user || isExporting}
                 onClick={() => exportAllData(user?.id)}
-                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary hover:bg-muted/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                className="flex items-start gap-3 p-3 rounded-lg border border-ds-line hover:border-primary hover:bg-ds-s3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
               >
-                <div className="w-8 h-8 rounded-lg bg-profit/10 dark:bg-profit/10 flex items-center justify-center shrink-0">
-                  <FileJson className="h-4 w-4 text-profit" />
+                <div className="w-8 h-8 rounded-lg bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] flex items-center justify-center shrink-0">
+                  <FileJson className="h-4 w-4 text-ds-pos" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">
@@ -403,7 +403,7 @@ export default function Billing() {
             </div>
 
             {/* Auto-backup info */}
-            <div className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-profit/10 dark:bg-profit/10 border border-profit/20 dark:border-profit/30 text-xs text-profit dark:text-profit">
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] border border-[color:color-mix(in_srgb,var(--ds-pos)_20%,transparent)] text-xs text-ds-pos">
               <RefreshCw className="h-3.5 w-3.5 shrink-0" />
               Backup automatyczny — Firestore synchronizuje dane w czasie rzeczywistym
             </div>
@@ -411,12 +411,12 @@ export default function Billing() {
         </Card>
 
         {/* ─── Import Card ─────────────────────────────────────────────────── */}
-        <Card className="border-border">
+        <Card className="border-ds-line">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Upload className="h-4 w-4 text-muted-foreground" />
               Import transakcji
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/30 animate-pulse">⚠ W budowie</span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider text-ds-warn bg-[color:color-mix(in_srgb,var(--ds-warn)_10%,transparent)] border border-[color:color-mix(in_srgb,var(--ds-warn)_30%,transparent)] animate-pulse">⚠ W budowie</span>
             </CardTitle>
             <CardDescription className="text-xs">
               Wczytaj transakcje z CSV — obsługujemy własny format, MT4/MT5 i TradingView
@@ -427,7 +427,7 @@ export default function Billing() {
             {/* Supported formats badges */}
             <div className="flex flex-wrap gap-1.5">
               {Object.entries(FORMAT_LABELS).map(([key, label]) => (
-                <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-xs text-muted-foreground border border-border">
+                <span key={key} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ds-s2 text-xs text-muted-foreground border border-ds-line">
                   <FileUp className="h-3 w-3" />
                   {label}
                 </span>
@@ -444,10 +444,10 @@ export default function Billing() {
                 "border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
                 dragOver
                   ? "border-primary bg-primary/10"
-                  : "border-border hover:border-primary/40 hover:bg-muted/50"
+                  : "border-ds-line hover:border-primary/40 hover:bg-ds-s3"
               )}
             >
-              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-ds-s2 flex items-center justify-center">
                 <FileUp className="h-5 w-5 text-muted-foreground" />
               </div>
               <div className="text-center">
@@ -469,7 +469,7 @@ export default function Billing() {
             {/* Format info */}
             <div className="space-y-2">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Wymagane kolumny (własny format):</p>
-              <div className="p-3 rounded-lg bg-muted/30 border border-border">
+              <div className="p-3 rounded-lg bg-ds-s2 border border-ds-line">
                 <code className="text-[11px] text-muted-foreground break-all">
                   date, symbol, direction, quantity, entry_price, exit_price, profit_loss
                 </code>
@@ -483,7 +483,7 @@ export default function Billing() {
         </Card>
 
         {/* ─── Import History Card ─────────────────────────────────────────── */}
-        <Card className="border-border">
+        <Card className="border-ds-line">
           <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowHistory((p) => !p)}>
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -508,7 +508,7 @@ export default function Billing() {
               ) : (
                 <div className="space-y-2">
                   {importHistory.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/30 text-xs">
+                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border border-ds-line bg-ds-s2 text-xs">
                       <div className="space-y-0.5">
                         <p className="font-medium text-foreground">
                           {FORMAT_LABELS[item.format] || item.format}
@@ -517,11 +517,11 @@ export default function Billing() {
                         <p className="text-muted-foreground">{formatHistoryDate(item.importedAt)}</p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-3">
-                        <span className="px-2 py-0.5 rounded-full bg-profit/10 dark:bg-profit/10 text-profit dark:text-profit">
+                        <span className="px-2 py-0.5 rounded-full bg-[color:color-mix(in_srgb,var(--ds-pos)_10%,transparent)] text-ds-pos">
                           ✓ {item.successRows}
                         </span>
                         {item.errorRows > 0 && (
-                          <span className="px-2 py-0.5 rounded-full bg-loss/10 text-loss">
+                          <span className="px-2 py-0.5 rounded-full bg-[color:color-mix(in_srgb,var(--ds-neg)_10%,transparent)] text-ds-neg">
                             ✗ {item.errorRows}
                           </span>
                         )}

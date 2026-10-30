@@ -161,8 +161,8 @@ export default function Strategies() {
                 <ResponsiveContainer width="100%" height={350}>
                   <BarChart data={chartData}>
                     <CartesianGrid {...chartGridProps} />
-                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
-                    <YAxis domain={[yMin, yMax]} stroke="hsl(var(--muted-foreground))" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }} />
+                    <XAxis dataKey="name" stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} />
+                    <YAxis domain={[yMin, yMax]} stroke="var(--ds-text3)" tick={{ fill: 'var(--ds-text3)', fontSize: 11 }} />
                     <Tooltip contentStyle={chartTooltipStyle} />
                     <Legend iconType="circle" iconSize={8} />
                     <Bar dataKey="winRate" fill={CHART.accent} name="Win Rate (%)" radius={chartBarRadius} maxBarSize={56} {...chartSeriesProps} />
@@ -367,7 +367,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 {formData.timeframes.map((tf, idx) => (
-                  <Badge key={idx} className="bg-muted text-foreground">
+                  <Badge key={idx} className="bg-ds-s2 text-foreground">
                     {tf}
                     <button
                       type="button"
@@ -394,7 +394,7 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 {formData.instruments.map((inst, idx) => (
-                  <Badge key={idx} className="bg-muted text-foreground">
+                  <Badge key={idx} className="bg-ds-s2 text-foreground">
                     {inst}
                     <button
                       type="button"
@@ -508,8 +508,8 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
                       >
                         <Star
                           className="w-6 h-6"
-                          fill={rating <= (formData.performance_rating || 0) ? "hsl(var(--warning))" : "none"}
-                          color={rating <= (formData.performance_rating || 0) ? "hsl(var(--warning))" : "hsl(var(--border))"}
+                          fill={rating <= (formData.performance_rating || 0) ? "var(--ds-warn)" : "none"}
+                          color={rating <= (formData.performance_rating || 0) ? "var(--ds-warn)" : "var(--ds-line)"}
                         />
                       </button>
                     ))}
@@ -556,9 +556,9 @@ function StrategyForm({ strategy, onSubmit, onCancel }) {
 function StrategyCard({ strategy, stats, onEdit, onDelete }) {
   const accent = strategy.color || "var(--ds-text3)";
   const statusStyles = {
-    Aktywna: "bg-profit/12 text-profit dark:text-profit border-profit/25",
-    Testowa: "bg-warning/12 text-warning border-warning/25",
-    Archiwalna: "bg-muted text-muted-foreground border-border",
+    Aktywna: "bg-[color:color-mix(in_srgb,var(--ds-pos)_12%,transparent)] text-ds-pos border-[color:color-mix(in_srgb,var(--ds-pos)_25%,transparent)]",
+    Testowa: "bg-[color:color-mix(in_srgb,var(--ds-warn)_12%,transparent)] text-ds-warn border-[color:color-mix(in_srgb,var(--ds-warn)_25%,transparent)]",
+    Archiwalna: "bg-ds-s2 text-muted-foreground border-ds-line",
   };
 
   return (
@@ -575,7 +575,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
         style={{ background: `linear-gradient(90deg, ${accent}, transparent 70%)` }}
       />
 
-      <CardHeader className="relative z-[2] border-b border-border pb-4 pt-5">
+      <CardHeader className="relative z-[2] border-b border-ds-line pb-4 pt-5">
         <div className="flex justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -590,7 +590,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
               </Badge>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-primary">
+              <span className="inline-flex items-center rounded-md bg-ds-s2 px-2 py-0.5 text-xs font-medium text-primary">
                 {strategy.category}
               </span>
               {strategy.performance_rating > 0 && (
@@ -599,8 +599,8 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
                     <Star
                       key={i}
                       className="h-3.5 w-3.5"
-                      fill={i < strategy.performance_rating ? "hsl(var(--warning))" : "none"}
-                      color={i < strategy.performance_rating ? "hsl(var(--warning))" : "hsl(var(--muted-foreground))"}
+                      fill={i < strategy.performance_rating ? "var(--ds-warn)" : "none"}
+                      color={i < strategy.performance_rating ? "var(--ds-warn)" : "var(--ds-text3)"}
                     />
                   ))}
                 </div>
@@ -611,7 +611,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-ds-s3 hover:text-foreground"
               onClick={() => { window.location.href = `${createPageUrl("StrategyDetails")}?id=${strategy.id}`; }}
               title="Szczegóły strategii"
             >
@@ -620,7 +620,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-ds-s3 hover:text-foreground"
               onClick={onEdit}
               title="Edytuj strategię"
             >
@@ -629,7 +629,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-loss/10 hover:text-loss dark:hover:text-loss"
+              className="h-9 w-9 rounded-lg text-muted-foreground hover:bg-[color:color-mix(in_srgb,var(--ds-neg)_10%,transparent)] hover:text-ds-neg dark:hover:text-ds-neg"
               onClick={onDelete}
               title="Usuń strategię"
             >
@@ -642,19 +642,19 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
       <CardContent className="relative z-[2] space-y-4 pt-5">
         {stats && stats.trades > 0 && (
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <div className="rounded-md border border-border bg-muted p-3 text-center">
+            <div className="rounded-md border border-ds-line bg-ds-s2 p-3 text-center">
               <Target className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
               <p className="text-lg font-bold tabular-nums text-foreground">{stats.winRate}%</p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Win Rate</p>
             </div>
-            <div className="rounded-md border border-border bg-muted p-3 text-center">
-              <TrendingUp className="mx-auto mb-1 h-5 w-5 text-profit dark:text-profit" />
+            <div className="rounded-md border border-ds-line bg-ds-s2 p-3 text-center">
+              <TrendingUp className="mx-auto mb-1 h-5 w-5 text-ds-pos" />
               <p
                 className={cn(
                   "text-lg font-bold tabular-nums",
                   parseFloat(stats.avgPL) >= 0
-                    ? "text-profit dark:text-profit"
-                    : "text-loss dark:text-loss"
+                    ? "text-ds-pos"
+                    : "text-ds-neg"
                 )}
               >
                 {parseFloat(stats.avgPL) > 0 ? "+" : ""}
@@ -662,7 +662,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
               </p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Średni P&amp;L</p>
             </div>
-            <div className="rounded-md border border-border bg-muted p-3 text-center">
+            <div className="rounded-md border border-ds-line bg-ds-s2 p-3 text-center">
               <Award className="mx-auto mb-1 h-5 w-5 text-muted-foreground" />
               <p className="text-lg font-bold tabular-nums text-foreground">{stats.trades}</p>
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Transakcje</p>
@@ -673,7 +673,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
         {stats && stats.trades > 0 && (
           <div
             className={cn(
-              "flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3",
+              "flex items-center justify-between rounded-xl border border-ds-line bg-ds-s2 px-4 py-3",
             )}
           >
             <span className="text-sm font-semibold text-foreground/90">Łączny P&amp;L</span>
@@ -681,8 +681,8 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
               className={cn(
                 "text-2xl font-bold tabular-nums tracking-tight",
                 parseFloat(stats.totalPL) >= 0
-                  ? "text-profit dark:text-profit"
-                  : "text-loss dark:text-loss"
+                  ? "text-ds-pos"
+                  : "text-ds-neg"
               )}
             >
               {parseFloat(stats.totalPL) > 0 ? "+" : ""}
@@ -692,14 +692,14 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
         )}
 
         {strategy.description && (
-          <div className="rounded-xl border border-border bg-muted p-3">
+          <div className="rounded-xl border border-ds-line bg-ds-s2 p-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Opis</p>
             <p className="text-sm leading-relaxed text-foreground/85">{strategy.description}</p>
           </div>
         )}
 
         {strategy.rules && (
-          <div className="rounded-xl border border-border bg-muted p-3">
+          <div className="rounded-xl border border-ds-line bg-ds-s2 p-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ds-text2">Zasady</p>
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{strategy.rules}</p>
           </div>
@@ -724,7 +724,7 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
               <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Instrumenty</p>
               <div className="flex flex-wrap gap-1.5">
                 {strategy.instruments.map((inst, idx) => (
-                  <Badge key={idx} className="rounded-md border-0 bg-muted font-normal text-foreground">
+                  <Badge key={idx} className="rounded-md border-0 bg-ds-s2 font-normal text-foreground">
                     {inst}
                   </Badge>
                 ))}
@@ -734,14 +734,14 @@ function StrategyCard({ strategy, stats, onEdit, onDelete }) {
         </div>
 
         {strategy.target_rr && (
-          <div className="flex items-center justify-between rounded-xl border border-border bg-muted px-4 py-3">
-            <span className="text-sm font-semibold text-warning">Docelowy R:R</span>
-            <span className="text-xl font-bold tabular-nums text-warning">1:{strategy.target_rr}</span>
+          <div className="flex items-center justify-between rounded-xl border border-ds-line bg-ds-s2 px-4 py-3">
+            <span className="text-sm font-semibold text-ds-warn">Docelowy R:R</span>
+            <span className="text-xl font-bold tabular-nums text-ds-warn">1:{strategy.target_rr}</span>
           </div>
         )}
 
         {strategy.notes && (
-          <div className="rounded-xl border border-border bg-muted p-3">
+          <div className="rounded-xl border border-ds-line bg-ds-s2 p-3">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notatki</p>
             <p className="text-sm leading-relaxed text-foreground/85">{strategy.notes}</p>
           </div>
