@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PageHeader } from "@/components/common/PageShell";
 import { toast } from "sonner";
 import {
   AppWindow,
@@ -427,18 +428,11 @@ export default function Calculators() {
 
   return (
     <div className="space-y-4 pb-24">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="cyber-page-title flex items-center gap-2">
-            <Calculator className="w-7 h-7 text-primary shrink-0" />
-            Kalkulatory
-          </h1>
-          <p className="cyber-page-sub mt-1">
-            Narzędzia do analizy, planowania i zarządzania pozycją. Używaj gotowych kalkulatorów lub twórz własne.
-          </p>
-        </div>
-        <QuoteLine className="hidden lg:flex shrink-0" />
-      </div>
+      <PageHeader
+        title="Kalkulatory"
+        subtitle="Narzędzia do analizy, planowania i zarządzania pozycją. Używaj gotowych kalkulatorów lub twórz własne."
+        actions={<QuoteLine className="hidden lg:flex shrink-0" />}
+      />
 
       <div className="flex flex-wrap justify-end gap-2">
         <Button type="button" size="sm" className="gap-1.5" onClick={() => openFloatingCalculatorPip(pipKind(selectedId))}>

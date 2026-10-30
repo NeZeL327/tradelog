@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import DailyLimitHint from "@/components/calculators/DailyLimitHint";
 import { Label } from "@/components/ui/label";
 import {
   computeBreakEven,
@@ -98,6 +99,7 @@ export default function MathCalculatorBody({ id, state, onChange }) {
           <Result label="Potential profit" value={formatNum(r.potentialProfit, 2)} />
           <Result label="Pip value / lot" value={formatNum(r.pipValue, 2)} />
         </div>
+        <DailyLimitHint riskAmount={r.riskUsd} />
       </div>
     );
   }

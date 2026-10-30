@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { PageHeader } from "@/components/common/PageShell";
 import { SkeletonBlock } from "@/components/ui/skeleton-block";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -210,10 +211,7 @@ export default function Billing() {
       <div className="max-w-3xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="text-center pt-2 pb-2">
-          <h1 className="cyber-page-title">{t("billingTitle")}</h1>
-          <p className="cyber-page-sub">{t("billingSubtitle")}</p>
-        </div>
+        <PageHeader title={t("billingTitle")} subtitle={t("billingSubtitle")} />
 
         {/* Status banner */}
         <div className={cn(

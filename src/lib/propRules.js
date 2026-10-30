@@ -131,3 +131,19 @@ export function computePropStatus(account, trades, { today = new Date() } = {}) 
     hasLimits: Boolean(daily || total || target),
   };
 }
+
+/**
+ * Czy planowane ryzyko transakcji zmieści się w pozostałym dziennym limicie konta (szacunek, tylko odczyt).
+ * status: wynik computePropStatus; riskAmount: kwota ryzyka transakcji. null = brak danych do oceny.
+ */
+export function dailyLimitFit(status, riskAmount) {
+  const risk = Number(riskAmount);
+  if (!status?.daily || !(risk > 0)) return null;
+  const left = Math.max(0, status.daily.limit - status.daily.todayLoss);
+  return {
+    riskPctOfAccount: status.initial ? round2((risk / status.initial) * 100) : null,
+    left: round2(left),
+    fits: risk <= left + 1e-9,
+    usedAfter: (status.daily.todayLoss + risk) / status.daily.limit,
+  };
+}

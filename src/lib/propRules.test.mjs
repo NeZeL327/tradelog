@@ -121,3 +121,12 @@ test("progi koloru i daty z Firestore", () => {
   );
   assert.equal(s.lastChange.toISOString(), "2026-10-30T10:00:00.000Z");
 });
+
+test("kalkulator: czy ryzyko zmieści się w limicie dziennym", () => {
+  const s = p.computePropStatus(account, [trade(1, "2026-10-30", -300)], { today });
+  const ok = p.dailyLimitFit(s, 100);
+  assert.deepEqual(ok, { riskPctOfAccount: 1, left: 200, fits: true, usedAfter: 0.8 });
+  assert.equal(p.dailyLimitFit(s, 250).fits, false);
+  assert.equal(p.dailyLimitFit(s, 0), null);
+  assert.equal(p.dailyLimitFit(p.computePropStatus({ id: "a1", initial_balance: 5000 }, [], { today }), 100), null);
+});
