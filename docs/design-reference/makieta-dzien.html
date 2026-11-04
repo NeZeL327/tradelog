@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="pl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AiKeepTrade Dzień</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: icon rail + main. Two views: "Mój dzień" (Start-my-day flow: Plan → Handel → Import → Przegląd, right rail with daily score, heatmap, limits)
+   and "Dziennik dni" (Tradezella-style list of day cards with intraday curve + stats, mini calendar on the right) */
+:root{
+  --bg:#070b16; --panel:rgba(255,255,255,.035); --panel2:rgba(255,255,255,.06);
+  --line:rgba(255,255,255,.075); --line2:rgba(255,255,255,.13);
+  --fg:#e6e9f2; --mute:#7f8aa3; --dim:#4f5a72;
+  --accent:#6b7cf5; --accent2:#8c99ff; --accentbg:rgba(107,124,245,.14);
+  --win:#78d66a; --winbg:rgba(120,214,106,.12); --loss:#f2646a; --lossbg:rgba(242,100,106,.12); --warn:#e3b341; --warnbg:rgba(227,179,65,.12);
+  --sans:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r:14px; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5;
+  background-image:radial-gradient(900px 380px at 55% -120px,rgba(70,100,220,.28),transparent 70%);background-attachment:fixed;min-height:100%}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+.frame{display:flex;min-height:100vh;padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.shell{flex:1;display:flex;border:1px solid var(--line2);border-radius:20px;overflow:hidden;background:rgba(7,11,22,.55);min-width:0}
+.rail{width:60px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 0;flex-shrink:0}
+.rail .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--mute);position:relative}
+.rail .ic.on{background:var(--accentbg);color:var(--fg);box-shadow:inset 0 0 0 1px rgba(107,124,245,.5)}
+.rail .ic.on::after{content:"";position:absolute;right:-12px;top:9px;width:2px;height:18px;background:var(--fg);border-radius:2px}
+.rail .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(140deg,var(--accent2),#3346c9);margin-bottom:12px}
+.rail .plus{margin-top:10px;width:32px;height:32px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:#fff;border:0}
+main{flex:1;min-width:0;padding:22px clamp(16px,3vw,36px) 40px}
+.ico{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.pos{color:var(--win)} .neg{color:var(--loss)}
+
+/* header */
+.head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px}
+.head h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.eg{font-size:11px;color:var(--warn);border:1px solid rgba(227,179,65,.35);border-radius:6px;padding:1px 7px;font-weight:600}
+.hctl{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 13px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);font-size:13px;white-space:nowrap}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--win)}
+.tabs{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line2);border-radius:11px;background:rgba(0,0,0,.25)}
+.tabs button{border:0;background:transparent;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;color:var(--mute)}
+.tabs button.on{background:var(--panel2);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line2)}
+
+/* stepper */
+.steps{display:flex;align-items:stretch;gap:0;margin-bottom:18px;border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:6px;overflow-x:auto}
+.step{flex:1;border:0;background:transparent;border-radius:10px;padding:10px 12px;text-align:left;display:flex;gap:11px;align-items:center;min-width:150px;position:relative}
+.step+.step::before{content:"";position:absolute;left:-1px;top:22%;bottom:22%;width:1px;background:var(--line)}
+.step .num{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-weight:700;font-size:12.5px;border:1.5px solid var(--line2);color:var(--mute)}
+.step .t{font-weight:600;font-size:13.5px}
+.step .s{font-size:11.5px;color:var(--mute);white-space:nowrap}
+.step.on{background:var(--panel2);box-shadow:inset 0 0 0 1px rgba(107,124,245,.55)}
+.step.on .num{border-color:var(--accent);color:#fff;background:var(--accent)}
+.step.done .num{border-color:var(--win);color:var(--win);background:var(--winbg)}
+.step.lock{flex:0 0 auto;min-width:0}
+.step.lock .num{border-style:dashed}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:18px;align-items:start}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{border:1px solid var(--line);border-radius:var(--r);background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));padding:18px;min-width:0}
+.ch{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.ch h2{margin:0;font-size:15px;font-weight:700}
+.ch .h{font-size:12px;color:var(--mute)}
+.lab{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);font-weight:600}
+
+/* sessions */
+.sess{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ses{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:13px 14px;text-align:left;display:flex;flex-direction:column;gap:4px;min-width:0}
+.ses .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.ses .nm{font-weight:700;font-size:15px}
+.ses .tm{font-family:var(--mono);font-size:12px;color:var(--mute)}
+.ses .kz{font-size:11.5px;color:var(--mute)}
+.tag{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;border-radius:6px;padding:2px 7px;white-space:nowrap}
+.tag.open{color:var(--win);background:var(--winbg)} .tag.off{color:var(--dim);background:rgba(255,255,255,.04)} .tag.soon{color:var(--warn);background:var(--warnbg)}
+.tag.auto{color:var(--accent2);background:var(--accentbg)}
+.ses.on{border-color:var(--accent);background:var(--accentbg);box-shadow:0 0 0 3px rgba(107,124,245,.13)}
+
+/* mood faces */
+.mood{display:flex;gap:8px;flex-wrap:wrap}
+.mood button{flex:1;min-width:64px;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 6px 8px;font-size:12px;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:6px}
+.mood button svg{width:28px!important;height:28px!important}
+.mbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.mood button.on{border-color:var(--mc);color:var(--fg);background:color-mix(in srgb,var(--mc) 12%,transparent)}
+.mood button.on svg{color:var(--mc)}
+.moodnote{margin-top:10px}
+
+/* bias rows */
+.bias{display:flex;flex-direction:column;gap:8px}
+.brow{display:grid;grid-template-columns:84px auto minmax(0,1fr);gap:10px;align-items:center}
+.brow .sym{font-family:var(--mono);font-weight:500;font-size:13px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:9px;padding:2px;gap:2px;background:rgba(0,0,0,.2)}
+.seg button{border:0;background:transparent;border-radius:7px;padding:5px 10px;font-size:12px;color:var(--mute);font-weight:600}
+.seg button.on.L{background:var(--winbg);color:var(--win)}
+.seg button.on.S{background:var(--lossbg);color:var(--loss)}
+.seg button.on.N{background:rgba(255,255,255,.08);color:var(--fg)}
+.inp{width:100%;min-width:0;height:34px;border-radius:9px;border:1px solid var(--line);background:rgba(0,0,0,.22);padding:0 11px;font-size:13px}
+.inp::placeholder,textarea::placeholder{color:var(--dim)}
+textarea.inp{height:auto;min-height:74px;padding:9px 11px;resize:vertical;line-height:1.5}
+select.inp{padding:0 8px;height:30px;font-size:12.5px;width:auto}
+
+/* limits */
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.rule{border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:var(--panel)}
+.rule .v{display:flex;align-items:center;gap:8px;margin-top:6px}
+.rule .v b{font-family:var(--mono);font-size:17px;font-weight:500;min-width:52px}
+.mini{width:26px;height:26px;border-radius:7px;border:1px solid var(--line2);background:transparent;color:var(--mute);display:grid;place-items:center;font-size:15px;line-height:1}
+
+/* rule checklist */
+.chk{display:flex;flex-direction:column;gap:6px}
+.ci{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:transparent;text-align:left;width:100%}
+.ci .bx{width:19px;height:19px;border-radius:6px;border:1.5px solid var(--line2);flex-shrink:0;display:grid;place-items:center}
+.ci.on .bx{background:var(--accent);border-color:var(--accent)}
+.ci.on .bx::after,.ci.ok .bx::after{content:"";width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.ci.ok .bx{background:var(--win);border-color:var(--win)}
+.ci.ok .bx::after{border-color:#0d1a12}
+.ci.bad .bx{border-color:var(--loss);background:var(--lossbg)}
+.ci.on .tx b,.ci.ok .tx b{color:var(--mute)}
+.ci .tx{flex:1;font-size:13.5px;min-width:0}
+.ci .tx b{font-weight:500}
+.ci .tx small{display:block;color:var(--dim);font-size:11.5px}
+.ci.auto{cursor:default}
+
+.btn{height:40px;padding:0 18px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;justify-content:center;white-space:nowrap}
+.btn.sm{height:32px;padding:0 12px;font-size:12.5px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:disabled{background:rgba(107,124,245,.25);border-color:transparent;color:rgba(255,255,255,.5);cursor:not-allowed}
+.btn.ok{background:var(--win);border-color:var(--win);color:#0b1a0e}
+.actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.actions .why{font-size:12.5px;color:var(--mute)}
+
+/* trading */
+.livegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.meter .bar{height:6px;border-radius:4px;background:rgba(255,255,255,.07);margin-top:9px;overflow:hidden}
+.meter .bar i{display:block;height:100%;border-radius:4px}
+.meter .big{font-family:var(--mono);font-size:20px;font-weight:500;margin-top:4px}
+.meter .sub{font-size:12px;color:var(--mute)}
+.tw{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);text-align:left;font-weight:600;padding:0 10px 8px;white-space:nowrap}
+.tbl td{padding:9px 10px;border-top:1px solid var(--line);white-space:nowrap}
+.tbl td.r,.tbl th.r{text-align:right}
+.dir{font-size:11px;font-weight:700;border-radius:5px;padding:2px 6px}
+.dir.L{color:var(--win);background:var(--winbg)} .dir.S{color:var(--loss);background:var(--lossbg)}
+.disc{width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font-size:11px;font-weight:700;border:1.5px solid}
+.notes{display:flex;flex-direction:column;max-height:260px;overflow:auto}
+.note{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
+.note:first-child{border-top:0}
+.note time{font-family:var(--mono);font-size:12px;color:var(--mute);padding-top:1px}
+.nadd{display:flex;gap:8px;margin-top:10px}
+.qchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);background:transparent;border-radius:999px;padding:5px 11px;font-size:12px;color:var(--mute)}
+.chip i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.chip.on{color:var(--loss);border-color:rgba(242,100,106,.45);background:var(--lossbg)}
+.chip.good.on{color:var(--win);border-color:rgba(120,214,106,.45);background:var(--winbg)}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:10px;background:var(--warnbg);border:1px solid rgba(227,179,65,.3);font-size:13px}
+.alert b{color:var(--warn)}
+
+/* import */
+.imp{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.imp .src{width:44px;height:44px;border-radius:11px;background:var(--panel2);border:1px solid var(--line2);display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:500}
+.imp .meta{flex:1;min-width:180px}
+.imp .meta b{display:block;font-size:14px}
+.imp .meta span{font-size:12.5px;color:var(--mute)}
+
+/* review */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:13px 14px;background:var(--panel)}
+.kpi .big{font-family:var(--mono);font-size:21px;font-weight:500;margin-top:4px}
+.kpi .sub{font-size:12px;color:var(--mute)}
+.chart{width:100%;height:auto;display:block}
+.refl{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.refl label,.fl{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--mute);font-weight:600}
+.stars{display:flex;gap:6px}
+.stars button{flex:1;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--panel);font-family:var(--mono);color:var(--mute)}
+.stars button.on{background:var(--accentbg);border-color:var(--accent);color:var(--fg)}
+.done-banner{display:flex;gap:14px;align-items:center;padding:16px 18px;border-radius:var(--r);border:1px solid rgba(120,214,106,.35);background:var(--winbg)}
+.done-banner b{font-size:15px}
+
+/* right rail */
+aside{position:sticky;top:16px;display:flex;flex-direction:column;gap:14px}
+.ring{display:flex;align-items:center;gap:16px}
+.ring .t{font-size:13px;color:var(--mute)}
+.ring .t b{display:block;color:var(--fg);font-size:15px}
+.groups{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.grp .row{display:flex;justify-content:space-between;font-size:12.5px}
+.grp .row span:last-child{font-family:var(--mono);color:var(--mute)}
+.grp .bar{height:5px;border-radius:4px;background:rgba(255,255,255,.07);margin-top:5px;overflow:hidden}
+.grp .bar i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .3s}
+.heat{display:grid;grid-template-columns:18px repeat(12,1fr);gap:3px;margin-top:12px;font-size:9.5px;color:var(--dim);font-family:var(--mono)}
+.heat i{aspect-ratio:1;border-radius:3px;background:rgba(255,255,255,.05);max-width:100%}
+.heat i.l1{background:rgba(242,100,106,.45)} .heat i.l2{background:rgba(227,179,65,.45)} .heat i.l3{background:rgba(120,214,106,.4)} .heat i.l4{background:rgba(120,214,106,.8)}
+.heat i.now{box-shadow:0 0 0 1.5px var(--accent2)}
+.heat i.fut{background:transparent;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.legend{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--mute);margin-top:10px}
+.legend i{width:10px;height:10px;border-radius:2px}
+.sstats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.sstats div{border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.sstats b{display:block;font-family:var(--mono);font-size:17px;font-weight:500}
+.sstats span{font-size:11.5px;color:var(--mute)}
+.lim{display:flex;flex-direction:column;gap:12px}
+.lim .row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mute);gap:8px}
+.lim .row b{color:var(--fg);font-family:var(--mono);font-weight:500}
+.lim .bar{height:5px;border-radius:4px;background:rgba(255,255,255,.07);margin-top:6px;overflow:hidden}
+.lim .bar i{display:block;height:100%}
+.planbox{font-size:13px;color:var(--mute);display:flex;flex-direction:column;gap:6px}
+.planbox b{color:var(--fg);font-weight:600}
+
+/* ---- journal view ---- */
+.jtop{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.jtop h2{margin:0;font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px}
+.jtop h2 .navb{width:30px;height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--panel);display:grid;place-items:center;color:var(--mute)}
+.jsum{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0;border:1px solid var(--line2);border-radius:var(--r);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));margin-bottom:14px;overflow:hidden}
+.jsum>div{padding:14px 16px;border-left:1px solid var(--line);min-width:0}
+.jsum>div:first-child{border-left:0}
+.jsum>div>span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600;white-space:nowrap}
+.jsum>div>b{display:block;font-family:var(--mono);font-weight:500;font-size:20px;margin-top:3px;white-space:nowrap}
+.jsum small{font-size:11.5px;color:var(--mute);font-family:var(--mono)}
+.mcal{border:1px solid var(--line2);border-radius:var(--r);background:rgba(255,255,255,.025);padding:12px;margin-bottom:22px}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr)) minmax(0,1.1fr);gap:6px}
+.mgrid .wd{font-size:11px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:0 4px 4px}
+.cd{min-height:84px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.02);padding:8px 9px;display:flex;flex-direction:column;justify-content:space-between;text-align:left;min-width:0;color:var(--fg)}
+.cd .n{font-family:var(--mono);font-size:12px;color:var(--mute)}
+.cd .v{font-family:var(--mono);font-size:14.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cd .c{font-size:11px;color:var(--mute);white-space:nowrap}
+.cd.w{background:rgba(120,214,106,.13);border-color:rgba(120,214,106,.38)}
+.cd.w .v{color:var(--win)}
+.cd.l{background:rgba(242,100,106,.13);border-color:rgba(242,100,106,.38)}
+.cd.l .v{color:var(--loss)}
+.cd.out{opacity:.38}
+.cd.we{background:transparent;border-style:dashed;border-color:rgba(255,255,255,.05)}
+.cd.t{box-shadow:0 0 0 2px var(--accent2)}
+.cd.sel{outline:2px solid #fff;outline-offset:1px}
+button.cd:hover{border-color:var(--line2)}
+.cwk{min-height:84px;border-radius:10px;background:var(--panel2);padding:8px 10px;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+.cwk .n{font-size:11px;color:var(--mute);font-weight:600}
+.cwk .v{font-family:var(--mono);font-size:14.5px;font-weight:500}
+.cwk .c{font-size:11px;color:var(--mute)}
+.fbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.fbar .chip{font-weight:600}
+.fbar .chip.on{color:var(--fg);border-color:var(--accent);background:var(--accentbg)}
+.fbar .sp{flex:1}
+.jlist{display:flex;flex-direction:column;gap:14px}
+.jday{border:1px solid var(--line2);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018));overflow:hidden;scroll-margin-top:20px}
+.jday.today{border-color:rgba(107,124,245,.55)}
+.jday.flash{box-shadow:0 0 0 3px rgba(140,153,255,.45)}
+.jhead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px}
+.dbox{width:54px;height:58px;border-radius:12px;border:1px solid var(--line2);background:rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.dbox b{font-family:var(--mono);font-size:22px;font-weight:500}
+.dbox span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:700;margin-top:3px}
+.jtitle{min-width:0}
+.jtitle .dt{font-weight:700;font-size:15.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.jtitle .meta{font-size:12.5px;color:var(--mute);margin-top:3px;display:flex;gap:6px 12px;flex-wrap:wrap}
+.jtitle .meta i{font-style:normal;color:var(--fg)}
+.jright{display:flex;align-items:center;gap:14px}
+.jnet{text-align:right}
+.jnet b{display:block;font-family:var(--mono);font-size:21px;font-weight:500;line-height:1.2}
+.jnet span{font-size:11.5px;color:var(--mute);font-family:var(--mono)}
+.jring{display:flex;flex-direction:column;align-items:center;font-size:10px;color:var(--mute);gap:2px;font-weight:600;letter-spacing:.04em}
+.jface{width:26px;height:26px}
+.jmid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);border-top:1px solid var(--line)}
+.jchart{padding:12px 14px 8px;border-right:1px solid var(--line);min-width:0}
+.jchart .lab{margin-bottom:4px}
+.jst{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.jst>div{padding:12px 14px;border-left:1px solid var(--line);border-top:1px solid var(--line);min-width:0}
+.jst>div:nth-child(3n+1){border-left:0}
+.jst>div:nth-child(-n+3){border-top:0}
+.jst>div>span{display:block;font-size:10.5px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em;font-weight:600;white-space:nowrap}
+.jst>div>b{display:block;font-family:var(--mono);font-weight:500;font-size:16px;margin-top:2px;white-space:nowrap}
+.jtr{border-top:1px solid var(--line);padding:6px 6px 2px}
+.jtr .tbl td{padding:8px 10px}
+.jfoot{border-top:1px solid var(--line);padding:12px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 16px;align-items:start;background:rgba(0,0,0,.12)}
+.jfoot .txt{font-size:13px;color:var(--fg);display:flex;flex-direction:column;gap:4px}
+.jfoot .txt span{color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.jfoot .tg{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:340px}
+.jfoot .chip{padding:3px 9px;font-size:11.5px;cursor:default}
+.jtoggle{display:flex;justify-content:center;border-top:1px solid var(--line)}
+.jtoggle button{border:0;background:transparent;color:var(--mute);font-size:12.5px;font-weight:600;padding:9px 12px;display:flex;align-items:center;gap:6px}
+.jtoggle button:hover{color:var(--fg)}
+.empty{border:1px dashed var(--line2);border-radius:var(--r);padding:28px;text-align:center;color:var(--mute)}
+@media (max-width:1000px){.jsum{grid-template-columns:repeat(3,minmax(0,1fr))}.jsum>div:nth-child(4){border-left:0}.jsum>div:nth-child(n+4){border-top:1px solid var(--line)}}
+@media (max-width:760px){
+  .jsum{grid-template-columns:repeat(2,minmax(0,1fr))}.jsum>div{border-left:1px solid var(--line)!important;border-top:1px solid var(--line)}.jsum>div:nth-child(odd){border-left:0!important}.jsum>div:nth-child(-n+2){border-top:0}
+  .mgrid{grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.mgrid .wk,.cwk{display:none}
+  .cd{min-height:48px;padding:4px;border-radius:7px;align-items:center;justify-content:center;gap:2px}.cd .c{display:none}.cd .v{font-size:9.5px}.cd .n{font-size:10px}
+  .mcal{padding:8px}
+  .jhead{grid-template-columns:auto minmax(0,1fr)}.jright{grid-column:1/-1;justify-content:space-between}
+  .jmid{grid-template-columns:1fr}.jchart{border-right:0;border-bottom:1px solid var(--line)}
+  .jfoot{grid-template-columns:1fr}.jfoot .tg{justify-content:flex-start}
+}
+
+
+/* ---- hero "Dziś" ---- */
+.hero{position:relative;border:1px solid var(--line2);border-radius:18px;padding:18px 20px 16px;margin-bottom:14px;overflow:hidden;
+  background:radial-gradient(600px 220px at 0% 0%,rgba(107,124,245,.22),transparent 70%),linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015))}
+.htop{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,2fr) auto;gap:20px;align-items:center}
+.hdate{font-size:22px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+.hstat{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mute);margin-top:4px}
+.hstat b{color:var(--fg);font-weight:600}
+.ldot{width:8px;height:8px;border-radius:50%;background:var(--win);box-shadow:0 0 0 0 rgba(120,214,106,.6);animation:pulse 2s infinite;flex-shrink:0}
+.ldot.off{background:var(--dim);animation:none}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(120,214,106,.55)}70%{box-shadow:0 0 0 8px rgba(120,214,106,0)}100%{box-shadow:0 0 0 0 rgba(120,214,106,0)}}
+.hnums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.hnums>div{padding:2px 18px;min-width:0}
+.hnums>div+div{border-left:1px solid var(--line)}
+.hnums span{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.hnums b{display:block;font-family:var(--mono);font-weight:500;font-size:24px;line-height:1.25;white-space:nowrap}
+.hnums small{font-size:12px;color:var(--mute);font-family:var(--mono)}
+.hcta{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.hcta span{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.tl{margin-top:16px;position:relative;padding-left:66px}
+.tl .lane{position:relative;height:16px;margin-bottom:5px;border-radius:5px;background:rgba(255,255,255,.035)}
+.tl .lane em{position:absolute;left:-66px;top:0;font-style:normal;font-size:11px;color:var(--mute);font-weight:600;line-height:16px;width:60px}
+.tl .lane.on em{color:var(--fg)}
+.tl .bar{position:absolute;top:0;bottom:0;border-radius:5px;background:rgba(140,153,255,.22);border:1px solid rgba(140,153,255,.3)}
+.tl .lane.on .bar{background:rgba(107,124,245,.42);border-color:var(--accent2)}
+.tl .kz{position:absolute;top:3px;bottom:3px;border-radius:3px;background:repeating-linear-gradient(135deg,rgba(227,179,65,.75) 0 3px,rgba(227,179,65,.35) 3px 6px)}
+.tl .ticks{position:relative;height:16px;font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+.tl .ticks span{position:absolute;transform:translateX(-50%);top:2px}
+.tl .now{position:absolute;top:-6px;bottom:14px;width:2px;background:#fff;border-radius:2px;box-shadow:0 0 10px rgba(255,255,255,.6);z-index:2}
+.tl .now b{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10.5px;font-weight:500;background:#fff;color:#0b1122;border-radius:4px;padding:0 4px;white-space:nowrap}
+.tlleg{display:flex;gap:14px;font-size:11.5px;color:var(--mute);margin-top:2px;flex-wrap:wrap;padding-left:66px}
+.tlleg i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:stretch}
+.two>.card{display:flex;flex-direction:column}
+.two textarea.inp{flex:1;min-height:150px}
+.two .rules{grid-template-columns:1fr;gap:8px}
+.two .rule{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px}
+.two .rule .v{margin-top:0}
+.chkbar{height:5px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden;margin:-4px 0 12px}
+.chkbar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+@media (max-width:1250px){.htop{grid-template-columns:1fr auto}.hnums{grid-column:1/-1;grid-row:2;border:0;border-top:1px solid var(--line);padding-top:12px}.hnums>div:first-child{padding-left:0}}
+@media (max-width:760px){.two{grid-template-columns:1fr}.htop{grid-template-columns:1fr}.hcta{align-items:stretch}.hnums>div{padding:2px 10px}.hnums b{font-size:19px}.tl{padding-left:0}.tl .lane em{position:static;display:block;line-height:1.2;margin-bottom:2px;width:auto}.tl .lane{margin-top:16px}.tlleg{padding-left:0}}
+@media (prefers-reduced-motion:reduce){.ldot{animation:none}}
+
+/* ---- timeline: trades + news ---- */
+.tl .tdot{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);border:2px solid #0b1122;z-index:3;cursor:help}
+.tl .tdot.w{background:var(--win)} .tl .tdot.l{background:var(--loss)}
+.tl .lane.news{background:transparent;height:18px}
+.tl .nw{position:absolute;top:3px;width:11px;height:11px;transform:translateX(-50%) rotate(45deg);border-radius:2px;cursor:help;z-index:3}
+.tl .nw.high{background:var(--loss)} .tl .nw.med{background:#f0a35b}
+.tl .nline{position:absolute;top:0;bottom:14px;width:0;border-left:1px dashed rgba(242,100,106,.45);z-index:1}
+.ldot.warn{background:var(--loss);animation:pulseR 1.6s infinite}
+@keyframes pulseR{0%{box-shadow:0 0 0 0 rgba(242,100,106,.6)}70%{box-shadow:0 0 0 8px rgba(242,100,106,0)}100%{box-shadow:0 0 0 0 rgba(242,100,106,0)}}
+.hstat.warn b{color:var(--loss)}
+/* ---- promise ---- */
+.promise{display:flex;gap:16px;align-items:center;flex-wrap:wrap;border-color:rgba(227,179,65,.35);background:linear-gradient(90deg,rgba(227,179,65,.10),rgba(255,255,255,.015) 60%)}
+.promise .pi{width:40px;height:40px;border-radius:11px;background:var(--warnbg);color:var(--warn);display:grid;place-items:center;flex-shrink:0}
+.promise .pt{flex:1;min-width:200px}
+.promise .pt span{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--warn);font-weight:700}
+.promise .pt b{display:block;font-size:15.5px;font-weight:600;margin-top:2px}
+.promise .pt small{color:var(--mute);font-size:12px}
+.promise.ok{border-color:rgba(120,214,106,.35);background:linear-gradient(90deg,rgba(120,214,106,.09),rgba(255,255,255,.015) 60%)}
+.promise.ok .pi{background:var(--winbg);color:var(--win)}
+.promise.ok .pt span{color:var(--win)}
+.yn{display:flex;gap:8px}
+.yn button.on.y{background:var(--winbg);border-color:var(--win);color:var(--win)}
+.yn button.on.n{background:var(--lossbg);border-color:var(--loss);color:var(--loss)}
+/* ---- day card ---- */
+.dcard{position:relative;max-width:100%;border-radius:20px;padding:26px 28px;overflow:hidden;border:1px solid var(--line2);
+  background:radial-gradient(520px 260px at 100% 0%,rgba(107,124,245,.35),transparent 70%),radial-gradient(400px 240px at 0% 100%,rgba(120,214,106,.12),transparent 70%),#0a1022;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:22px;align-items:center}
+.dcard .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px}
+.dcard .brand i{width:18px;height:18px;border-radius:5px;background:linear-gradient(140deg,var(--accent2),#3346c9)}
+.dcard .dd{color:var(--mute);font-size:13px;margin-top:14px}
+.dcard .dn{font-family:var(--mono);font-size:44px;font-weight:500;line-height:1.1;margin-top:2px}
+.dcard .dr{font-family:var(--mono);color:var(--mute);font-size:14px}
+.dcard .dchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:16px}
+.dcard .dchips span{font-size:12px;border:1px solid var(--line2);border-radius:999px;padding:4px 10px;background:rgba(0,0,0,.25)}
+.dcard .drule{margin-top:16px;font-size:13px;color:var(--mute);border-left:2px solid var(--warn);padding-left:10px}
+.dcard .drule b{display:block;color:var(--fg);font-weight:600}
+.dcard .dright{min-width:0;display:flex;flex-direction:column;gap:10px}
+.dcard .dscore{display:flex;align-items:center;gap:12px;justify-content:flex-end;font-size:12.5px;color:var(--mute)}
+.dcard .dscore b{color:var(--fg);font-size:14px;display:block}
+.dcbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+/* ---- badges ---- */
+.badges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 8px;margin-top:12px}
+.bdg{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;min-width:0}
+.bdg svg{width:44px;height:48px}
+.bdg b{font-size:11.5px;font-weight:700;line-height:1.2}
+.bdg small{font-size:10.5px;color:var(--mute);font-family:var(--mono)}
+.bdg.lock b{color:var(--mute)}
+.bdg .pb{width:80%;height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
+.bdg .pb i{display:block;height:100%;background:var(--accent2)}
+.bdg.new svg{animation:pop .6s ease}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+/* ---- work mode ---- */
+.work{position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto;
+  background-image:radial-gradient(700px 300px at 50% -100px,rgba(70,100,220,.3),transparent 70%);
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wbox{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.wtop{display:flex;justify-content:space-between;align-items:center}
+.wtop b{font-size:15px;display:flex;gap:8px;align-items:center}
+.wclock{text-align:center;padding:22px 16px;border-radius:18px;border:1px solid var(--line2);background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.015))}
+.wclock .big{font-family:var(--mono);font-size:56px;font-weight:500;line-height:1}
+.wclock .sub{color:var(--mute);margin-top:8px;font-size:14px}
+.wnews{display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:12px;border:1px solid rgba(242,100,106,.35);background:var(--lossbg);font-size:14px}
+.wnews.calm{border-color:var(--line2);background:var(--panel)}
+.wtiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.wtiles div{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel)}
+.wtiles span{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.wtiles b{display:block;font-family:var(--mono);font-size:26px;font-weight:500;margin-top:2px}
+.wnote .inp{height:48px;font-size:15px}
+.wq{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.wq button{height:46px;border-radius:12px;border:1px solid var(--line2);background:var(--panel);font-weight:600;font-size:13.5px}
+.wq button:active{background:var(--accentbg)}
+.wlog{font-size:13.5px;color:var(--mute)}
+.wlog div{display:flex;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
+.wlog time{font-family:var(--mono);font-size:12px}
+@media (max-width:760px){.dcard{aspect-ratio:auto;grid-template-columns:1fr;padding:20px}.dcard .dn{font-size:36px}.dcard .dscore{justify-content:flex-start}.wclock .big{font-size:44px}}
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:#1a2140;border:1px solid var(--line2);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:20}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+@media (max-width:1100px){.grid{grid-template-columns:1fr} aside{position:static;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}}
+@media (max-width:760px){
+  .rail{display:none} .frame{padding-block:0} .shell{border-radius:0;border:0;background:transparent}
+  main{padding:16px 0 32px}
+  .sess,.rules,.livegrid{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr 1fr}
+  .refl,.jbody{grid-template-columns:1fr}
+  .brow{grid-template-columns:70px 1fr} .brow .inp{grid-column:1/-1}
+  .step{min-width:120px} .step .s{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5a1.5 1.5 0 0 0 1.5-1.5z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol>
+  <symbol id="i-day" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M9 15l2 2 4-4"/></symbol>
+  <symbol id="i-bar" viewBox="0 0 24 24"><path d="M5 20V10M10 20V4M15 20v-7M20 20v-4"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M9 12h6M9 16h6"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></symbol>
+  <symbol id="i-l" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+  <symbol id="i-r" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></symbol>
+  <symbol id="i-note" viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h3"/></symbol>
+  <symbol id="i-fire" viewBox="0 0 24 24"><path d="M12 21c-4 0-7-2.7-7-6.5 0-3 2-5 3.5-6.5.3 1.6 1.2 2.7 2.3 3.3C10.5 8 12 5 14 3c.5 3 4.9 5.5 4.9 11.5 0 3.8-3 6.5-6.9 6.5z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v8"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-news" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/></symbol>
+</svg>
+
+<div class="frame"><div class="shell">
+  <nav class="rail" aria-label="Menu">
+    <div class="logo"></div>
+    <span class="ic"><svg class="ico"><use href="#i-grid"/></svg></span>
+    <span class="ic"><svg class="ico"><use href="#i-book"/></svg></span>
+    <span class="ic"><svg class="ico"><use href="#i-cal"/></svg></span>
+    <span class="ic on"><svg class="ico"><use href="#i-day"/></svg></span>
+    <span class="ic"><svg class="ico"><use href="#i-bar"/></svg></span>
+    <span class="ic"><svg class="ico"><use href="#i-flask"/></svg></span>
+    <span class="ic"><svg class="ico"><use href="#i-doc"/></svg></span>
+    <button class="plus" aria-label="Nowa transakcja">+</button>
+    <span style="flex:1"></span>
+    <span class="ic"><svg class="ico"><use href="#i-gear"/></svg></span>
+  </nav>
+
+  <main>
+    <div class="head">
+      <h1>Dzień <span class="eg">przykładowe dane</span></h1>
+      <div class="tabs" role="tablist"><button data-view="day" class="on">Mój dzień</button><button data-view="journal">Dziennik dni</button></div>
+      <div class="hctl">
+        <span class="pill"><svg class="ico"><use href="#i-l"/></svg><span class="mono">Śr · 04.11.2026</span><svg class="ico"><use href="#i-r"/></svg></span>
+        <span class="pill"><span class="dot"></span>FundedNext 14101942 · 100k</span>
+      </div>
+    </div>
+
+    <!-- ===================== VIEW: MÓJ DZIEŃ ===================== -->
+    <div id="vDay">
+      <section class="hero" id="hero" aria-label="Dziś"></section>
+      <div class="steps" role="tablist" id="steps">
+        <button class="step" data-p="0"><span class="num">1</span><div><div class="t">Plan</div><div class="s" id="s0"></div></div></button>
+        <button class="step" data-p="1"><span class="num">2</span><div><div class="t">Handel</div><div class="s" id="s1"></div></div></button>
+        <button class="step" data-p="2"><span class="num">3</span><div><div class="t">Import</div><div class="s" id="s2"></div></div></button>
+        <button class="step" data-p="3"><span class="num">4</span><div><div class="t">Przegląd</div><div class="s" id="s3"></div></div></button>
+        <button class="step lock" data-p="3" id="stLock"><span class="num"><svg class="ico" style="width:14px;height:14px"><use href="#i-lock"/></svg></span><div><div class="t">Zamknij dzień</div><div class="s" id="s4"></div></div></button>
+      </div>
+
+      <div class="grid">
+        <div class="col">
+
+          <!-- 1 PLAN -->
+          <section class="col" id="p0">
+            <div class="card promise" id="promise"></div>
+            <div class="two">
+            <div class="card">
+              <div class="ch"><h2>Jak się dziś czujesz?</h2><span class="h">Przy „Źle” plan obniża limit transakcji do 1</span></div>
+              <div class="mood" id="mood"></div>
+              <input class="inp moodnote" id="moodNote" placeholder="Co wpływa na Twój nastrój? np. mało snu, długa trasa">
+            </div>
+            <div class="card">
+              <div class="ch"><h2>Limity na dziś</h2><span class="h">Sprawdzane automatycznie</span></div>
+              <div class="rules">
+                <div class="rule"><div class="lab">Max transakcji</div><div class="v"><button class="mini" data-k="maxT" data-d="-1" aria-label="mniej">−</button><b id="v-maxT"></b><button class="mini" data-k="maxT" data-d="1" aria-label="więcej">+</button></div></div>
+                <div class="rule"><div class="lab">Ryzyko / trade</div><div class="v"><button class="mini" data-k="risk" data-d="-0.25" aria-label="mniej">−</button><b id="v-risk"></b><button class="mini" data-k="risk" data-d="0.25" aria-label="więcej">+</button></div></div>
+                <div class="rule"><div class="lab">Stop dzienny</div><div class="v"><button class="mini" data-k="stop" data-d="-0.5" aria-label="mniej">−</button><b id="v-stop"></b><button class="mini" data-k="stop" data-d="0.5" aria-label="więcej">+</button></div></div>
+              </div>
+            </div>
+            </div>
+            <div class="card">
+              <div class="ch"><h2>Którą sesję grasz?</h2><span class="h">Godziny polskie · kill zone wg ICT</span></div>
+              <div class="sess" id="sess"></div>
+            </div>
+            <div class="card">
+              <div class="ch"><h2>Bias i poziomy</h2><span class="h">Kierunek z H4/D1, poziomy do obserwacji</span></div>
+              <div class="bias" id="bias"></div>
+            </div>
+            <div class="two">
+            <div class="card">
+              <div class="ch"><h2>Zasady: przygotowanie</h2><span class="h mono" id="cnt0"></span></div>
+              <div class="chkbar"><i id="chkbar"></i></div>
+              <div class="chk" id="rPrep"></div>
+            </div>
+            <div class="card">
+              <div class="ch"><h2>Plan w jednym zdaniu</h2><span class="h">Co musi się stać, żebyś wszedł?</span></div>
+              <textarea class="inp" id="planTxt" placeholder="np. Czekam na sweep Asia low na EURUSD, potem MSS na M5 i wejście z FVG. Bez wejścia przed 08:00."></textarea>
+            </div>
+            </div>
+            <div class="actions"><span class="why" id="why"></span><button class="btn pri" id="goTrade"><svg class="ico"><use href="#i-check"/></svg>Plan gotowy, zaczynam handel</button></div>
+          </section>
+
+          <!-- 2 HANDEL -->
+          <section class="col" id="p1" hidden>
+            <div class="livegrid">
+              <div class="card meter"><div class="lab">Transakcje</div><div class="big" id="mT"></div><div class="sub" id="mTs"></div><div class="bar"><i id="mTb"></i></div></div>
+              <div class="card meter"><div class="lab">Wynik dnia</div><div class="big" id="mP"></div><div class="sub" id="mPs"></div><div class="bar"><i id="mPb"></i></div></div>
+              <div class="card meter"><div class="lab">Sesja</div><div class="big" id="mS"></div><div class="sub" id="mSs"></div><div class="bar"><i id="mSb"></i></div></div>
+            </div>
+            <div class="alert" id="alert" hidden></div>
+            <div class="card">
+              <div class="ch"><h2>Zasady: w trakcie handlu</h2><span class="h mono" id="cnt1"></span></div>
+              <div class="chk" id="rTrade"></div>
+            </div>
+            <div class="card">
+              <div class="ch"><h2>Notatki z sesji</h2><span class="h">Enter dodaje wpis z godziną</span></div>
+              <div class="notes" id="notes"></div>
+              <div class="nadd"><input class="inp" id="noteIn" placeholder="Co widzisz? np. Sweep Asia low, czekam na MSS…"><button class="btn" id="noteAdd">Dodaj</button></div>
+              <div class="qchips" id="quick"></div>
+            </div>
+            <div class="actions"><button class="btn" data-go="0">Wróć do planu</button><button class="btn pri" data-go="2">Koniec handlu, importuj transakcje</button></div>
+          </section>
+
+          <!-- 3 IMPORT -->
+          <section class="col" id="p2" hidden>
+            <div class="card">
+              <div class="imp">
+                <span class="src">MT5</span>
+                <div class="meta"><b id="impTitle"></b><span id="impSub"></span></div>
+                <button class="btn" id="impBtn"><svg class="ico"><use href="#i-up"/></svg>Importuj z MT5</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="ch"><h2>Transakcje dnia</h2><span class="h">Przypisz setup i oceń dyscyplinę każdej transakcji</span></div>
+              <div class="tw"><table class="tbl" id="trades"></table></div>
+            </div>
+            <div class="actions"><button class="btn" data-go="1">Wróć do handlu</button><button class="btn pri" data-go="3">Dalej: przegląd dnia</button></div>
+          </section>
+
+          <!-- 4 PRZEGLĄD -->
+          <section class="col" id="p3" hidden>
+            <div class="done-banner" id="closed" hidden><svg class="ico" style="width:26px;height:26px;color:var(--win)"><use href="#i-lock"/></svg><div><b>Dzień zamknięty i wliczony do serii.</b><div style="font-size:13px;color:var(--mute)" id="closedTxt"></div></div></div>
+            <div id="dayCardWrap" hidden><div class="dcard" id="dayCard"></div><div class="dcbtns"><button class="btn sm" data-dc="png">Zapisz jako obraz</button><button class="btn sm" data-dc="copy">Kopiuj podsumowanie</button></div></div>
+            <div class="kpis" id="kpis"></div>
+            <div class="card">
+              <div class="ch"><h2>Krzywa dnia</h2><span class="h">Skumulowany wynik netto po każdej transakcji</span></div>
+              <div id="chart"></div>
+            </div>
+            <div class="card">
+              <div class="ch"><h2>Zasady: refleksja</h2><span class="h mono" id="cnt2"></span></div>
+              <div class="chk" id="rRefl"></div>
+            </div>
+            <div class="card promise" id="kept"></div>
+            <div class="card">
+              <div class="ch"><h2>Jak trzymałeś się planu?</h2><span class="h">1 – złamałem plan, 5 – w 100%</span></div>
+              <div class="stars" id="stars"></div>
+              <div class="lab" style="margin:16px 0 8px">Co się wydarzyło</div>
+              <div class="qchips" id="tags" style="margin-top:0"></div>
+            </div>
+            <div class="card">
+              <div class="ch"><h2>Wnioski</h2><span class="h">Wystarczy po jednym zdaniu</span></div>
+              <div class="refl">
+                <label for="r1">Co zrobiłem dobrze<textarea class="inp" id="r1" placeholder="np. Poczekałem na sweep zamiast wchodzić od razu."></textarea></label>
+                <label for="r2">Co poprawić<textarea class="inp" id="r2" placeholder="np. Drugi trade bez potwierdzenia na M5."></textarea></label>
+              </div>
+              <label class="fl" for="r3" style="margin-top:12px">Jedna zasada na jutro<input class="inp" id="r3" placeholder="np. Po stracie 15 minut przerwy, zanim otworzę wykres."></label>
+            </div>
+            <div class="actions"><button class="btn" data-go="2">Wróć do importu</button><button class="btn ok" id="closeDay"></button></div>
+          </section>
+        </div>
+
+        <aside>
+          <div class="card">
+            <div class="lab" style="margin-bottom:12px">Wynik dnia za dyscyplinę</div>
+            <div class="ring" id="ring"></div>
+            <div class="groups" id="groups"></div>
+          </div>
+          <div class="card">
+            <div class="mbar"><span class="lab">Postęp</span><span class="h mono" style="font-size:12px;color:var(--mute)">ostatnie 12 tygodni</span></div>
+            <div class="heat" id="heat"></div>
+            <div class="legend">mniej <i style="background:rgba(242,100,106,.45)"></i><i style="background:rgba(227,179,65,.45)"></i><i style="background:rgba(120,214,106,.4)"></i><i style="background:rgba(120,214,106,.8)"></i> więcej zasad</div>
+            <div class="sstats" id="sstats"></div>
+          </div>
+          <div class="card">
+            <div class="mbar"><span class="lab">Odznaki</span><span class="h mono" id="bdgN" style="font-size:12px;color:var(--mute)"></span></div>
+            <div class="badges" id="badges"></div>
+          </div>
+          <div class="card">
+            <div class="lab" style="margin-bottom:12px">Limity konta</div>
+            <div class="lim" id="lim"></div>
+          </div>
+          <div class="card">
+            <div class="lab" style="margin-bottom:10px">Twój plan</div>
+            <div class="planbox" id="planbox"></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- ===================== VIEW: DZIENNIK DNI ===================== -->
+    <div id="vJournal" hidden>
+      <div class="jtop">
+        <h2><button class="navb" aria-label="Poprzedni miesiąc"><svg class="ico"><use href="#i-l"/></svg></button>Listopad 2026<button class="navb" aria-label="Następny miesiąc"><svg class="ico"><use href="#i-r"/></svg></button></h2>
+        <span style="font-size:12.5px;color:var(--mute)">Kliknij dzień w kalendarzu, żeby przejść do jego karty</span>
+      </div>
+      <div class="jsum" id="jsum"></div>
+      <div class="mcal"><div class="mgrid" id="mgrid"></div></div>
+      <div class="fbar" id="fbar"></div>
+      <div class="jlist" id="jlist"></div>
+    </div>
+  </main>
+</div></div>
+<div class="work" id="work" hidden role="dialog" aria-label="Tryb w pracy"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const BAL=100000;
+const SESS=[
+  {id:"asia",nm:"Azja",from:1,to:9,tm:"01:00 – 09:00",kz:"Kontekst: zakres i płynność"},
+  {id:"ldn",nm:"Londyn",from:9,to:17.5,tm:"09:00 – 17:30",kz:"Kill zone 08:00 – 11:00"},
+  {id:"ny",nm:"Nowy Jork",from:14.5,to:22,tm:"14:30 – 22:00",kz:"Kill zone 13:00 – 16:00"}
+];
+const MOODS=[["Bardzo źle","#f2646a","M9 16.5c1.6-1.6 4.4-1.6 6 0"],["Źle","#f09a5b","M9 16c1.8-1 4.2-1 6 0"],["Neutralnie","#9aa3b8","M9 15.5h6"],["Dobrze","#9ccf6a","M9 15c1.8 1 4.2 1 6 0"],["Świetnie","#78d66a","M8.5 14.5c1.9 2.2 5.1 2.2 7 0"]];
+const face=(i,c)=>`<svg viewBox="0 0 24 24" class="ico" style="width:100%;height:100%;stroke-width:1.6${c?";color:"+c:""}"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r=".6" fill="currentColor"/><circle cx="15" cy="10" r=".6" fill="currentColor"/><path d="${MOODS[i][2]}"/></svg>`;
+const PAIRS=["EURUSD","GBPUSD","XAUUSD"];
+const SETUPS=["Sweep + FVG","MSS M5","OB retest","Judas Swing","Bez setupu"];
+// Rules grouped like Tradezella Progress Tracker: Prepare / Trade / Reflect. auto = checked by the app from data
+const PREP=[
+  ["HTF bias określony","Kierunek z D1 / H4"],
+  ["Zaznaczona płynność","PDH / PDL, high i low Azji"],
+  ["POI na H1 / M15","Order block lub FVG w kierunku biasu"],
+  ["Kalendarz sprawdzony","Brak czerwonych newsów w oknie wejścia"],
+  ["Głowa w porządku","Nie odrabiam wczorajszej straty"]
+];
+const REFL=[["Zaimportowane transakcje","Wszystkie pozycje z dnia są w dzienniku","auto"],["Setup przy każdej transakcji","Przypisany w kroku Import","auto"],["Screeny wejść","Zrzut M15 i M5 przy każdej transakcji"],["Wnioski zapisane","Co dobrze, co poprawić, zasada na jutro","auto"]];
+const TAGS=[["Wejście zgodne z planem",1],["Czekałem na potwierdzenie",1],["FOMO",0],["Overtrading",0],["Przesunięty SL",0],["Za wczesne wyjście",0],["Trade po stracie",0],["Rozproszenie w pracy",0]];
+const QUICK=["Sweep Asia low","MSS na M5","Czekam, brak setupu","Telefon / przerwa","Za szybko, odpuszczam"];
+const TODAY=[
+  {t:"09:42",sym:"EURUSD",d:"L",setup:"Sweep + FVG",r:1.6,usd:800,fee:-14,disc:5},
+  {t:"10:58",sym:"GBPUSD",d:"S",setup:"",r:-1,usd:-500,fee:-12,disc:3}
+];
+// journal history (examples)
+const HISTORY=[
+  {key:"3.11",dnum:3,mon:"lis",wd:"Wtorek",date:"Wtorek, 3 listopada",mood:1,score:67,sess:"Nowy Jork",note:"Wszedłem przed newsami, SL wybity spike'iem.",rule:"15 min przed i po czerwonym newsie bez pozycji.",tags:[["Kalendarz zignorowany",0],["Wejście zgodne z planem",1]],tr:[{t:"14:21",sym:"XAUUSD",d:"L",setup:"OB retest",r:-1,usd:-500,fee:-9,disc:2},{t:"15:02",sym:"EURUSD",d:"S",setup:"MSS M5",r:0.6,usd:300,fee:-12,disc:4}]},
+  {key:"2.11",dnum:2,mon:"lis",wd:"Poniedziałek",date:"Poniedziałek, 2 listopada",mood:3,score:100,sess:"Londyn",note:"Czysty dzień. Sweep Asia high, MSS, wejście z FVG. Druga transakcja przez TP1 i BE.",rule:"Trzymać się tego samego schematu.",tags:[["Wejście zgodne z planem",1],["Czekałem na potwierdzenie",1]],tr:[{t:"08:47",sym:"GBPUSD",d:"S",setup:"Judas Swing",r:2.1,usd:1050,fee:-12,disc:5},{t:"10:15",sym:"EURUSD",d:"S",setup:"Sweep + FVG",r:-0.3,usd:-150,fee:-12,disc:4}]},
+  {key:"30.10",dnum:30,mon:"paź",wd:"Piątek",date:"Piątek, 30 października",mood:2,score:83,sess:"Londyn",note:"Mało setupów, jeden trade. Dobrze, że nie wymuszałem.",rule:"",tags:[["Czekałem na potwierdzenie",1]],tr:[{t:"09:30",sym:"EURUSD",d:"L",setup:"Sweep + FVG",r:0.4,usd:200,fee:-12,disc:5}]},
+  {key:"29.10",dnum:29,mon:"paź",wd:"Czwartek",date:"Czwartek, 29 października",mood:0,score:33,sess:"Londyn",note:"Handel po stracie, trzy transakcje zamiast dwóch.",rule:"Po pierwszej stracie obowiązkowa przerwa.",tags:[["Trade po stracie",0],["Overtrading",0],["Rozproszenie w pracy",0]],tr:[{t:"09:12",sym:"GBPUSD",d:"L",setup:"MSS M5",r:-1,usd:-500,fee:-12,disc:3},{t:"09:40",sym:"GBPUSD",d:"L",setup:"Bez setupu",r:-1,usd:-500,fee:-12,disc:1},{t:"11:05",sym:"XAUUSD",d:"S",setup:"OB retest",r:1.5,usd:750,fee:-9,disc:3}]},
+  {key:"28.10",dnum:28,mon:"paź",wd:"Środa",date:"Środa, 28 października",mood:3,score:92,sess:"Londyn",note:"Jedno wejście z kill zone, TP pełny.",rule:"",tags:[["Wejście zgodne z planem",1]],tr:[{t:"08:55",sym:"EURUSD",d:"S",setup:"Judas Swing",r:2.4,usd:1200,fee:-12,disc:5}]},
+  {key:"27.10",dnum:27,mon:"paź",wd:"Wtorek",date:"Wtorek, 27 października",mood:2,score:58,sess:"Nowy Jork",note:"SL za ciasno, wybity o 2 pipsy przed ruchem.",rule:"SL za sweepem, nie za świecą.",tags:[["Przesunięty SL",0]],tr:[{t:"14:40",sym:"XAUUSD",d:"S",setup:"OB retest",r:-1,usd:-500,fee:-9,disc:3}]}
+];
+
+const def={view:"day",phase:0,sess:null,mood:null,moodNote:"",bias:{EURUSD:{d:"L",lv:"Asia low 1.0842, cel PDH 1.0896"},GBPUSD:{d:"N",lv:""},XAUUSD:{d:null,lv:""}},
+  maxT:3,risk:0.5,stop:2,prep:[1,1,0,0,0],shots:0,imported:false,setups:{},discs:{},
+  notes:[{t:"08:05",x:"Azja zebrała płynność pod 1.0842, czekam na reakcję."},{t:"09:38",x:"MSS na M5, wejście z FVG, SL pod sweepem."}],
+  rating:null,tags:[],r1:"",r2:"",r3:"",closed:false,open:{"4.11":true}};
+let S;
+try{S=Object.assign({},def,JSON.parse(localStorage.getItem("akt-dzien2")||"{}"))}catch(e){S=Object.assign({},def)}
+const save=()=>{try{localStorage.setItem("akt-dzien2",JSON.stringify(S))}catch(e){}};
+const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),1900)};
+const fmt$=v=>(v>=0?"+":"−")+"$"+Math.abs(Math.round(v)).toLocaleString("pl-PL");
+const fmtR=v=>(v>=0?"+":"−")+Math.abs(v).toFixed(1)+"R";
+const now=()=>{const d=new Date();return d.getHours()+d.getMinutes()/60};
+const hhmm=()=>{const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")};
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+
+const trades=()=>S.imported?TODAY.map((t,i)=>Object.assign({},t,{setup:S.setups[i]!=null?S.setups[i]:t.setup,disc:S.discs[i]!=null?S.discs[i]:t.disc})):TODAY.slice(0,0);
+// before import we still know live P&L from the broker feed; use TODAY for meters
+const effMax=()=>S.mood!=null&&S.mood<=1?1:S.maxT;
+function stats(list){
+  list=list||TODAY;const n=list.length,net=list.reduce((a,t)=>a+t.usd+t.fee,0),gross=list.reduce((a,t)=>a+t.usd,0),fee=list.reduce((a,t)=>a+t.fee,0),r=list.reduce((a,t)=>a+t.r,0),w=list.filter(t=>t.usd>0).length;
+  const gw=list.filter(t=>t.usd>0).reduce((a,t)=>a+t.usd,0),gl=-list.filter(t=>t.usd<0).reduce((a,t)=>a+t.usd,0);
+  return {n,net,gross,fee,r,w,l:n-w,wr:n?Math.round(w/n*100):0,pf:gl?(gw/gl).toFixed(2):"—"};
+}
+
+/* ---- rules ---- */
+function tradeRules(){
+  const st=stats(),s=SESS.find(x=>x.id===S.sess)||SESS[1];
+  const inSess=TODAY.every(t=>{const [h,m]=t.t.split(":").map(Number),v=h+m/60;return v>=8&&v<s.to});
+  const lastLossGap=(()=>{for(let i=1;i<TODAY.length;i++){if(TODAY[i-1].usd<0){const a=TODAY[i-1].t.split(":").map(Number),b=TODAY[i].t.split(":").map(Number);if((b[0]*60+b[1])-(a[0]*60+a[1])<15)return false}}return true})();
+  return [
+    [`Max ${effMax()} transakcje`,`Dziś ${st.n}`,st.n<=effMax()],
+    [`Ryzyko ≤ ${S.risk.toFixed(2)}% na transakcję`,"Strata na trade nie większa niż 1R",TODAY.every(t=>t.r>=-1.05)],
+    [`Stop dzienny −${S.stop}% nie przekroczony`,`Wynik ${fmt$(st.net)}`,st.net>-BAL*S.stop/100],
+    ["Handel tylko w oknie sesji",`${s.nm}, od kill zone do końca sesji`,inSess],
+    ["15 min przerwy po stracie","Liczone z godzin transakcji",lastLossGap],
+    ["Notatki w trakcie sesji",`${S.notes.length} wpisów`,S.notes.length>0]
+  ];
+}
+function reflRules(){
+  const tr=trades();
+  return [
+    [REFL[0][0],REFL[0][1],"auto",S.imported],
+    [REFL[1][0],REFL[1][1],"auto",S.imported&&tr.every(t=>t.setup)],
+    [REFL[2][0],REFL[2][1],"manual",!!S.shots],
+    [REFL[3][0],REFL[3][1],"auto",!!(S.r1&&S.r2&&S.r3)]
+  ];
+}
+function score(){
+  const p=S.prep.filter(Boolean).length,t=tradeRules().filter(r=>r[2]).length,r=reflRules().filter(x=>x[3]).length;
+  const tot=PREP.length+tradeRules().length+REFL.length;
+  return {p,t,r,tot,done:p+t+r,sc:Math.round((p+t+r)/tot*100)};
+}
+function planMissing(){
+  const m=[];
+  if(S.mood==null)m.push("nastrój");
+  if(!S.sess)m.push("sesja");
+  if(!PAIRS.some(p=>S.bias[p]&&S.bias[p].d))m.push("bias");
+  const c=S.prep.filter(Boolean).length;if(c<PREP.length)m.push(`zasady ${c}/${PREP.length}`);
+  return m;
+}
+
+/* ---- renders: plan ---- */
+function rPlan(){
+  $("#mood").innerHTML=MOODS.map(([l,c],i)=>`<button class="${S.mood===i?"on":""}" data-m="${i}" style="--mc:${c}">${face(i)}${l}</button>`).join("");
+  const h=now();
+  $("#sess").innerHTML=SESS.map(s=>{const o=h>=s.from&&h<s.to,soon=!o&&h<s.from&&s.from-h<=2;
+    return `<button class="ses${S.sess===s.id?" on":""}" data-s="${s.id}"><div class="top"><span class="nm">${s.nm}</span><span class="tag ${o?"open":soon?"soon":"off"}">${o?"otwarta":soon?"za chwilę":"zamknięta"}</span></div><span class="tm">${s.tm}</span><span class="kz">${s.kz}</span></button>`}).join("");
+  $("#bias").innerHTML=PAIRS.map(p=>{const b=S.bias[p]||{};return `<div class="brow"><span class="sym">${p}</span><div class="seg">${[["L","Long"],["S","Short"],["N","Neutral"]].map(([k,l])=>`<button class="${k}${b.d===k?" on":""}" data-pair="${p}" data-bd="${k}">${l}</button>`).join("")}</div><input class="inp" id="lv-${p}" data-lv="${p}" value="${esc(b.lv||"")}" placeholder="Poziomy, np. PDH, Asia high"></div>`}).join("");
+  $("#v-maxT").textContent=S.maxT;$("#v-risk").textContent=S.risk.toFixed(2)+"%";$("#v-stop").textContent="−"+S.stop.toFixed(1)+"%";
+  $("#rPrep").innerHTML=PREP.map(([a,b],i)=>`<button class="ci${S.prep[i]?" on":""}" data-c="${i}"><span class="bx"></span><span class="tx"><b>${a}</b><small>${b}</small></span></button>`).join("");
+  $("#cnt0").textContent=S.prep.filter(Boolean).length+" / "+PREP.length;$("#chkbar").style.width=(S.prep.filter(Boolean).length/PREP.length*100)+"%";
+  const m=planMissing();$("#why").textContent=m.length?"Brakuje: "+m.join(", "):"Wszystko gotowe.";$("#goTrade").disabled=m.length>0;rPromise();
+}
+/* ---- trading ---- */
+function rTrade(){
+  const st=stats(),mx=effMax(),ps=BAL*S.stop/100;
+  $("#mT").textContent=`${st.n} / ${mx}`;$("#mTs").textContent=st.n>=mx?"Limit osiągnięty":`Zostało ${mx-st.n}`;
+  $("#mTb").style.cssText=`width:${Math.min(100,st.n/mx*100)}%;background:${st.n>=mx?"var(--warn)":"var(--accent)"}`;
+  $("#mP").innerHTML=`<span class="${st.net>=0?"pos":"neg"}">${fmt$(st.net)}</span>`;$("#mPs").textContent=`${fmtR(st.r)} · stop dzienny −$${ps.toLocaleString("pl-PL")}`;
+  $("#mPb").style.cssText=`width:${Math.min(100,Math.abs(st.net)/ps*100)}%;background:${st.net>=0?"var(--win)":"var(--loss)"}`;
+  const s=SESS.find(x=>x.id===S.sess)||SESS[1],h=now(),pct=Math.max(0,Math.min(1,(h-s.from)/(s.to-s.from))),left=s.to-h;
+  $("#mS").textContent=s.nm;$("#mSs").textContent=h<s.from?"Jeszcze nie otwarta":left>0?`Do końca ${Math.floor(left)} h ${Math.round((left%1)*60)} min`:"Sesja zamknięta";
+  $("#mSb").style.cssText=`width:${pct*100}%;background:var(--accent2)`;
+  const al=$("#alert");
+  if(st.n>=mx){al.hidden=false;al.innerHTML=`<b>Limit transakcji osiągnięty.</b> Plan mówi: koniec na dziś. Dopisz notatkę i przejdź do importu.`}
+  else if(TODAY.length&&TODAY[TODAY.length-1].usd<0){al.hidden=false;al.innerHTML=`<b>Ostatnia transakcja na minusie.</b> 15 minut przerwy, zanim otworzysz kolejną.`}
+  else al.hidden=true;
+  const tr=tradeRules();
+  $("#rTrade").innerHTML=tr.map(([a,b,ok])=>`<div class="ci auto ${ok?"ok":"bad"}"><span class="bx"></span><span class="tx"><b>${a}</b><small>${b}</small></span><span class="tag auto">auto</span></div>`).join("");
+  $("#cnt1").textContent=tr.filter(r=>r[2]).length+" / "+tr.length;
+  $("#notes").innerHTML=S.notes.length?S.notes.map(n=>`<div class="note"><time>${n.t}</time><span>${esc(n.x)}</span></div>`).join(""):`<div style="color:var(--dim);font-size:13px">Brak notatek. Zapisz, co widzisz na wykresie, choćby dwa słowa.</div>`;
+  $("#quick").innerHTML=QUICK.map(q=>`<button class="chip" data-q="${q}">+ ${q}</button>`).join("");
+}
+/* ---- import ---- */
+function discColor(v){return v>=4?"var(--win)":v>=3?"var(--warn)":"var(--loss)"}
+function tradeTable(list,editable){
+  return `<tr><th>Godz.</th><th>Para</th><th>Kier.</th><th>Setup</th><th class="r">R</th><th class="r">Netto</th><th class="r">Dyscyplina</th></tr>`+
+  list.map((t,i)=>`<tr><td class="mono">${t.t}</td><td class="mono">${t.sym}</td><td><span class="dir ${t.d}">${t.d==="L"?"LONG":"SHORT"}</span></td>
+   <td>${editable?`<select class="inp" data-setup="${i}" aria-label="Setup"><option value="">Wybierz setup…</option>${SETUPS.map(s=>`<option${s===t.setup?" selected":""}>${s}</option>`).join("")}</select>`:t.setup}</td>
+   <td class="r mono ${t.r>=0?"pos":"neg"}">${fmtR(t.r)}</td><td class="r mono ${t.usd+t.fee>=0?"pos":"neg"}">${fmt$(t.usd+t.fee)}</td>
+   <td class="r">${editable?`<button class="disc" data-disc="${i}" title="Kliknij, żeby zmienić ocenę" style="background:transparent;color:${discColor(t.disc)};border-color:${discColor(t.disc)}">${t.disc}</button>`:`<span class="disc" style="color:${discColor(t.disc)};border-color:${discColor(t.disc)}">${t.disc}</span>`}</td></tr>`).join("");
+}
+function rImport(){
+  $("#impTitle").textContent=S.imported?"Zaimportowano 2 transakcje":"Pobierz dzisiejsze transakcje z MT5";
+  $("#impSub").textContent=S.imported?"FundedNext 14101942 · ostatni import dziś "+(S.impAt||"12:41"):"Plik z historią konta lub połączenie z MT5. Duplikaty są pomijane.";
+  $("#impBtn").innerHTML=`<svg class="ico"><use href="#i-up"/></svg>${S.imported?"Importuj ponownie":"Importuj z MT5"}`;
+  $("#impBtn").className="btn"+(S.imported?"":" pri");
+  $("#trades").innerHTML=S.imported?tradeTable(trades(),true):`<tr><td style="border:0;color:var(--dim);padding:6px 0">Po imporcie zobaczysz tu transakcje z dnia i przypiszesz im setup.</td></tr>`;
+}
+/* ---- review ---- */
+function curveSVG(list,W,H,small){
+  const pts=[{x:"",y:0}];let c=0;list.forEach(t=>{c+=t.usd+t.fee;pts.push({x:t.t,y:c})});
+  const pl=small?6:52,pr=small?6:16,pt=small?8:14,pb=small?8:26,ys=pts.map(p=>p.y),mx=Math.max(100,...ys),mn=Math.min(-100,...ys);
+  const X=i=>pl+i*(W-pl-pr)/(pts.length-1),Y=v=>pt+(mx-v)*(H-pt-pb)/(mx-mn);
+  const line=pts.map((p,i)=>`${i?"L":"M"}${X(i).toFixed(1)},${Y(p.y).toFixed(1)}`).join(" ");
+  const last=pts[pts.length-1],lc=last.y>=0?"#78d66a":"#f2646a",id="g"+Math.random().toString(36).slice(2,7);
+  const step=small?0:Math.max(250,Math.ceil((mx-mn)/4/250)*250),ticks=[];if(step)for(let v=Math.ceil(mn/step)*step;v<=mx;v+=step)ticks.push(v);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Skumulowany wynik w ciągu dnia">
+   <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${lc}" stop-opacity=".28"/><stop offset="1" stop-color="${lc}" stop-opacity="0"/></linearGradient></defs>
+   ${ticks.map(v=>`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(255,255,255,${v===0?.18:.06})"${v===0?' stroke-dasharray="4 4"':""}/><text x="${pl-8}" y="${Y(v)+4}" text-anchor="end" fill="#7f8aa3" font-size="11" font-family="JetBrains Mono,monospace">${v===0?"$0":fmt$(v)}</text>`).join("")}
+   ${small?`<line x1="${pl}" x2="${W-pr}" y1="${Y(0)}" y2="${Y(0)}" stroke="rgba(255,255,255,.14)" stroke-dasharray="3 3"/>`:""}
+   <path d="${line} L${X(pts.length-1)},${Y(0)} L${X(0)},${Y(0)} Z" fill="url(#${id})"/>
+   <path d="${line}" fill="none" stroke="${lc}" stroke-width="${small?1.8:2.2}" stroke-linejoin="round"/>
+   ${pts.map((p,i)=>`<circle cx="${X(i)}" cy="${Y(p.y)}" r="${i===pts.length-1?(small?3.5:5):(small?2.2:3.5)}" fill="${i===pts.length-1?lc:"#0b1122"}" stroke="${lc}" stroke-width="1.8"/>${small||!p.x?"":`<text x="${X(i)}" y="${H-6}" text-anchor="middle" fill="#7f8aa3" font-size="11" font-family="JetBrains Mono,monospace">${p.x}</text>`}`).join("")}
+   ${small?"":`<text x="${X(pts.length-1)-10}" y="${Y(last.y)-10}" text-anchor="end" fill="${lc}" font-size="12" font-family="JetBrains Mono,monospace">${fmt$(last.y)}</text>`}
+  </svg>`;
+}
+function rReview(){
+  const st=stats(),{sc}=score();
+  $("#kpis").innerHTML=[
+    ["Wynik netto",`<span class="${st.net>=0?"pos":"neg"}">${fmt$(st.net)}</span>`,`${fmtR(st.r)} · prowizje ${fmt$(st.fee)}`],
+    ["Transakcje",`${st.n}`,`${st.w} wygrane · ${st.l} przegrane`],
+    ["Win rate",`${st.wr}%`,`profit factor ${st.pf}`],
+    ["Wynik za dyscyplinę",`<span style="color:${sc>=80?"var(--win)":sc>=50?"var(--warn)":"var(--loss)"}">${sc}%</span>`,"zasady z 3 etapów"]
+  ].map(([l,v,s])=>`<div class="kpi"><div class="lab">${l}</div><div class="big">${v}</div><div class="sub">${s}</div></div>`).join("");
+  $("#chart").innerHTML=curveSVG(TODAY,640,190,false);
+  const rr=reflRules();
+  $("#rRefl").innerHTML=rr.map(([a,b,kind,ok],i)=>kind==="auto"?`<div class="ci auto ${ok?"ok":""}"><span class="bx"></span><span class="tx"><b>${a}</b><small>${b}</small></span><span class="tag auto">auto</span></div>`:`<button class="ci${ok?" on":""}" data-shots="1"><span class="bx"></span><span class="tx"><b>${a}</b><small>${b}</small></span></button>`).join("");
+  $("#cnt2").textContent=rr.filter(r=>r[3]).length+" / "+rr.length;
+  $("#stars").innerHTML=[1,2,3,4,5].map(n=>`<button class="${S.rating===n?"on":""}" data-st="${n}">${n}</button>`).join("");
+  $("#tags").innerHTML=TAGS.map(([t,g])=>`<button class="chip${g?" good":""}${S.tags.includes(t)?" on":""}" data-t="${t}"><i></i>${t}</button>`).join("");
+  ["r1","r2","r3"].forEach(k=>{const el=$("#"+k);if(document.activeElement!==el)el.value=S[k]||""});
+  $("#closed").hidden=!S.closed;$("#closedTxt").textContent=`Wynik za dyscyplinę ${sc}%. Zasada na jutro: ${S.r3||"—"}`;
+  $("#closeDay").innerHTML=S.closed?"Zapisz zmiany":`<svg class="ico"><use href="#i-lock"/></svg>Zamknij dzień`;
+  rDayCard();rKept();
+}
+/* ---- side ---- */
+function heatData(){
+  // 12 weeks x 5 days, deterministic example scores; last column = this week (Mon..Wed done, Wed today)
+  const out=[];let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  for(let w=0;w<12;w++)for(let d=0;d<5;d++){
+    if(w===11&&d>2){out.push("fut");continue}
+    if(w===11&&d===2){out.push("now");continue}
+    const r=rnd();out.push(w<3&&r<.4?0:r<.12?0:r<.25?1:r<.42?2:r<.7?3:4);
+  }
+  // last days from HISTORY
+  out[11*5+1]=2;out[11*5+0]=4;out[10*5+4]=4;out[10*5+3]=1;
+  return out;
+}
+function rSide(){
+  const {p,t,r,tot,done,sc}=score(),C=2*Math.PI*30,col=sc>=80?"var(--win)":sc>=50?"var(--warn)":"var(--loss)";
+  $("#ring").innerHTML=`<svg width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="30" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="7"/><circle cx="38" cy="38" r="30" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C*sc/100} ${C}" transform="rotate(-90 38 38)" style="transition:stroke-dasharray .4s"/><text x="38" y="43" text-anchor="middle" fill="#e6e9f2" font-family="JetBrains Mono,monospace" font-size="16">${sc}%</text></svg><div class="t"><b>${sc>=85?"Świetnie trzymasz plan":sc>=60?"Dobry kierunek":sc>=30?"Jeszcze trochę":"Zacznij od planu"}</b>${done} z ${tot} zasad spełnionych</div>`;
+  const tl=tradeRules().length;
+  $("#groups").innerHTML=[["Przygotowanie",p,PREP.length],["Handel",t,tl],["Refleksja",r,REFL.length]].map(([n,a,b])=>`<div class="grp"><div class="row"><span>${n}</span><span>${a}/${b}</span></div><div class="bar"><i style="width:${a/b*100}%;${a===b?"background:var(--win)":""}"></i></div></div>`).join("");
+  const hd=heatData(),todayLvl=S.closed?(sc>=85?4:sc>=60?3:sc>=30?2:1):null;
+  let h=["Pn","","Śr","","Pt"].map((l,d)=>`<span>${l}</span>`+Array.from({length:12},(_,w)=>{const v=hd[w*5+d];if(v==="fut")return `<i class="fut"></i>`;if(v==="now")return `<i class="now ${todayLvl?"l"+todayLvl:""}" title="Dziś"></i>`;return `<i class="${v?"l"+v:""}"></i>`}).join("")).join("");
+  $("#heat").innerHTML=h;
+  const streak=S.closed?5:4;
+  $("#sstats").innerHTML=`<div><b style="display:flex;align-items:center;gap:6px"><svg class="ico" style="color:var(--warn)"><use href="#i-fire"/></svg>${streak} dni</b><span>Seria zamkniętych dni</span></div><div><b>81%</b><span>Średni wynik, 30 dni</span></div>`;
+  const st=stats(),dl=BAL*.05,used=Math.max(0,-st.net),ps=BAL*S.stop/100;
+  $("#lim").innerHTML=`
+    <div><div class="row"><span>Twój stop dzienny (−${S.stop}%)</span><b>$${(ps-used).toLocaleString("pl-PL")} wolne</b></div><div class="bar"><i style="width:${Math.min(100,used/ps*100)}%;background:var(--warn)"></i></div></div>
+    <div><div class="row"><span>Daily loss FundedNext (5%)</span><b>$${(dl-used).toLocaleString("pl-PL")}</b></div><div class="bar"><i style="width:${Math.min(100,used/dl*100)}%;background:var(--loss)"></i></div></div>
+    <div><div class="row"><span>1R przy ${S.risk.toFixed(2)}%</span><b>$${(BAL*S.risk/100).toLocaleString("pl-PL")}</b></div></div>`;
+  const ses=SESS.find(s=>s.id===S.sess),bl=PAIRS.filter(p=>S.bias[p]&&S.bias[p].d).map(p=>`${p} <span class="${S.bias[p].d==="L"?"pos":S.bias[p].d==="S"?"neg":""}">${{L:"Long",S:"Short",N:"Neutral"}[S.bias[p].d]}</span>`);
+  $("#planbox").innerHTML=`<div>Nastrój: <b>${S.mood!=null?MOODS[S.mood][0]:"—"}</b></div><div>Sesja: <b>${ses?ses.nm:"—"}</b></div><div>Bias: <b>${bl.join(", ")||"—"}</b></div><div>Limit: <b>${effMax()} trans. · ${S.risk.toFixed(2)}% · stop −${S.stop}%</b>${effMax()<S.maxT?' <span class="tag soon">obniżony</span>':""}</div>${S.plan?`<div style="color:var(--fg);border-top:1px solid var(--line);padding-top:8px;margin-top:2px">${esc(S.plan)}</div>`:""}`;
+  // stepper
+  const m=planMissing(),tr=trades();
+  $("#s0").textContent=m.length?`brakuje: ${m.length}`:"gotowe";
+  $("#s1").textContent=`${TODAY.length}/${effMax()} trans. · ${S.notes.length} notatek`;
+  $("#s2").textContent=S.imported?`${tr.filter(t=>t.setup).length}/${tr.length} z setupem`:"MT5";
+  $("#s3").textContent=S.rating?`ocena ${S.rating}/5`:"wynik i wnioski";
+  $("#s4").textContent=S.closed?"zamknięty":"liczy się do serii";
+  const doneP=[!m.length,S.phase>1||S.closed,S.imported&&tr.every(t=>t.setup),S.closed];
+  $$("#steps .step").forEach((b,i)=>{if(b.id==="stLock"){b.classList.toggle("done",S.closed);b.classList.remove("on");return}b.classList.toggle("on",i===S.phase);b.classList.toggle("done",i!==S.phase&&doneP[i])});
+}
+
+/* ---- journal view ---- */
+function miniRing(sc,size){const r=size/2-4,C=2*Math.PI*r,c=sc>=80?"#78d66a":sc>=50?"#e3b341":"#f2646a";
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${c}" stroke-width="4" stroke-linecap="round" stroke-dasharray="${C*sc/100} ${C}" transform="rotate(-90 ${size/2} ${size/2})"/><text x="${size/2}" y="${size/2+4}" text-anchor="middle" fill="#e6e9f2" font-size="11" font-family="JetBrains Mono,monospace">${sc}</text></svg>`}
+function allDays(){
+  const st=score();
+  const tg=S.tags.map(t=>[t,(TAGS.find(x=>x[0]===t)||[0,0])[1]]);
+  return [{key:"4.11",dnum:4,mon:"lis",wd:"Środa",date:"Środa, 4 listopada",today:true,mood:S.mood,score:st.sc,sess:(SESS.find(s=>s.id===S.sess)||{}).nm||"—",
+    note:S.r1||S.r2||(S.notes.length?S.notes[S.notes.length-1].x:""),rule:S.r3||"",tags:tg,tr:TODAY,closed:S.closed},...HISTORY];
+}
+function rJournal(){
+  const days=allDays(),byKey={};days.forEach(d=>byKey[d.key]=d);
+  const nov=days.filter(d=>d.mon==="lis"),ms=stats(nov.flatMap(d=>d.tr)),dn=nov.map(d=>stats(d.tr).net);
+  const best=Math.max(...dn),worst=Math.min(...dn),avg=Math.round(nov.reduce((a,d)=>a+d.score,0)/nov.length),greenD=dn.filter(v=>v>0).length;
+  $("#jsum").innerHTML=[
+    ["Netto w miesiącu",`<b class="${ms.net>=0?"pos":"neg"}">${fmt$(ms.net)}</b>`,`${fmtR(ms.r)}`],
+    ["Dni handlowe",`<b>${nov.length}</b>`,`<span class="pos">${greenD} na plus</span> · <span class="neg">${nov.length-greenD} na minus</span>`],
+    ["Win rate",`<b>${ms.wr}%</b>`,`${ms.w} W · ${ms.l} L`],
+    ["Profit factor",`<b>${ms.pf}</b>`,`prowizje ${fmt$(ms.fee)}`],
+    ["Najlepszy / najgorszy",`<b><span class="pos">${fmt$(best)}</span></b>`,`<span class="neg">${fmt$(worst)}</span>`],
+    ["Śr. dyscyplina",`<b style="color:${avg>=80?"var(--win)":avg>=50?"var(--warn)":"var(--loss)"}">${avg}%</b>`,"z zamkniętych dni"]
+  ].map(([l,v,s])=>`<div><span>${l}</span>${v}<small>${s}</small></div>`).join("");
+  // calendar: Mon-first; Nov 2026 starts on Sunday → leading 26-31 Oct
+  let g=["Pn","Wt","Śr","Cz","Pt","So","Nd"].map(d=>`<span class="wd">${d}</span>`).join("")+`<span class="wd wk">Tydzień</span>`;
+  const cells=[];for(let d=26;d<=31;d++)cells.push({n:d,key:d+".10",out:true});for(let d=1;d<=30;d++)cells.push({n:d,key:d+".11"});
+  while(cells.length%7)cells.push({n:cells.length-35,key:"x",out:true});
+  for(let w=0;w<cells.length/7;w++){
+    let wsum=0,wn=0,wd=0;
+    for(let i=0;i<7;i++){const c=cells[w*7+i],d=byKey[c.key],we=i>=5;
+      if(d){const s=stats(d.tr);wsum+=s.net;wn+=s.n;wd++;
+        g+=`<button class="cd ${s.net>=0?"w":"l"}${c.out?" out":""}${d.today?" t":""}${S.jsel===d.key?" sel":""}" data-jump="${d.key}" title="${d.date}: ${fmt$(s.net)}"><span class="n">${c.n}</span><span class="v">${fmt$(s.net)}</span><span class="c">${s.n} trans. · ${s.wr}%</span></button>`}
+      else g+=`<div class="cd${c.out?" out":""}${we?" we":""}${c.key==="4.11"?" t":""}"><span class="n">${c.n>0?c.n:""}</span></div>`;
+    }
+    g+=`<div class="cwk"><span class="n">Tydz. ${w+1}</span><span class="v ${wsum>0?"pos":wsum<0?"neg":""}">${wd?fmt$(wsum):"—"}</span><span class="c">${wd?wd+" dni · "+wn+" trans.":""}</span></div>`;
+  }
+  $("#mgrid").innerHTML=g;
+  const F=[["all","Wszystkie"],["win","Na plus"],["loss","Na minus"],["err","Z błędami"],["low","Dyscyplina < 70%"]],f=S.jf||"all";
+  $("#fbar").innerHTML=F.map(([k,l])=>`<button class="chip${f===k?" on":""}" data-jf="${k}">${l}</button>`).join("")+`<span class="sp"></span><span style="font-size:12px;color:var(--mute)">Pokaż transakcje:</span><button class="chip${S.jall?" on":""}" data-jall="1">${S.jall?"rozwinięte":"zwinięte"}</button>`;
+  const list=days.filter(d=>{const s=stats(d.tr);return f==="all"||(f==="win"&&s.net>0)||(f==="loss"&&s.net<0)||(f==="err"&&d.tags.some(t=>!t[1]))||(f==="low"&&d.score<70)});
+  $("#jlist").innerHTML=list.length?list.map(d=>{const s=stats(d.tr),open=S.jall||!!S.open[d.key],mc=d.mood!=null?MOODS[d.mood]:null;
+    return `<article class="jday${d.today?" today":""}" id="day-${d.key.replace(".","-")}">
+      <div class="jhead">
+        <div class="dbox"><b>${String(d.dnum).padStart(2,"0")}</b><span>${d.mon}</span></div>
+        <div class="jtitle">
+          <div class="dt">${d.date}${d.today?` <span class="tag auto">dziś</span>${d.closed?"":` <span class="tag soon">niezamknięty</span>`}`:""}</div>
+          <div class="meta"><span>Sesja <i>${d.sess}</i></span><span><i>${s.n}</i> trans.</span><span>WR <i>${s.wr}%</i></span><span>${mc?`Nastrój <i style="color:${mc[1]}">${mc[0]}</i>`:"Brak nastroju"}</span></div>
+        </div>
+        <div class="jright">
+          <div class="jnet"><b class="${s.net>=0?"pos":"neg"}">${fmt$(s.net)}</b><span>${fmtR(s.r)}</span></div>
+          <div class="jring">${miniRing(d.score,40)}DYSC.</div>
+          ${d.today?`<button class="btn sm pri" data-gotoday="1">Otwórz dzień</button>`:""}
+        </div>
+      </div>
+      <div class="jmid">
+        <div class="jchart"><div class="lab">Krzywa dnia</div>${curveSVG(d.tr,420,120,true)}</div>
+        <div class="jst">
+          <div><span>Brutto</span><b class="${s.gross>=0?"pos":"neg"}">${fmt$(s.gross)}</b></div>
+          <div><span>Prowizje</span><b>${fmt$(s.fee)}</b></div>
+          <div><span>Profit factor</span><b>${s.pf}</b></div>
+          <div><span>Wygrane</span><b class="pos">${s.w}</b></div>
+          <div><span>Przegrane</span><b class="neg">${s.l}</b></div>
+          <div><span>Śr. dyscyplina</span><b>${s.n?(d.tr.reduce((a,t)=>a+t.disc,0)/s.n).toFixed(1):"—"} / 5</b></div>
+        </div>
+      </div>
+      ${open?`<div class="jtr tw"><table class="tbl">${tradeTable(d.tr,false)}</table></div>`:""}
+      ${(d.note||d.rule||d.tags.length)?`<div class="jfoot"><div class="txt">${d.note?`<span>Wniosek</span>${esc(d.note)}`:""}${d.rule?`<span style="margin-top:6px">Zasada na jutro</span>${esc(d.rule)}`:""}</div><div class="tg">${d.tags.map(([t,gd])=>`<span class="chip on${gd?" good":""}"><i></i>${t}</span>`).join("")}</div></div>`:""}
+      <div class="jtoggle"><button data-open="${d.key}" aria-expanded="${open}"><svg class="ico" style="width:15px;height:15px;transform:rotate(${open?180:0}deg)"><use href="#i-down"/></svg>${open?"Ukryj transakcje":`Pokaż transakcje (${s.n})`}</button></div>
+    </article>`}).join(""):`<div class="empty">Brak dni dla tego filtra.</div>`;
+}
+
+
+/* ---- news, trades on timeline ---- */
+const NEWS=[{t:"10:00",cur:"EUR",nm:"PMI usług",imp:"med"},{t:"14:30",cur:"USD",nm:"CPI m/m",imp:"high"},{t:"16:00",cur:"USD",nm:"ISM usług",imp:"med"},{t:"20:00",cur:"USD",nm:"Protokół FOMC",imp:"high"}];
+const tnum=t=>{const [a,b]=t.split(":").map(Number);return a+b/60};
+const pctT=v=>(v/24*100).toFixed(2)+"%";
+function newsWarn(h){const n=NEWS.filter(x=>x.imp==="high").find(x=>{const d=tnum(x.t)-h;return d>-0.25&&d<=0.5});return n}
+function nextNews(h){return NEWS.find(x=>tnum(x.t)>h)}
+function tdots(){return TODAY.map(t=>`<span class="tdot ${t.usd>=0?"w":"l"}" style="left:${pctT(tnum(t.t))}" title="${t.t} ${t.sym} ${t.d==="L"?"Long":"Short"} ${fmtR(t.r)} (${fmt$(t.usd+t.fee)})"></span>`).join("")}
+function newsMarks(){return NEWS.map(n=>`<span class="nw ${n.imp}" style="left:${pctT(tnum(n.t))}" title="${n.t} ${n.cur} ${n.nm}${n.imp==="high"?" · wysoki wpływ":""}"></span>`).join("")}
+function newsLines(){return NEWS.filter(n=>n.imp==="high").map(n=>`<span class="nline" style="left:calc(66px + (100% - 66px) * ${tnum(n.t)/24})"></span>`).join("")}
+
+/* ---- promise ---- */
+const PROMISE=HISTORY[0].rule;
+function rPromise(){
+  const el=$("#promise");
+  el.className="card promise"+(S.promiseAck?" ok":"");
+  el.innerHTML=`<span class="pi"><svg class="ico"><use href="#i-pin"/></svg></span><div class="pt"><span>Wczoraj obiecałeś</span><b>${esc(PROMISE)}</b><small>${S.promiseAck?"Przypięte do dzisiejszego planu. Wieczorem zapytam, czy się udało.":"Z wtorku, 3 listopada · zasada na jutro"}</small></div>${S.promiseAck?`<button class="btn sm" data-promise="0">Odepnij</button>`:`<button class="btn pri" data-promise="1">Pamiętam, dziś też</button>`}`;
+}
+function rKept(){
+  const el=$("#kept");const k=S.promiseKept;
+  el.className="card promise"+(k===true?" ok":"");
+  el.innerHTML=`<span class="pi"><svg class="ico"><use href="#i-pin"/></svg></span><div class="pt"><span>${k===true?"Obietnica dotrzymana":"Obietnica z wczoraj"}</span><b>${esc(PROMISE)}</b><small>Dotrzymałeś dziś tej zasady?</small></div><div class="yn"><button class="btn sm y${k===true?" on":""}" data-kept="1">Tak</button><button class="btn sm n${k===false?" on":""}" data-kept="0">Nie</button></div>`;
+}
+
+/* ---- day card ---- */
+function rDayCard(){
+  const w=$("#dayCardWrap");w.hidden=!S.closed;if(!S.closed)return;
+  const st=stats(),sc=score().sc;
+  $("#dayCard").innerHTML=`<div>
+      <div class="brand"><i></i>AiKeepTrade</div>
+      <div class="dd">Środa, 4 listopada 2026 · ${(SESS.find(s=>s.id===S.sess)||SESS[1]).nm}</div>
+      <div class="dn ${st.net>=0?"pos":"neg"}">${fmt$(st.net)}</div>
+      <div class="dr">${fmtR(st.r)} · FundedNext 100k</div>
+      <div class="dchips"><span>${st.n} transakcje</span><span>WR ${st.wr}%</span><span>PF ${st.pf}</span><span>Seria ${S.closed?5:4} dni</span></div>
+      ${S.r3?`<div class="drule"><b>Zasada na jutro</b>${esc(S.r3)}</div>`:""}
+    </div>
+    <div class="dright"><div class="dscore">${miniRing(sc,52)}<div><b>Dyscyplina ${sc}%</b>${score().done} z ${score().tot} zasad</div></div>${curveSVG(TODAY,420,200,false)}</div>`;
+}
+
+/* ---- badges ---- */
+function badgeList(){const streak=S.closed?5:4;return [
+  ["Seria 5 dni","zamknięte dni z rzędu",streak,5],["Plan przed sesją","dni z pełnym planem",8,10],["Bez overtradingu","dni w limicie transakcji",10,10],
+  ["SL nietknięty","dni bez przesuwania SL",5,5],["Snajper kill zone","wejścia w kill zone",14,20],["Dziennikarz","dni z wnioskami",22,30]]}
+function medal(earned,i){const cols=[["#ffd36b","#d08a1f"],["#9fb0ff","#4b5ee0"],["#8ee58a","#3d9b48"],["#ff9da1","#c2444b"],["#7fe0e6","#2f8f9a"],["#d7b3ff","#7c4fd1"]][i%6];const id="m"+i;
+  return `<svg viewBox="0 0 44 48"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${earned?cols[0]:"#2a3248"}"/><stop offset="1" stop-color="${earned?cols[1]:"#171d2e"}"/></linearGradient></defs><path d="M22 2 40 12v22L22 46 4 34V12z" fill="url(#${id})" stroke="${earned?"rgba(255,255,255,.45)":"rgba(255,255,255,.12)"}" stroke-width="1.2"/><path d="M22 10 32 16v14l-10 6-10-6V16z" fill="none" stroke="${earned?"rgba(255,255,255,.55)":"rgba(255,255,255,.08)"}" stroke-width="1.2"/>${earned?`<path d="m16.5 23.5 4 4 7.5-8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`:`<rect x="17" y="22" width="10" height="8" rx="1.5" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/><path d="M19 22v-2.5a3 3 0 0 1 6 0V22" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>`}</svg>`}
+function rBadges(){const L=badgeList();
+  $("#badges").innerHTML=L.map(([n,d,c,g],i)=>{const e=c>=g;return `<div class="bdg${e?"":" lock"}${e&&i===0&&S.closed&&S.newBadge?" new":""}" title="${n}: ${Math.min(c,g)}/${g} ${d}">${medal(e,i)}<b>${n}</b>${e?`<small>zdobyta</small>`:`<div class="pb"><i style="width:${c/g*100}%"></i></div><small>${c}/${g}</small>`}</div>`}).join("");
+  $("#bdgN").textContent=L.filter(b=>b[2]>=b[3]).length+" / "+L.length;
+}
+
+/* ---- work mode ---- */
+function rWork(){
+  const h=now(),st=stats(),mx=effMax(),ps=BAL*S.stop/100,sc=score().sc;
+  const kz=KZ.find(k=>h>=k.from&&h<k.to),ses=SESS.filter(s=>h>=s.from&&h<s.to).pop();
+  let big,sub;
+  if(kz){const m=Math.round((kz.to-h)*60);big=`${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`;sub=`do końca kill zone ${kz.nm}`}
+  else if(ses){const m=Math.round((ses.to-h)*60);big=`${Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`;sub=`do końca sesji: ${ses.nm}`}
+  else{big=hhmm();sub="Poza sesją"}
+  const nw=newsWarn(h),nn=nextNews(h);
+  $("#work").innerHTML=`<div class="wbox">
+    <div class="wtop"><b><svg class="ico"><use href="#i-phone"/></svg>Tryb w pracy</b><button class="btn sm" data-workx="1"><svg class="ico"><use href="#i-x"/></svg>Wyjdź</button></div>
+    <div class="wclock"><div class="big mono">${big}</div><div class="sub">${sub}</div></div>
+    ${nw?`<div class="wnews"><svg class="ico" style="color:var(--loss)"><use href="#i-news"/></svg><span><b>${nw.t} ${nw.cur} ${nw.nm}</b> · bez nowych pozycji 15 min przed i po</span></div>`:nn?`<div class="wnews calm"><svg class="ico" style="color:var(--mute)"><use href="#i-news"/></svg><span>Następny news: <b>${nn.t} ${nn.cur} ${nn.nm}</b></span></div>`:""}
+    <div class="wtiles">
+      <div><span>Wynik</span><b class="${st.net>=0?"pos":"neg"}">${fmt$(st.net)}</b></div>
+      <div><span>Transakcje</span><b style="${st.n>=mx?"color:var(--warn)":""}">${st.n} / ${mx}</b></div>
+      <div><span>Do stopu dziennego</span><b>$${Math.max(0,ps+Math.min(0,st.net)).toLocaleString("pl-PL")}</b></div>
+      <div><span>Dyscyplina</span><b style="color:${sc>=80?"var(--win)":sc>=50?"var(--warn)":"var(--loss)"}">${sc}%</b></div>
+    </div>
+    <div class="wnote"><input class="inp" id="workIn" placeholder="Szybka notatka i Enter"><div class="wq">${QUICK.slice(0,4).map(q=>`<button data-q="${q}">${q}</button>`).join("")}</div></div>
+    <div class="wlog">${S.notes.slice(-3).reverse().map(n=>`<div><time>${n.t}</time><span>${esc(n.x)}</span></div>`).join("")}</div>
+  </div>`;
+  const wi=$("#workIn");wi.addEventListener("keydown",e=>{if(e.key==="Enter"&&wi.value.trim()){S.notes.push({t:hhmm(),x:wi.value.trim()});save();render();toast("Notatka zapisana.");setTimeout(()=>{const n=$("#workIn");if(n)n.focus()},0)}});
+}
+/* ---- hero ---- */
+const KZ=[{nm:"Londynu",from:8,to:11,lane:"ldn"},{nm:"Nowego Jorku",from:13,to:16,lane:"ny"}];
+const hm=v=>{const h=Math.floor(v),m=Math.round((v-h)*60);return String(h).padStart(2,"0")+":"+String(m%60).padStart(2,"0")};
+const dur=v=>{const m=Math.round(v*60);return m>=60?`${Math.floor(m/60)} h ${m%60} min`:`${m} min`};
+function heroStatus(h){
+  const nw=newsWarn(h);if(nw){const d=tnum(nw.t)-h;return {live:true,warn:true,html:`<b>${nw.cur} ${nw.nm} ${d>0?"za "+dur(d):"właśnie wyszedł"}</b> · bez nowych pozycji 15 min przed i po`}}
+  const kz=KZ.find(k=>h>=k.from&&h<k.to);
+  if(kz)return {live:true,html:`Kill zone ${kz.nm} trwa · <b>zostało ${dur(kz.to-h)}</b>`};
+  const open=SESS.filter(s=>h>=s.from&&h<s.to);
+  if(open.length){const s=open[open.length-1];const nk=KZ.find(k=>k.from>h);return {live:true,html:`<b>${s.nm}</b> otwarty do ${hm(s.to)}${nk?` · kill zone ${nk.nm} za ${dur(nk.from-h)}`:""}`}}
+  const nx=[...KZ.map(k=>({nm:"kill zone "+k.nm,at:k.from})),...SESS.map(s=>({nm:s.nm,at:s.from}))].filter(x=>x.at>h).sort((a,b)=>a.at-b.at)[0];
+  return {live:false,html:nx?`Rynek spokojny · <b>${nx.nm}</b> za ${dur(nx.at-h)}`:"Sesje na dziś zakończone"};
+}
+function nextStep(){
+  const m=planMissing();
+  if(S.closed)return ["Dzień zamknięty","",true];
+  if(S.phase===0)return m.length?[`Dokończ plan · brakuje ${m.length}`,"plan"]:["Zacznij handel","go1"];
+  if(S.phase===1)return ["Koniec handlu, import","go2"];
+  if(S.phase===2)return S.imported?["Przejdź do przeglądu","go3"]:["Importuj z MT5","imp"];
+  return ["Zamknij dzień","close"];
+}
+function rHero(){
+  const h=now(),st=stats(),sc=score(),hs=heroStatus(h),mx=effMax(),[lbl,act,dis]=nextStep();
+  const pct=v=>(v/24*100).toFixed(2)+"%";
+  const lanes=SESS.map(s=>{const k=KZ.find(k=>k.lane===s.id),on=S.sess===s.id;
+    return `<div class="lane${on?" on":""}"><em>${s.nm}</em><span class="bar" style="left:${pct(s.from)};width:${pct(s.to-s.from)}"></span>${k?`<span class="kz" style="left:${pct(k.from)};width:${pct(k.to-k.from)}" title="Kill zone ${hm(k.from)}–${hm(k.to)}"></span>`:""}${(S.sess||"ldn")===s.id?tdots():""}</div>`}).join("");
+  $("#hero").innerHTML=`
+    <div class="htop">
+      <div><div class="hdate">Środa, 4 listopada</div><div class="hstat${hs.warn?" warn":""}"><span class="ldot${hs.warn?" warn":hs.live?"":" off"}"></span><span>${hs.html}</span></div></div>
+      <div class="hnums">
+        <div><span>Wynik dziś</span><b class="${st.net>=0?"pos":"neg"}">${fmt$(st.net)}</b><small>${fmtR(st.r)}</small></div>
+        <div><span>Transakcje</span><b>${st.n}<span style="display:inline;font-size:16px;color:var(--mute);letter-spacing:0;text-transform:none"> / ${mx}</span></b><small>${st.n>=mx?"limit osiągnięty":"zostało "+(mx-st.n)}</small></div>
+        <div><span>Dyscyplina</span><b style="color:${sc.sc>=80?"var(--win)":sc.sc>=50?"var(--warn)":"var(--loss)"}">${sc.sc}%</b><small>${sc.done} z ${sc.tot} zasad</small></div>
+      </div>
+      <div class="hcta"><span>Następny krok</span><button class="btn ${S.closed?"":"pri"}" data-next="${act}"${dis?" disabled":""}>${dis?`<svg class="ico" style="color:var(--win)"><use href="#i-check"/></svg>`:""}${lbl}${dis?"":`<svg class="ico"><use href="#i-r"/></svg>`}</button><button class="btn sm" data-work="1"><svg class="ico"><use href="#i-phone"/></svg>Tryb w pracy</button></div>
+    </div>
+    <div class="tl">
+      <div class="now" style="left:calc(66px + (100% - 66px) * ${h/24})"><b>${hhmm()}</b></div>
+      ${newsLines()}${lanes}<div class="lane news"><em>Newsy</em>${newsMarks()}</div>
+      <div class="ticks">${[0,3,6,9,12,15,18,21,24].map(t=>`<span style="left:${pct(t)}">${String(t).padStart(2,"0")}</span>`).join("")}</div>
+    </div>
+    <div class="tlleg"><span><i style="background:rgba(107,124,245,.42);border:1px solid var(--accent2)"></i>Twoja sesja</span><span><i style="background:repeating-linear-gradient(135deg,rgba(227,179,65,.75) 0 3px,rgba(227,179,65,.35) 3px 6px)"></i>Kill zone</span><span><i style="background:var(--win);width:9px;height:9px;border-radius:50%"></i>Zysk</span><span><i style="background:var(--loss);width:9px;height:9px;border-radius:50%"></i>Strata</span><span><i style="background:var(--loss);width:9px;height:9px;transform:rotate(45deg)"></i>News wysoki</span><span><i style="background:#f0a35b;width:9px;height:9px;transform:rotate(45deg)"></i>średni</span><span>Godziny polskie</span></div>`;
+}
+function render(){
+  $$(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.view===S.view));
+  $("#vDay").hidden=S.view!=="day";$("#vJournal").hidden=S.view!=="journal";
+  if(S.view==="journal"){rJournal();return}
+  [0,1,2,3].forEach(p=>$("#p"+p).hidden=p!==S.phase);
+  rPlan();
+  if(S.phase===1)rTrade();if(S.phase===2)rImport();if(S.phase===3)rReview();
+  rSide();rHero();rBadges();if(!$("#work").hidden)rWork();
+}
+function go(p){S.phase=p;save();render();window.scrollTo({top:0,behavior:"smooth"})}
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;const D=b.dataset;
+  if(D.work){$("#work").hidden=false;document.body.style.overflow="hidden";rWork();return}
+  if(D.workx){$("#work").hidden=true;document.body.style.overflow="";return}
+  if(D.promise!=null){S.promiseAck=D.promise==="1";if(S.promiseAck)toast("Przypięte do planu.");save();render();return}
+  if(D.kept!=null){S.promiseKept=D.kept==="1";save();render();return}
+  if(D.dc==="png"){toast("W aplikacji ten przycisk zapisze kartę jako PNG.");return}
+  if(D.dc==="copy"){const st=stats();const t=`AiKeepTrade · 04.11.2026\nWynik: ${fmt$(st.net)} (${fmtR(st.r)})\nTransakcje: ${st.n} · WR ${st.wr}% · PF ${st.pf}\nDyscyplina: ${score().sc}%\nZasada na jutro: ${S.r3||"—"}`;
+    try{navigator.clipboard.writeText(t).then(()=>toast("Skopiowano podsumowanie."),()=>toast("Nie udało się skopiować."))}catch(e){toast("Nie udało się skopiować.")}return}
+  if(D.next!=null){const a=D.next;
+    if(a==="plan"){go(0);const m=planMissing();const t=m[0]==="nastrój"?"#mood":m[0]==="sesja"?"#sess":m[0]==="bias"?"#bias":"#rPrep";setTimeout(()=>{const el=$(t);if(el)el.closest(".card").scrollIntoView({behavior:"smooth",block:"center"})},350);return}
+    if(a==="go1"){toast("Plan zapisany. Powodzenia na sesji.");go(1);return}
+    if(a==="go2"){go(2);return} if(a==="go3"){go(3);return}
+    if(a==="imp"){S.imported=true;S.impAt=hhmm();toast("Zaimportowano 2 transakcje z MT5.")}
+    if(a==="close"){S.closed=true;(S.newBadge=1,toast("Dzień zamknięty. Nowa odznaka: Seria 5 dni!"))}
+  }
+  else if(D.view){S.view=D.view}
+  else if(D.s){S.sess=D.s}
+  else if(D.m!=null){S.mood=+D.m}
+  else if(D.pair){const p=D.pair;S.bias[p]=S.bias[p]||{};S.bias[p].d=S.bias[p].d===D.bd?null:D.bd}
+  else if(D.k){const k=D.k,d=+D.d,lim={maxT:[1,10],risk:[0.25,2],stop:[0.5,5]}[k];S[k]=Math.min(lim[1],Math.max(lim[0],+(S[k]+d).toFixed(2)))}
+  else if(D.c!=null){S.prep[+D.c]=S.prep[+D.c]?0:1}
+  else if(D.p!=null&&b.classList.contains("step")){go(+D.p);return}
+  else if(D.go){go(+D.go);return}
+  else if(b.id==="goTrade"){toast("Plan zapisany. Powodzenia na sesji.");go(1);return}
+  else if(D.q){S.notes.push({t:hhmm(),x:D.q})}
+  else if(b.id==="noteAdd"){addNote();return}
+  else if(b.id==="impBtn"){S.imported=true;S.impAt=hhmm();toast("Zaimportowano 2 transakcje z MT5.")}
+  else if(D.disc!=null){const i=+D.disc,cur=S.discs[i]!=null?S.discs[i]:TODAY[i].disc;S.discs[i]=cur>=5?1:cur+1}
+  else if(D.shots){S.shots=S.shots?0:1}
+  else if(D.st){S.rating=+D.st}
+  else if(D.t){const t=D.t;S.tags=S.tags.includes(t)?S.tags.filter(x=>x!==t):[...S.tags,t]}
+  else if(b.id==="closeDay"){S.closed=true;(S.newBadge=1,toast("Dzień zamknięty. Nowa odznaka: Seria 5 dni!"))}
+  else if(D.open!=null){S.open[D.open]=!S.open[D.open]}
+  else if(D.gotoday){S.view="day"}
+  else if(D.jf){S.jf=D.jf}
+  else if(D.jall){S.jall=!S.jall}
+  else if(D.jump){S.jsel=D.jump;S.jf="all";save();render();const el=document.getElementById("day-"+D.jump.replace(".","-"));if(el){el.scrollIntoView({behavior:"smooth",block:"start"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1400)}return}
+  else return;
+  save();render();
+});
+document.addEventListener("change",e=>{const el=e.target;if(el.dataset.setup!=null){S.setups[+el.dataset.setup]=el.value;save();render()}});
+function addNote(){const i=$("#noteIn"),v=i.value.trim();if(!v)return;S.notes.push({t:hhmm(),x:v});i.value="";save();render();const n=$("#notes");n.scrollTop=n.scrollHeight}
+$("#noteIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addNote()}});
+document.addEventListener("input",e=>{
+  const el=e.target;
+  if(el.dataset.lv){S.bias[el.dataset.lv]=S.bias[el.dataset.lv]||{};S.bias[el.dataset.lv].lv=el.value;save();return}
+  if(el.id==="planTxt"){S.plan=el.value;save();rSide();return}
+  if(el.id==="moodNote"){S.moodNote=el.value;save();return}
+  if(["r1","r2","r3"].includes(el.id)){S[el.id]=el.value;save();rSide();if(S.phase===3){const rr=reflRules();$("#cnt2").textContent=rr.filter(r=>r[3]).length+" / "+rr.length}return}
+});
+$("#planTxt").value=S.plan||"";$("#moodNote").value=S.moodNote||"";
+render();
+setInterval(()=>{if(!$("#work").hidden){const a=document.activeElement;if(!(a&&a.id==="workIn"))rWork();return}const a=document.activeElement;if(a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA"))return;if(S.view==="day"&&S.phase<=1)render()},60000);
+})();
+</script>
+
+</html>

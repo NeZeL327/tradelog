@@ -91,6 +91,17 @@ export default function HeaderAccountSync() {
     setAccountId(stillThere ? String(saved) : String(activeAccounts[0].id));
   }, [user?.id, activeAccounts]);
 
+  // Strona "Dzień" ma własny wybór konta — po jego zmianie odświeżamy wybór w nagłówku.
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    const follow = () => {
+      const saved = localStorage.getItem(storageKey(user.id));
+      if (saved && activeAccounts.some((account) => String(account.id) === saved)) setAccountId(saved);
+    };
+    window.addEventListener("dz-account", follow);
+    return () => window.removeEventListener("dz-account", follow);
+  }, [user?.id, activeAccounts]);
+
   useEffect(() => {
     const updateWidth = () => {
       setSelectWidth(measureAccountSelectWidth(accountNames, triggerRef.current));

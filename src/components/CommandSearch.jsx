@@ -22,7 +22,7 @@ function navItems(t) {
     { title: t("dashboard"), url: createPageUrl("Dashboard"), icon: LayoutDashboard },
     { title: t("journal"), url: createPageUrl("Journal"), icon: BookOpen },
     { title: t("calendar"), url: createPageUrl("Calendar"), icon: Calendar },
-    { title: t("dayPage"), url: createPageUrl("DayPlan"), icon: CalendarCheck },
+    { title: t("dayPage"), url: createPageUrl("Day"), icon: CalendarCheck },
     { title: t("tradeDetails"), url: "/trade", icon: CandlestickChart },
     { title: t("analytics"), url: createPageUrl("Analytics"), icon: BarChart3 },
     { title: t("backtesting"), url: createPageUrl("Backtesting"), icon: FlaskConical },
