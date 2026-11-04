@@ -70,7 +70,23 @@ main{flex:1;min-width:0;padding:22px clamp(16px,3vw,36px) 40px}
 .lab{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);font-weight:600}
 
 /* sessions */
-.sess{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sess{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.ses .nm{display:flex;align-items:center;gap:8px}
+.ses .sck{width:18px;height:18px;border-radius:6px;border:1.5px solid var(--line2);display:grid;place-items:center;flex-shrink:0;transition:.15s}
+.ses.on .sck{background:var(--sc);border-color:var(--sc)}
+.ses.on .sck::after{content:"";width:8px;height:4.5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.ses.on{border-color:var(--sc)!important;background:color-mix(in srgb,var(--sc) 13%,transparent)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--sc) 16%,transparent)!important}
+.mtl{position:relative;display:block;height:8px;border-radius:4px;background:rgba(255,255,255,.06);margin:6px 0 2px}
+.mtl i{position:absolute;top:0;bottom:0;border-radius:4px}
+.mtl .mb{background:rgba(255,255,255,.16)}
+.ses.on .mtl .mb{background:var(--sc)}
+.mtl .mk{top:2px;bottom:2px;background:repeating-linear-gradient(135deg,rgba(227,179,65,.9) 0 2px,rgba(227,179,65,.35) 2px 4px)}
+.mtl .mn{width:2px;background:#fff;top:-3px;bottom:-3px;border-radius:1px}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.presets .chip{font-weight:600}
+.presets .chip.on{color:var(--fg);border-color:var(--accent);background:var(--accentbg)}
+.ssum{margin-top:10px;font-size:13px;color:var(--mute)}
+.ssum b{color:var(--fg)}
 .ses{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:13px 14px;text-align:left;display:flex;flex-direction:column;gap:4px;min-width:0}
 .ses .top{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .ses .nm{font-weight:700;font-size:15px}
@@ -318,7 +334,7 @@ button.cd:hover{border-color:var(--line2)}
 .tl .lane em{position:absolute;left:-66px;top:0;font-style:normal;font-size:11px;color:var(--mute);font-weight:600;line-height:16px;width:60px}
 .tl .lane.on em{color:var(--fg)}
 .tl .bar{position:absolute;top:0;bottom:0;border-radius:5px;background:rgba(140,153,255,.22);border:1px solid rgba(140,153,255,.3)}
-.tl .lane.on .bar{background:rgba(107,124,245,.42);border-color:var(--accent2)}
+.tl .lane.on .bar{background:color-mix(in srgb,var(--sc) 45%,transparent);border-color:var(--sc)}
 .tl .kz{position:absolute;top:3px;bottom:3px;border-radius:3px;background:repeating-linear-gradient(135deg,rgba(227,179,65,.75) 0 3px,rgba(227,179,65,.35) 3px 6px)}
 .tl .ticks{position:relative;height:16px;font-family:var(--mono);font-size:10.5px;color:var(--dim)}
 .tl .ticks span{position:absolute;transform:translateX(-50%);top:2px}
@@ -416,11 +432,13 @@ button.cd:hover{border-color:var(--line2)}
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:#1a2140;border:1px solid var(--line2);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:20}
 .toast.show{opacity:1;transform:translateX(-50%)}
 
+@media (max-width:1250px){.sess{grid-template-columns:1fr 1fr}}
 @media (max-width:1100px){.grid{grid-template-columns:1fr} aside{position:static;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}}
 @media (max-width:760px){
   .rail{display:none} .frame{padding-block:0} .shell{border-radius:0;border:0;background:transparent}
   main{padding:16px 0 32px}
-  .sess,.rules,.livegrid{grid-template-columns:1fr}
+  .sess{grid-template-columns:1fr 1fr}
+  .rules,.livegrid{grid-template-columns:1fr}
   .kpis{grid-template-columns:1fr 1fr}
   .refl,.jbody{grid-template-columns:1fr}
   .brow{grid-template-columns:70px 1fr} .brow .inp{grid-column:1/-1}
@@ -510,8 +528,9 @@ button.cd:hover{border-color:var(--line2)}
             </div>
             </div>
             <div class="card">
-              <div class="ch"><h2>Którą sesję grasz?</h2><span class="h">Godziny polskie · kill zone wg ICT</span></div>
+              <div class="ch"><h2>Które sesje grasz?</h2><span class="h">Możesz wybrać kilka · godziny polskie · kill zone wg ICT</span></div>
               <div class="sess" id="sess"></div>
+              <div id="sessSum"></div>
             </div>
             <div class="card">
               <div class="ch"><h2>Bias i poziomy</h2><span class="h">Kierunek z H4/D1, poziomy do obserwacji</span></div>
@@ -649,10 +668,16 @@ button.cd:hover{border-color:var(--line2)}
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const BAL=100000;
 const SESS=[
-  {id:"asia",nm:"Azja",from:1,to:9,tm:"01:00 – 09:00",kz:"Kontekst: zakres i płynność"},
-  {id:"ldn",nm:"Londyn",from:9,to:17.5,tm:"09:00 – 17:30",kz:"Kill zone 08:00 – 11:00"},
-  {id:"ny",nm:"Nowy Jork",from:14.5,to:22,tm:"14:30 – 22:00",kz:"Kill zone 13:00 – 16:00"}
+  {id:"asia",nm:"Azja",from:1,to:9,tm:"01:00 – 09:00",kz:"Kontekst: zakres i płynność",kzr:null,c:"#b48cff"},
+  {id:"ldn",nm:"Londyn",from:9,to:17.5,tm:"09:00 – 17:30",kz:"Kill zone 08:00 – 11:00",kzr:[8,11],c:"#6b7cf5"},
+  {id:"nyam",nm:"NY AM",from:14.5,to:17,tm:"14:30 – 17:00",kz:"Kill zone 13:00 – 16:00",kzr:[13,16],c:"#4fc3d9"},
+  {id:"nypm",nm:"NY PM",from:19.5,to:22,tm:"19:30 – 22:00",kz:"Power hour 21:00 – 22:00",kzr:[21,22],c:"#f0a35b"}
 ];
+const PRESETS=[["Tylko Londyn",["ldn"]],["Londyn + NY AM",["ldn","nyam"]],["NY AM + PM",["nyam","nypm"]],["Cały dzień",["ldn","nyam","nypm"]]];
+const mySess=()=>SESS.filter(s=>(S.sessions||[]).includes(s.id));
+const sessNames=()=>mySess().map(s=>s.nm).join(" + ")||"—";
+const sessWin=s=>[s.kzr?Math.min(s.kzr[0],s.from):s.from,s.to];
+const inMySess=v=>mySess().some(s=>{const [a,b]=sessWin(s);return v>=a&&v<b});
 const MOODS=[["Bardzo źle","#f2646a","M9 16.5c1.6-1.6 4.4-1.6 6 0"],["Źle","#f09a5b","M9 16c1.8-1 4.2-1 6 0"],["Neutralnie","#9aa3b8","M9 15.5h6"],["Dobrze","#9ccf6a","M9 15c1.8 1 4.2 1 6 0"],["Świetnie","#78d66a","M8.5 14.5c1.9 2.2 5.1 2.2 7 0"]];
 const face=(i,c)=>`<svg viewBox="0 0 24 24" class="ico" style="width:100%;height:100%;stroke-width:1.6${c?";color:"+c:""}"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r=".6" fill="currentColor"/><circle cx="15" cy="10" r=".6" fill="currentColor"/><path d="${MOODS[i][2]}"/></svg>`;
 const PAIRS=["EURUSD","GBPUSD","XAUUSD"];
@@ -688,6 +713,7 @@ const def={view:"day",phase:0,sess:null,mood:null,moodNote:"",bias:{EURUSD:{d:"L
   rating:null,tags:[],r1:"",r2:"",r3:"",closed:false,open:{"4.11":true}};
 let S;
 try{S=Object.assign({},def,JSON.parse(localStorage.getItem("akt-dzien2")||"{}"))}catch(e){S=Object.assign({},def)}
+if(!Array.isArray(S.sessions))S.sessions=S.sess?[S.sess==="ny"?"nyam":S.sess]:[];
 const save=()=>{try{localStorage.setItem("akt-dzien2",JSON.stringify(S))}catch(e){}};
 const toast=m=>{const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),1900)};
 const fmt$=v=>(v>=0?"+":"−")+"$"+Math.abs(Math.round(v)).toLocaleString("pl-PL");
@@ -707,14 +733,14 @@ function stats(list){
 
 /* ---- rules ---- */
 function tradeRules(){
-  const st=stats(),s=SESS.find(x=>x.id===S.sess)||SESS[1];
-  const inSess=TODAY.every(t=>{const [h,m]=t.t.split(":").map(Number),v=h+m/60;return v>=8&&v<s.to});
+  const st=stats();
+  const inSess=TODAY.every(t=>{const [h,m]=t.t.split(":").map(Number);return inMySess(h+m/60)});
   const lastLossGap=(()=>{for(let i=1;i<TODAY.length;i++){if(TODAY[i-1].usd<0){const a=TODAY[i-1].t.split(":").map(Number),b=TODAY[i].t.split(":").map(Number);if((b[0]*60+b[1])-(a[0]*60+a[1])<15)return false}}return true})();
   return [
     [`Max ${effMax()} transakcje`,`Dziś ${st.n}`,st.n<=effMax()],
     [`Ryzyko ≤ ${S.risk.toFixed(2)}% na transakcję`,"Strata na trade nie większa niż 1R",TODAY.every(t=>t.r>=-1.05)],
     [`Stop dzienny −${S.stop}% nie przekroczony`,`Wynik ${fmt$(st.net)}`,st.net>-BAL*S.stop/100],
-    ["Handel tylko w oknie sesji",`${s.nm}, od kill zone do końca sesji`,inSess],
+    ["Handel tylko w Twoich sesjach",`${sessNames()}, od kill zone do końca sesji`,inSess],
     ["15 min przerwy po stracie","Liczone z godzin transakcji",lastLossGap],
     ["Notatki w trakcie sesji",`${S.notes.length} wpisów`,S.notes.length>0]
   ];
@@ -736,7 +762,7 @@ function score(){
 function planMissing(){
   const m=[];
   if(S.mood==null)m.push("nastrój");
-  if(!S.sess)m.push("sesja");
+  if(!(S.sessions||[]).length)m.push("sesja");
   if(!PAIRS.some(p=>S.bias[p]&&S.bias[p].d))m.push("bias");
   const c=S.prep.filter(Boolean).length;if(c<PREP.length)m.push(`zasady ${c}/${PREP.length}`);
   return m;
@@ -746,8 +772,14 @@ function planMissing(){
 function rPlan(){
   $("#mood").innerHTML=MOODS.map(([l,c],i)=>`<button class="${S.mood===i?"on":""}" data-m="${i}" style="--mc:${c}">${face(i)}${l}</button>`).join("");
   const h=now();
-  $("#sess").innerHTML=SESS.map(s=>{const o=h>=s.from&&h<s.to,soon=!o&&h<s.from&&s.from-h<=2;
-    return `<button class="ses${S.sess===s.id?" on":""}" data-s="${s.id}"><div class="top"><span class="nm">${s.nm}</span><span class="tag ${o?"open":soon?"soon":"off"}">${o?"otwarta":soon?"za chwilę":"zamknięta"}</span></div><span class="tm">${s.tm}</span><span class="kz">${s.kz}</span></button>`}).join("");
+  $("#sess").innerHTML=SESS.map(s=>{const o=h>=s.from&&h<s.to,soon=!o&&h<s.from&&s.from-h<=2,on=S.sessions.includes(s.id);
+    return `<button class="ses${on?" on":""}" data-s="${s.id}" aria-pressed="${on}" style="--sc:${s.c}"><div class="top"><span class="nm"><span class="sck"></span>${s.nm}</span><span class="tag ${o?"open":soon?"soon":"off"}">${o?"otwarta":soon?"za chwilę":"zamknięta"}</span></div><span class="tm">${s.tm}</span>
+      <span class="mtl"><i class="mb" style="left:${pctT(s.from)};width:${pctT(s.to-s.from)}"></i>${s.kzr?`<i class="mk" style="left:${pctT(s.kzr[0])};width:${pctT(s.kzr[1]-s.kzr[0])}"></i>`:""}<i class="mn" style="left:${pctT(h)}"></i></span>
+      <span class="kz">${s.kz}</span></button>`}).join("");
+  const ms=mySess(),hrs=(()=>{let t=0,e=-1;[...ms].sort((a,b)=>a.from-b.from).forEach(x=>{const a=Math.max(x.from,e);if(x.to>a)t+=x.to-a;e=Math.max(e,x.to)});return t})(),kzn=ms.filter(x=>x.kzr).length;
+  const gaps=[];const so=[...ms].sort((a,b)=>a.from-b.from);for(let i=1;i<so.length;i++){if(so[i].from>so[i-1].to)gaps.push(hm(so[i-1].to)+"–"+hm(so[i].from))}
+  $("#sessSum").innerHTML=`<div class="presets">${PRESETS.map(([l,ids])=>`<button class="chip${ids.length===S.sessions.length&&ids.every(i=>S.sessions.includes(i))?" on":""}" data-preset="${ids.join(",")}">${l}</button>`).join("")}</div>
+    <div class="ssum">${ms.length?`Grasz: <b>${sessNames()}</b> · ${dur(hrs)} na rynku · ${kzn} ${kzn===1?"kill zone":"kill zone"}${gaps.length?` · przerwa ${gaps.join(", ")}`:""}`:`Wybierz jedną lub kilka sesji. Możesz łączyć, np. Londyn + NY AM.`}</div>`;
   $("#bias").innerHTML=PAIRS.map(p=>{const b=S.bias[p]||{};return `<div class="brow"><span class="sym">${p}</span><div class="seg">${[["L","Long"],["S","Short"],["N","Neutral"]].map(([k,l])=>`<button class="${k}${b.d===k?" on":""}" data-pair="${p}" data-bd="${k}">${l}</button>`).join("")}</div><input class="inp" id="lv-${p}" data-lv="${p}" value="${esc(b.lv||"")}" placeholder="Poziomy, np. PDH, Asia high"></div>`}).join("");
   $("#v-maxT").textContent=S.maxT;$("#v-risk").textContent=S.risk.toFixed(2)+"%";$("#v-stop").textContent="−"+S.stop.toFixed(1)+"%";
   $("#rPrep").innerHTML=PREP.map(([a,b],i)=>`<button class="ci${S.prep[i]?" on":""}" data-c="${i}"><span class="bx"></span><span class="tx"><b>${a}</b><small>${b}</small></span></button>`).join("");
@@ -761,7 +793,7 @@ function rTrade(){
   $("#mTb").style.cssText=`width:${Math.min(100,st.n/mx*100)}%;background:${st.n>=mx?"var(--warn)":"var(--accent)"}`;
   $("#mP").innerHTML=`<span class="${st.net>=0?"pos":"neg"}">${fmt$(st.net)}</span>`;$("#mPs").textContent=`${fmtR(st.r)} · stop dzienny −$${ps.toLocaleString("pl-PL")}`;
   $("#mPb").style.cssText=`width:${Math.min(100,Math.abs(st.net)/ps*100)}%;background:${st.net>=0?"var(--win)":"var(--loss)"}`;
-  const s=SESS.find(x=>x.id===S.sess)||SESS[1],h=now(),pct=Math.max(0,Math.min(1,(h-s.from)/(s.to-s.from))),left=s.to-h;
+  const h=now(),ms=mySess().length?mySess():[SESS[1]],s=ms.find(x=>h>=x.from&&h<x.to)||ms.find(x=>x.from>h)||ms[ms.length-1],pct=Math.max(0,Math.min(1,(h-s.from)/(s.to-s.from))),left=s.to-h;
   $("#mS").textContent=s.nm;$("#mSs").textContent=h<s.from?"Jeszcze nie otwarta":left>0?`Do końca ${Math.floor(left)} h ${Math.round((left%1)*60)} min`:"Sesja zamknięta";
   $("#mSb").style.cssText=`width:${pct*100}%;background:var(--accent2)`;
   const al=$("#alert");
@@ -855,8 +887,8 @@ function rSide(){
     <div><div class="row"><span>Twój stop dzienny (−${S.stop}%)</span><b>$${(ps-used).toLocaleString("pl-PL")} wolne</b></div><div class="bar"><i style="width:${Math.min(100,used/ps*100)}%;background:var(--warn)"></i></div></div>
     <div><div class="row"><span>Daily loss FundedNext (5%)</span><b>$${(dl-used).toLocaleString("pl-PL")}</b></div><div class="bar"><i style="width:${Math.min(100,used/dl*100)}%;background:var(--loss)"></i></div></div>
     <div><div class="row"><span>1R przy ${S.risk.toFixed(2)}%</span><b>$${(BAL*S.risk/100).toLocaleString("pl-PL")}</b></div></div>`;
-  const ses=SESS.find(s=>s.id===S.sess),bl=PAIRS.filter(p=>S.bias[p]&&S.bias[p].d).map(p=>`${p} <span class="${S.bias[p].d==="L"?"pos":S.bias[p].d==="S"?"neg":""}">${{L:"Long",S:"Short",N:"Neutral"}[S.bias[p].d]}</span>`);
-  $("#planbox").innerHTML=`<div>Nastrój: <b>${S.mood!=null?MOODS[S.mood][0]:"—"}</b></div><div>Sesja: <b>${ses?ses.nm:"—"}</b></div><div>Bias: <b>${bl.join(", ")||"—"}</b></div><div>Limit: <b>${effMax()} trans. · ${S.risk.toFixed(2)}% · stop −${S.stop}%</b>${effMax()<S.maxT?' <span class="tag soon">obniżony</span>':""}</div>${S.plan?`<div style="color:var(--fg);border-top:1px solid var(--line);padding-top:8px;margin-top:2px">${esc(S.plan)}</div>`:""}`;
+  const bl=PAIRS.filter(p=>S.bias[p]&&S.bias[p].d).map(p=>`${p} <span class="${S.bias[p].d==="L"?"pos":S.bias[p].d==="S"?"neg":""}">${{L:"Long",S:"Short",N:"Neutral"}[S.bias[p].d]}</span>`);
+  $("#planbox").innerHTML=`<div>Nastrój: <b>${S.mood!=null?MOODS[S.mood][0]:"—"}</b></div><div>Sesje: <b>${sessNames()}</b></div><div>Bias: <b>${bl.join(", ")||"—"}</b></div><div>Limit: <b>${effMax()} trans. · ${S.risk.toFixed(2)}% · stop −${S.stop}%</b>${effMax()<S.maxT?' <span class="tag soon">obniżony</span>':""}</div>${S.plan?`<div style="color:var(--fg);border-top:1px solid var(--line);padding-top:8px;margin-top:2px">${esc(S.plan)}</div>`:""}`;
   // stepper
   const m=planMissing(),tr=trades();
   $("#s0").textContent=m.length?`brakuje: ${m.length}`:"gotowe";
@@ -874,7 +906,7 @@ function miniRing(sc,size){const r=size/2-4,C=2*Math.PI*r,c=sc>=80?"#78d66a":sc>
 function allDays(){
   const st=score();
   const tg=S.tags.map(t=>[t,(TAGS.find(x=>x[0]===t)||[0,0])[1]]);
-  return [{key:"4.11",dnum:4,mon:"lis",wd:"Środa",date:"Środa, 4 listopada",today:true,mood:S.mood,score:st.sc,sess:(SESS.find(s=>s.id===S.sess)||{}).nm||"—",
+  return [{key:"4.11",dnum:4,mon:"lis",wd:"Środa",date:"Środa, 4 listopada",today:true,mood:S.mood,score:st.sc,sess:sessNames(),
     note:S.r1||S.r2||(S.notes.length?S.notes[S.notes.length-1].x:""),rule:S.r3||"",tags:tg,tr:TODAY,closed:S.closed},...HISTORY];
 }
 function rJournal(){
@@ -944,7 +976,7 @@ const tnum=t=>{const [a,b]=t.split(":").map(Number);return a+b/60};
 const pctT=v=>(v/24*100).toFixed(2)+"%";
 function newsWarn(h){const n=NEWS.filter(x=>x.imp==="high").find(x=>{const d=tnum(x.t)-h;return d>-0.25&&d<=0.5});return n}
 function nextNews(h){return NEWS.find(x=>tnum(x.t)>h)}
-function tdots(){return TODAY.map(t=>`<span class="tdot ${t.usd>=0?"w":"l"}" style="left:${pctT(tnum(t.t))}" title="${t.t} ${t.sym} ${t.d==="L"?"Long":"Short"} ${fmtR(t.r)} (${fmt$(t.usd+t.fee)})"></span>`).join("")}
+function tdots(id){const laneOf=v=>{const ms=mySess().length?mySess():[SESS[1]];const f=ms.find(x=>{const [a,b]=sessWin(x);return v>=a&&v<b});return (f||ms[0]).id};return TODAY.filter(t=>laneOf(tnum(t.t))===id).map(t=>`<span class="tdot ${t.usd>=0?"w":"l"}" style="left:${pctT(tnum(t.t))}" title="${t.t} ${t.sym} ${t.d==="L"?"Long":"Short"} ${fmtR(t.r)} (${fmt$(t.usd+t.fee)})"></span>`).join("")}
 function newsMarks(){return NEWS.map(n=>`<span class="nw ${n.imp}" style="left:${pctT(tnum(n.t))}" title="${n.t} ${n.cur} ${n.nm}${n.imp==="high"?" · wysoki wpływ":""}"></span>`).join("")}
 function newsLines(){return NEWS.filter(n=>n.imp==="high").map(n=>`<span class="nline" style="left:calc(66px + (100% - 66px) * ${tnum(n.t)/24})"></span>`).join("")}
 
@@ -967,7 +999,7 @@ function rDayCard(){
   const st=stats(),sc=score().sc;
   $("#dayCard").innerHTML=`<div>
       <div class="brand"><i></i>AiKeepTrade</div>
-      <div class="dd">Środa, 4 listopada 2026 · ${(SESS.find(s=>s.id===S.sess)||SESS[1]).nm}</div>
+      <div class="dd">Środa, 4 listopada 2026 · ${sessNames()}</div>
       <div class="dn ${st.net>=0?"pos":"neg"}">${fmt$(st.net)}</div>
       <div class="dr">${fmtR(st.r)} · FundedNext 100k</div>
       <div class="dchips"><span>${st.n} transakcje</span><span>WR ${st.wr}%</span><span>PF ${st.pf}</span><span>Seria ${S.closed?5:4} dni</span></div>
@@ -1012,7 +1044,7 @@ function rWork(){
   const wi=$("#workIn");wi.addEventListener("keydown",e=>{if(e.key==="Enter"&&wi.value.trim()){S.notes.push({t:hhmm(),x:wi.value.trim()});save();render();toast("Notatka zapisana.");setTimeout(()=>{const n=$("#workIn");if(n)n.focus()},0)}});
 }
 /* ---- hero ---- */
-const KZ=[{nm:"Londynu",from:8,to:11,lane:"ldn"},{nm:"Nowego Jorku",from:13,to:16,lane:"ny"}];
+const KZ=[{nm:"Londynu",from:8,to:11,lane:"ldn"},{nm:"NY AM",from:13,to:16,lane:"nyam"},{nm:"NY PM (power hour)",from:21,to:22,lane:"nypm"}];
 const hm=v=>{const h=Math.floor(v),m=Math.round((v-h)*60);return String(h).padStart(2,"0")+":"+String(m%60).padStart(2,"0")};
 const dur=v=>{const m=Math.round(v*60);return m>=60?`${Math.floor(m/60)} h ${m%60} min`:`${m} min`};
 function heroStatus(h){
@@ -1035,8 +1067,8 @@ function nextStep(){
 function rHero(){
   const h=now(),st=stats(),sc=score(),hs=heroStatus(h),mx=effMax(),[lbl,act,dis]=nextStep();
   const pct=v=>(v/24*100).toFixed(2)+"%";
-  const lanes=SESS.map(s=>{const k=KZ.find(k=>k.lane===s.id),on=S.sess===s.id;
-    return `<div class="lane${on?" on":""}"><em>${s.nm}</em><span class="bar" style="left:${pct(s.from)};width:${pct(s.to-s.from)}"></span>${k?`<span class="kz" style="left:${pct(k.from)};width:${pct(k.to-k.from)}" title="Kill zone ${hm(k.from)}–${hm(k.to)}"></span>`:""}${(S.sess||"ldn")===s.id?tdots():""}</div>`}).join("");
+  const lanes=SESS.map(s=>{const k=KZ.find(k=>k.lane===s.id),on=S.sessions.includes(s.id);
+    return `<div class="lane${on?" on":""}"><em>${s.nm}</em><span class="bar" style="left:${pct(s.from)};width:${pct(s.to-s.from)};--sc:${s.c}"></span>${k?`<span class="kz" style="left:${pct(k.from)};width:${pct(k.to-k.from)}" title="Kill zone ${hm(k.from)}–${hm(k.to)}"></span>`:""}${tdots(s.id)}</div>`}).join("");
   $("#hero").innerHTML=`
     <div class="htop">
       <div><div class="hdate">Środa, 4 listopada</div><div class="hstat${hs.warn?" warn":""}"><span class="ldot${hs.warn?" warn":hs.live?"":" off"}"></span><span>${hs.html}</span></div></div>
@@ -1082,7 +1114,8 @@ document.addEventListener("click",e=>{
     if(a==="close"){S.closed=true;(S.newBadge=1,toast("Dzień zamknięty. Nowa odznaka: Seria 5 dni!"))}
   }
   else if(D.view){S.view=D.view}
-  else if(D.s){S.sess=D.s}
+  else if(D.s){const i=S.sessions.indexOf(D.s);if(i>=0)S.sessions.splice(i,1);else S.sessions.push(D.s)}
+  else if(D.preset){S.sessions=D.preset.split(",")}
   else if(D.m!=null){S.mood=+D.m}
   else if(D.pair){const p=D.pair;S.bias[p]=S.bias[p]||{};S.bias[p].d=S.bias[p].d===D.bd?null:D.bd}
   else if(D.k){const k=D.k,d=+D.d,lim={maxT:[1,10],risk:[0.25,2],stop:[0.5,5]}[k];S[k]=Math.min(lim[1],Math.max(lim[0],+(S[k]+d).toFixed(2)))}

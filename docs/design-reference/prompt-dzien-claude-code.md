@@ -72,4 +72,12 @@ Stepper: **1 Plan → 2 Handel → 3 Import → 4 Przegląd → Zamknij dzień**
 - Po mojej akceptacji: przełącz trasę na nowy widok, stary komponent przenieś do usunięcia (lista plików do usunięcia — usuwam po potwierdzeniu).
 - Krótka notka w `docs/` co zostało zrobione i jakie nowe pola doszły do bazy.
 
+## Uzupełnienie — wiele sesji naraz (NY AM / NY PM)
+- Zamiast jednej sesji: **wybór kilku sesji** (przełączniki). Sesje (godz. PL, w pliku konfiguracyjnym): Azja 01:00–09:00 · Londyn 09:00–17:30 (kill zone 08:00–11:00) · **NY AM 14:30–17:00** (kill zone 13:00–16:00) · **NY PM 19:30–22:00** (power hour 21:00–22:00). Każda sesja ma swój kolor (Azja fiolet, Londyn indygo, NY AM turkus, NY PM pomarańcz).
+- Karta sesji: kwadracik z ptaszkiem w kolorze sesji, status (otwarta/za chwilę/zamknięta), godziny, **mini oś 24 h** z paskiem sesji, kill zone i kreską „teraz”.
+- Pod kartami **gotowe zestawy**: „Tylko Londyn”, „Londyn + NY AM”, „NY AM + PM”, „Cały dzień” oraz podsumowanie: „Grasz: Londyn + NY PM · 11 h na rynku · 2 kill zone · przerwa 17:30–19:30” (godziny liczone bez nakładania się sesji).
+- Pasek „Dziś”: osobny tor dla każdej sesji, wybrane podświetlone w swoim kolorze; kropki transakcji na torze sesji, w której było wejście.
+- Zasada AUTO „Handel tylko w Twoich sesjach” = wejście w dowolnej wybranej sesji (od początku jej kill zone do końca sesji). Licznik „Sesja” w kroku Handel pokazuje bieżącą albo najbliższą z wybranych.
+- W zapisie dnia: lista sesji (tablica id), nie jedno pole — zgodnie z zasadą zgody na nowe pola. Stare dni z jedną sesją czytaj jako listę z jednym elementem.
+
 Zacznij od **Etapu 0** i czekaj na „dalej”.

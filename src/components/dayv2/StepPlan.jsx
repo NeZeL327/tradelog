@@ -12,7 +12,7 @@ import {
   prepChecks,
   riskPercent,
 } from "@/lib/dayFlow";
-import { sessionState } from "@/lib/daySessions";
+import { SESSION_PRESETS, durationLabel, hhmmOf, legacyMappingSession, selectedSessionIds, sessionState, sessionsSummary } from "@/lib/daySessions";
 import { Check, MoodFace } from "./parts";
 
 const STATE_LABEL = { open: "otwarta", soon: "za chwilę", off: "zamknięta" };
@@ -58,6 +58,70 @@ function LimitRule({ label, value, display, onStep }) {
         <button type="button" className="mini" onClick={() => onStep(1)} aria-label={`${label}: więcej`}>
           +
         </button>
+      </div>
+    </div>
+  );
+}
+
+const pctOf = (m) => `${((Math.max(0, Math.min(1440, m)) / 1440) * 100).toFixed(2)}%`;
+
+function SessionPicker({ doc, patch, sessions, nowMin, isToday }) {
+  const ids = selectedSessionIds(doc);
+  const setIds = (next) => {
+    const ordered = sessions.map((s) => s.id).filter((id) => next.includes(id));
+    patch((p) => ({ ...p, sessions: ordered, mapping_session: legacyMappingSession(ordered) }));
+  };
+  const toggle = (id) => setIds(ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
+  const sum = sessionsSummary(sessions, ids);
+  return (
+    <div className="card">
+      <div className="ch">
+        <h2>Które sesje grasz?</h2>
+        <span className="h">Możesz wybrać kilka · godziny polskie · kill zone wg ICT</span>
+      </div>
+      <div className="sess" role="group" aria-label="Sesje">
+        {sessions.map((s) => {
+          const state = isToday ? sessionState(s, nowMin) : "off";
+          const on = ids.includes(s.id);
+          return (
+            <button key={s.id} type="button" aria-pressed={on} className={`ses${on ? " on" : ""}`} style={{ "--sc": s.color }} onClick={() => toggle(s.id)}>
+              <div className="top">
+                <span className="nm">
+                  <span className="sck" />
+                  {s.name}
+                </span>
+                {isToday ? <span className={`tag ${state}`}>{STATE_LABEL[state]}</span> : null}
+              </div>
+              <span className="tm">{s.label}</span>
+              <span className="mtl" aria-hidden="true">
+                <i className="mb" style={{ left: pctOf(s.from), width: pctOf(s.to - s.from) }} />
+                {s.killZone ? <i className="mk" style={{ left: pctOf(s.killZone.from), width: pctOf(s.killZone.to - s.killZone.from) }} /> : null}
+                {isToday ? <i className="mn" style={{ left: pctOf(nowMin) }} /> : null}
+              </span>
+              <span className="kz">{s.hint}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="presets">
+        {SESSION_PRESETS.map((p) => {
+          const on = p.ids.length === ids.length && p.ids.every((id) => ids.includes(id));
+          return (
+            <button key={p.label} type="button" aria-pressed={on} className={`chip${on ? " on" : ""}`} onClick={() => setIds(p.ids)}>
+              {p.label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="ssum">
+        {ids.length ? (
+          <>
+            Grasz: <b>{sum.names}</b> · {durationLabel(sum.minutes)} na rynku · {sum.killZones} kill zone
+            {sum.gaps.length ? ` · przerwa ${sum.gaps.map((g) => `${hhmmOf(g.from)}–${hhmmOf(g.to)}`).join(", ")}` : ""}
+          </>
+        ) : (
+          "Wybierz jedną lub kilka sesji. Możesz łączyć, np. Londyn + NY AM."
+        )}
       </div>
     </div>
   );
@@ -218,34 +282,7 @@ export default function StepPlan({ doc, patch, pairs, onPairsChange, sessions, n
         </div>
       </div>
 
-      <div className="card">
-        <div className="ch">
-          <h2>Którą sesję grasz?</h2>
-          <span className="h">Godziny polskie · kill zone wg ICT</span>
-        </div>
-        <div className="sess" role="radiogroup" aria-label="Sesja">
-          {sessions.map((s) => {
-            const state = isToday ? sessionState(s, nowMin) : "off";
-            return (
-              <button
-                key={s.id}
-                type="button"
-                role="radio"
-                aria-checked={doc?.mapping_session === s.id}
-                className={`ses${doc?.mapping_session === s.id ? " on" : ""}`}
-                onClick={() => patch((p) => ({ ...p, mapping_session: s.id }))}
-              >
-                <div className="top">
-                  <span className="nm">{s.name}</span>
-                  {isToday ? <span className={`tag ${state}`}>{STATE_LABEL[state]}</span> : null}
-                </div>
-                <span className="tm">{s.label}</span>
-                <span className="kz">{s.hint}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <SessionPicker doc={doc} patch={patch} sessions={sessions} nowMin={nowMin} isToday={isToday} />
 
       <div className="card">
         <div className="ch">

@@ -6,7 +6,7 @@ import { buildDayIndex, emptyBucket, mergeBuckets, profitFactor, tradeDayKey, wi
 import { detectOvertradingAfterLoss } from "@/lib/disciplineInsights";
 import { getTradeRealizedPL, isClosedTrade, normalizeDirection, tradeRealizedR } from "@/lib/utils";
 import { convertTradeDateTime } from "@/lib/userSettings";
-import { sessionsForDate, tradingWindow, durationLabel, hhmmOf } from "@/lib/daySessions";
+import { durationLabel, hhmmOf, selectedSessionIds, sessionOfMinute, sessionsForDate, sessionsSummary } from "@/lib/daySessions";
 
 /* ------------------------------------------------------------------ słowniki */
 
@@ -178,10 +178,6 @@ export function curvePoints(views) {
 
 /* ------------------------------------------------------------------ zasady */
 
-function selectedSession(doc, sessions) {
-  return sessions.find((s) => s.id === doc?.mapping_session) || null;
-}
-
 export function prepChecks(doc) {
   const state = doc?.rules_manual?.prep || {};
   return PREP_RULES.map((rule) => ({ ...rule, ok: !!state[rule.key], auto: false }));
@@ -194,12 +190,10 @@ export function tradeChecks({ doc, views, balance, sessions }) {
   const risk = riskPercent(doc);
   const stop = dailyStopPercent(doc);
   const stopMoney = balance > 0 ? (balance * stop) / 100 : null;
-  const session = selectedSession(doc, sessions);
-  const win = tradingWindow(session);
+  const ids = selectedSessionIds(doc);
+  const names = sessionsSummary(sessions, ids).names;
   const timed = views.filter((v) => v.minutes != null);
-  const inWindow = win
-    ? timed.every((v) => v.minutes >= win.from && v.minutes < win.to)
-    : timed.every((v) => sessions.some((s) => v.minutes >= tradingWindow(s).from && v.minutes < s.to));
+  const inWindow = timed.every((v) => sessionOfMinute(sessions, v.minutes, ids.length ? ids : null) != null);
   const flagged = detectOvertradingAfterLoss(views.map((v) => v.trade));
   const notes = Array.isArray(doc?.session_notes) ? doc.session_notes.length : 0;
   return [
@@ -221,8 +215,8 @@ export function tradeChecks({ doc, views, balance, sessions }) {
     {
       key: "window",
       auto: true,
-      title: "Handel tylko w oknie sesji",
-      hint: session ? `${session.name}, od kill zone do końca sesji` : "Dowolna sesja (nie wybrano)",
+      title: "Handel tylko w Twoich sesjach",
+      hint: ids.length ? `${names}, od kill zone do końca sesji` : "Dowolna sesja (nie wybrano)",
       ok: inWindow,
     },
     {
@@ -300,7 +294,7 @@ export function hasAnyBias(doc, pairs) {
 export function planMissing(doc, pairs) {
   const missing = [];
   if (moodLevel(doc) == null) missing.push("nastrój");
-  if (!doc?.mapping_session) missing.push("sesja");
+  if (!selectedSessionIds(doc).length) missing.push("sesja");
   if (!hasAnyBias(doc, pairs)) missing.push("bias");
   const prep = prepChecks(doc);
   const done = prep.filter((c) => c.ok).length;

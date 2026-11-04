@@ -34,7 +34,7 @@ import {
   shiftDays,
   statsOf,
 } from "@/lib/dayFlow";
-import { nowInWarsaw, sessionsForDate } from "@/lib/daySessions";
+import { currentOrNextSession, nowInWarsaw, selectedSessionIds, sessionsForDate, sessionsSummary } from "@/lib/daySessions";
 import DayHero from "@/components/dayv2/DayHero";
 import StepPlan from "@/components/dayv2/StepPlan";
 import StepTrade from "@/components/dayv2/StepTrade";
@@ -256,6 +256,7 @@ export default function Day() {
   const phase = flowPhase(doc);
   const closed = isClosed(doc);
   const missing = doc ? planMissing(doc, pairs) : [];
+  const selectedIds = selectedSessionIds(doc);
   const limit = effectiveTradeLimit(doc);
   const stopMoney = balance > 0 ? (balance * dailyStopPercent(doc)) / 100 : null;
   const news = useMemo(() => newsOfDay(doc?.news_manual), [doc?.news_manual]);
@@ -420,7 +421,7 @@ export default function Day() {
             isToday={isToday}
             nowMin={nowMin}
             sessions={sessions}
-            selectedId={doc.mapping_session}
+            selectedIds={selectedIds}
             views={views}
             stats={stats}
             limit={limit}
@@ -487,7 +488,7 @@ export default function Day() {
                   views={views}
                   limit={limit}
                   stopMoney={stopMoney}
-                  session={sessions.find((s) => s.id === doc.mapping_session)}
+                  session={currentOrNextSession(sessions, selectedIds, nowMin)}
                   checks={discipline.trade.list}
                   onAddNote={addNote}
                   onRemoveNote={removeNote}
@@ -515,7 +516,7 @@ export default function Day() {
                   dirty={dirty}
                   cardProps={{
                     dateLabel: `${dateLabel.charAt(0).toUpperCase()}${dateLabel.slice(1)} ${date.slice(0, 4)}`,
-                    sessionName: sessions.find((s) => s.id === doc.mapping_session)?.name,
+                    sessionName: sessionsSummary(sessions, selectedIds).names,
                     accountLabel: account?.name || "",
                     streak,
                   }}

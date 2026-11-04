@@ -15,7 +15,8 @@ Wzorzec: `docs/design-reference/makieta-dzien.html`.
 - **Etap 5** — karta dnia po zamknięciu (PNG przez `html-to-image`, „Kopiuj podsumowanie”), Tryb w pracy (pełny ekran, Esc zamyka).
 - **Etap 6** — Dziennik dni: podsumowanie miesiąca, kalendarz z kolumną tygodnia, filtry, karty dni z krzywą i statystykami, rozwijana tabela.
 
-Godziny sesji i kill zone: `src/lib/daySessions.js` (okna w strefie giełdy/NY, przeliczane na czas polski dla daty — zmiana czasu działa sama).
+Sesje (godz. PL): Azja 01:00–09:00 · Londyn 09:00–17:30 (kill zone 08:00–11:00) · NY AM 14:30–17:00 (kill zone 13:00–16:00) · NY PM 19:30–22:00 (power hour 21:00–22:00); można wybrać kilka, są gotowe zestawy.
+Godziny sesji, kolory, kill zone i zestawy: `src/lib/daySessions.js` (okna w strefie giełdy/NY, przeliczane na czas polski dla daty — zmiana czasu działa sama).
 Logika: `src/lib/dayFlow.js` (+ testy `dayFlow.test.mjs`). Widoki: `src/components/dayv2/*`, strona `src/pages/Day.jsx`.
 
 ## Nowe pola w bazie (wszystkie opcjonalne, istniejące pola bez zmian)
@@ -25,6 +26,7 @@ Logika: `src/lib/dayFlow.js` (+ testy `dayFlow.test.mjs`). Widoki: `src/componen
 | pole | typ | znaczenie |
 |---|---|---|
 | `flow_phase` | number 0–3 | aktywny krok |
+| `sessions` | string[] (`asia`, `london`, `nyam`, `nypm`) | wybrane sesje dnia (kilka naraz); stare dni z `mapping_session` czytane jako lista 1-elementowa (`ny` → `nyam`) |
 | `mood_v2` | `{ level: 0–4, note: string }` | nastrój (0 = bardzo źle) |
 | `limits` | `{ daily_stop_percent: number }` | stop dzienny % |
 | `bias_levels` | `{ [para]: { bias: "long"\|"short"\|"neutral"\|null, levels: string } }` | bias i poziomy |
@@ -38,7 +40,7 @@ Logika: `src/lib/dayFlow.js` (+ testy `dayFlow.test.mjs`). Widoki: `src/componen
 | `discipline_day` | `{ score, prep, trade, review, total }` | wynik dnia za dyscyplinę (zapisywany przy każdym zapisie) |
 | `closed_at` | ISO string | moment zamknięcia |
 
-Używane istniejące pola: `status` (`active` / `closed`), `mapping_session`, `parameters.trade_limit`, `parameters.max_risk_percent`,
+Używane istniejące pola: `status` (`active` / `closed`), `mapping_session` (wypełniane pierwszą wybraną sesją, `nyam`/`nypm` → `ny`, żeby stara strona działała), `parameters.trade_limit`, `parameters.max_risk_percent`,
 `session_notes`, `post_session.went_well`, `post_session.improve_next`.
 
 `users/{uid}/trades/{id}` — nowe opcjonalne pole `discipline_rating` (1–5). Setup = istniejące `strategy_id`.

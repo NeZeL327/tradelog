@@ -9,6 +9,7 @@ export const SESSION_WINDOWS = [
   {
     id: "asia",
     name: "Azja",
+    color: "#b48cff",
     anchorZone: "Asia/Tokyo",
     from: "09:00",
     to: "17:00",
@@ -18,20 +19,92 @@ export const SESSION_WINDOWS = [
   {
     id: "london",
     name: "Londyn",
+    color: "#6b7cf5",
     anchorZone: "Europe/London",
     from: "08:00",
     to: "16:30",
-    killZone: { name: "Londynu", anchorZone: "America/New_York", from: "02:00", to: "05:00" },
+    killZone: { name: "Londynu", label: "Kill zone", anchorZone: "America/New_York", from: "02:00", to: "05:00" },
   },
   {
-    id: "ny",
-    name: "Nowy Jork",
+    id: "nyam",
+    name: "NY AM",
+    color: "#4fc3d9",
     anchorZone: "America/New_York",
     from: "08:30",
+    to: "11:00",
+    killZone: { name: "NY AM", label: "Kill zone", anchorZone: "America/New_York", from: "07:00", to: "10:00" },
+  },
+  {
+    id: "nypm",
+    name: "NY PM",
+    color: "#f0a35b",
+    anchorZone: "America/New_York",
+    from: "13:30",
     to: "16:00",
-    killZone: { name: "Nowego Jorku", anchorZone: "America/New_York", from: "07:00", to: "10:00" },
+    killZone: { name: "NY PM (power hour)", label: "Power hour", anchorZone: "America/New_York", from: "15:00", to: "16:00" },
   },
 ];
+
+/** Gotowe zestawy sesji w kroku Plan. */
+export const SESSION_PRESETS = [
+  { label: "Tylko Londyn", ids: ["london"] },
+  { label: "Londyn + NY AM", ids: ["london", "nyam"] },
+  { label: "NY AM + PM", ids: ["nyam", "nypm"] },
+  { label: "Cały dzień", ids: ["london", "nyam", "nypm"] },
+];
+
+const SESSION_ORDER = SESSION_WINDOWS.map((s) => s.id);
+const LEGACY_SESSION_IDS = { ny: "nyam" };
+
+/** Wybrane sesje dnia: nowe pole `sessions` (lista id), stare dni z `mapping_session` jako lista 1-elementowa. */
+export function selectedSessionIds(doc) {
+  const raw = Array.isArray(doc?.sessions) ? doc.sessions : doc?.mapping_session ? [doc.mapping_session] : [];
+  const ids = raw.map((id) => LEGACY_SESSION_IDS[id] || id).filter((id) => SESSION_ORDER.includes(id));
+  return SESSION_ORDER.filter((id) => ids.includes(id));
+}
+
+/** Pole `mapping_session` zostaje wypełnione pierwszą sesją, żeby stara strona dalej działała. */
+export function legacyMappingSession(ids) {
+  const first = ids[0];
+  if (!first) return null;
+  return first === "nyam" || first === "nypm" ? "ny" : first;
+}
+
+/** Podsumowanie wyboru: minuty na rynku (bez nakładania się), liczba kill zone, przerwy. */
+export function sessionsSummary(sessions, ids) {
+  const picked = sessions.filter((s) => ids.includes(s.id)).sort((a, b) => a.from - b.from);
+  let minutes = 0;
+  let end = -Infinity;
+  const gaps = [];
+  for (const s of picked) {
+    if (end > -Infinity && s.from > end) gaps.push({ from: end, to: s.from });
+    const start = Math.max(s.from, end);
+    if (s.to > start) minutes += s.to - start;
+    end = Math.max(end, s.to);
+  }
+  return {
+    names: picked.map((s) => s.name).join(" + "),
+    minutes,
+    killZones: picked.filter((s) => s.killZone).length,
+    gaps,
+  };
+}
+
+/** Sesja, w której wypada wejście (od początku kill zone do końca sesji); null, gdy żadna. */
+export function sessionOfMinute(sessions, minutes, ids = null) {
+  const pool = ids ? sessions.filter((s) => ids.includes(s.id)) : sessions;
+  return pool.find((s) => {
+    const w = tradingWindow(s);
+    return minutes >= w.from && minutes < w.to;
+  }) || null;
+}
+
+/** Bieżąca albo najbliższa (lub ostatnia) z wybranych sesji — do licznika w kroku Handel. */
+export function currentOrNextSession(sessions, ids, minutes) {
+  const pool = sessions.filter((s) => ids.includes(s.id));
+  if (!pool.length) return null;
+  return pool.find((s) => minutes >= s.from && minutes < s.to) || pool.find((s) => s.from > minutes) || pool[pool.length - 1];
+}
 
 function zoneParts(date, timeZone) {
   const parts = new Intl.DateTimeFormat("en-GB", {
@@ -94,7 +167,8 @@ export function hhmmOf(minutes) {
 
 export function durationLabel(minutes) {
   const m = Math.max(0, Math.round(minutes));
-  return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
+  if (m < 60) return `${m} min`;
+  return m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`;
 }
 
 function windowFor(dateIso, w) {
@@ -108,14 +182,15 @@ function windowFor(dateIso, w) {
 export function sessionsForDate(dateIso) {
   return SESSION_WINDOWS.map((s) => {
     const span = windowFor(dateIso, s);
-    const kz = s.killZone ? { name: s.killZone.name, ...windowFor(dateIso, s.killZone) } : null;
+    const kz = s.killZone ? { name: s.killZone.name, label: s.killZone.label, ...windowFor(dateIso, s.killZone) } : null;
     return {
       id: s.id,
       name: s.name,
+      color: s.color,
       from: span.from,
       to: span.to,
       label: `${hhmmOf(span.from)} – ${hhmmOf(span.to)}`,
-      hint: kz ? `Kill zone ${hhmmOf(kz.from)} – ${hhmmOf(kz.to)}` : s.hint,
+      hint: kz ? `${kz.label} ${hhmmOf(kz.from)} – ${hhmmOf(kz.to)}` : s.hint,
       killZone: kz,
     };
   });

@@ -1,16 +1,21 @@
 // Pasek "Dziś": data, status rynku na żywo, trzy liczby, następny krok i oś dnia 00–24.
 import { Check, ChevronRight, Smartphone } from "lucide-react";
 import { fmtMoney, fmtR, marketStatus } from "@/lib/dayFlow";
-import { hhmmOf } from "@/lib/daySessions";
+import { hhmmOf, sessionOfMinute } from "@/lib/daySessions";
 import { toneColor } from "./parts";
 
 const pct = (minutes) => `${((Math.max(0, Math.min(1440, minutes)) / 1440) * 100).toFixed(2)}%`;
 const onAxis = (minutes) => `calc(66px + (100% - 66px) * ${Math.max(0, Math.min(1440, minutes)) / 1440})`;
 
-export default function DayHero({ dateLabel, isToday, nowMin, sessions, selectedId, views, stats, limit, discipline, news, next, onNext, onWork }) {
+export default function DayHero({ dateLabel, isToday, nowMin, sessions, selectedIds, views, stats, limit, discipline, news, next, onNext, onWork }) {
   const status = marketStatus({ minutes: nowMin, sessions, news, isToday });
-  const dotLane = selectedId || "london";
-  const dots = views.filter((v) => v.minutes != null);
+  // Kropka trafia na tor sesji, w której było wejście (najpierw wybrane sesje, potem dowolna).
+  const laneOf = (m) =>
+    (selectedIds.length && sessionOfMinute(sessions, m, selectedIds))?.id ||
+    sessionOfMinute(sessions, m)?.id ||
+    selectedIds[0] ||
+    "london";
+  const dots = views.filter((v) => v.minutes != null).map((v) => ({ ...v, lane: laneOf(v.minutes) }));
   return (
     <section className="hero" aria-label="Dziś">
       <div className="htop">
@@ -69,26 +74,26 @@ export default function DayHero({ dateLabel, isToday, nowMin, sessions, selected
             <span key={`nl${i}`} className="nline" style={{ left: onAxis(n.minutes) }} />
           ))}
         {sessions.map((s) => (
-          <div key={s.id} className={`lane${selectedId === s.id ? " on" : ""}`}>
+          <div key={s.id} className={`lane${selectedIds.includes(s.id) ? " on" : ""}`} style={{ "--sc": s.color }}>
             <em>{s.name}</em>
             <span className="bar" style={{ left: pct(s.from), width: pct(s.to - s.from) }} title={`${s.name} ${s.label}`} />
             {s.killZone ? (
               <span
                 className="kz"
                 style={{ left: pct(s.killZone.from), width: pct(s.killZone.to - s.killZone.from) }}
-                title={`Kill zone ${hhmmOf(s.killZone.from)}–${hhmmOf(s.killZone.to)}`}
+                title={`${s.killZone.label} ${hhmmOf(s.killZone.from)}–${hhmmOf(s.killZone.to)}`}
               />
             ) : null}
-            {dotLane === s.id
-              ? dots.map((v) => (
+            {dots
+              .filter((v) => v.lane === s.id)
+              .map((v) => (
                   <span
                     key={v.id}
                     className={`tdot ${(v.net ?? 0) >= 0 ? "w" : "l"}`}
                     style={{ left: pct(v.minutes) }}
                     title={`${v.time} ${v.symbol} ${v.dir === "L" ? "Long" : "Short"} ${fmtR(v.r)} (${fmtMoney(v.net)})`}
                   />
-                ))
-              : null}
+                ))}
           </div>
         ))}
         <div className="lane news">
@@ -113,7 +118,7 @@ export default function DayHero({ dateLabel, isToday, nowMin, sessions, selected
       <div className="tlleg">
         <span>
           <i style={{ background: "color-mix(in srgb,var(--accent) 42%,transparent)", border: "1px solid var(--accent2)" }} />
-          Twoja sesja
+          Twoje sesje
         </span>
         <span>
           <i style={{ background: "repeating-linear-gradient(135deg,color-mix(in srgb,var(--warn) 75%,transparent) 0 3px,color-mix(in srgb,var(--warn) 35%,transparent) 3px 6px)" }} />

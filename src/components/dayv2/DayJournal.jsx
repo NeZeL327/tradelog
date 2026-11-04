@@ -4,7 +4,7 @@ import { addDays, endOfMonth, format, startOfMonth, startOfWeek } from "date-fns
 import { pl } from "date-fns/locale";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { DAY_TAGS, MOODS, curvePoints, fmtMoney, fmtPf, fmtR, journalDays, monthSummary } from "@/lib/dayFlow";
-import { SESSION_WINDOWS } from "@/lib/daySessions";
+import { SESSION_WINDOWS, selectedSessionIds } from "@/lib/daySessions";
 import { tradeMistakes } from "@/lib/calendarAggregates";
 import { DayCurve, ScoreRing, toneColor } from "./parts";
 import { TradeTable } from "./StepImport";
@@ -229,7 +229,8 @@ function DayCardRow({ day, todayIso, strategies, expanded, onToggle, onOpenDay }
   const s = day.stats;
   const date = dateOf(day.dateIso);
   const mood = Number.isInteger(day.plan?.mood_v2?.level) ? MOODS[day.plan.mood_v2.level] : null;
-  const session = SESSION_WINDOWS.find((x) => x.id === day.plan?.mapping_session);
+  const ids = selectedSessionIds(day.plan);
+  const sessionNames = SESSION_WINDOWS.filter((x) => ids.includes(x.id)).map((x) => x.name).join(" + ");
   const note = day.plan?.post_session?.went_well || day.plan?.post_session?.improve_next || "";
   const rule = day.plan?.promise?.tomorrow_rule || "";
   const isPast = day.dateIso < todayIso;
@@ -248,7 +249,7 @@ function DayCardRow({ day, todayIso, strategies, expanded, onToggle, onOpenDay }
           </div>
           <div className="meta">
             <span>
-              Sesja <i>{session ? session.name : "—"}</i>
+              {ids.length > 1 ? "Sesje" : "Sesja"} <i>{sessionNames || "—"}</i>
             </span>
             <span>
               <i>{s.n}</i> trans.

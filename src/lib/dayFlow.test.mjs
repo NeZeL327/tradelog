@@ -25,21 +25,51 @@ const s = await load("lib/daySessions.js");
 const d = await load("lib/dayFlow.js");
 
 test("sesje w czasie polskim — zima (listopad)", () => {
-  const [asia, london, ny] = s.sessionsForDate("2026-11-04");
+  const [asia, london, nyam, nypm] = s.sessionsForDate("2026-11-04");
   assert.equal(asia.label, "01:00 – 09:00");
   assert.equal(london.label, "09:00 – 17:30");
-  assert.equal(ny.label, "14:30 – 22:00");
+  assert.equal(nyam.label, "14:30 – 17:00");
+  assert.equal(nypm.label, "19:30 – 22:00");
   assert.equal(london.hint, "Kill zone 08:00 – 11:00");
-  assert.equal(ny.hint, "Kill zone 13:00 – 16:00");
+  assert.equal(nyam.hint, "Kill zone 13:00 – 16:00");
+  assert.equal(nypm.hint, "Power hour 21:00 – 22:00");
 });
 
 test("sesje w czasie polskim — lato i okres przejściowy", () => {
-  const [, london, ny] = s.sessionsForDate("2026-07-01");
+  const [, london, nyam, nypm] = s.sessionsForDate("2026-07-01");
   assert.equal(london.label, "09:00 – 17:30");
-  assert.equal(ny.label, "14:30 – 22:00");
-  // USA już na czasie letnim, Europa jeszcze nie → NY otwiera się w PL godzinę wcześniej.
-  const [, , nyMarch] = s.sessionsForDate("2026-03-20"); // USA czas letni od 8.03, UE od 29.03
-  assert.equal(nyMarch.label, "13:30 – 21:00");
+  assert.equal(nyam.label, "14:30 – 17:00");
+  assert.equal(nypm.label, "19:30 – 22:00");
+  // USA już na czasie letnim, Europa jeszcze nie → NY w PL godzinę wcześniej (USA od 8.03, UE od 29.03).
+  const [, , nyamMarch] = s.sessionsForDate("2026-03-20");
+  assert.equal(nyamMarch.label, "13:30 – 16:00");
+});
+
+test("wybór kilku sesji: stare dni, podsumowanie, bieżąca sesja", () => {
+  assert.deepEqual(s.selectedSessionIds({ mapping_session: "ny" }), ["nyam"]);
+  assert.deepEqual(s.selectedSessionIds({ sessions: ["nypm", "london", "xx"] }), ["london", "nypm"]);
+  assert.deepEqual(s.selectedSessionIds({}), []);
+  assert.equal(s.legacyMappingSession(["nypm"]), "ny");
+  const sessions = s.sessionsForDate("2026-11-04");
+  const sum = s.sessionsSummary(sessions, ["london", "nypm"]);
+  assert.equal(sum.names, "Londyn + NY PM");
+  assert.equal(sum.minutes, 11 * 60);
+  assert.equal(sum.killZones, 2);
+  assert.deepEqual(sum.gaps.map((g) => [s.hhmmOf(g.from), s.hhmmOf(g.to)]), [["17:30", "19:30"]]);
+  // Londyn i NY AM nachodzą na siebie — bez podwójnego liczenia: 09:00–17:30 = 8,5 h
+  assert.equal(s.sessionsSummary(sessions, ["london", "nyam"]).minutes, 8.5 * 60);
+  assert.equal(s.currentOrNextSession(sessions, ["london", "nypm"], 18 * 60).id, "nypm");
+  assert.equal(s.sessionOfMinute(sessions, 20 * 60, ["london", "nypm"]).id, "nypm");
+  assert.equal(s.sessionOfMinute(sessions, 18 * 60, ["london", "nypm"]), null);
+});
+
+test("zasada AUTO: handel tylko w wybranych sesjach", () => {
+  const sessions = s.sessionsForDate("2026-11-04");
+  const views = d.dayTradesFor([trade("a", 100, { entry_time: "09:30" }), trade("b", 100, { entry_time: "20:15" })], "a1", "2026-11-04");
+  const rule = (doc) => d.tradeChecks({ doc, views, balance: 100000, sessions }).find((c) => c.key === "window");
+  assert.equal(rule({ sessions: ["london", "nypm"] }).ok, true);
+  assert.equal(rule({ sessions: ["london", "nypm"] }).title, "Handel tylko w Twoich sesjach");
+  assert.equal(rule({ sessions: ["london"] }).ok, false);
 });
 
 const trade = (id, pl, extra = {}) => ({

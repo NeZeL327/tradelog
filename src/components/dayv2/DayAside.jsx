@@ -1,6 +1,7 @@
 // Prawy panel: wynik za dyscyplinę, postęp (mapa ciepła, seria), odznaki, limity konta, "Twój plan".
 import { Flame } from "lucide-react";
 import { MOODS, effectiveTradeLimit, fmtMoney, isLimitLowered, moodLevel, riskPercent, dailyStopPercent, scoreHeadline } from "@/lib/dayFlow";
+import { selectedSessionIds, sessionsSummary } from "@/lib/daySessions";
 import { Medal, ScoreRing } from "./parts";
 
 const DAY_LABELS = ["Pn", "", "Śr", "", "Pt"];
@@ -19,7 +20,7 @@ export default function DayAside({ doc, promise, discipline, heat, streak, avg30
   const risk = riskPercent(doc);
   const oneR = balance > 0 ? (balance * risk) / 100 : null;
   const mood = moodLevel(doc);
-  const session = sessions.find((s) => s.id === doc?.mapping_session);
+  const sessionNames = sessionsSummary(sessions, selectedSessionIds(doc)).names;
   const biasList = pairs.filter((p) => doc?.bias_levels?.[p]?.bias);
   const promiseRule = doc?.promise?.acknowledged ? promise?.rule : null;
 
@@ -163,7 +164,7 @@ export default function DayAside({ doc, promise, discipline, heat, streak, avg30
             Nastrój: <b>{mood != null ? MOODS[mood].label : "—"}</b>
           </div>
           <div>
-            Sesja: <b>{session ? session.name : "—"}</b>
+            Sesje: <b>{sessionNames || "—"}</b>
           </div>
           <div>
             Bias:{" "}
