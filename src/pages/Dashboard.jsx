@@ -470,17 +470,15 @@ export default function Dashboard() {
     tradesByDate[key].push(trade);
   });
 
-  // Default day = latest date with a closed trade in the current filters; today when there is none.
-  // Re-applied when the account filter or data changes, until the user picks a day or month.
+  // Default day = today (current month in the day strip), until the user picks a day or month.
   const userPickedDayRef = useRef(Boolean(dateParamDay));
-  const latestTradeKey = Object.keys(tradesByDate).sort().pop() || "";
   useEffect(() => {
     if (isLoading || userPickedDayRef.current) return;
-    const day = new Date(`${latestTradeKey || localTodayKey()}T12:00:00`);
+    const day = new Date(`${localTodayKey()}T12:00:00`);
     if (Number.isNaN(day.getTime())) return;
     setSelectedCalendarDate(day);
     setCalendarDate(new Date(day.getFullYear(), day.getMonth(), 1));
-  }, [isLoading, latestTradeKey]);
+  }, [isLoading]);
   const pickCalendarDay = (day) => {
     userPickedDayRef.current = true;
     setSelectedCalendarDate(day);
