@@ -470,6 +470,21 @@ export default function Dashboard() {
     tradesByDate[key].push(trade);
   });
 
+  // Day strip / day view: same account & symbol/direction/outcome filters, but NOT the period filter
+  // (selected month / 7d / 30d / 90d / date range), so every month shows its own trades.
+  const dayTradesByDate = {};
+  tradesFromActiveAccounts.forEach(trade => {
+    if (!isClosedTrade(trade)) return;
+    if (!(dashboardAccounts.includes("all") || dashboardAccounts.includes(String(trade.account_id)))) return;
+    if (!(filterSymbols.includes("all") || filterSymbols.includes(String(trade.symbol)))) return;
+    if (!(filterDirections.includes("all") || filterDirections.includes(String(normalizeDirection(trade.direction))))) return;
+    if (!(filterOutcomes.includes("all") || filterOutcomes.includes(String(trade.outcome)))) return;
+    const key = toDateKey(trade.date);
+    if (!key) return;
+    if (!dayTradesByDate[key]) dayTradesByDate[key] = [];
+    dayTradesByDate[key].push(trade);
+  });
+
   // Default day = today (current month in the day strip), until the user picks a day or month.
   const userPickedDayRef = useRef(Boolean(dateParamDay));
   useEffect(() => {
@@ -1142,7 +1157,7 @@ export default function Dashboard() {
         calendarDate={calendarDate}
         selectedDate={selectedCalendarDate}
         calendarDays={calendarDays}
-        tradesByDate={tradesByDate}
+        tradesByDate={dayTradesByDate}
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
         onSelectDay={pickCalendarDay}

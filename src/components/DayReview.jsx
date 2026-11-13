@@ -113,14 +113,6 @@ export function DayShell({ children }) {
   );
 }
 
-function centerTile(container, key) {
-  if (!container || !key) return;
-  const tile = container.querySelector(`[data-day="${key}"]`);
-  if (!tile) return;
-  const left = tile.getBoundingClientRect().left - container.getBoundingClientRect().left + container.scrollLeft;
-  container.scrollTo({ left: Math.max(0, left - container.clientWidth / 2 + tile.clientWidth / 2), behavior: "auto" });
-}
-
 function tagTone(kind) {
   if (kind === "mistake" || kind === "overtrading") return LOSS;
   if (kind === "mind" || kind === "risk" || kind === "mistakes") return WARN;
@@ -140,12 +132,134 @@ export function TagPill({ tag, kind, className = "" }) {
 }
 
 // days: [{ key, label, valueText, valueColor, countText, tag, tagKind, tagExtra?, barRatio?, barColor? }]
+// Coverflow look: tiles tilt and recede with their distance from the strip's centre.
+function applyStrip3d(container) {
+  if (!container) return;
+  const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const box = container.getBoundingClientRect();
+  const mid = box.left + box.width / 2;
+  const half = Math.max(1, box.width / 2);
+  container.querySelectorAll("[data-day]").forEach((tile) => {
+    if (reduce) { tile.style.transform = ""; tile.style.opacity = ""; return; }
+    const r = tile.getBoundingClientRect();
+    const d = Math.max(-1.4, Math.min(1.4, (r.left + r.width / 2 - mid) / half));
+    const a = Math.min(1, Math.abs(d));
+    tile.style.transform = `perspective(900px) translateZ(${(-a * 60).toFixed(1)}px) rotateY(${(-d * 32).toFixed(1)}deg) scale(${(1 - a * 0.1).toFixed(3)})`;
+    tile.style.opacity = String((1 - a * 0.45).toFixed(3));
+  });
+}
+
+function nearestTileLeft(container) {
+  const box = container.getBoundingClientRect();
+  const mid = box.left + box.width / 2;
+  let best = null;
+  container.querySelectorAll("[data-day]").forEach((tile) => {
+    const r = tile.getBoundingClientRect();
+    const dist = r.left + r.width / 2 - mid;
+    if (best === null || Math.abs(dist) < Math.abs(best)) best = dist;
+  });
+  return best === null ? container.scrollLeft : container.scrollLeft + best;
+}
+
 export function DayStripRow({ title, onPrev, onNext, prevLabel, nextLabel, extra, days, selectedKey, onSelect, emptyText }) {
   const scrollerRef = useRef(null);
+  const dragRef = useRef({ active: false, moved: false, startX: 0, startLeft: 0, lastX: 0, lastT: 0, v: 0, raf: 0 });
+  const firstCenterRef = useRef(true);
+
   useEffect(() => {
-    const frame = requestAnimationFrame(() => centerTile(scrollerRef.current, selectedKey));
+    const frame = requestAnimationFrame(() => {
+      const el = scrollerRef.current;
+      if (!el || !selectedKey) return;
+      const tile = el.querySelector(`[data-day="${selectedKey}"]`);
+      if (!tile) return;
+      const left = tile.getBoundingClientRect().left - el.getBoundingClientRect().left + el.scrollLeft;
+      el.scrollTo({ left: Math.max(0, left - el.clientWidth / 2 + tile.clientWidth / 2), behavior: firstCenterRef.current ? "auto" : "smooth" });
+      firstCenterRef.current = false;
+      applyStrip3d(el);
+    });
     return () => cancelAnimationFrame(frame);
   }, [selectedKey, days.length, title]);
+
+  // 3D on scroll/resize + mouse wheel scrolls sideways.
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return undefined;
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => { frame = 0; applyStrip3d(el); });
+    };
+    const onWheel = (event) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      event.preventDefault();
+      el.scrollBy({ left: event.deltaY, behavior: "auto" });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    el.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("resize", onScroll);
+    applyStrip3d(el);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      el.removeEventListener("wheel", onWheel);
+      window.removeEventListener("resize", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+      cancelAnimationFrame(dragRef.current.raf);
+    };
+  }, [days.length]);
+
+  // Click-and-drag scrolling with momentum and a soft snap to the nearest tile.
+  const onPointerDown = (event) => {
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+    const el = scrollerRef.current;
+    if (!el) return;
+    cancelAnimationFrame(dragRef.current.raf);
+    dragRef.current = { ...dragRef.current, active: true, moved: false, startX: event.clientX, startLeft: el.scrollLeft, lastX: event.clientX, lastT: performance.now(), v: 0 };
+  };
+  const onPointerMove = (event) => {
+    const drag = dragRef.current;
+    const el = scrollerRef.current;
+    if (!drag.active || !el) return;
+    const dx = event.clientX - drag.startX;
+    if (!drag.moved && Math.abs(dx) > 5) {
+      drag.moved = true;
+      el.setPointerCapture?.(event.pointerId);
+      el.style.cursor = "grabbing";
+    }
+    if (!drag.moved) return;
+    const now = performance.now();
+    const dt = Math.max(1, now - drag.lastT);
+    drag.v = 0.8 * ((event.clientX - drag.lastX) / dt) + 0.2 * drag.v;
+    drag.lastX = event.clientX;
+    drag.lastT = now;
+    el.scrollLeft = drag.startLeft - dx;
+  };
+  const endDrag = (event) => {
+    const drag = dragRef.current;
+    const el = scrollerRef.current;
+    if (!drag.active || !el) return;
+    drag.active = false;
+    el.style.cursor = "";
+    if (!drag.moved) return;
+    el.releasePointerCapture?.(event.pointerId);
+    let v = -drag.v * 16;
+    const step = () => {
+      if (Math.abs(v) < 0.6) {
+        el.scrollTo({ left: Math.max(0, nearestTileLeft(el)), behavior: "smooth" });
+        return;
+      }
+      el.scrollLeft += v;
+      v *= 0.93;
+      drag.raf = requestAnimationFrame(step);
+    };
+    drag.raf = requestAnimationFrame(step);
+  };
+  const swallowClickAfterDrag = (event) => {
+    if (dragRef.current.moved) {
+      event.preventDefault();
+      event.stopPropagation();
+      dragRef.current.moved = false;
+    }
+  };
 
   return (
     <div className="ds-rise flex min-w-0 items-stretch" style={{ borderBottom: `1px solid ${LINE}`, "--i": 0 }}>
@@ -161,7 +275,17 @@ export function DayStripRow({ title, onPrev, onNext, prevLabel, nextLabel, extra
           {extra}
         </div>
       </div>
-      <div ref={scrollerRef} className="day-strip flex min-w-0 flex-1 gap-2 overflow-x-auto px-12 py-3" style={{ scrollbarWidth: "none" }}>
+      <div
+        ref={scrollerRef}
+        className="day-strip flex min-w-0 flex-1 cursor-grab select-none gap-2 overflow-x-auto py-3"
+        style={{ scrollbarWidth: "none", paddingLeft: "50%", paddingRight: "50%", transformStyle: "preserve-3d" }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={swallowClickAfterDrag}
+        onDragStart={(event) => event.preventDefault()}
+      >
         {days.length === 0 ? (
           <p className="px-3 py-4 text-[12px]" style={{ color: MUTED }}>{emptyText}</p>
         ) : days.map((day) => {
@@ -174,7 +298,7 @@ export function DayStripRow({ title, onPrev, onNext, prevLabel, nextLabel, extra
               data-selected={selected ? "true" : "false"}
               aria-pressed={selected}
               onClick={() => onSelect(day)}
-              className={`day-tile ds-press relative flex min-w-[148px] shrink-0 flex-col overflow-hidden rounded-[12px] border px-3 py-2.5 text-left transition-[background-color,border-color,transform] duration-150 hover:-translate-y-px ${
+              className={`day-tile ds-press relative flex min-w-[148px] shrink-0 flex-col overflow-hidden rounded-[12px] border px-3 py-2.5 text-left transition-[background-color,border-color,opacity] duration-150 will-change-transform ${
                 selected ? "border-ds-frame bg-ds-s3" : "border-transparent bg-ds-s2 hover:bg-ds-s3"
               }`}
               style={{ boxShadow: selected ? "var(--ds-inset)" : "none" }}
