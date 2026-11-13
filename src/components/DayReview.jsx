@@ -161,6 +161,22 @@ function nearestTileLeft(container) {
   return best === null ? container.scrollLeft : container.scrollLeft + best;
 }
 
+// Hovered tile leans slightly toward the cursor (fine pointers only); CSS does the lift and shadow.
+function tiltTile(event) {
+  if (event.pointerType !== "mouse") return;
+  const tile = event.currentTarget;
+  const r = tile.getBoundingClientRect();
+  const x = (event.clientX - r.left) / Math.max(1, r.width) - 0.5;
+  const y = (event.clientY - r.top) / Math.max(1, r.height) - 0.5;
+  tile.style.setProperty("--tilt-x", `${(-y * 10).toFixed(2)}deg`);
+  tile.style.setProperty("--tilt-y", `${(x * 12).toFixed(2)}deg`);
+}
+
+function resetTileTilt(event) {
+  event.currentTarget.style.removeProperty("--tilt-x");
+  event.currentTarget.style.removeProperty("--tilt-y");
+}
+
 export function DayStripRow({ title, onPrev, onNext, prevLabel, nextLabel, extra, days, selectedKey, onSelect, emptyText }) {
   const scrollerRef = useRef(null);
   const dragRef = useRef({ active: false, moved: false, startX: 0, startLeft: 0, lastX: 0, lastT: 0, v: 0, raf: 0 });
@@ -277,7 +293,7 @@ export function DayStripRow({ title, onPrev, onNext, prevLabel, nextLabel, extra
       </div>
       <div
         ref={scrollerRef}
-        className="day-strip flex min-w-0 flex-1 cursor-grab select-none gap-2 overflow-x-auto py-3"
+        className="day-strip flex min-w-0 flex-1 cursor-grab select-none gap-2 overflow-x-auto py-4"
         style={{ scrollbarWidth: "none", paddingLeft: "50%", paddingRight: "50%", transformStyle: "preserve-3d" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -291,14 +307,15 @@ export function DayStripRow({ title, onPrev, onNext, prevLabel, nextLabel, extra
         ) : days.map((day) => {
           const selected = day.key === selectedKey;
           return (
+            <div key={day.key} data-day={day.key} className="day-tile-slot shrink-0 will-change-transform">
             <button
-              key={day.key}
               type="button"
-              data-day={day.key}
               data-selected={selected ? "true" : "false"}
               aria-pressed={selected}
               onClick={() => onSelect(day)}
-              className={`day-tile ds-press relative flex min-w-[148px] shrink-0 flex-col overflow-hidden rounded-[12px] border px-3 py-2.5 text-left transition-[background-color,border-color,opacity] duration-150 will-change-transform ${
+              onPointerMove={tiltTile}
+              onPointerLeave={resetTileTilt}
+              className={`day-tile day-tile-3d ds-press relative flex min-w-[148px] flex-col overflow-hidden rounded-[12px] border px-3 py-2.5 text-left ${
                 selected ? "border-ds-frame bg-ds-s3" : "border-transparent bg-ds-s2 hover:bg-ds-s3"
               }`}
               style={{ boxShadow: selected ? "var(--ds-inset)" : "none" }}
@@ -321,6 +338,7 @@ export function DayStripRow({ title, onPrev, onNext, prevLabel, nextLabel, extra
                 />
               ) : null}
             </button>
+            </div>
           );
         })}
       </div>

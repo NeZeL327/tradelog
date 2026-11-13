@@ -962,6 +962,45 @@ html .trade-preview-panel[role="dialog"] {
   outline: none;
 }
 
+/* ---------- Day tile: soft 3D pop-out (lift toward the viewer + tilt to the cursor) ---------- */
+.day-tile-slot {
+  perspective: 700px;
+  transform-style: preserve-3d;
+}
+.day-tile-3d {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
+  transform-style: preserve-3d;
+  transition:
+    transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+.day-tile-3d:hover {
+  transform: translate3d(0, -4px, 22px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  box-shadow: 0 10px 18px -10px rgba(0, 0, 0, 0.55), 0 2px 6px -2px rgba(0, 0, 0, 0.3) !important;
+}
+.day-tile-3d[data-selected="true"] {
+  transform: translate3d(0, -3px, 16px);
+  box-shadow: var(--ds-inset), 0 8px 16px -10px rgba(0, 0, 0, 0.5) !important;
+}
+.day-tile-3d[data-selected="true"]:hover {
+  transform: translate3d(0, -5px, 26px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+}
+html:not(.dark) .day-tile-3d:hover,
+html:not(.dark) .day-tile-3d[data-selected="true"] {
+  box-shadow: 0 10px 18px -12px rgba(30, 40, 90, 0.35), 0 2px 6px -3px rgba(30, 40, 90, 0.2) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .day-tile-3d,
+  .day-tile-3d:hover,
+  .day-tile-3d[data-selected="true"] {
+    transform: none;
+  }
+}
+
 /* ---------- Calendar: direction-aware month slide, staggered cells, glass day drawer ---------- */
 :root {
   --cal-pos: var(--ds-pos);
